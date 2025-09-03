@@ -1,0 +1,621 @@
+import { AppLayout } from "@/components/layout/AppLayout";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText } from "lucide-react";
+import { EquipmentLabel } from "@/components/EquipmentLabel";
+import { ChaveAcessoModal } from "@/components/ChaveAcessoModal";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ItensNFeModal } from "@/components/ItensNFeModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+
+// Função para carregar recebimentos do localStorage
+const carregarRecebimentos = () => {
+  const recebimentosSalvos = localStorage.getItem('recebimentos');
+  if (recebimentosSalvos) {
+    return JSON.parse(recebimentosSalvos);
+  }
+  
+  // Mock data inicial - dados de exemplo
+  const recebimentosIniciais = [
+    {
+      id: "1",
+      numeroOrdem: "0065/25",
+      cliente: "LIZY SOFTWARES LTDA",
+      dataEntrada: "15/08/2025",
+      notaFiscal: "NF-001234",
+      naEmpresa: true,
+      tag: "EQ001",
+      tipoEquipamento: "Cilindro Hidráulico",
+      numeroSerie: "CH-001-2025",
+      urgencia: false,
+      solicitante: "João Silva",
+      pressaoTrabalho: "200 bar",
+      observacoesEntrada: "Equipamento em manutenção preventiva.",
+      camisa: "80mm",
+      hasteComprimento: "500mm",
+      curso: "300mm",
+      conexaoA: "1/2 NPT",
+      conexaoB: "1/4 NPT",
+      observacoesPeritagem: "",
+      manutencaoCorretiva: false,
+      manutencaoPreventiva: true,
+      apresentarOrcamento: [false, false, false, false],
+      fotos: [null, null, null, null]
+    },
+    {
+      id: "2",
+      numeroOrdem: "0036/25", 
+      cliente: "NOVELIS DO BRASIL LTDA",
+      dataEntrada: "14/08/2025",
+      notaFiscal: "NF-005678",
+      naEmpresa: true,
+      tag: "EQ002",
+      tipoEquipamento: "Bomba Hidráulica",
+      numeroSerie: "BH-002-2025",
+      urgencia: true,
+      solicitante: "Maria Santos",
+      pressaoTrabalho: "350 bar",
+      observacoesEntrada: "Bomba com ruído excessivo.",
+      camisa: "100mm",
+      hasteComprimento: "800mm",
+      curso: "600mm",
+      conexaoA: "3/4 NPT",
+      conexaoB: "1/2 NPT",
+      observacoesPeritagem: "",
+      manutencaoCorretiva: true,
+      manutencaoPreventiva: false,
+      apresentarOrcamento: [false, false, false, false],
+      fotos: [null, null, null, null]
+    }
+  ];
+  
+  localStorage.setItem('recebimentos', JSON.stringify(recebimentosIniciais));
+  return recebimentosIniciais;
+};
+
+export default function Recebimentos() {
+  const navigate = useNavigate();
+  const [recebimentos, setRecebimentos] = useState<any[]>([]);
+  const [notasFiscais, setNotasFiscais] = useState<any[]>([]);
+  const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
+  const [modalChaveAcesso, setModalChaveAcesso] = useState(false);
+  const [notaFiscalSelecionada, setNotaFiscalSelecionada] = useState<any>(null);
+  
+  // Estados para filtros
+  const [dataInicio, setDataInicio] = useState<Date>();
+  const [dataFim, setDataFim] = useState<Date>();
+  const [filtroCliente, setFiltroCliente] = useState("");
+  const [filtroNotaEntrada, setFiltroNotaEntrada] = useState("");
+  const [filtroNotaFiscal, setFiltroNotaFiscal] = useState("");
+
+  // Carregar recebimentos ao montar o componente e quando a página for visitada
+  useEffect(() => {
+    const carregarDados = () => {
+      setRecebimentos(carregarRecebimentos());
+      
+      // Carregar notas fiscais
+      const notasFiscaisSalvas = localStorage.getItem('notasFiscais');
+      if (notasFiscaisSalvas) {
+        setNotasFiscais(JSON.parse(notasFiscaisSalvas));
+      }
+    };
+    
+    carregarDados();
+    
+    // Escuitar quando a página for visitada novamente
+    const handleFocus = () => {
+      carregarDados();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+  
+  // Filtrar recebimentos
+  const recebimentosFiltrados = useMemo(() => {
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    
+    return recebimentos.filter(item => {
+      // Apenas equipamentos que ainda estão na empresa
+      if (!item.naEmpresa) return false;
+      
+      const [dia, mes, ano] = item.dataEntrada.split('/');
+      const dataItem = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
+      
+      // Se não há filtros de data, mostrar apenas do mês atual
+      if (!dataInicio && !dataFim) {
+        const matchMesAtual = dataItem.getMonth() === mesAtual && dataItem.getFullYear() === anoAtual;
+        if (!matchMesAtual) return false;
+      } else {
+        // Se há filtros de data, aplicar os filtros
+        if (dataInicio && dataItem < dataInicio) return false;
+        if (dataFim && dataItem > dataFim) return false;
+      }
+      
+      const matchCliente = !filtroCliente || item.cliente.toLowerCase().includes(filtroCliente.toLowerCase());
+      const matchNota = !filtroNotaEntrada || item.numeroOrdem.includes(filtroNotaEntrada);
+      const matchNotaFiscal = !filtroNotaFiscal || item.notaFiscal.toLowerCase().includes(filtroNotaFiscal.toLowerCase());
+      
+      return matchCliente && matchNota && matchNotaFiscal;
+    });
+  }, [dataInicio, dataFim, filtroCliente, filtroNotaEntrada, filtroNotaFiscal]);
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Estoque de Terceiros</h2>
+            <p className="text-muted-foreground">
+              Equipamentos em estoque para análise e reparo
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => setModalChaveAcesso(true)}
+              variant="outline"
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth shadow-medium"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Nova Nota Fiscal
+            </Button>
+            <Button 
+              onClick={() => navigate("/recebimentos/novo")}
+              className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Recebimento
+            </Button>
+          </div>
+        </div>
+
+        {/* Filtros */}
+        <div className="bg-card rounded-lg shadow-soft border border-border p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Filtros</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Data Início</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dataInicio && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dataInicio ? format(dataInicio, "dd/MM/yyyy") : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dataInicio}
+                    onSelect={setDataInicio}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Data Fim</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dataFim && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dataFim ? format(dataFim, "dd/MM/yyyy") : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dataFim}
+                    onSelect={setDataFim}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Cliente</label>
+              <Input
+                placeholder="Nome do cliente"
+                value={filtroCliente}
+                onChange={(e) => setFiltroCliente(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Nº da Ordem</label>
+              <Input
+                placeholder="Ex: 0065/25"
+                value={filtroNotaEntrada}
+                onChange={(e) => setFiltroNotaEntrada(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Nota Fiscal</label>
+              <Input
+                placeholder="Ex: NF-001234"
+                value={filtroNotaFiscal}
+                onChange={(e) => setFiltroNotaFiscal(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
+
+        <Tabs defaultValue="ordens" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="ordens">Ordens</TabsTrigger>
+            <TabsTrigger value="notas-fiscais">Notas Fiscais</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="ordens" className="mt-6">
+            <div className="bg-card rounded-lg shadow-soft border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[150px]">Nº da Ordem</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="w-[150px]">Data de Entrada</TableHead>
+                    <TableHead className="w-[140px]">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recebimentosFiltrados.map((item, index) => (
+                    <TableRow key={index} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">
+                        <button
+                          onClick={() => navigate(`/recebimentos/${item.id}`)}
+                          className="text-primary hover:text-primary-hover underline font-medium"
+                        >
+                          {item.numeroOrdem}
+                        </button>
+                      </TableCell>
+                      <TableCell className="text-red-500 font-medium">
+                        {item.cliente}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {item.dataEntrada}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedEquipment(item)}
+                            className="h-8"
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => navigate(`/analise/novo/${item.id}`)}
+                            className="h-8"
+                          >
+                            <Play className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="notas-fiscais" className="mt-6">
+            <div className="bg-card rounded-lg shadow-soft border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[150px]">Nº Nota Fiscal</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="w-[100px]">Série</TableHead>
+                    <TableHead className="w-[150px]">Data de Emissão</TableHead>
+                    <TableHead className="w-[100px]">Itens</TableHead>
+                    <TableHead className="w-[140px]">Status</TableHead>
+                    <TableHead className="w-[140px]">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {notasFiscais.map((nota, index) => (
+                    <TableRow key={index} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">
+                        <span className="text-primary font-medium">
+                          NF-{nota.numero}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-red-500 font-medium">
+                        {nota.cliente}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {nota.serie}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(nota.dataEmissao).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
+                          {nota.itens?.length || 0}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                          {nota.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Criar novas ordens para itens restantes da NFe
+                              const ordensExistentes = recebimentos.filter(r => r.chaveAcessoNFe === nota.chaveAcesso);
+                              const itensComOrdem = ordensExistentes.map(o => o.itemNFe?.codigo).filter(Boolean);
+                              const itensDisponiveis = nota.itens?.filter((item: any) => !itensComOrdem.includes(item.codigo)) || [];
+                              
+                              if (itensDisponiveis.length > 0) {
+                                // Aqui você pode abrir um modal para selecionar itens adicionais
+                                console.log('Itens disponíveis para nova ordem:', itensDisponiveis);
+                              }
+                            }}
+                            className="h-8"
+                            title="Criar nova ordem"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setNotaFiscalSelecionada(nota)}
+                            className="h-8"
+                            title="Visualizar NFe"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {selectedEquipment && (
+          <EquipmentLabel
+            equipment={selectedEquipment}
+            onClose={() => setSelectedEquipment(null)}
+          />
+        )}
+
+        <ChaveAcessoModal
+          open={modalChaveAcesso}
+          onClose={() => setModalChaveAcesso(false)}
+          onConfirm={(dadosNFe, itensSelecionados, cliente) => {
+            // Salvar a nota fiscal
+            const notaFiscal = {
+              id: Date.now().toString(),
+              chaveAcesso: dadosNFe.chaveAcesso,
+              numero: dadosNFe.numero,
+              serie: dadosNFe.serie,
+              cliente: cliente || 'Nome não informado',
+              cnpjEmitente: dadosNFe.cnpjEmitente,
+              dataEmissao: dadosNFe.dataEmissao,
+              itens: dadosNFe.itens || [],
+              status: 'recebida'
+            };
+
+            // Criar ordens para cada item selecionado
+            const novasOrdens = itensSelecionados.map((item, index) => ({
+              id: `${Date.now()}-${index}`,
+              numeroOrdem: `${String(Date.now()).slice(-4)}/${new Date().getFullYear().toString().slice(-2)}`,
+              cliente: cliente || 'Nome não informado',
+              dataEntrada: new Date().toLocaleDateString('pt-BR'),
+              notaFiscal: `NF-${dadosNFe.numero}`,
+              chaveAcessoNFe: dadosNFe.chaveAcesso,
+              naEmpresa: true,
+              tag: `EQ${String(Date.now()).slice(-3)}`,
+              tipoEquipamento: item.descricao.split(';')[0]?.replace('NOME ITEM:', '').trim() || item.descricao,
+              numeroSerie: `${item.codigo}-${new Date().getFullYear()}`,
+              urgencia: false,
+              solicitante: "",
+              pressaoTrabalho: "",
+              observacoesEntrada: `Item da NFe: ${item.codigo} - ${item.descricao}`,
+              camisa: "",
+              hasteComprimento: "",
+              curso: "",
+              conexaoA: "",
+              conexaoB: "",
+              observacoesPeritagem: "",
+              manutencaoCorretiva: false,
+              manutencaoPreventiva: true,
+              apresentarOrcamento: [false, false, false, false],
+              fotos: [null, null, null, null],
+              itemNFe: item
+            }));
+
+            // Salvar ordens no localStorage
+            const recebimentosAtuais = carregarRecebimentos();
+            const recebimentosAtualizados = [...recebimentosAtuais, ...novasOrdens];
+            localStorage.setItem('recebimentos', JSON.stringify(recebimentosAtualizados));
+            setRecebimentos(recebimentosAtualizados);
+
+            // Salvar nota fiscal no localStorage
+            const notasFiscais = JSON.parse(localStorage.getItem('notasFiscais') || '[]');
+            notasFiscais.push(notaFiscal);
+            localStorage.setItem('notasFiscais', JSON.stringify(notasFiscais));
+            setNotasFiscais(notasFiscais);
+          }}
+        />
+
+        {/* Modal de Visualização da Nota Fiscal */}
+        <Dialog open={!!notaFiscalSelecionada} onOpenChange={() => setNotaFiscalSelecionada(null)}>
+          <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Detalhes da Nota Fiscal
+              </DialogTitle>
+              <DialogDescription>
+                Informações completas da nota fiscal eletrônica
+              </DialogDescription>
+            </DialogHeader>
+            
+            {notaFiscalSelecionada && (
+              <div className="space-y-6">
+                {/* Informações Gerais */}
+                <div className="bg-gradient-secondary p-4 rounded-lg">
+                  <h3 className="font-semibold text-lg mb-3">Informações Gerais</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Número da Nota</p>
+                      <p className="font-semibold text-primary">NF-{notaFiscalSelecionada.numero}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Série</p>
+                      <p className="font-semibold">{notaFiscalSelecionada.serie}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Data de Emissão</p>
+                      <p className="font-semibold">
+                        {new Date(notaFiscalSelecionada.dataEmissao).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Status</p>
+                      <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                        {notaFiscalSelecionada.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informações do Cliente */}
+                <div className="bg-card p-4 rounded-lg border">
+                  <h3 className="font-semibold text-lg mb-3">Cliente</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Nome/Razão Social</p>
+                      <p className="font-semibold text-red-500">{notaFiscalSelecionada.cliente}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">CNPJ</p>
+                      <p className="font-mono">{notaFiscalSelecionada.cnpjEmitente || 'Não informado'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chave de Acesso */}
+                {notaFiscalSelecionada.chaveAcesso && (
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <h3 className="font-semibold text-lg mb-3">Chave de Acesso</h3>
+                    <p className="font-mono text-sm break-all bg-background p-2 rounded border">
+                      {notaFiscalSelecionada.chaveAcesso}
+                    </p>
+                  </div>
+                )}
+
+                {/* Itens da Nota Fiscal */}
+                {notaFiscalSelecionada.itens && notaFiscalSelecionada.itens.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-lg">Itens da Nota Fiscal</h3>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[120px]">Código</TableHead>
+                            <TableHead>Descrição</TableHead>
+                            <TableHead className="w-[100px]">NCM</TableHead>
+                            <TableHead className="w-[80px]">Qtd</TableHead>
+                            <TableHead className="w-[100px]">Valor Unit.</TableHead>
+                            <TableHead className="w-[100px]">Valor Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {notaFiscalSelecionada.itens.map((item: any, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-mono text-sm">{item.codigo}</TableCell>
+                              <TableCell className="max-w-md">
+                                <div className="truncate" title={item.descricao}>
+                                  {item.descricao}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-mono text-sm">{item.ncm}</TableCell>
+                              <TableCell className="text-right">
+                                {item.quantidade?.toFixed(2)} {item.unidade}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                R$ {item.valorUnitario?.toFixed(2)}
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                R$ {item.valorTotal?.toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Total da Nota */}
+                    <div className="bg-gradient-primary/10 p-4 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">Total Geral da Nota:</span>
+                        <span className="text-xl font-bold text-primary">
+                          R$ {notaFiscalSelecionada.itens
+                            .reduce((total: number, item: any) => total + (item.valorTotal || 0), 0)
+                            .toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setNotaFiscalSelecionada(null)}
+                    className="flex-1"
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </AppLayout>
+  );
+}
