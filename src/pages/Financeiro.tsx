@@ -1857,14 +1857,80 @@ export default function Financeiro() {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="financiamento">
+              <TabsContent value="financiamento" className="space-y-6">
+                {/* Cards de Planejamento Financeiro */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <ArrowUpRight className="h-4 w-4 text-green-600" />
+                        A Receber
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-600">
+                        {formatCurrency(142500)}
+                      </div>
+                      <Badge variant="outline" className="text-xs mt-1">
+                        Próximos 30 dias
+                      </Badge>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        25 títulos em aberto
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <ArrowDownLeft className="h-4 w-4 text-destructive" />
+                        A Pagar
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-destructive">
+                        {formatCurrency(98700)}
+                      </div>
+                      <Badge variant="outline" className="text-xs mt-1">
+                        Próximos 30 dias
+                      </Badge>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        18 contas a vencer
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-primary" />
+                        Saldo Previsto
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-primary">
+                        {formatCurrency(142500 - 98700 + saldoTotal)}
+                      </div>
+                      <Badge variant="outline" className="text-xs mt-1">
+                        Saldo final projetado
+                      </Badge>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        {((142500 - 98700) / saldoTotal * 100).toFixed(1)}% de crescimento
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
                 <Card>
                   <CardHeader>
-                    <CardTitle>Planejamento Financeiro</CardTitle>
+                    <CardTitle>Planejamento Financeiro Detalhado</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Visão detalhada das movimentações financeiras previstas
+                    </p>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground">
-                      Em desenvolvimento - Funcionalidade de planejamento e projeções financeiras.
+                      Em desenvolvimento - Funcionalidade de planejamento e projeções financeiras detalhadas.
                     </p>
                   </CardContent>
                 </Card>
