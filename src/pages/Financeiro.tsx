@@ -28,110 +28,6 @@ export default function Financeiro() {
   const [periodoSelecionado, setPeriodoSelecionado] = useState("");
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
 
-  // Dados de exemplo para movimentações
-  const movimentacoesExemplo = [
-    {
-      id: 1,
-      data: '2024-01-15',
-      descricao: 'Recebimento Cliente João Silva',
-      tipo: 'receita',
-      categoria: 'Vendas',
-      valor: 2500.00,
-      status: 'pago'
-    },
-    {
-      id: 2,
-      data: '2024-01-16',
-      descricao: 'Pagamento Fornecedor ABC',
-      tipo: 'despesa',
-      categoria: 'Compras',
-      valor: 1800.00,
-      status: 'pago'
-    },
-    {
-      id: 3,
-      data: '2024-01-20',
-      descricao: 'Recebimento Cliente Maria Santos',
-      tipo: 'receita',
-      categoria: 'Vendas',
-      valor: 3200.00,
-      status: 'pendente'
-    },
-    {
-      id: 4,
-      data: '2024-01-25',
-      descricao: 'Pagamento Combustível',
-      tipo: 'despesa',
-      categoria: 'Despesas Operacionais',
-      valor: 450.00,
-      status: 'vencido'
-    },
-    {
-      id: 5,
-      data: '2024-02-01',
-      descricao: 'Recebimento PIX Cliente Pedro',
-      tipo: 'receita',
-      categoria: 'Vendas',
-      valor: 1750.00,
-      status: 'pago'
-    },
-    {
-      id: 6,
-      data: '2024-02-05',
-      descricao: 'Pagamento Energia Elétrica',
-      tipo: 'despesa',
-      categoria: 'Despesas Fixas',
-      valor: 680.00,
-      status: 'pendente'
-    }
-  ];
-
-  // Função para buscar movimentações baseado nos filtros
-  const handleBuscarMovimentacoes = () => {
-    if (!periodoSelecionado && !dataInicial && !dataFinal) {
-      setMovimentacoesFiltradas([]);
-      return;
-    }
-
-    let dataInicio = new Date();
-    let dataFim = new Date();
-
-    if (periodoSelecionado) {
-      const hoje = new Date();
-      switch (periodoSelecionado) {
-        case '1dia':
-          dataInicio = hoje;
-          dataFim = hoje;
-          break;
-        case '1semana':
-          dataInicio = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
-          dataFim = hoje;
-          break;
-        case '15dias':
-          dataInicio = new Date(hoje.getTime() - 15 * 24 * 60 * 60 * 1000);
-          dataFim = hoje;
-          break;
-        case '1mes':
-          dataInicio = new Date(hoje.getTime() - 30 * 24 * 60 * 60 * 1000);
-          dataFim = hoje;
-          break;
-        case '1ano':
-          dataInicio = new Date(hoje.getTime() - 365 * 24 * 60 * 60 * 1000);
-          dataFim = hoje;
-          break;
-      }
-    } else if (dataInicial && dataFinal) {
-      dataInicio = new Date(dataInicial);
-      dataFim = new Date(dataFinal);
-    }
-
-    // Simular filtro (retorna todas as movimentações de exemplo quando um período é selecionado)
-    if (periodoSelecionado) {
-      setMovimentacoesFiltradas(movimentacoesExemplo);
-    } else {
-      setMovimentacoesFiltradas([]);
-    }
-  };
   // Dados mensais para cada indicador
   const [monthlyData] = useState([
     { mes: 'Jan', faturamento: 75000, margemContribuicao: 32000, lucroLiquido: 4200, despesasTotais: 28500 },
@@ -601,6 +497,111 @@ export default function Financeiro() {
   // Saldo da conta selecionada
   const contaAtual = contasBancarias.find(conta => conta.id === contaSelecionada);
   const saldoContaSelecionada = contaAtual ? contaAtual.saldo : saldoTotal;
+
+  // Dados de exemplo para movimentações
+  const movimentacoesExemplo = [
+    {
+      id: 1,
+      data: '2024-01-15',
+      descricao: 'Recebimento Cliente João Silva',
+      tipo: 'receita',
+      categoria: 'Vendas',
+      valor: 2500.00,
+      status: 'pago'
+    },
+    {
+      id: 2,
+      data: '2024-01-16',
+      descricao: 'Pagamento Fornecedor ABC',
+      tipo: 'despesa',
+      categoria: 'Compras',
+      valor: 1800.00,
+      status: 'pago'
+    },
+    {
+      id: 3,
+      data: '2024-01-20',
+      descricao: 'Recebimento Cliente Maria Santos',
+      tipo: 'receita',
+      categoria: 'Vendas',
+      valor: 3200.00,
+      status: 'pendente'
+    },
+    {
+      id: 4,
+      data: '2024-01-25',
+      descricao: 'Pagamento Combustível',
+      tipo: 'despesa',
+      categoria: 'Despesas Operacionais',
+      valor: 450.00,
+      status: 'vencido'
+    },
+    {
+      id: 5,
+      data: '2024-02-01',
+      descricao: 'Recebimento PIX Cliente Pedro',
+      tipo: 'receita',
+      categoria: 'Vendas',
+      valor: 1750.00,
+      status: 'pago'
+    },
+    {
+      id: 6,
+      data: '2024-02-05',
+      descricao: 'Pagamento Energia Elétrica',
+      tipo: 'despesa',
+      categoria: 'Despesas Fixas',
+      valor: 680.00,
+      status: 'pendente'
+    }
+  ];
+
+  // Função para buscar movimentações baseado nos filtros
+  const handleBuscarMovimentacoes = () => {
+    if (!periodoSelecionado && !dataInicial && !dataFinal) {
+      setMovimentacoesFiltradas([]);
+      return;
+    }
+
+    let dataInicio = new Date();
+    let dataFim = new Date();
+
+    if (periodoSelecionado) {
+      const hoje = new Date();
+      switch (periodoSelecionado) {
+        case '1dia':
+          dataInicio = hoje;
+          dataFim = hoje;
+          break;
+        case '1semana':
+          dataInicio = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
+          dataFim = hoje;
+          break;
+        case '15dias':
+          dataInicio = new Date(hoje.getTime() - 15 * 24 * 60 * 60 * 1000);
+          dataFim = hoje;
+          break;
+        case '1mes':
+          dataInicio = new Date(hoje.getTime() - 30 * 24 * 60 * 60 * 1000);
+          dataFim = hoje;
+          break;
+        case '1ano':
+          dataInicio = new Date(hoje.getTime() - 365 * 24 * 60 * 60 * 1000);
+          dataFim = hoje;
+          break;
+      }
+    } else if (dataInicial && dataFinal) {
+      dataInicio = new Date(dataInicial);
+      dataFim = new Date(dataFinal);
+    }
+
+    // Simular filtro (retorna todas as movimentações de exemplo quando um período é selecionado)
+    if (periodoSelecionado) {
+      setMovimentacoesFiltradas(movimentacoesExemplo);
+    } else {
+      setMovimentacoesFiltradas([]);
+    }
+  };
 
   // Função para aplicar filtros
   const aplicarFiltros = () => {
