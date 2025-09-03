@@ -21,6 +21,117 @@ import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 
 export default function Financeiro() {
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
+  
+  // Estados para filtros de data e período
+  const [dataInicial, setDataInicial] = useState("");
+  const [dataFinal, setDataFinal] = useState("");
+  const [periodoSelecionado, setPeriodoSelecionado] = useState("");
+  const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
+
+  // Dados de exemplo para movimentações
+  const movimentacoesExemplo = [
+    {
+      id: 1,
+      data: '2024-01-15',
+      descricao: 'Recebimento Cliente João Silva',
+      tipo: 'receita',
+      categoria: 'Vendas',
+      valor: 2500.00,
+      status: 'pago'
+    },
+    {
+      id: 2,
+      data: '2024-01-16',
+      descricao: 'Pagamento Fornecedor ABC',
+      tipo: 'despesa',
+      categoria: 'Compras',
+      valor: 1800.00,
+      status: 'pago'
+    },
+    {
+      id: 3,
+      data: '2024-01-20',
+      descricao: 'Recebimento Cliente Maria Santos',
+      tipo: 'receita',
+      categoria: 'Vendas',
+      valor: 3200.00,
+      status: 'pendente'
+    },
+    {
+      id: 4,
+      data: '2024-01-25',
+      descricao: 'Pagamento Combustível',
+      tipo: 'despesa',
+      categoria: 'Despesas Operacionais',
+      valor: 450.00,
+      status: 'vencido'
+    },
+    {
+      id: 5,
+      data: '2024-02-01',
+      descricao: 'Recebimento PIX Cliente Pedro',
+      tipo: 'receita',
+      categoria: 'Vendas',
+      valor: 1750.00,
+      status: 'pago'
+    },
+    {
+      id: 6,
+      data: '2024-02-05',
+      descricao: 'Pagamento Energia Elétrica',
+      tipo: 'despesa',
+      categoria: 'Despesas Fixas',
+      valor: 680.00,
+      status: 'pendente'
+    }
+  ];
+
+  // Função para buscar movimentações baseado nos filtros
+  const handleBuscarMovimentacoes = () => {
+    if (!periodoSelecionado && !dataInicial && !dataFinal) {
+      setMovimentacoesFiltradas([]);
+      return;
+    }
+
+    let dataInicio = new Date();
+    let dataFim = new Date();
+
+    if (periodoSelecionado) {
+      const hoje = new Date();
+      switch (periodoSelecionado) {
+        case '1dia':
+          dataInicio = hoje;
+          dataFim = hoje;
+          break;
+        case '1semana':
+          dataInicio = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
+          dataFim = hoje;
+          break;
+        case '15dias':
+          dataInicio = new Date(hoje.getTime() - 15 * 24 * 60 * 60 * 1000);
+          dataFim = hoje;
+          break;
+        case '1mes':
+          dataInicio = new Date(hoje.getTime() - 30 * 24 * 60 * 60 * 1000);
+          dataFim = hoje;
+          break;
+        case '1ano':
+          dataInicio = new Date(hoje.getTime() - 365 * 24 * 60 * 60 * 1000);
+          dataFim = hoje;
+          break;
+      }
+    } else if (dataInicial && dataFinal) {
+      dataInicio = new Date(dataInicial);
+      dataFim = new Date(dataFinal);
+    }
+
+    // Simular filtro (retorna todas as movimentações de exemplo quando um período é selecionado)
+    if (periodoSelecionado) {
+      setMovimentacoesFiltradas(movimentacoesExemplo);
+    } else {
+      setMovimentacoesFiltradas([]);
+    }
+  };
   // Dados mensais para cada indicador
   const [monthlyData] = useState([
     { mes: 'Jan', faturamento: 75000, margemContribuicao: 32000, lucroLiquido: 4200, despesasTotais: 28500 },
@@ -1921,17 +2032,119 @@ export default function Financeiro() {
                   </Card>
                 </div>
 
+                {/* Filtros de Data e Período */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Filtros de Consulta</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label htmlFor="dataInicial">Data Inicial</Label>
+                        <Input
+                          id="dataInicial"
+                          type="date"
+                          value={dataInicial}
+                          onChange={(e) => setDataInicial(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="dataFinal">Data Final</Label>
+                        <Input
+                          id="dataFinal"
+                          type="date"
+                          value={dataFinal}
+                          onChange={(e) => setDataFinal(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="periodoRapido">Período Rápido</Label>
+                        <Select value={periodoSelecionado} onValueChange={setPeriodoSelecionado}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o período" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1dia">1 Dia</SelectItem>
+                            <SelectItem value="1semana">1 Semana</SelectItem>
+                            <SelectItem value="15dias">15 Dias</SelectItem>
+                            <SelectItem value="1mes">1 Mês</SelectItem>
+                            <SelectItem value="1ano">1 Ano</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-end">
+                        <Button onClick={handleBuscarMovimentacoes} className="w-full">
+                          Buscar
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Planejamento Financeiro Detalhado */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Planejamento Financeiro Detalhado</CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      Visão detalhada das movimentações financeiras previstas
+                      Listagem das movimentações financeiras do período selecionado
                     </p>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground">
-                      Em desenvolvimento - Funcionalidade de planejamento e projeções financeiras detalhadas.
-                    </p>
+                    {movimentacoesFiltradas.length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="text-sm text-muted-foreground">
+                          Exibindo {movimentacoesFiltradas.length} movimentações para o período selecionado
+                        </div>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Data</TableHead>
+                              <TableHead>Descrição</TableHead>
+                              <TableHead>Tipo</TableHead>
+                              <TableHead>Categoria</TableHead>
+                              <TableHead className="text-right">Valor</TableHead>
+                              <TableHead>Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {movimentacoesFiltradas.map((mov) => (
+                              <TableRow key={mov.id}>
+                                <TableCell>
+                                  {new Date(mov.data).toLocaleDateString('pt-BR')}
+                                </TableCell>
+                                <TableCell>{mov.descricao}</TableCell>
+                                <TableCell>
+                                  <Badge variant={mov.tipo === 'receita' ? 'default' : 'secondary'}>
+                                    {mov.tipo === 'receita' ? 'Receita' : 'Despesa'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{mov.categoria}</TableCell>
+                                <TableCell className={`text-right ${mov.tipo === 'receita' ? 'text-green-600' : 'text-destructive'}`}>
+                                  {mov.tipo === 'receita' ? '+' : '-'} {formatCurrency(mov.valor)}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge 
+                                    variant={mov.status === 'pago' ? 'default' : 'outline'}
+                                    className={mov.status === 'vencido' ? 'border-destructive text-destructive' : ''}
+                                  >
+                                    {mov.status}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">
+                          {periodoSelecionado ? 
+                            'Nenhuma movimentação encontrada para o período selecionado' : 
+                            'Selecione um período para visualizar as movimentações'
+                          }
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
