@@ -281,22 +281,24 @@ export const useRecebimentos = () => {
 
   const gerarNumeroOrdem = async () => {
     try {
+      const anoAtual = new Date().getFullYear();
+      
       const { data, error } = await supabase
         .from('recebimentos')
         .select('numero_ordem')
+        .ilike('numero_ordem', `MH-${anoAtual}-%`)
         .order('id', { ascending: false })
         .limit(1);
 
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        return 'MH-2024-001';
+        return `MH-${anoAtual}-001`;
       }
 
       const ultimoNumero = data[0].numero_ordem;
       const [prefix, ano, numero] = ultimoNumero.split('-');
       const proximoNumero = (parseInt(numero) + 1).toString().padStart(3, '0');
-      const anoAtual = new Date().getFullYear();
       
       return `${prefix}-${anoAtual}-${proximoNumero}`;
     } catch (error) {

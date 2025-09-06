@@ -27,7 +27,7 @@ export default function NovoRecebimento() {
       setNumeroOrdem(numero);
     };
     carregarNumeroOrdem();
-  }, [gerarNumeroOrdem]);
+  }, []); // Remover dependência para evitar múltiplas chamadas
 
   const [formData, setFormData] = useState({
     tipoOrdem: "",
