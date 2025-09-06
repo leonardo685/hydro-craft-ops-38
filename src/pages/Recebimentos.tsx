@@ -33,7 +33,11 @@ export default function Recebimentos() {
   const [filtroNotaEntrada, setFiltroNotaEntrada] = useState("");
   const [filtroNotaFiscal, setFiltroNotaFiscal] = useState("");
 
-  // Remove the local storage loading since we're using the hook now
+  // Limpar localStorage antigo na inicialização
+  useEffect(() => {
+    localStorage.removeItem('recebimentos');
+    localStorage.removeItem('notasFiscais');
+  }, []);
   
   // Filtrar recebimentos
   const recebimentosFiltrados = useMemo(() => {
