@@ -536,13 +536,13 @@ const NovaOrdemServico = () => {
       const { error } = await supabase
         .from('ordens_servico')
         .insert({
-          recebimento_id: recebimento?.id,
-          numero_ordem: recebimento?.numeroOrdem,
-          cliente_nome: recebimento?.cliente,
-          equipamento: recebimento?.equipamento,
+          recebimento_id: recebimento?.id ? parseInt(recebimento.id) : null,
+          numero_ordem: recebimento?.numeroOrdem || '',
+          cliente_nome: recebimento?.cliente || '',
+          equipamento: recebimento?.equipamento || '',
           tecnico: formData.tecnico,
-          data_entrada: new Date(recebimento?.dataEntrada.split('/').reverse().join('-')),
-          data_analise: new Date(),
+          data_entrada: new Date(recebimento?.dataEntrada.split('/').reverse().join('-')).toISOString(),
+          data_analise: new Date().toISOString(),
           status: 'em_andamento',
           prioridade: formData.prioridade.toLowerCase(),
           tipo_problema: formData.problemas,
