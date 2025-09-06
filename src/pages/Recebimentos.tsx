@@ -1,243 +1,531 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, FileText, TrendingUp, AlertCircle, CheckCircle2, Clock, Eye } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText } from "lucide-react";
+import { EquipmentLabel } from "@/components/EquipmentLabel";
+import { ChaveAcessoModal } from "@/components/ChaveAcessoModal";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ItensNFeModal } from "@/components/ItensNFeModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
+
+// Removed localStorage function since we're now using Supabase data
 
 export default function Recebimentos() {
   const navigate = useNavigate();
-  const { recebimentos, loading } = useRecebimentos();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("todos");
+  const { recebimentos, notasFiscais, loading } = useRecebimentos();
+  const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
+  const [modalChaveAcesso, setModalChaveAcesso] = useState(false);
+  const [notaFiscalSelecionada, setNotaFiscalSelecionada] = useState<any>(null);
+  
+  // Estados para filtros
+  const [dataInicio, setDataInicio] = useState<Date>();
+  const [dataFim, setDataFim] = useState<Date>();
+  const [filtroCliente, setFiltroCliente] = useState("");
+  const [filtroNotaEntrada, setFiltroNotaEntrada] = useState("");
+  const [filtroNotaFiscal, setFiltroNotaFiscal] = useState("");
 
+  // Limpar localStorage antigo na inicialização
   useEffect(() => {
-    console.log('Usando dados do Supabase');
+    localStorage.removeItem('recebimentos');
+    localStorage.removeItem('notasFiscais');
   }, []);
-
-  const filteredRecebimentos = recebimentos.filter(recebimento => {
-    const matchesSearch = 
-      recebimento.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recebimento.numero_ordem.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recebimento.tipo_equipamento.toLowerCase().includes(searchTerm.toLowerCase());
+  
+  // Filtrar recebimentos
+  const recebimentosFiltrados = useMemo(() => {
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
     
-    const matchesStatus = statusFilter === "todos" || recebimento.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "recebido":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "em_analise":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "concluido":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "aguardando_pecas":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "recebido":
-        return "Recebido";
-      case "em_analise":
-        return "Em Análise";
-      case "concluido":
-        return "Concluído";
-      case "aguardando_pecas":
-        return "Aguardando Peças";
-      default:
-        return status;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "recebido":
-        return <FileText className="h-4 w-4" />;
-      case "em_analise":
-        return <Clock className="h-4 w-4" />;
-      case "concluido":
-        return <CheckCircle2 className="h-4 w-4" />;
-      case "aguardando_pecas":
-        return <AlertCircle className="h-4 w-4" />;
-      default:
-        return <FileText className="h-4 w-4" />;
-    }
-  };
-
-  const stats = {
-    total: recebimentos.length,
-    recebidos: recebimentos.filter(r => r.status === 'recebido').length,
-    emAnalise: recebimentos.filter(r => r.status === 'em_analise').length,
-    concluidos: recebimentos.filter(r => r.status === 'concluido').length
-  };
-
-  if (loading) {
-    return (
-      <AppLayout>
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">Recebimentos</h2>
-              <p className="text-muted-foreground">Carregando dados...</p>
-            </div>
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
+    return recebimentos.filter(item => {
+      // Apenas equipamentos que ainda estão na empresa
+      if (!item.na_empresa) return false;
+      
+      const dataItem = new Date(item.data_entrada);
+      
+      // Se não há filtros de data, mostrar apenas do mês atual
+      if (!dataInicio && !dataFim) {
+        const matchMesAtual = dataItem.getMonth() === mesAtual && dataItem.getFullYear() === anoAtual;
+        if (!matchMesAtual) return false;
+      } else {
+        // Se há filtros de data, aplicar os filtros
+        if (dataInicio && dataItem < dataInicio) return false;
+        if (dataFim && dataItem > dataFim) return false;
+      }
+      
+      const nomeCliente = item.clientes?.nome || item.cliente_nome || '';
+      const matchCliente = !filtroCliente || nomeCliente.toLowerCase().includes(filtroCliente.toLowerCase());
+      const matchNota = !filtroNotaEntrada || item.numero_ordem.includes(filtroNotaEntrada);
+      const matchNotaFiscal = !filtroNotaFiscal || (item.nota_fiscal && item.nota_fiscal.toLowerCase().includes(filtroNotaFiscal.toLowerCase()));
+      
+      return matchCliente && matchNota && matchNotaFiscal;
+    });
+  }, [recebimentos, dataInicio, dataFim, filtroCliente, filtroNotaEntrada, filtroNotaFiscal]);
 
   return (
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Recebimentos</h2>
+            <h2 className="text-2xl font-bold text-foreground">Estoque de Terceiros</h2>
             <p className="text-muted-foreground">
-              Gerencie todos os equipamentos recebidos ({stats.total})
+              Equipamentos em estoque para análise e reparo
             </p>
           </div>
-          <Button 
-            className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium"
-            onClick={() => navigate('/recebimentos/novo')}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Recebimento
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => setModalChaveAcesso(true)}
+              variant="outline"
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth shadow-medium"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Nova Nota Fiscal
+            </Button>
+            <Button 
+              onClick={() => navigate("/recebimentos/novo")}
+              className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Recebimento
+            </Button>
+          </div>
         </div>
 
-        {/* Cards de Estatísticas */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="shadow-soft">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">equipamentos registrados</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Recebidos</CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.recebidos}</div>
-              <p className="text-xs text-muted-foreground">aguardando análise</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Em Análise</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.emAnalise}</div>
-              <p className="text-xs text-muted-foreground">sendo analisados</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Concluídos</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.concluidos}</div>
-              <p className="text-xs text-muted-foreground">finalizados</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="shadow-soft">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Lista de Recebimentos</CardTitle>
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por cliente, ordem ou equipamento..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-80"
+        {/* Filtros */}
+        <div className="bg-card rounded-lg shadow-soft border border-border p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Filtros</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Data Início</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dataInicio && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dataInicio ? format(dataInicio, "dd/MM/yyyy") : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dataInicio}
+                    onSelect={setDataInicio}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
                   />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filtrar por status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os Status</SelectItem>
-                    <SelectItem value="recebido">Recebido</SelectItem>
-                    <SelectItem value="em_analise">Em Análise</SelectItem>
-                    <SelectItem value="concluido">Concluído</SelectItem>
-                    <SelectItem value="aguardando_pecas">Aguardando Peças</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                </PopoverContent>
+              </Popover>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Data Fim</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dataFim && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dataFim ? format(dataFim, "dd/MM/yyyy") : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dataFim}
+                    onSelect={setDataFim}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Cliente</label>
+              <Input
+                placeholder="Nome do cliente"
+                value={filtroCliente}
+                onChange={(e) => setFiltroCliente(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Nº da Ordem</label>
+              <Input
+                placeholder="Ex: 0065/25"
+                value={filtroNotaEntrada}
+                onChange={(e) => setFiltroNotaEntrada(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Nota Fiscal</label>
+              <Input
+                placeholder="Ex: NF-001234"
+                value={filtroNotaFiscal}
+                onChange={(e) => setFiltroNotaFiscal(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
+
+        <Tabs defaultValue="ordens" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="ordens">Ordens</TabsTrigger>
+            <TabsTrigger value="notas-fiscais">Notas Fiscais</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="ordens" className="mt-6">
+            <div className="bg-card rounded-lg shadow-soft border border-border">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="font-semibold text-foreground">Nº da Ordem</TableHead>
-                    <TableHead className="font-semibold text-foreground">Cliente</TableHead>
-                    <TableHead className="font-semibold text-foreground">Equipamento</TableHead>
-                    <TableHead className="font-semibold text-foreground">Data de Entrada</TableHead>
-                    <TableHead className="font-semibold text-foreground">Status</TableHead>
-                    <TableHead className="font-semibold text-foreground text-right">Ações</TableHead>
+                  <TableRow>
+                    <TableHead className="w-[150px]">Nº da Ordem</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="w-[150px]">Data de Entrada</TableHead>
+                    <TableHead className="w-[140px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRecebimentos.map((recebimento) => (
-                    <TableRow key={recebimento.id} className="hover:bg-muted/30 transition-fast">
-                      <TableCell className="font-medium text-primary">{recebimento.numero_ordem}</TableCell>
-                      <TableCell className="text-primary font-medium">{recebimento.cliente_nome}</TableCell>
-                      <TableCell className="text-foreground">{recebimento.tipo_equipamento}</TableCell>
+                  {recebimentosFiltrados.map((item, index) => (
+                    <TableRow key={index} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">
+                        <button
+                          onClick={() => navigate(`/recebimentos/${item.id}`)}
+                          className="text-primary hover:text-primary-hover underline font-medium"
+                        >
+                          {item.numero_ordem}
+                        </button>
+                      </TableCell>
+                      <TableCell className="text-red-500 font-medium">
+                        {item.clientes?.nome || item.cliente_nome || 'Cliente não encontrado'}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {new Date(recebimento.data_entrada).toLocaleDateString('pt-BR')}
+                        {new Date(item.data_entrada).toLocaleDateString('pt-BR')}
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(recebimento.status)}>
-                          {getStatusIcon(recebimento.status)}
-                          <span className="ml-1">{getStatusText(recebimento.status)}</span>
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => navigate(`/recebimentos/${recebimento.numero_ordem}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedEquipment(item)}
+                            className="h-8"
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => navigate(`/analise/novo/${item.id}`)}
+                            className="h-8"
+                          >
+                            <Play className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
+          
+          <TabsContent value="notas-fiscais" className="mt-6">
+            <div className="bg-card rounded-lg shadow-soft border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[150px]">Nº Nota Fiscal</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="w-[100px]">Série</TableHead>
+                    <TableHead className="w-[150px]">Data de Emissão</TableHead>
+                    <TableHead className="w-[100px]">Itens</TableHead>
+                    <TableHead className="w-[140px]">Status</TableHead>
+                    <TableHead className="w-[140px]">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {notasFiscais.map((nota, index) => (
+                    <TableRow key={index} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">
+                        <span className="text-primary font-medium">
+                          NF-{nota.numero}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-red-500 font-medium">
+                        {nota.cliente_nome}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {nota.serie}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(nota.data_emissao).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
+                          {nota.itens?.length || 0}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                          {nota.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Criar novas ordens para itens restantes da NFe
+                              const ordensExistentes = recebimentos.filter(r => r.chave_acesso_nfe === nota.chave_acesso);
+                              const itensDisponiveis = nota.itens || [];
+                              
+                              if (itensDisponiveis.length > 0) {
+                                // Aqui você pode abrir um modal para selecionar itens adicionais
+                                console.log('Itens disponíveis para nova ordem:', itensDisponiveis);
+                              }
+                            }}
+                            className="h-8"
+                            title="Criar nova ordem"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setNotaFiscalSelecionada(nota)}
+                            className="h-8"
+                            title="Visualizar NFe"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {selectedEquipment && (
+          <EquipmentLabel
+            equipment={selectedEquipment}
+            onClose={() => setSelectedEquipment(null)}
+          />
+        )}
+
+        <ChaveAcessoModal
+          open={modalChaveAcesso}
+          onClose={() => setModalChaveAcesso(false)}
+          onConfirm={(dadosNFe, itensSelecionados, cliente) => {
+            // Salvar a nota fiscal
+            const notaFiscal = {
+              id: Date.now().toString(),
+              chaveAcesso: dadosNFe.chaveAcesso,
+              numero: dadosNFe.numero,
+              serie: dadosNFe.serie,
+              cliente: cliente || 'Nome não informado',
+              cnpjEmitente: dadosNFe.cnpjEmitente,
+              dataEmissao: dadosNFe.dataEmissao,
+              itens: dadosNFe.itens || [],
+              status: 'recebida'
+            };
+
+            // Criar ordens para cada item selecionado
+            const novasOrdens = itensSelecionados.map((item, index) => ({
+              id: `${Date.now()}-${index}`,
+              numeroOrdem: `${String(Date.now()).slice(-4)}/${new Date().getFullYear().toString().slice(-2)}`,
+              cliente: cliente || 'Nome não informado',
+              dataEntrada: new Date().toLocaleDateString('pt-BR'),
+              notaFiscal: `NF-${dadosNFe.numero}`,
+              chaveAcessoNFe: dadosNFe.chaveAcesso,
+              naEmpresa: true,
+              tag: `EQ${String(Date.now()).slice(-3)}`,
+              tipoEquipamento: item.descricao.split(';')[0]?.replace('NOME ITEM:', '').trim() || item.descricao,
+              numeroSerie: `${item.codigo}-${new Date().getFullYear()}`,
+              urgencia: false,
+              solicitante: "",
+              pressaoTrabalho: "",
+              observacoesEntrada: `Item da NFe: ${item.codigo} - ${item.descricao}`,
+              camisa: "",
+              hasteComprimento: "",
+              curso: "",
+              conexaoA: "",
+              conexaoB: "",
+              observacoesPeritagem: "",
+              manutencaoCorretiva: false,
+              manutencaoPreventiva: true,
+              apresentarOrcamento: [false, false, false, false],
+              fotos: [null, null, null, null],
+              itemNFe: item
+            }));
+
+            // Dados serão atualizados automaticamente pelo hook useRecebimentos
+            console.log('Novas ordens criadas:', novasOrdens);
+            console.log('Nota fiscal criada:', notaFiscal);
+          }}
+        />
+
+        {/* Modal de Visualização da Nota Fiscal */}
+        <Dialog open={!!notaFiscalSelecionada} onOpenChange={() => setNotaFiscalSelecionada(null)}>
+          <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Detalhes da Nota Fiscal
+              </DialogTitle>
+              <DialogDescription>
+                Informações completas da nota fiscal eletrônica
+              </DialogDescription>
+            </DialogHeader>
+            
+            {notaFiscalSelecionada && (
+              <div className="space-y-6">
+                {/* Informações Gerais */}
+                <div className="bg-gradient-secondary p-4 rounded-lg">
+                  <h3 className="font-semibold text-lg mb-3">Informações Gerais</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Número da Nota</p>
+                      <p className="font-semibold text-primary">NF-{notaFiscalSelecionada.numero}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Série</p>
+                      <p className="font-semibold">{notaFiscalSelecionada.serie}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Data de Emissão</p>
+                      <p className="font-semibold">
+                        {new Date(notaFiscalSelecionada.dataEmissao).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Status</p>
+                      <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                        {notaFiscalSelecionada.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informações do Cliente */}
+                <div className="bg-card p-4 rounded-lg border">
+                  <h3 className="font-semibold text-lg mb-3">Cliente</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Nome/Razão Social</p>
+                      <p className="font-semibold text-red-500">{notaFiscalSelecionada.cliente}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">CNPJ</p>
+                      <p className="font-mono">{notaFiscalSelecionada.cnpjEmitente || 'Não informado'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chave de Acesso */}
+                {notaFiscalSelecionada.chaveAcesso && (
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <h3 className="font-semibold text-lg mb-3">Chave de Acesso</h3>
+                    <p className="font-mono text-sm break-all bg-background p-2 rounded border">
+                      {notaFiscalSelecionada.chaveAcesso}
+                    </p>
+                  </div>
+                )}
+
+                {/* Itens da Nota Fiscal */}
+                {notaFiscalSelecionada.itens && notaFiscalSelecionada.itens.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-lg">Itens da Nota Fiscal</h3>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[120px]">Código</TableHead>
+                            <TableHead>Descrição</TableHead>
+                            <TableHead className="w-[100px]">NCM</TableHead>
+                            <TableHead className="w-[80px]">Qtd</TableHead>
+                            <TableHead className="w-[100px]">Valor Unit.</TableHead>
+                            <TableHead className="w-[100px]">Valor Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {notaFiscalSelecionada.itens.map((item: any, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-mono text-sm">{item.codigo}</TableCell>
+                              <TableCell className="max-w-md">
+                                <div className="truncate" title={item.descricao}>
+                                  {item.descricao}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-mono text-sm">{item.ncm}</TableCell>
+                              <TableCell className="text-right">
+                                {item.quantidade?.toFixed(2)} {item.unidade}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                R$ {item.valorUnitario?.toFixed(2)}
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                R$ {item.valorTotal?.toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Total da Nota */}
+                    <div className="bg-gradient-primary/10 p-4 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">Total Geral da Nota:</span>
+                        <span className="text-xl font-bold text-primary">
+                          R$ {notaFiscalSelecionada.itens
+                            .reduce((total: number, item: any) => total + (item.valorTotal || 0), 0)
+                            .toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setNotaFiscalSelecionada(null)}
+                    className="flex-1"
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );

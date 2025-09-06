@@ -16,8 +16,9 @@ export default function Analise() {
   const [analises, setAnalises] = useState<any[]>([]);
 
   useEffect(() => {
-    // Dados serão carregados do Supabase - por enquanto lista vazia
-    setAnalises([]);
+    // Carregar análises do localStorage
+    const analisesStorage = JSON.parse(localStorage.getItem('analises') || '[]');
+    setAnalises(analisesStorage);
   }, []);
 
   const filteredAnalises = analises.filter(analise =>

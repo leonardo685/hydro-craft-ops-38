@@ -15,8 +15,10 @@ export default function Aprovados() {
   useEffect(() => {
     setOrdensServico(getOrdensServico());
     
-    // Dados serão carregados do Supabase - por enquanto lista vazia
-    setAnalisesAprovadas([]);
+    // Carregar análises aprovadas
+    const analises = JSON.parse(localStorage.getItem('analises') || '[]');
+    const aprovadas = analises.filter((a: any) => a.status === 'Aprovada');
+    setAnalisesAprovadas(aprovadas);
   }, []);
   const getEtapaColor = (etapa: string) => {
     switch (etapa) {
