@@ -24,6 +24,10 @@ export interface Recebimento {
   status: string;
   data_analise?: string;
   fotos?: FotoEquipamento[];
+  clientes?: {
+    id: string;
+    nome: string;
+  };
 }
 
 export interface FotoEquipamento {
@@ -70,6 +74,10 @@ export const useRecebimentos = () => {
         .from('recebimentos')
         .select(`
           *,
+          clientes:cliente_id (
+            id,
+            nome
+          ),
           fotos_equipamentos (
             id,
             arquivo_url,

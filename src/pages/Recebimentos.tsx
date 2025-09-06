@@ -15,76 +15,13 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useRecebimentos } from "@/hooks/use-recebimentos";
 
-// Função para carregar recebimentos do localStorage
-const carregarRecebimentos = () => {
-  const recebimentosSalvos = localStorage.getItem('recebimentos');
-  if (recebimentosSalvos) {
-    return JSON.parse(recebimentosSalvos);
-  }
-  
-  // Mock data inicial - dados de exemplo
-  const recebimentosIniciais = [
-    {
-      id: "1",
-      numeroOrdem: "0065/25",
-      cliente: "LIZY SOFTWARES LTDA",
-      dataEntrada: "15/08/2025",
-      notaFiscal: "NF-001234",
-      naEmpresa: true,
-      tag: "EQ001",
-      tipoEquipamento: "Cilindro Hidráulico",
-      numeroSerie: "CH-001-2025",
-      urgencia: false,
-      solicitante: "João Silva",
-      pressaoTrabalho: "200 bar",
-      observacoesEntrada: "Equipamento em manutenção preventiva.",
-      camisa: "80mm",
-      hasteComprimento: "500mm",
-      curso: "300mm",
-      conexaoA: "1/2 NPT",
-      conexaoB: "1/4 NPT",
-      observacoesPeritagem: "",
-      manutencaoCorretiva: false,
-      manutencaoPreventiva: true,
-      apresentarOrcamento: [false, false, false, false],
-      fotos: [null, null, null, null]
-    },
-    {
-      id: "2",
-      numeroOrdem: "0036/25", 
-      cliente: "NOVELIS DO BRASIL LTDA",
-      dataEntrada: "14/08/2025",
-      notaFiscal: "NF-005678",
-      naEmpresa: true,
-      tag: "EQ002",
-      tipoEquipamento: "Bomba Hidráulica",
-      numeroSerie: "BH-002-2025",
-      urgencia: true,
-      solicitante: "Maria Santos",
-      pressaoTrabalho: "350 bar",
-      observacoesEntrada: "Bomba com ruído excessivo.",
-      camisa: "100mm",
-      hasteComprimento: "800mm",
-      curso: "600mm",
-      conexaoA: "3/4 NPT",
-      conexaoB: "1/2 NPT",
-      observacoesPeritagem: "",
-      manutencaoCorretiva: true,
-      manutencaoPreventiva: false,
-      apresentarOrcamento: [false, false, false, false],
-      fotos: [null, null, null, null]
-    }
-  ];
-  
-  localStorage.setItem('recebimentos', JSON.stringify(recebimentosIniciais));
-  return recebimentosIniciais;
-};
+// Removed localStorage function since we're now using Supabase data
 
 export default function Recebimentos() {
   const navigate = useNavigate();
-  const [recebimentos, setRecebimentos] = useState<any[]>([]);
-  const [notasFiscais, setNotasFiscais] = useState<any[]>([]);
+  const { recebimentos, notasFiscais, loading } = useRecebimentos();
   const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
   const [modalChaveAcesso, setModalChaveAcesso] = useState(false);
   const [notaFiscalSelecionada, setNotaFiscalSelecionada] = useState<any>(null);
@@ -96,28 +33,7 @@ export default function Recebimentos() {
   const [filtroNotaEntrada, setFiltroNotaEntrada] = useState("");
   const [filtroNotaFiscal, setFiltroNotaFiscal] = useState("");
 
-  // Carregar recebimentos ao montar o componente e quando a página for visitada
-  useEffect(() => {
-    const carregarDados = () => {
-      setRecebimentos(carregarRecebimentos());
-      
-      // Carregar notas fiscais
-      const notasFiscaisSalvas = localStorage.getItem('notasFiscais');
-      if (notasFiscaisSalvas) {
-        setNotasFiscais(JSON.parse(notasFiscaisSalvas));
-      }
-    };
-    
-    carregarDados();
-    
-    // Escuitar quando a página for visitada novamente
-    const handleFocus = () => {
-      carregarDados();
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+  // Remove the local storage loading since we're using the hook now
   
   // Filtrar recebimentos
   const recebimentosFiltrados = useMemo(() => {
@@ -127,10 +43,9 @@ export default function Recebimentos() {
     
     return recebimentos.filter(item => {
       // Apenas equipamentos que ainda estão na empresa
-      if (!item.naEmpresa) return false;
+      if (!item.na_empresa) return false;
       
-      const [dia, mes, ano] = item.dataEntrada.split('/');
-      const dataItem = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
+      const dataItem = new Date(item.data_entrada);
       
       // Se não há filtros de data, mostrar apenas do mês atual
       if (!dataInicio && !dataFim) {
@@ -142,13 +57,14 @@ export default function Recebimentos() {
         if (dataFim && dataItem > dataFim) return false;
       }
       
-      const matchCliente = !filtroCliente || item.cliente.toLowerCase().includes(filtroCliente.toLowerCase());
-      const matchNota = !filtroNotaEntrada || item.numeroOrdem.includes(filtroNotaEntrada);
-      const matchNotaFiscal = !filtroNotaFiscal || item.notaFiscal.toLowerCase().includes(filtroNotaFiscal.toLowerCase());
+      const nomeCliente = item.clientes?.nome || item.cliente_nome || '';
+      const matchCliente = !filtroCliente || nomeCliente.toLowerCase().includes(filtroCliente.toLowerCase());
+      const matchNota = !filtroNotaEntrada || item.numero_ordem.includes(filtroNotaEntrada);
+      const matchNotaFiscal = !filtroNotaFiscal || (item.nota_fiscal && item.nota_fiscal.toLowerCase().includes(filtroNotaFiscal.toLowerCase()));
       
       return matchCliente && matchNota && matchNotaFiscal;
     });
-  }, [dataInicio, dataFim, filtroCliente, filtroNotaEntrada, filtroNotaFiscal]);
+  }, [recebimentos, dataInicio, dataFim, filtroCliente, filtroNotaEntrada, filtroNotaFiscal]);
 
   return (
     <AppLayout>
@@ -296,14 +212,14 @@ export default function Recebimentos() {
                           onClick={() => navigate(`/recebimentos/${item.id}`)}
                           className="text-primary hover:text-primary-hover underline font-medium"
                         >
-                          {item.numeroOrdem}
+                          {item.numero_ordem}
                         </button>
                       </TableCell>
                       <TableCell className="text-red-500 font-medium">
-                        {item.cliente}
+                        {item.clientes?.nome || item.cliente_nome || 'Cliente não encontrado'}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {item.dataEntrada}
+                        {new Date(item.data_entrada).toLocaleDateString('pt-BR')}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -355,13 +271,13 @@ export default function Recebimentos() {
                         </span>
                       </TableCell>
                       <TableCell className="text-red-500 font-medium">
-                        {nota.cliente}
+                        {nota.cliente_nome}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {nota.serie}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {new Date(nota.dataEmissao).toLocaleDateString('pt-BR')}
+                        {new Date(nota.data_emissao).toLocaleDateString('pt-BR')}
                       </TableCell>
                       <TableCell className="text-center">
                         <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
@@ -380,9 +296,8 @@ export default function Recebimentos() {
                             size="sm"
                             onClick={() => {
                               // Criar novas ordens para itens restantes da NFe
-                              const ordensExistentes = recebimentos.filter(r => r.chaveAcessoNFe === nota.chaveAcesso);
-                              const itensComOrdem = ordensExistentes.map(o => o.itemNFe?.codigo).filter(Boolean);
-                              const itensDisponiveis = nota.itens?.filter((item: any) => !itensComOrdem.includes(item.codigo)) || [];
+                              const ordensExistentes = recebimentos.filter(r => r.chave_acesso_nfe === nota.chave_acesso);
+                              const itensDisponiveis = nota.itens || [];
                               
                               if (itensDisponiveis.length > 0) {
                                 // Aqui você pode abrir um modal para selecionar itens adicionais
@@ -466,17 +381,9 @@ export default function Recebimentos() {
               itemNFe: item
             }));
 
-            // Salvar ordens no localStorage
-            const recebimentosAtuais = carregarRecebimentos();
-            const recebimentosAtualizados = [...recebimentosAtuais, ...novasOrdens];
-            localStorage.setItem('recebimentos', JSON.stringify(recebimentosAtualizados));
-            setRecebimentos(recebimentosAtualizados);
-
-            // Salvar nota fiscal no localStorage
-            const notasFiscais = JSON.parse(localStorage.getItem('notasFiscais') || '[]');
-            notasFiscais.push(notaFiscal);
-            localStorage.setItem('notasFiscais', JSON.stringify(notasFiscais));
-            setNotasFiscais(notasFiscais);
+            // Dados serão atualizados automaticamente pelo hook useRecebimentos
+            console.log('Novas ordens criadas:', novasOrdens);
+            console.log('Nota fiscal criada:', notaFiscal);
           }}
         />
 
