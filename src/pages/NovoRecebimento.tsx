@@ -9,10 +9,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Upload, Camera } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useClientes } from "@/hooks/use-clientes";
 
 export default function NovoRecebimento() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { clientes } = useClientes();
   
   // Função para gerar o próximo número da ordem
   const gerarProximoNumero = () => {
@@ -212,9 +214,11 @@ export default function NovoRecebimento() {
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="lizy">LIZY SOFTWARES LTDA</SelectItem>
-                      <SelectItem value="novelis">NOVELIS DO BRASIL LTDA</SelectItem>
-                      <SelectItem value="ssi">SSI EQUIPAMENTOS INDUSTRIAIS LIMITADA</SelectItem>
+                      {clientes.map(cliente => (
+                        <SelectItem key={cliente.id} value={cliente.id}>
+                          {cliente.nome}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

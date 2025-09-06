@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useClientes } from "@/hooks/use-clientes";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
@@ -31,6 +32,7 @@ export default function NovoOrcamento() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const analiseId = searchParams.get('analiseId');
+  const { clientes } = useClientes();
   
   const [dadosOrcamento, setDadosOrcamento] = useState({
     tipoOrdem: '',
@@ -695,9 +697,11 @@ export default function NovoOrcamento() {
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cliente1">Cliente 1</SelectItem>
-                      <SelectItem value="cliente2">Cliente 2</SelectItem>
-                      <SelectItem value="cliente3">Cliente 3</SelectItem>
+                      {clientes.map(cliente => (
+                        <SelectItem key={cliente.id} value={cliente.id}>
+                          {cliente.nome}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
