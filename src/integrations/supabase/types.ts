@@ -116,6 +116,216 @@ export type Database = {
         }
         Relationships: []
       }
+      fotos_equipamentos: {
+        Row: {
+          apresentar_orcamento: boolean | null
+          arquivo_url: string
+          created_at: string
+          id: string
+          nome_arquivo: string
+          recebimento_id: number | null
+        }
+        Insert: {
+          apresentar_orcamento?: boolean | null
+          arquivo_url: string
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          recebimento_id?: number | null
+        }
+        Update: {
+          apresentar_orcamento?: boolean | null
+          arquivo_url?: string
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          recebimento_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fotos_equipamentos_recebimento_id_fkey"
+            columns: ["recebimento_id"]
+            isOneToOne: false
+            referencedRelation: "recebimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itens_nfe: {
+        Row: {
+          codigo: string
+          created_at: string
+          descricao: string
+          id: string
+          ncm: string | null
+          nota_fiscal_id: string | null
+          quantidade: number
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          codigo: string
+          created_at?: string
+          descricao: string
+          id?: string
+          ncm?: string | null
+          nota_fiscal_id?: string | null
+          quantidade: number
+          valor_total: number
+          valor_unitario: number
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          ncm?: string | null
+          nota_fiscal_id?: string | null
+          quantidade?: number
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_nfe_nota_fiscal_id_fkey"
+            columns: ["nota_fiscal_id"]
+            isOneToOne: false
+            referencedRelation: "notas_fiscais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notas_fiscais: {
+        Row: {
+          chave_acesso: string
+          cliente_cnpj: string | null
+          cliente_nome: string
+          cnpj_emitente: string
+          created_at: string
+          data_emissao: string
+          id: string
+          modelo: string | null
+          numero: string
+          serie: string
+          status: string | null
+          updated_at: string
+          valor_total: number | null
+        }
+        Insert: {
+          chave_acesso: string
+          cliente_cnpj?: string | null
+          cliente_nome: string
+          cnpj_emitente: string
+          created_at?: string
+          data_emissao: string
+          id?: string
+          modelo?: string | null
+          numero: string
+          serie: string
+          status?: string | null
+          updated_at?: string
+          valor_total?: number | null
+        }
+        Update: {
+          chave_acesso?: string
+          cliente_cnpj?: string | null
+          cliente_nome?: string
+          cnpj_emitente?: string
+          created_at?: string
+          data_emissao?: string
+          id?: string
+          modelo?: string | null
+          numero?: string
+          serie?: string
+          status?: string | null
+          updated_at?: string
+          valor_total?: number | null
+        }
+        Relationships: []
+      }
+      recebimentos: {
+        Row: {
+          chave_acesso_nfe: string | null
+          cliente_cnpj: string | null
+          cliente_id: string | null
+          cliente_nome: string
+          created_at: string
+          data_analise: string | null
+          data_entrada: string
+          fluido_trabalho: string | null
+          id: number
+          local_instalacao: string | null
+          na_empresa: boolean | null
+          nota_fiscal: string | null
+          numero_ordem: string
+          numero_serie: string | null
+          observacoes: string | null
+          potencia: string | null
+          pressao_trabalho: string | null
+          status: string | null
+          temperatura_trabalho: string | null
+          tipo_equipamento: string
+          updated_at: string
+          urgente: boolean | null
+        }
+        Insert: {
+          chave_acesso_nfe?: string | null
+          cliente_cnpj?: string | null
+          cliente_id?: string | null
+          cliente_nome: string
+          created_at?: string
+          data_analise?: string | null
+          data_entrada?: string
+          fluido_trabalho?: string | null
+          id?: number
+          local_instalacao?: string | null
+          na_empresa?: boolean | null
+          nota_fiscal?: string | null
+          numero_ordem: string
+          numero_serie?: string | null
+          observacoes?: string | null
+          potencia?: string | null
+          pressao_trabalho?: string | null
+          status?: string | null
+          temperatura_trabalho?: string | null
+          tipo_equipamento: string
+          updated_at?: string
+          urgente?: boolean | null
+        }
+        Update: {
+          chave_acesso_nfe?: string | null
+          cliente_cnpj?: string | null
+          cliente_id?: string | null
+          cliente_nome?: string
+          created_at?: string
+          data_analise?: string | null
+          data_entrada?: string
+          fluido_trabalho?: string | null
+          id?: number
+          local_instalacao?: string | null
+          na_empresa?: boolean | null
+          nota_fiscal?: string | null
+          numero_ordem?: string
+          numero_serie?: string | null
+          observacoes?: string | null
+          potencia?: string | null
+          pressao_trabalho?: string | null
+          status?: string | null
+          temperatura_trabalho?: string | null
+          tipo_equipamento?: string
+          updated_at?: string
+          urgente?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recebimentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
