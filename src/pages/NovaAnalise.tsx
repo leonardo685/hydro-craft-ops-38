@@ -1463,29 +1463,14 @@ const NovaAnalise = () => {
                 <div className="grid grid-cols-6 gap-2 items-end">
                   <div>
                     <Label>Peça</Label>
-                    <Select 
-                      value={novaPeca.peca} 
-                      onValueChange={(value) => setNovaPeca({
+                    <Input
+                      placeholder="Nome da peça"
+                      value={novaPeca.peca}
+                      onChange={(e) => setNovaPeca({
                         ...novaPeca,
-                        peca: value
+                        peca: e.target.value
                       })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a peça" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="anel-vedacao">Anel de Vedação</SelectItem>
-                        <SelectItem value="oring">O-Ring</SelectItem>
-                        <SelectItem value="retentores">Retentores</SelectItem>
-                        <SelectItem value="haste">Haste</SelectItem>
-                        <SelectItem value="embolo">Êmbolo</SelectItem>
-                        <SelectItem value="bucha">Bucha</SelectItem>
-                        <SelectItem value="tampa">Tampa</SelectItem>
-                        <SelectItem value="parafuso">Parafuso</SelectItem>
-                        <SelectItem value="arruela">Arruela</SelectItem>
-                        <SelectItem value="porca">Porca</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    />
                   </div>
                   
                   <div>
