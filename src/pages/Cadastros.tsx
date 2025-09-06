@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Users, Building, Tag, Edit, Trash2 } from "lucide-react";
 import { CategoriasFinanceiras } from "@/components/CategoriasFinanceiras";
+import { CNPJInput } from "@/components/CNPJInput";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -133,6 +134,13 @@ const Cadastros = () => {
     setShowClienteForm(false);
   };
 
+  const handleClienteCNPJDataFetch = (data: any) => {
+    setClienteForm({
+      ...clienteForm,
+      ...data
+    });
+  };
+
   const resetFornecedorForm = () => {
     setFornecedorForm({
       nome: "",
@@ -149,6 +157,13 @@ const Cadastros = () => {
     });
     setEditingFornecedor(null);
     setShowFornecedorForm(false);
+  };
+
+  const handleFornecedorCNPJDataFetch = (data: any) => {
+    setFornecedorForm({
+      ...fornecedorForm,
+      ...data
+    });
   };
 
   const handleSaveCliente = async () => {
@@ -343,6 +358,14 @@ const Cadastros = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                          <Label htmlFor="cnpj_cpf">CNPJ *</Label>
+                          <CNPJInput
+                            value={clienteForm.cnpj_cpf}
+                            onChange={(value) => setClienteForm({ ...clienteForm, cnpj_cpf: value })}
+                            onDataFetch={handleClienteCNPJDataFetch}
+                          />
+                        </div>
                         <div>
                           <Label htmlFor="nome">Nome *</Label>
                           <Input
@@ -369,15 +392,6 @@ const Cadastros = () => {
                             value={clienteForm.telefone}
                             onChange={(e) => setClienteForm({ ...clienteForm, telefone: e.target.value })}
                             placeholder="(11) 99999-9999"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="cnpj_cpf">CNPJ/CPF</Label>
-                          <Input
-                            id="cnpj_cpf"
-                            value={clienteForm.cnpj_cpf}
-                            onChange={(e) => setClienteForm({ ...clienteForm, cnpj_cpf: e.target.value })}
-                            placeholder="000.000.000-00"
                           />
                         </div>
                         <div>
@@ -545,6 +559,14 @@ const Cadastros = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                          <Label htmlFor="fornecedor-cnpj_cpf">CNPJ *</Label>
+                          <CNPJInput
+                            value={fornecedorForm.cnpj_cpf}
+                            onChange={(value) => setFornecedorForm({ ...fornecedorForm, cnpj_cpf: value })}
+                            onDataFetch={handleFornecedorCNPJDataFetch}
+                          />
+                        </div>
                         <div>
                           <Label htmlFor="fornecedor-nome">Nome *</Label>
                           <Input
@@ -571,15 +593,6 @@ const Cadastros = () => {
                             value={fornecedorForm.telefone}
                             onChange={(e) => setFornecedorForm({ ...fornecedorForm, telefone: e.target.value })}
                             placeholder="(11) 99999-9999"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="fornecedor-cnpj_cpf">CNPJ/CPF</Label>
-                          <Input
-                            id="fornecedor-cnpj_cpf"
-                            value={fornecedorForm.cnpj_cpf}
-                            onChange={(e) => setFornecedorForm({ ...fornecedorForm, cnpj_cpf: e.target.value })}
-                            placeholder="00.000.000/0000-00"
                           />
                         </div>
                         <div>
