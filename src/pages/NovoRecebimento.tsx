@@ -10,29 +10,27 @@ import { ArrowLeft, Upload, Camera } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useClientes } from "@/hooks/use-clientes";
+import { useRecebimentos } from "@/hooks/use-recebimentos";
 
 export default function NovoRecebimento() {
   const navigate = useNavigate();
   const location = useLocation();
   const { clientes } = useClientes();
+  const { criarRecebimento, gerarNumeroOrdem, uploadFoto } = useRecebimentos();
   
-  // Função para gerar o próximo número da ordem
-  const gerarProximoNumero = () => {
-    const hoje = new Date();
-    const ano = hoje.getFullYear().toString().slice(-2); // Últimos 2 dígitos do ano
-    
-    // Aqui você pode implementar uma lógica mais sofisticada
-    // Por exemplo, buscar do localStorage ou de uma API
-    const ultimoNumero = localStorage.getItem(`ultimoNumero_${ano}`) || "0";
-    const proximoNumero = (parseInt(ultimoNumero) + 1).toString().padStart(4, '0');
-    
-    localStorage.setItem(`ultimoNumero_${ano}`, proximoNumero);
-    return `${proximoNumero}/${ano}`;
-  };
+  const [numeroOrdem, setNumeroOrdem] = useState("");
+
+  // Gerar número da ordem ao carregar
+  useEffect(() => {
+    const carregarNumeroOrdem = async () => {
+      const numero = await gerarNumeroOrdem();
+      setNumeroOrdem(numero);
+    };
+    carregarNumeroOrdem();
+  }, [gerarNumeroOrdem]);
 
   const [formData, setFormData] = useState({
     tipoOrdem: "",
-    numeroOrdem: gerarProximoNumero(), // Gera automaticamente
     cliente: "",
     tag: "",
     dataAbertura: new Date().toISOString().split('T')[0], // Data atual
@@ -93,56 +91,43 @@ export default function NovoRecebimento() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Converter fotos para base64
-    const fotosBase64 = await Promise.all(
-      formData.fotos.map(async (foto) => {
-        if (foto && foto instanceof File) {
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(foto);
-          });
-        }
-        return foto;
-      })
-    );
-    
-    // Criar novo recebimento com os dados do formulário
-    const novoRecebimento = {
-      id: Date.now().toString(),
-      numeroOrdem: formData.numeroOrdem,
-      cliente: formData.cliente,
-      dataEntrada: formData.dataAbertura,
-      notaFiscal: formData.numeroNota,
-      naEmpresa: true,
-      tag: formData.tag,
-      tipoEquipamento: formData.tipoEquipamento,
-      numeroSerie: formData.numeroSerie,
-      urgencia: formData.urgencia,
-      solicitante: formData.solicitante,
-      pressaoTrabalho: formData.pressaoTrabalho,
-      observacoesEntrada: formData.observacoesEntrada,
-      camisa: formData.camisa,
-      hasteComprimento: formData.hasteComprimento,
-      curso: formData.curso,
-      conexaoA: formData.conexaoA,
-      conexaoB: formData.conexaoB,
-      observacoesPeritagem: formData.observacoesPeritagem,
-      manutencaoCorretiva: formData.manutencaoCorretiva,
-      manutencaoPreventiva: formData.manutencaoPreventiva,
-      apresentarOrcamento: formData.apresentarOrcamento,
-      fotos: fotosBase64
-    };
+    try {
+      // Buscar nome do cliente
+      const clienteSelecionado = clientes.find(c => c.id === formData.cliente);
+      
+      // Criar novo recebimento com os dados do formulário
+      const novoRecebimento = {
+        numero_ordem: numeroOrdem,
+        cliente_id: formData.cliente,
+        cliente_nome: clienteSelecionado?.nome || '',
+        data_entrada: formData.dataAbertura,
+        nota_fiscal: formData.numeroNota,
+        tipo_equipamento: formData.tipoEquipamento,
+        numero_serie: formData.numeroSerie,
+        urgente: formData.urgencia,
+        na_empresa: true,
+        status: 'recebido',
+        pressao_trabalho: formData.pressaoTrabalho,
+        observacoes: formData.observacoesEntrada
+      };
 
-    // Salvar no localStorage
-    const recebimentosExistentes = JSON.parse(localStorage.getItem('recebimentos') || '[]');
-    const novosRecebimentos = [...recebimentosExistentes, novoRecebimento];
-    localStorage.setItem('recebimentos', JSON.stringify(novosRecebimentos));
-    
-    console.log("Dados do formulário:", formData);
-    console.log("Recebimento salvo:", novoRecebimento);
-    
-    navigate("/recebimentos");
+      // Criar recebimento no Supabase
+      const recebimentoCriado = await criarRecebimento(novoRecebimento);
+      
+      // Upload das fotos se houver
+      if (recebimentoCriado && formData.fotos.some(foto => foto !== null)) {
+        for (let i = 0; i < formData.fotos.length; i++) {
+          const foto = formData.fotos[i];
+          if (foto) {
+            await uploadFoto(recebimentoCriado.id, foto, formData.apresentarOrcamento[i]);
+          }
+        }
+      }
+      
+      navigate("/recebimentos");
+    } catch (error) {
+      console.error("Erro ao salvar recebimento:", error);
+    }
   };
 
   return (
@@ -188,7 +173,7 @@ export default function NovoRecebimento() {
                   <Label htmlFor="numeroOrdem">Nº da Ordem*</Label>
                   <Input 
                     id="numeroOrdem"
-                    value={formData.numeroOrdem}
+                    value={numeroOrdem}
                     disabled
                     className="bg-muted text-muted-foreground cursor-not-allowed"
                     placeholder="Ex: 0065/25"
