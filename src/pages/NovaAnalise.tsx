@@ -116,7 +116,7 @@ const NovaAnalise = () => {
   });
 
   // Buscar recebimento baseado no ID da URL
-  const recebimento = id ? recebimentos.find(r => r.numero_ordem === id) : null;
+  const recebimento = id ? recebimentos.find(r => r.numero_ordem === id || r.id.toString() === id) : null;
 
   useEffect(() => {
     console.log('Debug NovaAnalise - ID:', id);
