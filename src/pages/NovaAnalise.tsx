@@ -10,13 +10,16 @@ import { ArrowLeft, Save, Upload, Camera, FileText } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-const NovaAnalise = () => {
+const NovaOrdemServico = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { toast } = useToast();
   const { recebimentos, loading } = useRecebimentos();
   const [recebimento, setRecebimento] = useState<any>(null);
-  const [analiseExistente, setAnaliseExistente] = useState<any>(null);
+  const [ordemExistente, setOrdemExistente] = useState<any>(null);
   const [isEdicao, setIsEdicao] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -186,7 +189,7 @@ const NovaAnalise = () => {
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('Análise Técnica', 15, 55);
+    doc.text('Ordem de Serviço', 15, 55);
     
     // Data do relatório
     doc.setFontSize(10);
@@ -406,7 +409,7 @@ const NovaAnalise = () => {
       doc.text(`Página ${i} de ${totalPages}`, 15, 290);
     }
     
-    doc.save(`analise-tecnica-${recebimento?.cliente || 'cliente'}.pdf`);
+    doc.save(`ordem-servico-${recebimento?.cliente || 'cliente'}.pdf`);
   };
 
   // Função para lidar com o upload de fotos de chegada
@@ -519,34 +522,53 @@ const NovaAnalise = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Botão Criar Análise clicado!');
-    console.log('Dados do formulário:', formData);
-    console.log('Recebimento encontrado:', recebimento);
     
-    // Por enquanto, apenas mostrar os dados no console
-    // TODO: Implementar salvamento no Supabase quando for necessário
-    const dadosAnalise = {
-      recebimento_id: recebimento?.id,
-      tecnico: formData.tecnico,
-      problemas: formData.problemas,
-      prazo_estimado: formData.prazoEstimado,
-      prioridade: formData.prioridade.toLowerCase(),
-      observacoes: formData.observacoes,
-      pecas_utilizadas: pecasUtilizadas,
-      servicos: servicos,
-      usinagem: usinagem,
-      servicos_pre_determinados: servicosPreDeterminados,
-      servicos_personalizados: servicosPersonalizados,
-      fotos_chegada: previewsChegada,
-      fotos_analise: previewsAnalise,
-      apresentar_orcamento: apresentarOrcamento,
-      dados_tecnicos: dadosTecnicos,
-      data_criacao: new Date().toISOString()
-    };
+    if (!formData.tecnico) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, informe o técnico responsável.",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    console.log('Dados da análise preparados:', dadosAnalise);
-    alert('Análise criada com sucesso! (dados salvos no console)');
-    navigate('/analise');
+    try {
+      const { error } = await supabase
+        .from('ordens_servico')
+        .insert({
+          recebimento_id: recebimento?.id,
+          numero_ordem: recebimento?.numeroOrdem,
+          cliente_nome: recebimento?.cliente,
+          equipamento: recebimento?.equipamento,
+          tecnico: formData.tecnico,
+          data_entrada: new Date(recebimento?.dataEntrada.split('/').reverse().join('-')),
+          data_analise: new Date(),
+          status: 'em_andamento',
+          prioridade: formData.prioridade.toLowerCase(),
+          tipo_problema: formData.problemas,
+          descricao_problema: formData.problemas,
+          solucao_proposta: servicosPersonalizados,
+          pecas_necessarias: pecasUtilizadas,
+          tempo_estimado: formData.prazoEstimado,
+          observacoes_tecnicas: formData.observacoes
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Ordem de serviço criada!",
+        description: "A ordem de serviço foi criada com sucesso.",
+      });
+
+      navigate('/analise');
+    } catch (error) {
+      console.error('Erro ao criar ordem de serviço:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar a ordem de serviço. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -1765,7 +1787,7 @@ const NovaAnalise = () => {
             </Button>
             <Button type="submit">
               <Save className="mr-2 h-4 w-4" />
-              {isEdicao ? 'Salvar Alterações' : 'Criar Análise'}
+              {isEdicao ? 'Salvar Alterações' : 'Criar Ordem de Serviço'}
             </Button>
           </div>
         </form>
@@ -1774,4 +1796,4 @@ const NovaAnalise = () => {
   );
 };
 
-export default NovaAnalise;
+export default NovaOrdemServico;

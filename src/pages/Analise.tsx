@@ -7,33 +7,54 @@ import { Input } from "@/components/ui/input";
 import { Search, Plus, ThumbsUp, ThumbsDown, Edit, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-const analisesDefault: any[] = [];
-
-export default function Analise() {
+export default function OrdensServico() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [analises, setAnalises] = useState<any[]>([]);
+  const [ordensServico, setOrdensServico] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Carregar análises do localStorage
-    const analisesStorage = JSON.parse(localStorage.getItem('analises') || '[]');
-    setAnalises(analisesStorage);
+    loadOrdensServico();
   }, []);
 
-  const filteredAnalises = analises.filter(analise =>
-    analise.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    analise.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    analise.equipamento.toLowerCase().includes(searchTerm.toLowerCase())
+  const loadOrdensServico = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ordens_servico')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setOrdensServico(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar ordens de serviço:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar ordens de serviço",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredOrdensServico = ordensServico.filter(ordem =>
+    ordem.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ordem.numero_ordem.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ordem.equipamento.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Em Análise":
+      case "em_andamento":
         return "bg-warning text-warning-foreground";
-      case "Concluída":
+      case "concluida":
         return "bg-accent text-accent-foreground";
-      case "Aguardando Peças":
+      case "aguardando_pecas":
         return "bg-destructive text-destructive-foreground";
       default:
         return "bg-secondary text-secondary-foreground";
@@ -99,18 +120,18 @@ export default function Analise() {
     
     yPosition += 15;
     
-    // Dados das análises
+    // Dados das ordens de serviço
     doc.setFont('helvetica', 'normal');
-    filteredAnalises.forEach((analise, index) => {
+    filteredOrdensServico.forEach((ordem, index) => {
       if (yPosition > 250) {
         doc.addPage();
         yPosition = 20;
       }
       
-      doc.text(analise.id, 20, yPosition);
-      doc.text(analise.cliente.substring(0, 25) + (analise.cliente.length > 25 ? '...' : ''), 50, yPosition);
-      doc.text(analise.equipamento.substring(0, 20) + (analise.equipamento.length > 20 ? '...' : ''), 100, yPosition);
-      doc.text(analise.status, 150, yPosition);
+      doc.text(ordem.numero_ordem, 20, yPosition);
+      doc.text(ordem.cliente_nome.substring(0, 25) + (ordem.cliente_nome.length > 25 ? '...' : ''), 50, yPosition);
+      doc.text(ordem.equipamento.substring(0, 20) + (ordem.equipamento.length > 20 ? '...' : ''), 100, yPosition);
+      doc.text(ordem.status, 150, yPosition);
       
       yPosition += lineHeight;
     });
@@ -126,7 +147,7 @@ export default function Analise() {
       doc.text(`Página ${i} de ${totalPages}`, 15, 290);
     }
     
-    doc.save('relatorio-analises.pdf');
+    doc.save('relatorio-ordens-servico.pdf');
   };
 
   return (
@@ -134,9 +155,9 @@ export default function Analise() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Análises Técnicas</h2>
+            <h2 className="text-2xl font-bold text-foreground">Ordens de Serviço</h2>
             <p className="text-muted-foreground">
-              Gerencie todas as análises de equipamentos
+              Gerencie todas as ordens de serviço de equipamentos
             </p>
           </div>
           <Button 
@@ -144,13 +165,13 @@ export default function Analise() {
             onClick={() => navigate('/analise/novo')}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Nova Análise
+            Nova Ordem de Serviço
           </Button>
         </div>
 
         <Card className="shadow-soft">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Lista de Análises</CardTitle>
+            <CardTitle className="text-lg">Lista de Ordens de Serviço</CardTitle>
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -172,49 +193,65 @@ export default function Analise() {
           </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="font-semibold text-foreground">Nº da Ordem</TableHead>
-                    <TableHead className="font-semibold text-foreground">Cliente</TableHead>
-                    <TableHead className="font-semibold text-foreground">Equipamento</TableHead>
-                    <TableHead className="font-semibold text-foreground">Técnico</TableHead>
-                    <TableHead className="font-semibold text-foreground">Data de Entrada</TableHead>
-                    <TableHead className="font-semibold text-foreground text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAnalises.map((analise) => (
-                    <TableRow key={analise.id} className="hover:bg-muted/30 transition-fast">
-                      <TableCell className="font-medium text-primary">{analise.id}</TableCell>
-                      <TableCell className="text-primary font-medium">{analise.cliente}</TableCell>
-                      <TableCell className="text-foreground">{analise.equipamento}</TableCell>
-                      <TableCell className="text-muted-foreground">{analise.tecnico}</TableCell>
-                      <TableCell className="text-muted-foreground">{analise.dataEntrada}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-green-600 hover:text-green-700">
-                            <ThumbsUp className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
-                            <ThumbsDown className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0"
-                            onClick={() => navigate(`/analise/novo/${encodeURIComponent(analise.id)}`)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            {loading ? (
+              <div className="text-center py-8">Carregando...</div>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="font-semibold text-foreground">Nº da Ordem</TableHead>
+                      <TableHead className="font-semibold text-foreground">Cliente</TableHead>
+                      <TableHead className="font-semibold text-foreground">Equipamento</TableHead>
+                      <TableHead className="font-semibold text-foreground">Técnico</TableHead>
+                      <TableHead className="font-semibold text-foreground">Status</TableHead>
+                      <TableHead className="font-semibold text-foreground">Data de Entrada</TableHead>
+                      <TableHead className="font-semibold text-foreground text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrdensServico.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          Nenhuma ordem de serviço encontrada
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredOrdensServico.map((ordem) => (
+                        <TableRow key={ordem.id} className="hover:bg-muted/30 transition-fast">
+                          <TableCell className="font-medium text-primary">{ordem.numero_ordem}</TableCell>
+                          <TableCell className="text-primary font-medium">{ordem.cliente_nome}</TableCell>
+                          <TableCell className="text-foreground">{ordem.equipamento}</TableCell>
+                          <TableCell className="text-muted-foreground">{ordem.tecnico || 'Não definido'}</TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(ordem.status)}>
+                              {ordem.status === 'em_andamento' ? 'Em Andamento' : 
+                               ordem.status === 'concluida' ? 'Concluída' : 
+                               ordem.status === 'aguardando_pecas' ? 'Aguardando Peças' : ordem.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {new Date(ordem.data_entrada).toLocaleDateString('pt-BR')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0"
+                                onClick={() => navigate(`/analise/novo/${encodeURIComponent(ordem.numero_ordem)}`)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

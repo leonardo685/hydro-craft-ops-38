@@ -243,6 +243,80 @@ export type Database = {
         }
         Relationships: []
       }
+      ordens_servico: {
+        Row: {
+          cliente_nome: string
+          created_at: string
+          data_analise: string | null
+          data_entrada: string
+          descricao_problema: string | null
+          equipamento: string
+          id: string
+          numero_ordem: string
+          observacoes_tecnicas: string | null
+          pecas_necessarias: Json | null
+          prioridade: string
+          recebimento_id: number | null
+          solucao_proposta: string | null
+          status: string
+          tecnico: string | null
+          tempo_estimado: string | null
+          tipo_problema: string | null
+          updated_at: string
+          valor_estimado: number | null
+        }
+        Insert: {
+          cliente_nome: string
+          created_at?: string
+          data_analise?: string | null
+          data_entrada: string
+          descricao_problema?: string | null
+          equipamento: string
+          id?: string
+          numero_ordem: string
+          observacoes_tecnicas?: string | null
+          pecas_necessarias?: Json | null
+          prioridade?: string
+          recebimento_id?: number | null
+          solucao_proposta?: string | null
+          status?: string
+          tecnico?: string | null
+          tempo_estimado?: string | null
+          tipo_problema?: string | null
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Update: {
+          cliente_nome?: string
+          created_at?: string
+          data_analise?: string | null
+          data_entrada?: string
+          descricao_problema?: string | null
+          equipamento?: string
+          id?: string
+          numero_ordem?: string
+          observacoes_tecnicas?: string | null
+          pecas_necessarias?: Json | null
+          prioridade?: string
+          recebimento_id?: number | null
+          solucao_proposta?: string | null
+          status?: string
+          tecnico?: string | null
+          tempo_estimado?: string | null
+          tipo_problema?: string | null
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_servico_recebimento_id_fkey"
+            columns: ["recebimento_id"]
+            isOneToOne: false
+            referencedRelation: "recebimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recebimentos: {
         Row: {
           chave_acesso_nfe: string | null
