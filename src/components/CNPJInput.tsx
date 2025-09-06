@@ -76,9 +76,9 @@ export const CNPJInput = ({ value, onChange, onDataFetch, disabled }: CNPJInputP
         estado: data.uf || '',
         cep: data.cep || '',
         cnpj_cpf: value, // Mantém o CNPJ formatado
-        // Tentativa de mapear campos de inscrição se existirem na API
-        inscricao_estadual: data.inscricao_estadual || data.ie || '',
-        inscricao_municipal: data.inscricao_municipal || data.im || '',
+        // Campos não disponíveis na API - devem ser preenchidos manualmente
+        inscricao_estadual: '',
+        inscricao_municipal: '',
         observacoes: `Situação: ${data.situacao || 'N/A'}\nAtividade Principal: ${data.atividade_principal?.[0]?.text || 'N/A'}`
       };
 
