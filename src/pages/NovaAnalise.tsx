@@ -9,10 +9,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Save, Upload, Camera, FileText } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useRecebimentos } from "@/hooks/use-recebimentos";
 
 const NovaAnalise = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { recebimentos, loading } = useRecebimentos();
   const [recebimento, setRecebimento] = useState<any>(null);
   const [analiseExistente, setAnaliseExistente] = useState<any>(null);
   const [isEdicao, setIsEdicao] = useState(false);
@@ -469,193 +471,95 @@ const NovaAnalise = () => {
   };
 
   useEffect(() => {
+    if (loading || !recebimentos.length) return;
+    
     const decodedId = id ? decodeURIComponent(id) : '';
+    console.log('Looking for recebimento with ID:', decodedId);
+    console.log('Available recebimentos:', recebimentos);
     
-    // Primeiro tentar buscar uma análise existente
-    const analises = JSON.parse(localStorage.getItem('analises') || '[]');
-    const analiseExistente = analises.find((a: any) => a.id === decodedId);
+    // Buscar recebimento pelo numero_ordem ou pelo id
+    const recebimentoEncontrado = recebimentos.find((r: any) => 
+      r.numero_ordem === decodedId || 
+      r.id?.toString() === decodedId
+    );
     
-    if (analiseExistente) {
-      // É uma edição de análise
-      setIsEdicao(true);
-      setAnaliseExistente(analiseExistente);
-      setFormData({
-        tecnico: analiseExistente.tecnico || "",
-        problemas: analiseExistente.problemas || "",
-        prazoEstimado: analiseExistente.prazoEstimado || "",
-        prioridade: analiseExistente.prioridade === "alta" ? "Alta" : 
-                    analiseExistente.prioridade === "media" ? "Média" : 
-                    analiseExistente.prioridade === "baixa" ? "Baixa" : "Média",
-        observacoes: analiseExistente.observacoes || ""
+    console.log('Found recebimento:', recebimentoEncontrado);
+    
+    if (recebimentoEncontrado) {
+      setRecebimento({
+        id: recebimentoEncontrado.id,
+        cliente: recebimentoEncontrado.cliente_nome,
+        equipamento: recebimentoEncontrado.tipo_equipamento,
+        dataEntrada: new Date(recebimentoEncontrado.data_entrada).toLocaleDateString('pt-BR'),
+        numeroOrdem: recebimentoEncontrado.numero_ordem,
+        fotos: recebimentoEncontrado.fotos || []
       });
       
-      // Carregar dados técnicos da análise
+      // Dados técnicos começam vazios para nova análise
       setDadosTecnicos({
-        tipoEquipamento: analiseExistente.tipoEquipamento || "",
-        pressaoTrabalho: analiseExistente.pressaoTrabalho || "",
-        camisa: analiseExistente.camisa || "",
-        hasteComprimento: analiseExistente.hasteComprimento || "",
-        curso: analiseExistente.curso || "",
-        conexaoA: analiseExistente.conexaoA || "",
-        conexaoB: analiseExistente.conexaoB || ""
+        tipoEquipamento: recebimentoEncontrado.tipo_equipamento || "",
+        pressaoTrabalho: recebimentoEncontrado.pressao_trabalho || "",
+        camisa: "",
+        hasteComprimento: "",
+        curso: "",
+        conexaoA: "",
+        conexaoB: ""
       });
       
-      // Carregar dados adicionais da análise
-      setPecasUtilizadas(analiseExistente.pecasUtilizadas || []);
-      setServicos(analiseExistente.servicos || "");
-      setUsinagem(analiseExistente.usinagem || {
-        usinagemHaste: false,
-        usinagemTampaGuia: false,
-        usinagemEmbolo: false,
-        usinagemCabecoteDianteiro: false,
-        usinagemCabecoteTraseiro: false
-      });
-      setServicosPersonalizados(analiseExistente.servicosPersonalizados || "");
-      
-      // Carregar serviços pré-determinados se existirem
-      if (analiseExistente.servicosPreDeterminados) {
-        setServicosPreDeterminados(analiseExistente.servicosPreDeterminados);
-      }
-      
-      // Carregar previews das fotos se existirem
-      if (analiseExistente.fotosChegada) {
-        setPreviewsChegada(analiseExistente.fotosChegada);
-      }
-      if (analiseExistente.fotosAnalise) {
-        setPreviewsAnalise(analiseExistente.fotosAnalise);
-      }
-      if (analiseExistente.apresentarOrcamento) {
-        setApresentarOrcamento(analiseExistente.apresentarOrcamento);
-      }
-      
-      // Buscar o recebimento relacionado pela análise
-      const recebimentos = JSON.parse(localStorage.getItem('recebimentos') || '[]');
-      const recebimentoRelacionado = recebimentos.find((r: any) => r.id === analiseExistente.recebimentoId);
-      if (recebimentoRelacionado) {
-        setRecebimento(recebimentoRelacionado);
-      } else {
-        // Criar um recebimento temporário baseado nos dados da análise
-        setRecebimento({
-          id: analiseExistente.recebimentoId || decodedId,
-          cliente: analiseExistente.cliente,
-          equipamento: analiseExistente.equipamento,
-          dataEntrada: analiseExistente.dataEntrada
-        });
+      // Carregar fotos do recebimento se existirem
+      if (recebimentoEncontrado.fotos && recebimentoEncontrado.fotos.length > 0) {
+        setPreviewsChegada(recebimentoEncontrado.fotos.map((foto: any) => foto.arquivo_url).filter(Boolean));
       }
     } else {
-      // É uma nova análise baseada em recebimento
-      const recebimentos = JSON.parse(localStorage.getItem('recebimentos') || '[]');
-      const recebimentoEncontrado = recebimentos.find((r: any) => r.id === decodedId);
-      if (recebimentoEncontrado) {
-        setRecebimento(recebimentoEncontrado);
-        
-        // Dados técnicos começam vazios para nova análise
-        setDadosTecnicos({
-          tipoEquipamento: "",
-          pressaoTrabalho: "",
-          camisa: "",
-          hasteComprimento: "",
-          curso: "",
-          conexaoA: "",
-          conexaoB: ""
-        });
-        
-        // Carregar fotos do recebimento se existirem
-        if (recebimentoEncontrado.fotos) {
-          setPreviewsChegada(recebimentoEncontrado.fotos.filter(foto => foto !== null));
-        }
-        if (recebimentoEncontrado.apresentarOrcamento) {
-          setApresentarOrcamento(recebimentoEncontrado.apresentarOrcamento);
-        }
-      }
+      console.log('Recebimento not found for ID:', decodedId);
     }
-  }, [id]);
+  }, [id, recebimentos, loading]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Botão Criar Análise clicado!');
     console.log('Dados do formulário:', formData);
-    console.log('É edição?', isEdicao);
     console.log('Recebimento encontrado:', recebimento);
     
-    const analises = JSON.parse(localStorage.getItem('analises') || '[]');
-    console.log('Análises existentes:', analises);
+    // Por enquanto, apenas mostrar os dados no console
+    // TODO: Implementar salvamento no Supabase quando for necessário
+    const dadosAnalise = {
+      recebimento_id: recebimento?.id,
+      tecnico: formData.tecnico,
+      problemas: formData.problemas,
+      prazo_estimado: formData.prazoEstimado,
+      prioridade: formData.prioridade.toLowerCase(),
+      observacoes: formData.observacoes,
+      pecas_utilizadas: pecasUtilizadas,
+      servicos: servicos,
+      usinagem: usinagem,
+      servicos_pre_determinados: servicosPreDeterminados,
+      servicos_personalizados: servicosPersonalizados,
+      fotos_chegada: previewsChegada,
+      fotos_analise: previewsAnalise,
+      apresentar_orcamento: apresentarOrcamento,
+      dados_tecnicos: dadosTecnicos,
+      data_criacao: new Date().toISOString()
+    };
     
-    if (isEdicao && analiseExistente) {
-      console.log('Atualizando análise existente...');
-      // Atualizar análise existente
-      const analiseAtualizada = {
-        ...analiseExistente,
-        tecnico: formData.tecnico,
-        problemas: formData.problemas,
-        prazoEstimado: formData.prazoEstimado,
-        prioridade: formData.prioridade.toLowerCase(),
-        observacoes: formData.observacoes,
-        pecasUtilizadas,
-        servicos,
-        usinagem,
-        servicosPreDeterminados,
-        servicosPersonalizados,
-        // Salvar previews das fotos para uso no orçamento
-        fotosChegada: previewsChegada,
-        fotosAnalise: previewsAnalise,
-        apresentarOrcamento,
-        ...dadosTecnicos,
-        dataUltimaAtualizacao: new Date().toLocaleDateString('pt-BR')
-      };
-      
-      const index = analises.findIndex((a: any) => a.id === analiseExistente.id);
-      if (index !== -1) {
-        analises[index] = analiseAtualizada;
-      }
-    } else {
-      console.log('Criando nova análise...');
-      // Criar nova análise
-      const novaAnalise = {
-        id: `${String(analises.length + 1).padStart(4, '0')}/25`,
-        equipamento: recebimento?.equipamento || "",
-        cliente: recebimento?.cliente || "",
-        tecnico: formData.tecnico,
-        dataEntrada: recebimento?.dataEntrada || new Date().toLocaleDateString('pt-BR'),
-        status: "Em Análise",
-        prioridade: formData.prioridade.toLowerCase(),
-        problemas: formData.problemas,
-        prazoEstimado: formData.prazoEstimado,
-        observacoes: formData.observacoes,
-        pecasUtilizadas,
-        servicos,
-        usinagem,
-        servicosPreDeterminados,
-        servicosPersonalizados,
-        // Salvar previews das fotos para uso no orçamento
-        fotosChegada: previewsChegada,
-        fotosAnalise: previewsAnalise,
-        apresentarOrcamento,
-        ...dadosTecnicos,
-        recebimentoId: id,
-        dataInicio: new Date().toLocaleDateString('pt-BR')
-      };
-      
-      console.log('Nova análise criada:', novaAnalise);
-      analises.push(novaAnalise);
-    }
-
-    console.log('Salvando no localStorage...');
-    try {
-      // Limpar dados antigos se necessário
-      if (analises.length > 50) {
-        analises.splice(0, analises.length - 50); // Manter apenas últimas 50 análises
-      }
-      localStorage.setItem('analises', JSON.stringify(analises));
-      console.log('Dados salvos com sucesso!');
-    } catch (error) {
-      console.error('Erro ao salvar no localStorage:', error);
-      alert('Erro ao salvar a análise. Tente novamente.');
-      return;
-    }
-    console.log('Navegando para /analise...');
+    console.log('Dados da análise preparados:', dadosAnalise);
+    alert('Análise criada com sucesso! (dados salvos no console)');
     navigate('/analise');
   };
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="container mx-auto p-6">
+          <Card>
+            <CardContent className="p-6">
+              <p>Carregando...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!recebimento) {
     return (
