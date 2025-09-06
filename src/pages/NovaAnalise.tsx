@@ -492,7 +492,9 @@ const NovaAnalise = () => {
         equipamento: recebimentoEncontrado.tipo_equipamento,
         dataEntrada: new Date(recebimentoEncontrado.data_entrada).toLocaleDateString('pt-BR'),
         numeroOrdem: recebimentoEncontrado.numero_ordem,
-        fotos: recebimentoEncontrado.fotos || []
+        nota_fiscal: recebimentoEncontrado.nota_fiscal,
+        numero_serie: recebimentoEncontrado.numero_serie,
+        fotos: (recebimentoEncontrado as any).fotos_equipamentos || []
       });
       
       // Dados técnicos começam vazios para nova análise
@@ -618,23 +620,19 @@ const NovaAnalise = () => {
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Nota Fiscal</Label>
-                  <p className="font-medium">{recebimento.notaFiscal || 'NF-005678'}</p>
+                  <p className="font-medium">{recebimento.nota_fiscal || 'Não informada'}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">TAG</Label>
-                  <p className="font-medium">{recebimento.tag || 'EQ002'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">Nº da Ordem</Label>
+                  <p className="font-medium">{recebimento.numeroOrdem}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Solicitante</Label>
-                  <p className="font-medium">{recebimento.solicitante || 'Maria Santos'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">Tipo de Equipamento</Label>
+                  <p className="font-medium">{recebimento.equipamento}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Nº de Série</Label>
-                  <p className="font-medium">{recebimento.numeroSerie || 'BH-002-2025'}</p>
-                </div>
-                <div className="md:col-span-2 lg:col-span-3">
-                  <Label className="text-sm font-medium text-muted-foreground">Tipo de Manutenção</Label>
-                  <p className="font-medium">{recebimento.tipoManutencao || 'Corretiva'}</p>
+                  <p className="font-medium">{recebimento.numero_serie || 'Não informado'}</p>
                 </div>
               </div>
             </CardContent>
