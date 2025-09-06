@@ -30,7 +30,6 @@ export default function NovoRecebimento() {
   }, []); // Remover dependência para evitar múltiplas chamadas
 
   const [formData, setFormData] = useState({
-    tipoOrdem: "",
     cliente: "",
     tag: "",
     dataAbertura: new Date().toISOString().split('T')[0], // Data atual
@@ -49,7 +48,6 @@ export default function NovoRecebimento() {
     conexaoA: "",
     conexaoB: "",
     observacoesPeritagem: "",
-    apresentarOrcamento: [false, false, false, false],
     fotos: [null, null, null, null] as (File | null)[]
   });
 
@@ -119,7 +117,7 @@ export default function NovoRecebimento() {
         for (let i = 0; i < formData.fotos.length; i++) {
           const foto = formData.fotos[i];
           if (foto) {
-            await uploadFoto(recebimentoCriado.id, foto, formData.apresentarOrcamento[i]);
+            await uploadFoto(recebimentoCriado.id, foto, false);
           }
         }
       }
@@ -156,20 +154,6 @@ export default function NovoRecebimento() {
             <CardContent className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tipoOrdem">Tipo Ordem*</Label>
-                  <Select value={formData.tipoOrdem} onValueChange={(value) => setFormData({...formData, tipoOrdem: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="manutencao">Manutenção</SelectItem>
-                      <SelectItem value="reparo">Reparo</SelectItem>
-                      <SelectItem value="revisao">Revisão</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="numeroOrdem">Nº da Ordem*</Label>
                   <Input 
                     id="numeroOrdem"
@@ -201,7 +185,7 @@ export default function NovoRecebimento() {
                     <SelectContent>
                       {clientes.map(cliente => (
                         <SelectItem key={cliente.id} value={cliente.id}>
-                          {cliente.nome}
+                          {cliente.nome} {cliente.cnpj_cpf ? `(${cliente.cnpj_cpf.slice(-4)})` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -349,18 +333,6 @@ export default function NovoRecebimento() {
                         )}
                       </CardContent>
                     </Card>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={`orcamento-${index}`}
-                        checked={formData.apresentarOrcamento[index]}
-                        onCheckedChange={(checked) => {
-                          const newArray = [...formData.apresentarOrcamento];
-                          newArray[index] = checked as boolean;
-                          setFormData({...formData, apresentarOrcamento: newArray});
-                        }}
-                      />
-                      <Label htmlFor={`orcamento-${index}`} className="text-sm">Apresentar Orçamento</Label>
-                    </div>
                   </div>
                 ))}
               </div>
