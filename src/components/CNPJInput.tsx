@@ -59,6 +59,8 @@ export const CNPJInput = ({ value, onChange, onDataFetch, disabled }: CNPJInputP
       const proxyData = await response.json();
       const data = JSON.parse(proxyData.contents);
 
+      console.log('Dados recebidos da API:', data); // Para debug
+
       if (data.status === 'ERROR') {
         toast.error(data.message || 'Erro ao consultar CNPJ');
         return;
@@ -74,8 +76,9 @@ export const CNPJInput = ({ value, onChange, onDataFetch, disabled }: CNPJInputP
         estado: data.uf || '',
         cep: data.cep || '',
         cnpj_cpf: value, // Mantém o CNPJ formatado
-        inscricao_estadual: '',
-        inscricao_municipal: '',
+        // Tentativa de mapear campos de inscrição se existirem na API
+        inscricao_estadual: data.inscricao_estadual || data.ie || '',
+        inscricao_municipal: data.inscricao_municipal || data.im || '',
         observacoes: `Situação: ${data.situacao || 'N/A'}\nAtividade Principal: ${data.atividade_principal?.[0]?.text || 'N/A'}`
       };
 
