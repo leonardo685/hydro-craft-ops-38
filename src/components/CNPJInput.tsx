@@ -54,7 +54,8 @@ export const CNPJInput = ({ value, onChange, onDataFetch, disabled }: CNPJInputP
     setIsLoading(true);
 
     try {
-      const response = await fetch(`https://receitaws.com.br/v1/cnpj/${cnpjNumbers}`);
+      // Usando proxy CORS para contornar limitações do navegador
+      const response = await fetch(`https://cors-anywhere.herokuapp.com/https://receitaws.com.br/v1/cnpj/${cnpjNumbers}`);
       const data = await response.json();
 
       if (data.status === 'ERROR') {
