@@ -232,7 +232,14 @@ export const useRecebimentos = () => {
 
   const uploadFoto = async (recebimentoId: number, arquivo: File, apresentarOrcamento: boolean = false) => {
     try {
-      const nomeArquivo = `${recebimentoId}/${Date.now()}_${arquivo.name}`;
+      // Sanitiza o nome do arquivo removendo caracteres especiais
+      const nomeArquivoLimpo = arquivo.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+        .replace(/[^a-zA-Z0-9.-]/g, '_') // Replace caracteres especiais com underscore
+        .replace(/_{2,}/g, '_'); // Remove underscores duplos
+      
+      const nomeArquivo = `${recebimentoId}/${Date.now()}_${nomeArquivoLimpo}`;
       
       const { error: uploadError } = await supabase.storage
         .from('equipamentos')
