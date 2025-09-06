@@ -54,9 +54,10 @@ export const CNPJInput = ({ value, onChange, onDataFetch, disabled }: CNPJInputP
     setIsLoading(true);
 
     try {
-      // Usando proxy CORS para contornar limitações do navegador
-      const response = await fetch(`https://cors-anywhere.herokuapp.com/https://receitaws.com.br/v1/cnpj/${cnpjNumbers}`);
-      const data = await response.json();
+      // Usando proxy alternativo para contornar CORS
+      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://receitaws.com.br/v1/cnpj/${cnpjNumbers}`)}`);
+      const proxyData = await response.json();
+      const data = JSON.parse(proxyData.contents);
 
       if (data.status === 'ERROR') {
         toast.error(data.message || 'Erro ao consultar CNPJ');
