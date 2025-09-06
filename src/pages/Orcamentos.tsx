@@ -20,11 +20,8 @@ export default function Orcamentos() {
   const orcamentosPendentes = orcamentosData;
 
   useEffect(() => {
-    // Carregar análises do localStorage
-    const analisesStorage = JSON.parse(localStorage.getItem('analises') || '[]');
-    setAnalises(analisesStorage);
-
-    // Carregar orçamentos pendentes
+    // Dados serão carregados do Supabase - por enquanto lista vazia
+    setAnalises([]);
     setOrcamentosData(getOrcamentosPendentes());
   }, []);
 
@@ -39,20 +36,12 @@ export default function Orcamentos() {
   };
 
   const handleAprovarOrcamento = (id: number) => {
-    const orcamentos = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-    const orcamento = orcamentos.find((o: any) => o.id === id);
-    
     aprovarOrcamento(id);
     setOrcamentosData(getOrcamentosPendentes()); // Recarregar lista
     
-    let mensagem = "O orçamento foi aprovado e enviado para faturamento!";
-    if (orcamento?.analiseOrigem) {
-      mensagem += " A análise técnica correspondente também foi aprovada automaticamente.";
-    }
-    
     toast({
       title: "Orçamento Aprovado",
-      description: mensagem,
+      description: "O orçamento foi aprovado e enviado para faturamento!",
     });
   };
 

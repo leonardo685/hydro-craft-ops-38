@@ -79,133 +79,40 @@ export default function NovoOrcamento() {
 
   useEffect(() => {
     if (analiseId) {
-      const analises = JSON.parse(localStorage.getItem('analises') || '[]');
-      const analise = analises.find((a: any) => a.id === analiseId);
+      // TODO: Buscar dados da análise no Supabase
+      console.log('Buscar análise no Supabase:', analiseId);
       
-      if (analise) {
-        setAnaliseData(analise);
-        
-        // Buscar dados do recebimento original através do recebimentoId
-        let dadosRecebimento = null;
-        if (analise.recebimentoId) {
-          const recebimentos = JSON.parse(localStorage.getItem('recebimentos') || '[]');
-          dadosRecebimento = recebimentos.find((r: any) => r.id === analise.recebimentoId || r.numeroOrdem === analise.recebimentoId);
-        }
-        
-        // Determinar tipo de ordem baseado no problema da análise
-        let tipoOrdem = '';
-        if (analise.problemas) {
-          const problemas = analise.problemas.toLowerCase();
-          if (problemas.includes('vazamento') || problemas.includes('danificado') || problemas.includes('quebrado')) {
-            tipoOrdem = 'reparo';
-          } else if (problemas.includes('reforma') || problemas.includes('recondicionamento')) {
-            tipoOrdem = 'reforma';
-          } else if (problemas.includes('manutenção') || problemas.includes('preventiva')) {
-            tipoOrdem = 'manutencao';
-          } else {
-            tipoOrdem = 'reforma'; // Default para reforma se não conseguir identificar
-          }
-        }
-        
-        setDadosOrcamento(prev => ({
-          ...prev,
-          tipoOrdem: tipoOrdem,
-          tag: analise.equipamento || dadosRecebimento?.tag || '',
-          cliente: analise.cliente || dadosRecebimento?.cliente || '',
-          solicitante: dadosRecebimento?.solicitante || '',
-          numeroNota: dadosRecebimento?.notaFiscal || dadosRecebimento?.numeroNota || '',
-          numeroSerie: dadosRecebimento?.numeroSerie || '',
-          dataAbertura: new Date().toISOString().split('T')[0],
-          observacoes: analise.observacoes || '',
-          urgencia: dadosRecebimento?.urgencia || false
-        }));
+      // Mock data para desenvolvimento
+      const analise = {
+        id: analiseId,
+        equipamento: 'Equipamento Mock',
+        cliente: 'Cliente Mock',
+        problemas: 'Problemas identificados'
+      };
+      
+      setAnaliseData(analise);
+      
+      // Mock setup para desenvolvimento
+      setDadosOrcamento(prev => ({
+        ...prev,
+        tipoOrdem: 'reforma',
+        tag: analise.equipamento || '',
+        cliente: analise.cliente || '',
+        dataAbertura: new Date().toISOString().split('T')[0],
+        observacoes: ''
+      }));
 
-        // Carregar peças da análise
-        const pecasAnalise: ItemOrcamento[] = (analise.pecasUtilizadas || []).map((peca: any, index: number) => ({
-          id: `peca-${index}`,
-          tipo: 'peca' as const,
-          descricao: peca.peca || '',
-          quantidade: peca.quantidade || 1,
-          valorUnitario: 0,
-          valorTotal: 0,
-          detalhes: {
-            material: peca.material,
-            medidas: `${peca.medida1 || ''} x ${peca.medida2 || ''} x ${peca.medida3 || ''}`.replace(/ x  x /g, '').replace(/ x $/g, '')
-          }
-        }));
+      // Inicializar com arrays vazios por enquanto
+      setItensAnalise({
+        pecas: [],
+        servicos: [],
+        usinagem: []
+      });
 
-        // Carregar serviços da análise
-        const servicosAnalise: ItemOrcamento[] = [];
-        if (analise.servicosPreDeterminados) {
-          Object.entries(analise.servicosPreDeterminados).forEach(([key, value]: [string, any]) => {
-            if (value) {
-              const quantidade = analise.servicosQuantidades?.[key] || 1;
-              const nome = analise.servicosNomes?.[key] || key;
-              servicosAnalise.push({
-                id: `servico-${key}`,
-                tipo: 'servico' as const,
-                descricao: nome,
-                quantidade,
-                valorUnitario: 0,
-                valorTotal: 0
-              });
-            }
-          });
-        }
-        if (analise.servicosPersonalizados) {
-          servicosAnalise.push({
-            id: 'servico-personalizado',
-            tipo: 'servico' as const,
-            descricao: analise.servicosPersonalizados,
-            quantidade: analise.servicosQuantidades?.personalizado || 1,
-            valorUnitario: 0,
-            valorTotal: 0
-          });
-        }
-
-        // Carregar usinagem da análise
-        const usinagemAnalise: ItemOrcamento[] = [];
-        if (analise.usinagem) {
-          Object.entries(analise.usinagem).forEach(([key, value]: [string, any]) => {
-            if (value) {
-              const quantidade = analise.usinagemQuantidades?.[key] || 1;
-              const nome = analise.usinagemNomes?.[key] || key;
-              usinagemAnalise.push({
-                id: `usinagem-${key}`,
-                tipo: 'usinagem' as const,
-                descricao: nome,
-                quantidade,
-                valorUnitario: 0,
-                valorTotal: 0
-              });
-            }
-          });
-        }
-        if (analise.usinagemPersonalizada) {
-          usinagemAnalise.push({
-            id: 'usinagem-personalizada',
-            tipo: 'usinagem' as const,
-            descricao: analise.usinagemPersonalizada,
-            quantidade: analise.usinagemQuantidades?.personalizada || 1,
-            valorUnitario: 0,
-            valorTotal: 0
-          });
-        }
-
-        setItensAnalise({
-          pecas: pecasAnalise,
-          servicos: servicosAnalise,
-          usinagem: usinagemAnalise
-        });
-
-        // Inicializar assunto da proposta baseado na análise
-        if (analise.problemas) {
-          setInformacoesComerciais(prev => ({
-            ...prev,
-            assuntoProposta: `REFORMA ${analise.equipamento?.toUpperCase() || ''}`.substring(0, 100)
-          }));
-        }
-      }
+      setInformacoesComerciais(prev => ({
+        ...prev,
+        assuntoProposta: `REFORMA ${analise.equipamento?.toUpperCase() || ''}`.substring(0, 100)
+      }));
     } else {
       setDadosOrcamento(prev => ({
         ...prev,
@@ -326,9 +233,8 @@ export default function NovoOrcamento() {
       analiseOrigem: analiseId
     };
 
-    const orcamentos = JSON.parse(localStorage.getItem("orcamentos") || "[]");
-    orcamentos.push(orcamento);
-    localStorage.setItem("orcamentos", JSON.stringify(orcamentos));
+    // TODO: Salvar no Supabase
+    console.log('Salvar orçamento no Supabase:', orcamento);
 
     toast({
       title: "Sucesso",

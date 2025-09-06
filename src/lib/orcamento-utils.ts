@@ -1,3 +1,6 @@
+// Este arquivo foi limpo - todos os dados agora são gerenciados pelo Supabase
+// As funcionalidades de orçamentos serão implementadas usando a base de dados
+
 export interface Orcamento {
   id: number;
   numero: string;
@@ -38,103 +41,28 @@ export interface OrdemServico {
   tecnicoResponsavel: string;
 }
 
-const ORCAMENTOS_STORAGE_KEY = 'orcamentos';
-const ORDENS_SERVICO_STORAGE_KEY = 'ordensServico';
-
+// Funções mockadas retornando arrays vazios - implementação será feita com Supabase
 export const getOrcamentos = (): Orcamento[] => {
-  const stored = localStorage.getItem(ORCAMENTOS_STORAGE_KEY);
-  if (stored) {
-    return JSON.parse(stored);
-  }
-  
-  // Iniciar com lista vazia
-  const initialOrcamentos: Orcamento[] = [];
-  localStorage.setItem(ORCAMENTOS_STORAGE_KEY, JSON.stringify(initialOrcamentos));
-  return initialOrcamentos;
+  return [];
 };
 
 export const getOrdensServico = (): OrdemServico[] => {
-  const stored = localStorage.getItem(ORDENS_SERVICO_STORAGE_KEY);
-  if (stored) {
-    return JSON.parse(stored);
-  }
-  
-  // Iniciar com lista vazia
-  const initialOrdens: OrdemServico[] = [];
-  localStorage.setItem(ORDENS_SERVICO_STORAGE_KEY, JSON.stringify(initialOrdens));
-  return initialOrdens;
+  return [];
 };
 
 export const updateOrcamento = (id: number, updates: Partial<Orcamento>): void => {
-  const orcamentos = getOrcamentos();
-  const index = orcamentos.findIndex(o => o.id === id);
-  if (index !== -1) {
-    orcamentos[index] = { ...orcamentos[index], ...updates };
-    localStorage.setItem(ORCAMENTOS_STORAGE_KEY, JSON.stringify(orcamentos));
-  }
+  // TODO: Implementar com Supabase
+  console.log('updateOrcamento - dados serão gerenciados pelo Supabase');
 };
 
 export const aprovarOrcamento = (id: number): void => {
-  const orcamentos = getOrcamentos();
-  const orcamento = orcamentos.find(o => o.id === id);
-  if (!orcamento) return;
-
-  const dataAprovacao = new Date().toISOString().split('T')[0];
-  
-  // Atualizar orçamento para faturamento
-  updateOrcamento(id, {
-    status: 'faturamento',
-    dataAprovacao
-  });
-
-  // Se o orçamento foi baseado em uma análise, aprovar a análise também
-  if (orcamento.analiseOrigem) {
-    const analises = JSON.parse(localStorage.getItem('analises') || '[]');
-    const analiseIndex = analises.findIndex((a: any) => a.id === orcamento.analiseOrigem);
-    
-    if (analiseIndex !== -1) {
-      analises[analiseIndex] = {
-        ...analises[analiseIndex],
-        status: 'Aprovada',
-        dataAprovacao: dataAprovacao,
-        orcamentoAprovado: orcamento.numeroOrdem || `${orcamento.numero}`,
-        valorAprovado: orcamento.valorComDesconto || orcamento.valorTotal || 0
-      };
-      
-      localStorage.setItem('analises', JSON.stringify(analises));
-    }
-  }
-
-  // Se vinculado a ordem de serviço, criar/atualizar ordem de serviço
-  if (orcamento.vinculadoOrdemServico) {
-    const ordensServico = getOrdensServico();
-    const ordemExistente = ordensServico.find(os => os.orcamentoId === id);
-    
-    if (!ordemExistente) {
-      const novaOrdem: OrdemServico = {
-        id: `OS-${new Date().getFullYear()}-${String(ordensServico.length + 1).padStart(3, '0')}`,
-        orcamentoId: id,
-        equipamento: orcamento.equipamento,
-        cliente: orcamento.cliente,
-        valor: orcamento.valor,
-        progresso: 0,
-        etapa: 'aguardando_inicio',
-        dataInicio: dataAprovacao,
-        previsaoEntrega: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 10 dias
-        tecnicoResponsavel: 'A definir'
-      };
-      
-      ordensServico.push(novaOrdem);
-      localStorage.setItem(ORDENS_SERVICO_STORAGE_KEY, JSON.stringify(ordensServico));
-      
-      // Atualizar orçamento com ID da ordem de serviço
-      updateOrcamento(id, { ordemServicoId: novaOrdem.id });
-    }
-  }
+  // TODO: Implementar com Supabase
+  console.log('aprovarOrcamento - dados serão gerenciados pelo Supabase');
 };
 
 export const reprovarOrcamento = (id: number): void => {
-  updateOrcamento(id, { status: 'rejeitado' });
+  // TODO: Implementar com Supabase
+  console.log('reprovarOrcamento - dados serão gerenciados pelo Supabase');
 };
 
 export const emitirNotaFiscal = (orcamentoId: number, dadosNF: {
@@ -142,23 +70,18 @@ export const emitirNotaFiscal = (orcamentoId: number, dadosNF: {
   formaPagamento: string;
   dataVencimento: string;
 }): void => {
-  updateOrcamento(orcamentoId, {
-    status: 'finalizado',
-    numeroNF: dadosNF.numeroNF,
-    formaPagamento: dadosNF.formaPagamento,
-    dataVencimento: dadosNF.dataVencimento,
-    dataEmissao: new Date().toISOString().split('T')[0]
-  });
+  // TODO: Implementar com Supabase
+  console.log('emitirNotaFiscal - dados serão gerenciados pelo Supabase');
 };
 
 export const getOrcamentosPendentes = (): Orcamento[] => {
-  return getOrcamentos().filter(o => o.status === 'pendente');
+  return [];
 };
 
 export const getOrcamentosEmFaturamento = (): Orcamento[] => {
-  return getOrcamentos().filter(o => o.status === 'faturamento');
+  return [];
 };
 
 export const getOrcamentosFinalizados = (): Orcamento[] => {
-  return getOrcamentos().filter(o => o.status === 'finalizado');
+  return [];
 };
