@@ -10,10 +10,12 @@ import { ArrowLeft, Save, Upload, Camera, FileText } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
+import { useRecebimentos } from "@/hooks/use-recebimentos";
 
 const NovaAnalise = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { recebimentos, loading } = useRecebimentos();
   const [isEdicao, setIsEdicao] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -113,26 +115,23 @@ const NovaAnalise = () => {
     usinagemCabecoteTraseiro: "Usinagem cabeçote traseiro canal do oring"
   });
 
-  // Mock data para recebimento - será substituído por dados do Supabase
-  const [recebimento] = useState({
-    id: id || '1',
-    cliente: 'Cliente Mock',
-    equipamento: 'Equipamento Mock',
-    dataEntrada: new Date().toLocaleDateString('pt-BR'),
-    notaFiscal: 'NF-Mock'
-  });
+  // Buscar recebimento baseado no ID da URL
+  const recebimento = id ? recebimentos.find(r => r.numero_ordem === id) : null;
 
   useEffect(() => {
-    const decodedId = id ? decodeURIComponent(id) : '';
+    console.log('Debug NovaAnalise - ID:', id);
+    console.log('Debug NovaAnalise - Recebimentos:', recebimentos);
+    console.log('Debug NovaAnalise - Loading:', loading);
+    console.log('Debug NovaAnalise - Recebimento encontrado:', recebimento);
     
-    // Dados serão carregados do Supabase quando disponíveis
-    if (decodedId) {
-      setIsEdicao(true);
-      console.log('TODO: Buscar análise no Supabase:', decodedId);
-    } else {
-      console.log('Nova análise');
+    if (id && !loading) {
+      if (recebimento) {
+        console.log('Recebimento encontrado:', recebimento);
+      } else {
+        console.log('Recebimento não encontrado para ID:', id);
+      }
     }
-  }, [id]);
+  }, [id, recebimento, loading, recebimentos]);
 
   // Função para lidar com o upload de fotos de chegada
   const handlePhotoUpload = (index: number, file: File | null) => {
@@ -234,6 +233,38 @@ const NovaAnalise = () => {
     setPecasUtilizadas(pecasUtilizadas.filter((_, i) => i !== index));
   };
 
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="container mx-auto p-6">
+          <Card>
+            <CardContent className="p-6">
+              <p>Carregando dados...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!recebimento) {
+    return (
+      <AppLayout>
+        <div className="container mx-auto p-6">
+          <Card>
+            <CardContent className="p-6">
+              <p>Recebimento não encontrado.</p>
+              <Button onClick={() => navigate('/recebimentos')} className="mt-4">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar para Recebimentos
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="container mx-auto p-6">
@@ -250,7 +281,7 @@ const NovaAnalise = () => {
             {isEdicao ? 'Editar Análise Técnica' : 'Nova Análise Técnica'}
           </h1>
           <p className="text-muted-foreground">
-            {isEdicao ? 'Editando análise para:' : 'Criar análise para:'} {recebimento.equipamento} - {recebimento.cliente}
+            {isEdicao ? 'Editando análise para:' : 'Criar análise para:'} {recebimento.tipo_equipamento} - {recebimento.cliente_nome}
           </p>
         </div>
 
@@ -265,15 +296,15 @@ const NovaAnalise = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Cliente</Label>
-                  <p className="font-semibold text-primary">{recebimento.cliente}</p>
+                  <p className="font-semibold text-primary">{recebimento.cliente_nome}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Data de Entrada</Label>
-                  <p className="font-medium">{recebimento.dataEntrada}</p>
+                  <p className="font-medium">{new Date(recebimento.data_entrada).toLocaleDateString('pt-BR')}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Nota Fiscal</Label>
-                  <p className="font-medium">{recebimento.notaFiscal}</p>
+                  <p className="font-medium">{recebimento.nota_fiscal}</p>
                 </div>
                 <div>
                   <Label htmlFor="tecnico">Técnico Responsável*</Label>
