@@ -25,7 +25,14 @@ export default function OrdensServico() {
     try {
       const { data, error } = await supabase
         .from('ordens_servico')
-        .select('*')
+        .select(`
+          *,
+          recebimentos (
+            numero_ordem,
+            cliente_nome,
+            tipo_equipamento
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -42,11 +49,65 @@ export default function OrdensServico() {
     }
   };
 
-  const filteredOrdensServico = ordensServico.filter(ordem =>
-    ordem.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ordem.numero_ordem.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ordem.equipamento.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleApprove = async (ordemId: string) => {
+    try {
+      const { error } = await supabase
+        .from('ordens_servico')
+        .update({ status: 'aprovada' })
+        .eq('id', ordemId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Sucesso",
+        description: "Ordem de serviço aprovada com sucesso!",
+      });
+      
+      loadOrdensServico();
+    } catch (error) {
+      console.error('Erro ao aprovar ordem:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao aprovar ordem de serviço",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReject = async (ordemId: string) => {
+    try {
+      const { error } = await supabase
+        .from('ordens_servico')
+        .update({ status: 'reprovada' })
+        .eq('id', ordemId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Sucesso",
+        description: "Ordem de serviço reprovada com sucesso!",
+      });
+      
+      loadOrdensServico();
+    } catch (error) {
+      console.error('Erro ao reprovar ordem:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao reprovar ordem de serviço",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredOrdensServico = ordensServico.filter(ordem => {
+    const clienteNome = ordem.recebimentos?.cliente_nome || ordem.cliente_nome || '';
+    const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem || '';
+    const equipamento = ordem.recebimentos?.tipo_equipamento || ordem.equipamento || '';
+    
+    return clienteNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           numeroOrdem.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           equipamento.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -198,56 +259,78 @@ export default function OrdensServico() {
             ) : (
               <div className="rounded-md border">
                 <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="font-semibold text-foreground">Nº da Ordem</TableHead>
-                      <TableHead className="font-semibold text-foreground">Cliente</TableHead>
-                      <TableHead className="font-semibold text-foreground">Equipamento</TableHead>
-                      <TableHead className="font-semibold text-foreground">Técnico</TableHead>
-                      <TableHead className="font-semibold text-foreground">Status</TableHead>
-                      <TableHead className="font-semibold text-foreground">Data de Entrada</TableHead>
-                      <TableHead className="font-semibold text-foreground text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                   <TableHeader>
+                     <TableRow className="bg-muted/50">
+                       <TableHead className="font-semibold text-foreground">Nº da Ordem</TableHead>
+                       <TableHead className="font-semibold text-foreground">Cliente</TableHead>
+                       <TableHead className="font-semibold text-foreground">Equipamento</TableHead>
+                       <TableHead className="font-semibold text-foreground">Status</TableHead>
+                       <TableHead className="font-semibold text-foreground">Data de Entrada</TableHead>
+                       <TableHead className="font-semibold text-foreground text-right">Ações</TableHead>
+                     </TableRow>
+                   </TableHeader>
                   <TableBody>
-                    {filteredOrdensServico.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                          Nenhuma ordem de serviço encontrada
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredOrdensServico.map((ordem) => (
-                        <TableRow key={ordem.id} className="hover:bg-muted/30 transition-fast">
-                          <TableCell className="font-medium text-primary">{ordem.numero_ordem}</TableCell>
-                          <TableCell className="text-primary font-medium">{ordem.cliente_nome}</TableCell>
-                          <TableCell className="text-foreground">{ordem.equipamento}</TableCell>
-                          <TableCell className="text-muted-foreground">{ordem.tecnico || 'Não definido'}</TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(ordem.status)}>
-                              {ordem.status === 'em_andamento' ? 'Em Andamento' : 
-                               ordem.status === 'concluida' ? 'Concluída' : 
-                               ordem.status === 'aguardando_pecas' ? 'Aguardando Peças' : ordem.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(ordem.data_entrada).toLocaleDateString('pt-BR')}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0"
-                                onClick={() => navigate(`/analise/novo/${encodeURIComponent(ordem.numero_ordem)}`)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
+                     {filteredOrdensServico.length === 0 ? (
+                       <TableRow>
+                         <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                           Nenhuma ordem de serviço encontrada
+                         </TableCell>
+                       </TableRow>
+                     ) : (
+                       filteredOrdensServico.map((ordem) => (
+                         <TableRow key={ordem.id} className="hover:bg-muted/30 transition-fast">
+                           <TableCell className="font-medium text-primary">
+                             {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
+                           </TableCell>
+                           <TableCell className="text-primary font-medium">
+                             {ordem.recebimentos?.cliente_nome || ordem.cliente_nome}
+                           </TableCell>
+                           <TableCell className="text-foreground">
+                             {ordem.recebimentos?.tipo_equipamento || ordem.equipamento}
+                           </TableCell>
+                           <TableCell>
+                             <Badge className={getStatusColor(ordem.status)}>
+                               {ordem.status === 'em_andamento' ? 'Em Andamento' : 
+                                ordem.status === 'concluida' ? 'Concluída' : 
+                                ordem.status === 'aguardando_pecas' ? 'Aguardando Peças' :
+                                ordem.status === 'aprovada' ? 'Aprovada' :
+                                ordem.status === 'reprovada' ? 'Reprovada' : ordem.status}
+                             </Badge>
+                           </TableCell>
+                           <TableCell className="text-muted-foreground">
+                             {new Date(ordem.data_entrada).toLocaleDateString('pt-BR')}
+                           </TableCell>
+                           <TableCell className="text-right">
+                             <div className="flex items-center justify-end gap-2">
+                               <Button 
+                                 variant="ghost" 
+                                 size="sm" 
+                                 className="h-8 w-8 p-0"
+                                 onClick={() => navigate(`/analise/novo/${encodeURIComponent(ordem.numero_ordem)}`)}
+                               >
+                                 <Edit className="h-4 w-4" />
+                               </Button>
+                               <Button 
+                                 variant="ghost" 
+                                 size="sm" 
+                                 className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                 onClick={() => handleApprove(ordem.id)}
+                               >
+                                 <ThumbsUp className="h-4 w-4" />
+                               </Button>
+                               <Button 
+                                 variant="ghost" 
+                                 size="sm" 
+                                 className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                 onClick={() => handleReject(ordem.id)}
+                               >
+                                 <ThumbsDown className="h-4 w-4" />
+                               </Button>
+                             </div>
+                           </TableCell>
+                         </TableRow>
+                       ))
+                     )}
                   </TableBody>
                 </Table>
               </div>
