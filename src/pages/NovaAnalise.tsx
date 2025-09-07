@@ -523,15 +523,6 @@ const NovaOrdemServico = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.tecnico) {
-      toast({
-        title: "Campo obrigatório",
-        description: "Por favor, informe o técnico responsável.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     try {
       const { error } = await supabase
         .from('ordens_servico')
