@@ -121,25 +121,59 @@ export default function NovoOrcamento() {
             }));
 
             // Carregar peças necessárias se existirem
+            const pecasOS: ItemOrcamento[] = [];
             if (ordemServico.pecas_necessarias) {
-              const pecasOS: ItemOrcamento[] = (ordemServico.pecas_necessarias as any[]).map((peca: any, index: number) => ({
-                id: `peca-os-${index}`,
-                tipo: 'peca' as const,
-                descricao: peca.descricao || peca.nome || '',
-                quantidade: peca.quantidade || 1,
-                valorUnitario: 0,
-                valorTotal: 0,
-                detalhes: {
-                  material: peca.material || '',
-                  medidas: peca.medidas || ''
-                }
-              }));
-
-              setItensAnalise(prev => ({
-                ...prev,
-                pecas: pecasOS
-              }));
+              (ordemServico.pecas_necessarias as any[]).forEach((peca: any, index: number) => {
+                pecasOS.push({
+                  id: `peca-os-${index}`,
+                  tipo: 'peca' as const,
+                  descricao: peca.peca || peca.descricao || peca.nome || '',
+                  quantidade: peca.quantidade || 1,
+                  valorUnitario: 0,
+                  valorTotal: 0,
+                  detalhes: {
+                    material: peca.material || '',
+                    medidas: `${peca.medida1 || ''} x ${peca.medida2 || ''} x ${peca.medida3 || ''}`.replace(/ x  x /g, '').replace(/ x $/g, '')
+                  }
+                });
+              });
             }
+
+            // Carregar serviços necessários se existirem
+            const servicosOS: ItemOrcamento[] = [];
+            if (ordemServico.servicos_necessarios) {
+              (ordemServico.servicos_necessarios as any[]).forEach((servico: any, index: number) => {
+                servicosOS.push({
+                  id: `servico-os-${index}`,
+                  tipo: 'servico' as const,
+                  descricao: servico.descricao || servico.nome || '',
+                  quantidade: servico.quantidade || 1,
+                  valorUnitario: 0,
+                  valorTotal: 0
+                });
+              });
+            }
+
+            // Carregar usinagem necessária se existir
+            const usinagemOS: ItemOrcamento[] = [];
+            if (ordemServico.usinagem_necessaria) {
+              (ordemServico.usinagem_necessaria as any[]).forEach((usinagem: any, index: number) => {
+                usinagemOS.push({
+                  id: `usinagem-os-${index}`,
+                  tipo: 'usinagem' as const,
+                  descricao: usinagem.descricao || usinagem.nome || '',
+                  quantidade: usinagem.quantidade || 1,
+                  valorUnitario: 0,
+                  valorTotal: 0
+                });
+              });
+            }
+
+            setItensAnalise({
+              pecas: pecasOS,
+              servicos: servicosOS,
+              usinagem: usinagemOS
+            });
 
             // Inicializar assunto da proposta baseado na ordem de serviço
             setInformacoesComerciais(prev => ({

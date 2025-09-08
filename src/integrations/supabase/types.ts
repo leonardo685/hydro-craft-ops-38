@@ -313,12 +313,14 @@ export type Database = {
           pecas_necessarias: Json | null
           prioridade: string
           recebimento_id: number | null
+          servicos_necessarios: Json | null
           solucao_proposta: string | null
           status: string
           tecnico: string | null
           tempo_estimado: string | null
           tipo_problema: string | null
           updated_at: string
+          usinagem_necessaria: Json | null
           valor_estimado: number | null
         }
         Insert: {
@@ -334,12 +336,14 @@ export type Database = {
           pecas_necessarias?: Json | null
           prioridade?: string
           recebimento_id?: number | null
+          servicos_necessarios?: Json | null
           solucao_proposta?: string | null
           status?: string
           tecnico?: string | null
           tempo_estimado?: string | null
           tipo_problema?: string | null
           updated_at?: string
+          usinagem_necessaria?: Json | null
           valor_estimado?: number | null
         }
         Update: {
@@ -355,12 +359,14 @@ export type Database = {
           pecas_necessarias?: Json | null
           prioridade?: string
           recebimento_id?: number | null
+          servicos_necessarios?: Json | null
           solucao_proposta?: string | null
           status?: string
           tecnico?: string | null
           tempo_estimado?: string | null
           tipo_problema?: string | null
           updated_at?: string
+          usinagem_necessaria?: Json | null
           valor_estimado?: number | null
         }
         Relationships: [
