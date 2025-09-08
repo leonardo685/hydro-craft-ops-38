@@ -14,7 +14,6 @@ import { useClientes } from "@/hooks/use-clientes";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
-
 interface ItemOrcamento {
   id: string;
   tipo: 'peca' | 'servico' | 'usinagem';
@@ -27,13 +26,13 @@ interface ItemOrcamento {
     medidas?: string;
   };
 }
-
 export default function NovoOrcamento() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const analiseId = searchParams.get('analiseId');
-  const { clientes } = useClientes();
-  
+  const {
+    clientes
+  } = useClientes();
   const [dadosOrcamento, setDadosOrcamento] = useState({
     tipoOrdem: '',
     numeroOrdem: `0001/${new Date().getFullYear().toString().slice(-2)}`,
@@ -64,7 +63,6 @@ export default function NovoOrcamento() {
     mostrarPecas: false,
     mostrarValores: true
   });
-  
   const [itensAnalise, setItensAnalise] = useState<{
     pecas: ItemOrcamento[];
     servicos: ItemOrcamento[];
@@ -74,24 +72,21 @@ export default function NovoOrcamento() {
     servicos: [],
     usinagem: []
   });
-
   const [analiseData, setAnaliseData] = useState<any>(null);
-
   useEffect(() => {
     if (analiseId) {
       const analises = JSON.parse(localStorage.getItem('analises') || '[]');
       const analise = analises.find((a: any) => a.id === analiseId);
-      
       if (analise) {
         setAnaliseData(analise);
-        
+
         // Buscar dados do recebimento original através do recebimentoId
         let dadosRecebimento = null;
         if (analise.recebimentoId) {
           const recebimentos = JSON.parse(localStorage.getItem('recebimentos') || '[]');
           dadosRecebimento = recebimentos.find((r: any) => r.id === analise.recebimentoId || r.numeroOrdem === analise.recebimentoId);
         }
-        
+
         // Determinar tipo de ordem baseado no problema da análise
         let tipoOrdem = '';
         if (analise.problemas) {
@@ -106,7 +101,6 @@ export default function NovoOrcamento() {
             tipoOrdem = 'reforma'; // Default para reforma se não conseguir identificar
           }
         }
-        
         setDadosOrcamento(prev => ({
           ...prev,
           tipoOrdem: tipoOrdem,
@@ -191,7 +185,6 @@ export default function NovoOrcamento() {
             valorTotal: 0
           });
         }
-
         setItensAnalise({
           pecas: pecasAnalise,
           servicos: servicosAnalise,
@@ -213,10 +206,11 @@ export default function NovoOrcamento() {
       }));
     }
   }, [analiseId]);
-
   const atualizarValorItem = (categoria: 'pecas' | 'servicos' | 'usinagem', id: string, valorUnitario: number) => {
     setItensAnalise(prev => {
-      const novoItens = { ...prev };
+      const novoItens = {
+        ...prev
+      };
       const item = novoItens[categoria].find(item => item.id === id);
       if (item) {
         item.valorUnitario = valorUnitario;
@@ -225,10 +219,11 @@ export default function NovoOrcamento() {
       return novoItens;
     });
   };
-
   const atualizarQuantidadeItem = (categoria: 'pecas' | 'servicos' | 'usinagem', id: string, quantidade: number) => {
     setItensAnalise(prev => {
-      const novoItens = { ...prev };
+      const novoItens = {
+        ...prev
+      };
       const item = novoItens[categoria].find(item => item.id === id);
       if (item) {
         item.quantidade = quantidade;
@@ -237,10 +232,11 @@ export default function NovoOrcamento() {
       return novoItens;
     });
   };
-
   const atualizarDescricaoItem = (categoria: 'pecas' | 'servicos' | 'usinagem', id: string, descricao: string) => {
     setItensAnalise(prev => {
-      const novoItens = { ...prev };
+      const novoItens = {
+        ...prev
+      };
       const item = novoItens[categoria].find(item => item.id === id);
       if (item) {
         item.descricao = descricao;
@@ -248,12 +244,14 @@ export default function NovoOrcamento() {
       return novoItens;
     });
   };
-
   const adicionarItemAdicional = (categoria: 'pecas' | 'servicos' | 'usinagem') => {
     const novoId = `${categoria}-adicional-${Date.now()}`;
-    const tipoMap = { 'pecas': 'peca', 'servicos': 'servico', 'usinagem': 'usinagem' } as const;
+    const tipoMap = {
+      'pecas': 'peca',
+      'servicos': 'servico',
+      'usinagem': 'usinagem'
+    } as const;
     const tipo = tipoMap[categoria];
-    
     const novoItem: ItemOrcamento = {
       id: novoId,
       tipo: tipo,
@@ -261,32 +259,31 @@ export default function NovoOrcamento() {
       quantidade: 1,
       valorUnitario: 0,
       valorTotal: 0,
-      detalhes: tipo === 'peca' ? { material: '', medidas: '' } : undefined
+      detalhes: tipo === 'peca' ? {
+        material: '',
+        medidas: ''
+      } : undefined
     };
-
     setItensAnalise(prev => ({
       ...prev,
       [categoria]: [...prev[categoria], novoItem]
     }));
   };
-
   const removerItem = (categoria: 'pecas' | 'servicos' | 'usinagem', id: string) => {
     setItensAnalise(prev => ({
       ...prev,
       [categoria]: prev[categoria].filter(item => item.id !== id)
     }));
   };
-
   const calcularTotalGeral = () => {
     const totalPecas = itensAnalise.pecas.reduce((total, item) => total + item.valorTotal, 0);
     const totalServicos = itensAnalise.servicos.reduce((total, item) => total + item.valorTotal, 0);
     const totalUsinagem = itensAnalise.usinagem.reduce((total, item) => total + item.valorTotal, 0);
     return totalPecas + totalServicos + totalUsinagem;
   };
-
   const calcularValorComDesconto = () => {
     const total = calcularTotalGeral();
-    const desconto = (total * informacoesComerciais.desconto) / 100;
+    const desconto = total * informacoesComerciais.desconto / 100;
     return total - desconto;
   };
 
@@ -300,10 +297,8 @@ export default function NovoOrcamento() {
       valorComDesconto
     }));
   }, [itensAnalise, informacoesComerciais.desconto]);
-
   const salvarOrcamento = () => {
     const totalItens = itensAnalise.pecas.length + itensAnalise.servicos.length + itensAnalise.usinagem.length;
-    
     if (!dadosOrcamento.tipoOrdem || !dadosOrcamento.cliente || totalItens === 0) {
       toast({
         title: "Erro",
@@ -312,7 +307,6 @@ export default function NovoOrcamento() {
       });
       return;
     }
-
     const orcamento = {
       id: Date.now(),
       ...dadosOrcamento,
@@ -325,19 +319,15 @@ export default function NovoOrcamento() {
       dataCriacao: new Date().toLocaleDateString("pt-BR"),
       analiseOrigem: analiseId
     };
-
     const orcamentos = JSON.parse(localStorage.getItem("orcamentos") || "[]");
     orcamentos.push(orcamento);
     localStorage.setItem("orcamentos", JSON.stringify(orcamentos));
-
     toast({
       title: "Sucesso",
       description: `Orçamento ${orcamento.numeroOrdem} criado com sucesso!`
     });
-
     navigate("/orcamentos");
   };
-
   const exportarPDF = async () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
@@ -346,7 +336,9 @@ export default function NovoOrcamento() {
     // Cabeçalho
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
-    doc.text("ORÇAMENTO", pageWidth / 2, yPosition, { align: "center" });
+    doc.text("ORÇAMENTO", pageWidth / 2, yPosition, {
+      align: "center"
+    });
     yPosition += 15;
 
     // Informações básicas
@@ -355,7 +347,6 @@ export default function NovoOrcamento() {
     doc.text(`Número: ${dadosOrcamento.numeroOrdem}`, 20, yPosition);
     doc.text(`Data: ${new Date().toLocaleDateString("pt-BR")}`, pageWidth - 60, yPosition);
     yPosition += 10;
-
     doc.text(`Cliente: ${dadosOrcamento.cliente}`, 20, yPosition);
     yPosition += 8;
     doc.text(`Tipo Ordem: ${dadosOrcamento.tipoOrdem}`, 20, yPosition);
@@ -381,11 +372,9 @@ export default function NovoOrcamento() {
         doc.addPage();
         yPosition = 20;
       }
-
       doc.setFont("helvetica", "bold");
       doc.text(titulo, 20, yPosition);
       yPosition += 10;
-
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
 
@@ -393,7 +382,6 @@ export default function NovoOrcamento() {
       const headers = ["Descrição", "Qtd", "Valor Unit.", "Total"];
       const colWidths = [100, 20, 30, 30];
       let xPos = 20;
-
       doc.setFont("helvetica", "bold");
       headers.forEach((header, index) => {
         doc.text(header, xPos, yPosition);
@@ -403,35 +391,31 @@ export default function NovoOrcamento() {
 
       // Linha separadora
       doc.line(20, yPosition - 2, pageWidth - 20, yPosition - 2);
-
       doc.setFont("helvetica", "normal");
 
       // Itens da tabela
-      itens.forEach((item) => {
+      itens.forEach(item => {
         if (yPosition > 270) {
           doc.addPage();
           yPosition = 20;
         }
-
         xPos = 20;
-        const descricao = item.descricao.length > 35 ? 
-          item.descricao.substring(0, 32) + "..." : 
-          item.descricao;
-        
+        const descricao = item.descricao.length > 35 ? item.descricao.substring(0, 32) + "..." : item.descricao;
         doc.text(descricao, xPos, yPosition);
         xPos += colWidths[0];
-        
-        doc.text(item.quantidade.toString(), xPos, yPosition, { align: "right" });
+        doc.text(item.quantidade.toString(), xPos, yPosition, {
+          align: "right"
+        });
         xPos += colWidths[1];
-        
-        doc.text(`R$ ${item.valorUnitario.toFixed(2)}`, xPos, yPosition, { align: "right" });
+        doc.text(`R$ ${item.valorUnitario.toFixed(2)}`, xPos, yPosition, {
+          align: "right"
+        });
         xPos += colWidths[2];
-        
-        doc.text(`R$ ${item.valorTotal.toFixed(2)}`, xPos, yPosition, { align: "right" });
-        
+        doc.text(`R$ ${item.valorTotal.toFixed(2)}`, xPos, yPosition, {
+          align: "right"
+        });
         yPosition += 8;
       });
-
       yPosition += 10;
     };
 
@@ -445,21 +429,29 @@ export default function NovoOrcamento() {
       doc.addPage();
       yPosition = 20;
     }
-
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    
     const valorTotal = calcularTotalGeral();
     const valorComDesconto = calcularValorComDesconto();
-
     yPosition += 10;
-    doc.text(`Valor Total: R$ ${valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, pageWidth - 80, yPosition, { align: "right" });
-    
+    doc.text(`Valor Total: R$ ${valorTotal.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2
+    })}`, pageWidth - 80, yPosition, {
+      align: "right"
+    });
     if (informacoesComerciais.desconto > 0) {
       yPosition += 10;
-      doc.text(`Desconto (${informacoesComerciais.desconto}%): R$ ${(valorTotal - valorComDesconto).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, pageWidth - 80, yPosition, { align: "right" });
+      doc.text(`Desconto (${informacoesComerciais.desconto}%): R$ ${(valorTotal - valorComDesconto).toLocaleString("pt-BR", {
+        minimumFractionDigits: 2
+      })}`, pageWidth - 80, yPosition, {
+        align: "right"
+      });
       yPosition += 10;
-      doc.text(`Valor Final: R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, pageWidth - 80, yPosition, { align: "right" });
+      doc.text(`Valor Final: R$ ${valorComDesconto.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2
+      })}`, pageWidth - 80, yPosition, {
+        align: "right"
+      });
     }
 
     // Informações comerciais
@@ -467,10 +459,8 @@ export default function NovoOrcamento() {
     doc.setFont("helvetica", "bold");
     doc.text("CONDIÇÕES COMERCIAIS", 20, yPosition);
     yPosition += 10;
-
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-
     if (informacoesComerciais.condicaoPagamento) {
       doc.text(`Condição de Pagamento: ${informacoesComerciais.condicaoPagamento}`, 20, yPosition);
       yPosition += 8;
@@ -493,33 +483,31 @@ export default function NovoOrcamento() {
       // Função para adicionar imagens ao PDF
       const adicionarImagemPDF = async (imageUrl: string, titulo: string, maxWidth = 80, maxHeight = 60) => {
         try {
-          return new Promise<void>((resolve) => {
+          return new Promise<void>(resolve => {
             const img = new Image();
             img.onload = () => {
               // Calcular dimensões mantendo proporção
               let width = img.width;
               let height = img.height;
-              
               const ratio = Math.min(maxWidth / width, maxHeight / height);
               width = width * ratio;
               height = height * ratio;
-              
+
               // Verificar se há espaço na página
               if (yPosition + height + 15 > 270) {
                 doc.addPage();
                 yPosition = 20;
               }
-              
+
               // Adicionar título da imagem
               doc.setFont('helvetica', 'bold');
               doc.setFontSize(10);
               doc.text(titulo, 20, yPosition);
               yPosition += 8;
-              
+
               // Adicionar imagem
               doc.addImage(img, 'JPEG', 20, yPosition, width, height);
               yPosition += height + 10;
-              
               resolve();
             };
             img.onerror = () => resolve(); // Continue mesmo se a imagem falhar
@@ -537,12 +525,10 @@ export default function NovoOrcamento() {
           doc.addPage();
           yPosition = 20;
         }
-        
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text("FOTOS DE CHEGADA DO EQUIPAMENTO", 20, yPosition);
         yPosition += 15;
-
         for (let i = 0; i < analiseData.fotosChegada.length; i++) {
           if (analiseData.fotosChegada[i]) {
             await adicionarImagemPDF(analiseData.fotosChegada[i], `Foto de Chegada ${i + 1}`);
@@ -557,12 +543,10 @@ export default function NovoOrcamento() {
           doc.addPage();
           yPosition = 20;
         }
-        
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text("FOTOS DA ANÁLISE TÉCNICA", 20, yPosition);
         yPosition += 15;
-
         for (let i = 0; i < analiseData.fotosAnalise.length; i++) {
           if (analiseData.fotosAnalise[i]) {
             await adicionarImagemPDF(analiseData.fotosAnalise[i], `Foto da Análise ${i + 1}`);
@@ -578,17 +562,15 @@ export default function NovoOrcamento() {
         doc.addPage();
         yPosition = 20;
       }
-      
       yPosition += 10;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       doc.text("OBSERVAÇÕES", 20, yPosition);
       yPosition += 10;
-
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       const observacoes = dadosOrcamento.observacoes.split("\n");
-      observacoes.forEach((linha) => {
+      observacoes.forEach(linha => {
         if (yPosition > 270) {
           doc.addPage();
           yPosition = 20;
@@ -600,22 +582,15 @@ export default function NovoOrcamento() {
 
     // Salvar PDF
     doc.save(`Orcamento_${dadosOrcamento.numeroOrdem.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
-
     toast({
       title: "Sucesso",
       description: "PDF exportado com sucesso!"
     });
   };
-
-  return (
-    <AppLayout>
+  return <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate('/orcamentos')}
-          >
+          <Button variant="outline" size="sm" onClick={() => navigate('/orcamentos')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
@@ -645,10 +620,10 @@ export default function NovoOrcamento() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="tipoOrdem">Tipo Ordem *</Label>
-                  <Select 
-                    value={dadosOrcamento.tipoOrdem} 
-                    onValueChange={(value) => setDadosOrcamento(prev => ({...prev, tipoOrdem: value}))}
-                  >
+                  <Select value={dadosOrcamento.tipoOrdem} onValueChange={value => setDadosOrcamento(prev => ({
+                  ...prev,
+                  tipoOrdem: value
+                }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
@@ -663,98 +638,75 @@ export default function NovoOrcamento() {
                 <div>
                   <Label htmlFor="numeroOrdem">Nº do Orçamento *</Label>
                   <div className="relative">
-                    <Input 
-                      id="numeroOrdem"
-                      value={dadosOrcamento.numeroOrdem}
-                      onChange={(e) => setDadosOrcamento(prev => ({...prev, numeroOrdem: e.target.value}))}
-                      className="bg-muted"
-                    />
+                    <Input id="numeroOrdem" value={dadosOrcamento.numeroOrdem} onChange={e => setDadosOrcamento(prev => ({
+                    ...prev,
+                    numeroOrdem: e.target.value
+                  }))} className="bg-muted" />
                     <span className="absolute bottom-1 left-3 text-xs text-muted-foreground">
                       Número gerado automaticamente
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2 pt-6">
-                  <Checkbox 
-                    id="urgencia"
-                    checked={dadosOrcamento.urgencia}
-                    onCheckedChange={(checked) => setDadosOrcamento(prev => ({...prev, urgencia: !!checked}))}
-                  />
-                  <Label htmlFor="urgencia" className="text-sm font-medium text-red-600">
-                    Urgência
-                  </Label>
-                </div>
+                
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="cliente">Cliente *</Label>
-                  <Select 
-                    value={dadosOrcamento.cliente} 
-                    onValueChange={(value) => setDadosOrcamento(prev => ({...prev, cliente: value}))}
-                  >
+                  <Select value={dadosOrcamento.cliente} onValueChange={value => setDadosOrcamento(prev => ({
+                  ...prev,
+                  cliente: value
+                }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {clientes.map(cliente => (
-                        <SelectItem key={cliente.id} value={cliente.id}>
+                      {clientes.map(cliente => <SelectItem key={cliente.id} value={cliente.id}>
                           {cliente.nome}
-                        </SelectItem>
-                      ))}
+                        </SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label htmlFor="solicitante">Solicitante</Label>
-                  <Input 
-                    id="solicitante"
-                    value={dadosOrcamento.solicitante}
-                    onChange={(e) => setDadosOrcamento(prev => ({...prev, solicitante: e.target.value}))}
-                    placeholder="Nome do solicitante"
-                  />
+                  <Input id="solicitante" value={dadosOrcamento.solicitante} onChange={e => setDadosOrcamento(prev => ({
+                  ...prev,
+                  solicitante: e.target.value
+                }))} placeholder="Nome do solicitante" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="dataAbertura">Data de Abertura *</Label>
-                  <Input 
-                    id="dataAbertura"
-                    type="date"
-                    value={dadosOrcamento.dataAbertura}
-                    onChange={(e) => setDadosOrcamento(prev => ({...prev, dataAbertura: e.target.value}))}
-                  />
+                  <Input id="dataAbertura" type="date" value={dadosOrcamento.dataAbertura} onChange={e => setDadosOrcamento(prev => ({
+                  ...prev,
+                  dataAbertura: e.target.value
+                }))} />
                 </div>
                 <div>
                   <Label htmlFor="numeroNota">Nº da Nota *</Label>
-                  <Input 
-                    id="numeroNota"
-                    value={dadosOrcamento.numeroNota}
-                    onChange={(e) => setDadosOrcamento(prev => ({...prev, numeroNota: e.target.value}))}
-                    placeholder="Número da nota fiscal"
-                  />
+                  <Input id="numeroNota" value={dadosOrcamento.numeroNota} onChange={e => setDadosOrcamento(prev => ({
+                  ...prev,
+                  numeroNota: e.target.value
+                }))} placeholder="Número da nota fiscal" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="numeroSerie">Nº de Série *</Label>
-                  <Input 
-                    id="numeroSerie"
-                    value={dadosOrcamento.numeroSerie}
-                    onChange={(e) => setDadosOrcamento(prev => ({...prev, numeroSerie: e.target.value}))}
-                    placeholder="Número de série do equipamento"
-                  />
+                  <Input id="numeroSerie" value={dadosOrcamento.numeroSerie} onChange={e => setDadosOrcamento(prev => ({
+                  ...prev,
+                  numeroSerie: e.target.value
+                }))} placeholder="Número de série do equipamento" />
                 </div>
                 <div>
                   <Label htmlFor="tag">TAG</Label>
-                  <Input 
-                    id="tag"
-                    value={dadosOrcamento.tag}
-                    onChange={(e) => setDadosOrcamento(prev => ({...prev, tag: e.target.value}))}
-                    placeholder="TAG do equipamento"
-                  />
+                  <Input id="tag" value={dadosOrcamento.tag} onChange={e => setDadosOrcamento(prev => ({
+                  ...prev,
+                  tag: e.target.value
+                }))} placeholder="TAG do equipamento" />
                 </div>
               </div>
             </CardContent>
@@ -762,8 +714,7 @@ export default function NovoOrcamento() {
         </div>
 
         {/* Fotos da Análise */}
-        {analiseId && analiseData && (analiseData.fotosChegada || analiseData.fotosAnalise) && (
-          <Card>
+        {analiseId && analiseData && (analiseData.fotosChegada || analiseData.fotosAnalise) && <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Camera className="h-5 w-5 text-primary" />
@@ -775,53 +726,34 @@ export default function NovoOrcamento() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Fotos de Chegada */}
-              {analiseData.fotosChegada && analiseData.fotosChegada.some((foto: string) => foto) && (
-                <div>
+              {analiseData.fotosChegada && analiseData.fotosChegada.some((foto: string) => foto) && <div>
                   <h4 className="text-sm font-medium text-foreground mb-3">Fotos de Chegada do Equipamento</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {analiseData.fotosChegada.map((foto: string, index: number) => {
-                      if (!foto) return null;
-                      return (
-                        <div key={`chegada-${index}`} className="relative group">
-                          <img
-                            src={foto}
-                            alt={`Foto de chegada ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                            onClick={() => window.open(foto, '_blank')}
-                          />
+                if (!foto) return null;
+                return <div key={`chegada-${index}`} className="relative group">
+                          <img src={foto} alt={`Foto de chegada ${index + 1}`} className="w-full h-32 object-cover rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.open(foto, '_blank')} />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg"></div>
-                        </div>
-                      );
-                    })}
+                        </div>;
+              })}
                   </div>
-                </div>
-              )}
+                </div>}
 
               {/* Fotos da Análise */}
-              {analiseData.fotosAnalise && analiseData.fotosAnalise.some((foto: string) => foto) && (
-                <div>
+              {analiseData.fotosAnalise && analiseData.fotosAnalise.some((foto: string) => foto) && <div>
                   <h4 className="text-sm font-medium text-foreground mb-3">Fotos da Análise Técnica</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {analiseData.fotosAnalise.map((foto: string, index: number) => {
-                      if (!foto) return null;
-                      return (
-                        <div key={`analise-${index}`} className="relative group">
-                          <img
-                            src={foto}
-                            alt={`Foto da análise ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                            onClick={() => window.open(foto, '_blank')}
-                          />
+                if (!foto) return null;
+                return <div key={`analise-${index}`} className="relative group">
+                          <img src={foto} alt={`Foto da análise ${index + 1}`} className="w-full h-32 object-cover rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.open(foto, '_blank')} />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg"></div>
-                        </div>
-                      );
-                    })}
+                        </div>;
+              })}
                   </div>
-                </div>
-              )}
+                </div>}
             </CardContent>
-          </Card>
-        )}
+          </Card>}
 
         {/* Seções de Itens do Orçamento */}
         {/* Peças */}
@@ -836,8 +768,7 @@ export default function NovoOrcamento() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {itensAnalise.pecas.length > 0 ? (
-              <>
+            {itensAnalise.pecas.length > 0 ? <>
                 <Table>
                   <TableHeader>
                       <TableRow>
@@ -851,106 +782,66 @@ export default function NovoOrcamento() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {itensAnalise.pecas.map((peca) => (
-                      <TableRow key={peca.id}>
+                    {itensAnalise.pecas.map(peca => <TableRow key={peca.id}>
                         <TableCell>
-                          <Input 
-                            value={peca.descricao}
-                            onChange={(e) => atualizarDescricaoItem('pecas', peca.id, e.target.value)}
-                            placeholder="Descrição da peça"
-                            className="min-w-[200px]"
-                          />
+                          <Input value={peca.descricao} onChange={e => atualizarDescricaoItem('pecas', peca.id, e.target.value)} placeholder="Descrição da peça" className="min-w-[200px]" />
                         </TableCell>
                         <TableCell>
-                          <Input 
-                            value={peca.detalhes?.material || ''}
-                            onChange={(e) => setItensAnalise(prev => ({
-                              ...prev,
-                              pecas: prev.pecas.map(p => 
-                                p.id === peca.id 
-                                  ? { ...p, detalhes: { ...p.detalhes, material: e.target.value } }
-                                  : p
-                              )
-                            }))}
-                            placeholder="Material"
-                            className="min-w-[120px]"
-                          />
+                          <Input value={peca.detalhes?.material || ''} onChange={e => setItensAnalise(prev => ({
+                      ...prev,
+                      pecas: prev.pecas.map(p => p.id === peca.id ? {
+                        ...p,
+                        detalhes: {
+                          ...p.detalhes,
+                          material: e.target.value
+                        }
+                      } : p)
+                    }))} placeholder="Material" className="min-w-[120px]" />
                         </TableCell>
                         <TableCell>
-                          <Input 
-                            value={peca.detalhes?.medidas || ''}
-                            onChange={(e) => setItensAnalise(prev => ({
-                              ...prev,
-                              pecas: prev.pecas.map(p => 
-                                p.id === peca.id 
-                                  ? { ...p, detalhes: { ...p.detalhes, medidas: e.target.value } }
-                                  : p
-                              )
-                            }))}
-                            placeholder="Medidas"
-                            className="min-w-[120px]"
-                          />
+                          <Input value={peca.detalhes?.medidas || ''} onChange={e => setItensAnalise(prev => ({
+                      ...prev,
+                      pecas: prev.pecas.map(p => p.id === peca.id ? {
+                        ...p,
+                        detalhes: {
+                          ...p.detalhes,
+                          medidas: e.target.value
+                        }
+                      } : p)
+                    }))} placeholder="Medidas" className="min-w-[120px]" />
                         </TableCell>
                         <TableCell className="text-center">
-                          <Input 
-                            type="number"
-                            min="1"
-                            value={peca.quantidade}
-                            onChange={(e) => atualizarQuantidadeItem('pecas', peca.id, parseInt(e.target.value) || 1)}
-                            className="w-16 text-center"
-                          />
+                          <Input type="number" min="1" value={peca.quantidade} onChange={e => atualizarQuantidadeItem('pecas', peca.id, parseInt(e.target.value) || 1)} className="w-16 text-center" />
                         </TableCell>
                         <TableCell className="text-right">
-                          <Input 
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={peca.valorUnitario}
-                            onChange={(e) => atualizarValorItem('pecas', peca.id, parseFloat(e.target.value) || 0)}
-                            className="w-24 text-right"
-                          />
+                          <Input type="number" step="0.01" min="0" value={peca.valorUnitario} onChange={e => atualizarValorItem('pecas', peca.id, parseFloat(e.target.value) || 0)} className="w-24 text-right" />
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          R$ {peca.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {peca.valorTotal.toLocaleString('pt-BR', {
+                      minimumFractionDigits: 2
+                    })}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removerItem('pecas', peca.id)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => removerItem('pecas', peca.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
-                      </TableRow>
-                    ))}
+                      </TableRow>)}
                   </TableBody>
                 </Table>
                 <div className="mt-4 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => adicionarItemAdicional('pecas')}
-                    className="flex items-center gap-2"
-                  >
+                  <Button variant="outline" onClick={() => adicionarItemAdicional('pecas')} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
                     Adicionar Peça
                   </Button>
                 </div>
-              </>
-            ) : (
-              <div className="text-center py-8">
+              </> : <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">Nenhuma peça adicionada</p>
-                <Button
-                  variant="outline"
-                  onClick={() => adicionarItemAdicional('pecas')}
-                  className="flex items-center gap-2"
-                >
+                <Button variant="outline" onClick={() => adicionarItemAdicional('pecas')} className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
                   Adicionar Primeira Peça
                 </Button>
-              </div>
-            )}
+              </div>}
           </CardContent>
         </Card>
 
@@ -966,8 +857,7 @@ export default function NovoOrcamento() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {itensAnalise.servicos.length > 0 ? (
-              <>
+            {itensAnalise.servicos.length > 0 ? <>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -979,76 +869,42 @@ export default function NovoOrcamento() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {itensAnalise.servicos.map((servico) => (
-                      <TableRow key={servico.id}>
+                    {itensAnalise.servicos.map(servico => <TableRow key={servico.id}>
                         <TableCell>
-                          <Input 
-                            value={servico.descricao}
-                            onChange={(e) => atualizarDescricaoItem('servicos', servico.id, e.target.value)}
-                            placeholder="Descrição do serviço"
-                            className="min-w-[250px]"
-                          />
+                          <Input value={servico.descricao} onChange={e => atualizarDescricaoItem('servicos', servico.id, e.target.value)} placeholder="Descrição do serviço" className="min-w-[250px]" />
                         </TableCell>
                         <TableCell className="text-center">
-                          <Input 
-                            type="number"
-                            min="1"
-                            value={servico.quantidade}
-                            onChange={(e) => atualizarQuantidadeItem('servicos', servico.id, parseInt(e.target.value) || 1)}
-                            className="w-16 text-center"
-                          />
+                          <Input type="number" min="1" value={servico.quantidade} onChange={e => atualizarQuantidadeItem('servicos', servico.id, parseInt(e.target.value) || 1)} className="w-16 text-center" />
                         </TableCell>
                         <TableCell className="text-right">
-                          <Input 
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={servico.valorUnitario}
-                            onChange={(e) => atualizarValorItem('servicos', servico.id, parseFloat(e.target.value) || 0)}
-                            className="w-24 text-right"
-                          />
+                          <Input type="number" step="0.01" min="0" value={servico.valorUnitario} onChange={e => atualizarValorItem('servicos', servico.id, parseFloat(e.target.value) || 0)} className="w-24 text-right" />
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          R$ {servico.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {servico.valorTotal.toLocaleString('pt-BR', {
+                      minimumFractionDigits: 2
+                    })}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removerItem('servicos', servico.id)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => removerItem('servicos', servico.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
-                      </TableRow>
-                    ))}
+                      </TableRow>)}
                   </TableBody>
                 </Table>
                 <div className="mt-4 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => adicionarItemAdicional('servicos')}
-                    className="flex items-center gap-2"
-                  >
+                  <Button variant="outline" onClick={() => adicionarItemAdicional('servicos')} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
                     Adicionar Serviço
                   </Button>
                 </div>
-              </>
-            ) : (
-              <div className="text-center py-8">
+              </> : <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">Nenhum serviço adicionado</p>
-                <Button
-                  variant="outline"
-                  onClick={() => adicionarItemAdicional('servicos')}
-                  className="flex items-center gap-2"
-                >
+                <Button variant="outline" onClick={() => adicionarItemAdicional('servicos')} className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
                   Adicionar Primeiro Serviço
                 </Button>
-              </div>
-            )}
+              </div>}
           </CardContent>
         </Card>
 
@@ -1064,8 +920,7 @@ export default function NovoOrcamento() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {itensAnalise.usinagem.length > 0 ? (
-              <>
+            {itensAnalise.usinagem.length > 0 ? <>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1077,76 +932,42 @@ export default function NovoOrcamento() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {itensAnalise.usinagem.map((usinagem) => (
-                      <TableRow key={usinagem.id}>
+                    {itensAnalise.usinagem.map(usinagem => <TableRow key={usinagem.id}>
                         <TableCell>
-                          <Input 
-                            value={usinagem.descricao}
-                            onChange={(e) => atualizarDescricaoItem('usinagem', usinagem.id, e.target.value)}
-                            placeholder="Descrição da usinagem"
-                            className="min-w-[250px]"
-                          />
+                          <Input value={usinagem.descricao} onChange={e => atualizarDescricaoItem('usinagem', usinagem.id, e.target.value)} placeholder="Descrição da usinagem" className="min-w-[250px]" />
                         </TableCell>
                         <TableCell className="text-center">
-                          <Input 
-                            type="number"
-                            min="1"
-                            value={usinagem.quantidade}
-                            onChange={(e) => atualizarQuantidadeItem('usinagem', usinagem.id, parseInt(e.target.value) || 1)}
-                            className="w-16 text-center"
-                          />
+                          <Input type="number" min="1" value={usinagem.quantidade} onChange={e => atualizarQuantidadeItem('usinagem', usinagem.id, parseInt(e.target.value) || 1)} className="w-16 text-center" />
                         </TableCell>
                         <TableCell className="text-right">
-                          <Input 
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={usinagem.valorUnitario}
-                            onChange={(e) => atualizarValorItem('usinagem', usinagem.id, parseFloat(e.target.value) || 0)}
-                            className="w-24 text-right"
-                          />
+                          <Input type="number" step="0.01" min="0" value={usinagem.valorUnitario} onChange={e => atualizarValorItem('usinagem', usinagem.id, parseFloat(e.target.value) || 0)} className="w-24 text-right" />
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          R$ {usinagem.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {usinagem.valorTotal.toLocaleString('pt-BR', {
+                      minimumFractionDigits: 2
+                    })}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removerItem('usinagem', usinagem.id)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => removerItem('usinagem', usinagem.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
-                      </TableRow>
-                    ))}
+                      </TableRow>)}
                   </TableBody>
                 </Table>
                 <div className="mt-4 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => adicionarItemAdicional('usinagem')}
-                    className="flex items-center gap-2"
-                  >
+                  <Button variant="outline" onClick={() => adicionarItemAdicional('usinagem')} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
                     Adicionar Usinagem
                   </Button>
                 </div>
-              </>
-            ) : (
-              <div className="text-center py-8">
+              </> : <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">Nenhuma usinagem adicionada</p>
-                <Button
-                  variant="outline"
-                  onClick={() => adicionarItemAdicional('usinagem')}
-                  className="flex items-center gap-2"
-                >
+                <Button variant="outline" onClick={() => adicionarItemAdicional('usinagem')} className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
                   Adicionar Primeira Usinagem
                 </Button>
-              </div>
-            )}
+              </div>}
           </CardContent>
         </Card>
 
@@ -1165,52 +986,39 @@ export default function NovoOrcamento() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="valorOrcamento">Valor do Orçamento</Label>
-                <Input 
-                  id="valorOrcamento"
-                  value={`R$ ${informacoesComerciais.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-                  disabled
-                  className="bg-muted font-medium"
-                />
+                <Input id="valorOrcamento" value={`R$ ${informacoesComerciais.valorTotal.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2
+              })}`} disabled className="bg-muted font-medium" />
               </div>
               <div>
                 <Label htmlFor="desconto">% Desconto</Label>
-                <Input 
-                  id="desconto"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={informacoesComerciais.desconto}
-                  onChange={(e) => setInformacoesComerciais(prev => ({...prev, desconto: parseFloat(e.target.value) || 0}))}
-                />
+                <Input id="desconto" type="number" min="0" max="100" step="0.1" value={informacoesComerciais.desconto} onChange={e => setInformacoesComerciais(prev => ({
+                ...prev,
+                desconto: parseFloat(e.target.value) || 0
+              }))} />
               </div>
               <div>
                 <Label htmlFor="valorComDesconto">Valor com Desconto</Label>
-                <Input 
-                  id="valorComDesconto"
-                  value={`R$ ${calcularValorComDesconto().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-                  disabled
-                  className="bg-muted font-medium"
-                />
+                <Input id="valorComDesconto" value={`R$ ${calcularValorComDesconto().toLocaleString('pt-BR', {
+                minimumFractionDigits: 2
+              })}`} disabled className="bg-muted font-medium" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="condicaoPagamento">Condição de Pagamento</Label>
-                <Input 
-                  id="condicaoPagamento"
-                  value={informacoesComerciais.condicaoPagamento}
-                  onChange={(e) => setInformacoesComerciais(prev => ({...prev, condicaoPagamento: e.target.value}))}
-                  placeholder="Ex: 21 DDL"
-                />
+                <Input id="condicaoPagamento" value={informacoesComerciais.condicaoPagamento} onChange={e => setInformacoesComerciais(prev => ({
+                ...prev,
+                condicaoPagamento: e.target.value
+              }))} placeholder="Ex: 21 DDL" />
               </div>
               <div>
                 <Label htmlFor="prazoMeses">Prazo (Meses)</Label>
-                <Select 
-                  value={informacoesComerciais.prazoMeses} 
-                  onValueChange={(value) => setInformacoesComerciais(prev => ({...prev, prazoMeses: value}))}
-                >
+                <Select value={informacoesComerciais.prazoMeses} onValueChange={value => setInformacoesComerciais(prev => ({
+                ...prev,
+                prazoMeses: value
+              }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -1224,54 +1032,37 @@ export default function NovoOrcamento() {
               </div>
               <div>
                 <Label htmlFor="prazoEntrega">Prazo de Entrega (dias)</Label>
-                <Input 
-                  id="prazoEntrega"
-                  type="number"
-                  min="1"
-                  value={informacoesComerciais.prazoEntrega}
-                  onChange={(e) => setInformacoesComerciais(prev => ({...prev, prazoEntrega: e.target.value}))}
-                />
+                <Input id="prazoEntrega" type="number" min="1" value={informacoesComerciais.prazoEntrega} onChange={e => setInformacoesComerciais(prev => ({
+                ...prev,
+                prazoEntrega: e.target.value
+              }))} />
               </div>
             </div>
 
             <div>
               <Label htmlFor="observacoes">Observações</Label>
-              <Textarea 
-                id="observacoes"
-                value={dadosOrcamento.observacoes}
-                onChange={(e) => setDadosOrcamento(prev => ({...prev, observacoes: e.target.value}))}
-                placeholder="Observações adicionais sobre o orçamento..."
-                rows={3}
-              />
+              <Textarea id="observacoes" value={dadosOrcamento.observacoes} onChange={e => setDadosOrcamento(prev => ({
+              ...prev,
+              observacoes: e.target.value
+            }))} placeholder="Observações adicionais sobre o orçamento..." rows={3} />
             </div>
           </CardContent>
         </Card>
 
         {/* Botões de Ação */}
         <div className="flex justify-end gap-4 pt-6">
-          <Button 
-            variant="outline"
-            onClick={() => navigate("/orcamentos")}
-          >
+          <Button variant="outline" onClick={() => navigate("/orcamentos")}>
             Cancelar
           </Button>
-          <Button 
-            onClick={exportarPDF}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
+          <Button onClick={exportarPDF} variant="outline" className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Exportar PDF
           </Button>
-          <Button 
-            onClick={salvarOrcamento}
-            className="flex items-center gap-2 bg-gradient-primary hover:bg-primary-hover"
-          >
+          <Button onClick={salvarOrcamento} className="flex items-center gap-2 bg-gradient-primary hover:bg-primary-hover">
             <Save className="h-4 w-4" />
             Salvar Orçamento
           </Button>
         </div>
       </div>
-    </AppLayout>
-  );
+    </AppLayout>;
 }
