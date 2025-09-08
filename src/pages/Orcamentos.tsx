@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Orcamento, getOrcamentos, getOrcamentosPendentes, aprovarOrcamento, reprovarOrcamento } from "@/lib/orcamento-utils";
+import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -14,50 +14,81 @@ import { useNavigate } from "react-router-dom";
 
 export default function Orcamentos() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [analises, setAnalises] = useState<any[]>([]);
-  const [analisesFiltered, setAnalisesFiltered] = useState<any[]>([]);
+  const [ordensServico, setOrdensServico] = useState<any[]>([]);
+  const [ordensFiltered, setOrdensFiltered] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedAnalise, setSelectedAnalise] = useState<any>(null);
-  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
+  const [selectedOrdemServico, setSelectedOrdemServico] = useState<any>(null);
+  const [orcamentos, setOrcamentos] = useState<any[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Carregar todas as análises sem filtros de status
-    const storedAnalises = JSON.parse(localStorage.getItem('analises') || '[]');
-    console.log('Todas as análises carregadas:', storedAnalises);
-    
-    // Também verificar outras possíveis chaves no localStorage
-    const ordensServico = JSON.parse(localStorage.getItem('ordensServico') || '[]');
-    console.log('Ordens de serviço carregadas:', ordensServico);
-    
-    // Usar todas as análises encontradas
-    const todasAnalises = storedAnalises.length > 0 ? storedAnalises : ordensServico;
-    console.log('Análises a serem exibidas:', todasAnalises);
-    
-    setAnalises(todasAnalises);
-    setAnalisesFiltered(todasAnalises);
-    setOrcamentos(getOrcamentosPendentes());
+    carregarOrdensServico();
+    carregarOrcamentos();
   }, []);
+
+  const carregarOrdensServico = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ordens_servico')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao carregar ordens de serviço:', error);
+        toast.error('Erro ao carregar ordens de serviço');
+        return;
+      }
+
+      console.log('Ordens de serviço carregadas:', data);
+      setOrdensServico(data || []);
+      setOrdensFiltered(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar ordens de serviço:', error);
+      toast.error('Erro ao carregar ordens de serviço');
+    }
+  };
+
+  const carregarOrcamentos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orcamentos')
+        .select('*')
+        .eq('status', 'pendente')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao carregar orçamentos:', error);
+        toast.error('Erro ao carregar orçamentos');
+        return;
+      }
+
+      console.log('Orçamentos carregados:', data);
+      setOrcamentos(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar orçamentos:', error);
+      toast.error('Erro ao carregar orçamentos');
+    }
+  };
 
   useEffect(() => {
     if (searchTerm) {
-      const filtered = analises.filter((analise) =>
-        analise.cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        analise.equipamento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        analise.numeroOrdem?.toLowerCase().includes(searchTerm.toLowerCase())
+      const filtered = ordensServico.filter((ordem) =>
+        ordem.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ordem.equipamento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ordem.numero_ordem?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setAnalisesFiltered(filtered);
+      setOrdensFiltered(filtered);
     } else {
-      setAnalisesFiltered(analises);
+      setOrdensFiltered(ordensServico);
     }
-  }, [searchTerm, analises]);
+  }, [searchTerm, ordensServico]);
 
-  const handleCreateOrcamentoFromAnalise = () => {
-    if (selectedAnalise) {
-      navigate(`/novo-orcamento?analiseId=${selectedAnalise.id}`);
+  const handleCreateOrcamentoFromOrdemServico = () => {
+    if (selectedOrdemServico) {
+      navigate(`/novo-orcamento?ordemServicoId=${selectedOrdemServico.id}`);
       setIsSheetOpen(false);
     } else {
-      toast.error("Selecione uma análise primeiro");
+      toast.error("Selecione uma ordem de serviço primeiro");
     }
   };
 
@@ -66,21 +97,54 @@ export default function Orcamentos() {
     setIsSheetOpen(false);
   };
 
-  const handleAprovarOrcamento = (id: number) => {
-    aprovarOrcamento(id);
-    setOrcamentos(getOrcamentosPendentes());
-    toast.success("Orçamento aprovado com sucesso!");
+  const handleAprovarOrcamento = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('orcamentos')
+        .update({ 
+          status: 'aprovado',
+          data_aprovacao: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Erro ao aprovar orçamento:', error);
+        toast.error('Erro ao aprovar orçamento');
+        return;
+      }
+
+      await carregarOrcamentos();
+      toast.success("Orçamento aprovado com sucesso!");
+    } catch (error) {
+      console.error('Erro ao aprovar orçamento:', error);
+      toast.error('Erro ao aprovar orçamento');
+    }
   };
 
-  const handleReprovarOrcamento = (id: number) => {
-    reprovarOrcamento(id);
-    setOrcamentos(getOrcamentosPendentes());
-    toast("Orçamento reprovado", {
-      description: "O orçamento foi marcado como rejeitado.",
-    });
+  const handleReprovarOrcamento = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('orcamentos')
+        .update({ status: 'rejeitado' })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Erro ao reprovar orçamento:', error);
+        toast.error('Erro ao reprovar orçamento');
+        return;
+      }
+
+      await carregarOrcamentos();
+      toast("Orçamento reprovado", {
+        description: "O orçamento foi marcado como rejeitado.",
+      });
+    } catch (error) {
+      console.error('Erro ao reprovar orçamento:', error);
+      toast.error('Erro ao reprovar orçamento');
+    }
   };
 
-  const editarOrcamento = (orcamento: Orcamento) => {
+  const editarOrcamento = (orcamento: any) => {
     navigate('/novo-orcamento', { state: { orcamento } });
   };
 
@@ -157,20 +221,20 @@ export default function Orcamentos() {
                         <Copy className="h-5 w-5 text-accent" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg">Baseado em Análise Técnica</CardTitle>
+                        <CardTitle className="text-lg">Baseado em Ordem de Serviço</CardTitle>
                         <CardDescription>
-                          Criar orçamento com base em uma análise técnica existente
+                          Criar orçamento com base em uma ordem de serviço existente
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0 space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="search-analise">Buscar Análise</Label>
+                      <Label htmlFor="search-ordem">Buscar Ordem de Serviço</Label>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                          id="search-analise"
+                          id="search-ordem"
                           placeholder="Busque por cliente, equipamento ou número..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
@@ -180,28 +244,28 @@ export default function Orcamentos() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Selecionar Análise</Label>
-                      <Select onValueChange={(value) => setSelectedAnalise(analisesFiltered.find(a => a.id === value))}>
+                      <Label>Selecionar Ordem de Serviço</Label>
+                      <Select onValueChange={(value) => setSelectedOrdemServico(ordensFiltered.find(o => o.id === value))}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma análise..." />
+                          <SelectValue placeholder="Selecione uma ordem de serviço..." />
                         </SelectTrigger>
                         <SelectContent className="max-h-60">
-                          {analisesFiltered.length > 0 ? (
-                            analisesFiltered.map((analise) => (
-                              <SelectItem key={analise.id} value={analise.id}>
+                          {ordensFiltered.length > 0 ? (
+                            ordensFiltered.map((ordem) => (
+                              <SelectItem key={ordem.id} value={ordem.id}>
                                 <div className="flex flex-col">
-                                  <span className="font-medium">{analise.numeroOrdem}</span>
+                                  <span className="font-medium">{ordem.numero_ordem}</span>
                                   <span className="text-sm text-muted-foreground">
-                                    {analise.cliente} - {analise.equipamento}
+                                    {ordem.cliente_nome} - {ordem.equipamento}
                                   </span>
                                 </div>
                               </SelectItem>
                             ))
                           ) : (
-                            <SelectItem value="no-analises" disabled>
+                            <SelectItem value="no-ordens" disabled>
                               <div className="text-center text-muted-foreground">
                                 <FileText className="h-4 w-4 mx-auto mb-1 opacity-50" />
-                                <p>Nenhuma análise encontrada</p>
+                                <p>Nenhuma ordem de serviço encontrada</p>
                               </div>
                             </SelectItem>
                           )}
@@ -209,25 +273,25 @@ export default function Orcamentos() {
                       </Select>
                     </div>
 
-                    {selectedAnalise && (
+                    {selectedOrdemServico && (
                       <div className="p-3 bg-accent/5 rounded-lg border">
                         <div className="space-y-1">
-                          <div className="font-medium text-sm">{selectedAnalise.numeroOrdem}</div>
-                          <div className="text-sm text-muted-foreground">{selectedAnalise.cliente}</div>
-                          <div className="text-xs text-muted-foreground">{selectedAnalise.equipamento}</div>
+                          <div className="font-medium text-sm">{selectedOrdemServico.numero_ordem}</div>
+                          <div className="text-sm text-muted-foreground">{selectedOrdemServico.cliente_nome}</div>
+                          <div className="text-xs text-muted-foreground">{selectedOrdemServico.equipamento}</div>
                           <Badge variant="outline" className="text-xs mt-2">
-                            {selectedAnalise.status}
+                            {selectedOrdemServico.status}
                           </Badge>
                         </div>
                       </div>
                     )}
 
                     <Button 
-                      onClick={handleCreateOrcamentoFromAnalise}
-                      disabled={!selectedAnalise}
+                      onClick={handleCreateOrcamentoFromOrdemServico}
+                      disabled={!selectedOrdemServico}
                       className="w-full"
                     >
-                      Criar Orçamento da Análise
+                      Criar Orçamento da Ordem de Serviço
                     </Button>
                   </CardContent>
                 </Card>
@@ -244,21 +308,21 @@ export default function Orcamentos() {
               <Card key={item.id} className="hover:shadow-md transition-smooth">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-foreground">
-                          Orçamento #{item.numero}
-                        </h3>
-                        <Badge className={getStatusColor(item.status)}>
-                          {getStatusText(item.status)}
-                        </Badge>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-foreground">
+                            Orçamento #{item.numero}
+                          </h3>
+                          <Badge className={getStatusColor(item.status)}>
+                            {getStatusText(item.status)}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p><span className="font-medium">Cliente:</span> {item.cliente_nome}</p>
+                          <p><span className="font-medium">Equipamento:</span> {item.equipamento}</p>
+                          <p><span className="font-medium">Valor:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        <p><span className="font-medium">Cliente:</span> {item.cliente}</p>
-                        <p><span className="font-medium">Equipamento:</span> {item.equipamento}</p>
-                        <p><span className="font-medium">Valor:</span> R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                      </div>
-                    </div>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"

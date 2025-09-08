@@ -243,6 +243,62 @@ export type Database = {
         }
         Relationships: []
       }
+      orcamentos: {
+        Row: {
+          cliente_nome: string
+          created_at: string
+          data_aprovacao: string | null
+          data_criacao: string
+          descricao: string | null
+          equipamento: string
+          id: string
+          numero: string
+          observacoes: string | null
+          ordem_servico_id: string | null
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          cliente_nome: string
+          created_at?: string
+          data_aprovacao?: string | null
+          data_criacao?: string
+          descricao?: string | null
+          equipamento: string
+          id?: string
+          numero: string
+          observacoes?: string | null
+          ordem_servico_id?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          cliente_nome?: string
+          created_at?: string
+          data_aprovacao?: string | null
+          data_criacao?: string
+          descricao?: string | null
+          equipamento?: string
+          id?: string
+          numero?: string
+          observacoes?: string | null
+          ordem_servico_id?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ordens_servico: {
         Row: {
           cliente_nome: string
