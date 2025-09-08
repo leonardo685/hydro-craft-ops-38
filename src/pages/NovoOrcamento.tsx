@@ -619,6 +619,18 @@ export default function NovoOrcamento() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 <div>
+                  <Label htmlFor="numeroOrdem">Nº do Orçamento *</Label>
+                  <div className="relative">
+                    <Input id="numeroOrdem" value={dadosOrcamento.numeroOrdem} onChange={e => setDadosOrcamento(prev => ({
+                    ...prev,
+                    numeroOrdem: e.target.value
+                  }))} className="bg-muted" />
+                    <span className="absolute bottom-1 left-3 text-xs text-muted-foreground">
+                      Número gerado automaticamente
+                    </span>
+                  </div>
+                </div>
+                <div>
                   <Label htmlFor="tipoOrdem">Tipo Ordem *</Label>
                   <Select value={dadosOrcamento.tipoOrdem} onValueChange={value => setDadosOrcamento(prev => ({
                   ...prev,
@@ -634,18 +646,6 @@ export default function NovoOrcamento() {
                       <SelectItem value="reparo">Reparo</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div>
-                  <Label htmlFor="numeroOrdem">Nº do Orçamento *</Label>
-                  <div className="relative">
-                    <Input id="numeroOrdem" value={dadosOrcamento.numeroOrdem} onChange={e => setDadosOrcamento(prev => ({
-                    ...prev,
-                    numeroOrdem: e.target.value
-                  }))} className="bg-muted" />
-                    <span className="absolute bottom-1 left-3 text-xs text-muted-foreground">
-                      Número gerado automaticamente
-                    </span>
-                  </div>
                 </div>
                 
               </div>
