@@ -90,7 +90,7 @@ export default function Orcamentos() {
 
   const handleCreateOrcamentoFromOrdemServico = () => {
     if (selectedOrdemServico) {
-      navigate(`/novo-orcamento?ordemServicoId=${selectedOrdemServico.id}`);
+      navigate(`/orcamentos/novo?ordemServicoId=${selectedOrdemServico.id}`);
       setIsSheetOpen(false);
     } else {
       toast.error("Selecione uma ordem de serviço primeiro");
@@ -98,7 +98,7 @@ export default function Orcamentos() {
   };
 
   const handleCreateNewOrcamento = () => {
-    navigate('/novo-orcamento');
+    navigate('/orcamentos/novo');
     setIsSheetOpen(false);
   };
 
@@ -150,7 +150,7 @@ export default function Orcamentos() {
   };
 
   const editarOrcamento = (orcamento: any) => {
-    navigate('/novo-orcamento', { state: { orcamento } });
+    navigate('/orcamentos/novo', { state: { orcamento } });
   };
 
   const getStatusColor = (status: string) => {
