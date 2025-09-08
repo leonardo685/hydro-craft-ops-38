@@ -29,23 +29,27 @@ export default function Orcamentos() {
   const carregarOrdensServico = async () => {
     try {
       const { data, error } = await supabase
-        .from('recebimentos')
-        .select('*')
-        .eq('status', 'em_analise')
+        .from('ordens_servico')
+        .select(`
+          *,
+          recebimentos:recebimento_id (
+            numero_ordem
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Erro ao carregar recebimentos em análise:', error);
-        toast.error('Erro ao carregar recebimentos em análise');
+        console.error('Erro ao carregar ordens de serviço:', error);
+        toast.error('Erro ao carregar ordens de serviço');
         return;
       }
 
-      console.log('Recebimentos em análise carregados:', data);
+      console.log('Ordens de serviço carregadas:', data);
       setOrdensServico(data || []);
       setOrdensFiltered(data || []);
     } catch (error) {
-      console.error('Erro ao carregar recebimentos em análise:', error);
-      toast.error('Erro ao carregar recebimentos em análise');
+      console.error('Erro ao carregar ordens de serviço:', error);
+      toast.error('Erro ao carregar ordens de serviço');
     }
   };
 
@@ -75,8 +79,8 @@ export default function Orcamentos() {
     if (searchTerm) {
       const filtered = ordensServico.filter((ordem) =>
         ordem.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ordem.tipo_equipamento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ordem.numero_ordem?.toLowerCase().includes(searchTerm.toLowerCase())
+        ordem.equipamento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ordem.recebimentos?.numero_ordem?.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setOrdensFiltered(filtered);
     } else {
@@ -255,9 +259,9 @@ export default function Orcamentos() {
                             ordensFiltered.map((ordem) => (
                               <SelectItem key={ordem.id} value={ordem.id}>
                                  <div className="flex flex-col">
-                                   <span className="font-medium">{ordem.numero_ordem}</span>
+                                   <span className="font-medium">{ordem.recebimentos?.numero_ordem || ordem.numero_ordem}</span>
                                    <span className="text-sm text-muted-foreground">
-                                     {ordem.cliente_nome} - {ordem.tipo_equipamento}
+                                     {ordem.cliente_nome} - {ordem.equipamento}
                                    </span>
                                  </div>
                               </SelectItem>
@@ -277,9 +281,9 @@ export default function Orcamentos() {
                     {selectedOrdemServico && (
                       <div className="p-3 bg-accent/5 rounded-lg border">
                          <div className="space-y-1">
-                           <div className="font-medium text-sm">{selectedOrdemServico.numero_ordem}</div>
+                           <div className="font-medium text-sm">{selectedOrdemServico.recebimentos?.numero_ordem || selectedOrdemServico.numero_ordem}</div>
                            <div className="text-sm text-muted-foreground">{selectedOrdemServico.cliente_nome}</div>
-                           <div className="text-xs text-muted-foreground">{selectedOrdemServico.tipo_equipamento}</div>
+                           <div className="text-xs text-muted-foreground">{selectedOrdemServico.equipamento}</div>
                            <Badge variant="outline" className="text-xs mt-2">
                              {selectedOrdemServico.status}
                            </Badge>
