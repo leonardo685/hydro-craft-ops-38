@@ -87,21 +87,20 @@ export const aprovarOrcamento = (id: number): void => {
     dataAprovacao
   });
 
-  // Se o orçamento foi baseado em uma análise, aprovar a análise também
-  if (orcamento.analiseOrigem) {
-    const analises = JSON.parse(localStorage.getItem('analises') || '[]');
-    const analiseIndex = analises.findIndex((a: any) => a.id === orcamento.analiseOrigem);
+  // Se o orçamento foi baseado em uma ordem de serviço, atualizar a ordem também
+  if (orcamento.ordemServicoId) {
+    const ordensServico = getOrdensServico();
+    const ordemIndex = ordensServico.findIndex((os: OrdemServico) => os.id === orcamento.ordemServicoId);
     
-    if (analiseIndex !== -1) {
-      analises[analiseIndex] = {
-        ...analises[analiseIndex],
-        status: 'Aprovada',
-        dataAprovacao: dataAprovacao,
-        orcamentoAprovado: orcamento.numeroOrdem || `${orcamento.numero}`,
-        valorAprovado: orcamento.valorComDesconto || orcamento.valorTotal || 0
+    if (ordemIndex !== -1) {
+      ordensServico[ordemIndex] = {
+        ...ordensServico[ordemIndex],
+        etapa: 'em_producao',
+        dataInicio: dataAprovacao,
+        valor: orcamento.valorComDesconto || orcamento.valorTotal || orcamento.valor
       };
       
-      localStorage.setItem('analises', JSON.stringify(analises));
+      localStorage.setItem(ORDENS_SERVICO_STORAGE_KEY, JSON.stringify(ordensServico));
     }
   }
 
