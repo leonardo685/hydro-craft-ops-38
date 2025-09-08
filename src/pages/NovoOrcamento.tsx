@@ -661,7 +661,7 @@ export default function NovoOrcamento() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="numeroOrdem">Nº da Ordem *</Label>
+                  <Label htmlFor="numeroOrdem">Nº do Orçamento *</Label>
                   <div className="relative">
                     <Input 
                       id="numeroOrdem"
