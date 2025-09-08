@@ -22,18 +22,20 @@ export default function Orcamentos() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Carregar análises que estão prontas para orçamento
+    // Carregar todas as análises sem filtros de status
     const storedAnalises = JSON.parse(localStorage.getItem('analises') || '[]');
     console.log('Todas as análises carregadas:', storedAnalises);
     
-    // Filtrar análises que podem gerar orçamentos (não aprovadas ainda)
-    const analisesProntas = storedAnalises.filter((a: any) => 
-      a.status !== 'Aprovada' && a.status !== 'Rejeitada' && a.status !== 'Rascunho'
-    );
-    console.log('Análises prontas para orçamento:', analisesProntas);
+    // Também verificar outras possíveis chaves no localStorage
+    const ordensServico = JSON.parse(localStorage.getItem('ordensServico') || '[]');
+    console.log('Ordens de serviço carregadas:', ordensServico);
     
-    setAnalises(analisesProntas);
-    setAnalisesFiltered(analisesProntas);
+    // Usar todas as análises encontradas
+    const todasAnalises = storedAnalises.length > 0 ? storedAnalises : ordensServico;
+    console.log('Análises a serem exibidas:', todasAnalises);
+    
+    setAnalises(todasAnalises);
+    setAnalisesFiltered(todasAnalises);
     setOrcamentos(getOrcamentosPendentes());
   }, []);
 
