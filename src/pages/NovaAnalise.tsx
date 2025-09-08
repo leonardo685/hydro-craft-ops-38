@@ -474,17 +474,106 @@ const NovaOrdemServico = () => {
   };
 
   useEffect(() => {
-    if (loading || !recebimentos.length) return;
+    if (loading) return;
     
     const decodedId = id ? decodeURIComponent(id) : '';
     console.log('Looking for recebimento with ID:', decodedId);
     console.log('Available recebimentos:', recebimentos);
     
-    // Buscar recebimento pelo numero_ordem ou pelo id
-    const recebimentoEncontrado = recebimentos.find((r: any) => 
+    // Primeiro tenta buscar diretamente na tabela recebimentos
+    let recebimentoEncontrado = recebimentos.find((r: any) => 
       r.numero_ordem === decodedId || 
       r.id?.toString() === decodedId
     );
+    
+    // Se não encontrou, pode ser que estejamos editando uma ordem de serviço existente
+    // Neste caso, precisamos buscar a ordem de serviço e depois o recebimento relacionado
+    if (!recebimentoEncontrado && decodedId.startsWith('OS-')) {
+      console.log('Searching for order service with number:', decodedId);
+      // Buscar ordem de serviço e carregar dados para edição
+      const loadOrderForEdit = async () => {
+        try {
+          const { data: ordem, error } = await supabase
+            .from('ordens_servico')
+            .select(`
+              *,
+              recebimentos (
+                id,
+                numero_ordem,
+                cliente_nome,
+                tipo_equipamento,
+                data_entrada,
+                nota_fiscal,
+                numero_serie,
+                observacoes,
+                fotos_equipamentos (*)
+              )
+            `)
+            .eq('numero_ordem', decodedId)
+            .maybeSingle();
+
+          if (error) {
+            console.error('Erro ao buscar ordem de serviço:', error);
+            return;
+          }
+
+          if (ordem && ordem.recebimentos) {
+            setIsEdicao(true);
+            setOrdemExistente(ordem);
+            
+            // Carregar dados do recebimento
+            const recebimentoData = ordem.recebimentos;
+            setRecebimento({
+              id: recebimentoData.id,
+              cliente: recebimentoData.cliente_nome,
+              equipamento: recebimentoData.tipo_equipamento,
+              dataEntrada: new Date(recebimentoData.data_entrada).toLocaleDateString('pt-BR'),
+              numeroOrdem: recebimentoData.numero_ordem,
+              nota_fiscal: recebimentoData.nota_fiscal,
+              numero_serie: recebimentoData.numero_serie,
+              observacoes: recebimentoData.observacoes,
+              fotos: recebimentoData.fotos_equipamentos || []
+            });
+
+            // Preencher form com dados da ordem existente
+            setFormData({
+              tecnico: ordem.tecnico || "",
+              problemas: ordem.tipo_problema || ordem.descricao_problema || "",
+              prazoEstimado: ordem.tempo_estimado || "",
+              prioridade: ordem.prioridade === 'alta' ? 'Alta' : 
+                         ordem.prioridade === 'baixa' ? 'Baixa' : 'Média',
+              observacoes: ordem.observacoes_tecnicas || ""
+            });
+
+            // Carregar peças se existirem
+            if (ordem.pecas_necessarias && Array.isArray(ordem.pecas_necessarias)) {
+              setPecasUtilizadas(ordem.pecas_necessarias as any);
+            }
+
+            // Dados técnicos
+            setDadosTecnicos({
+              tipoEquipamento: recebimentoData.tipo_equipamento || "",
+              pressaoTrabalho: "",
+              camisa: "",
+              hasteComprimento: "",
+              curso: "",
+              conexaoA: "",
+              conexaoB: ""
+            });
+
+            // Carregar fotos se existirem
+            if (recebimentoData.fotos_equipamentos && recebimentoData.fotos_equipamentos.length > 0) {
+              setPreviewsChegada(recebimentoData.fotos_equipamentos.map((foto: any) => foto.arquivo_url).filter(Boolean));
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao carregar ordem para edição:', error);
+        }
+      };
+
+      loadOrderForEdit();
+      return;
+    }
     
     console.log('Found recebimento:', recebimentoEncontrado);
     
@@ -524,42 +613,67 @@ const NovaOrdemServico = () => {
     e.preventDefault();
     
     try {
-      // Generate unique order number for service order
-      const numeroOrdem = `OS-${Date.now()}`;
-      
-      const { error } = await supabase
-        .from('ordens_servico')
-        .insert({
-          recebimento_id: recebimento?.id || null,
-          numero_ordem: numeroOrdem,
-          cliente_nome: recebimento?.cliente_nome || '',
-          equipamento: recebimento?.tipo_equipamento || '',
-          tecnico: formData.tecnico,
-          data_entrada: recebimento?.data_entrada || new Date().toISOString(),
-          data_analise: new Date().toISOString(),
-          status: 'em_andamento',
-          prioridade: formData.prioridade.toLowerCase(),
-          tipo_problema: formData.problemas,
-          descricao_problema: formData.problemas,
-          solucao_proposta: servicosPersonalizados,
-          pecas_necessarias: pecasUtilizadas,
-          tempo_estimado: formData.prazoEstimado,
-          observacoes_tecnicas: formData.observacoes
+      if (isEdicao && ordemExistente) {
+        // Atualizar ordem existente
+        const { error } = await supabase
+          .from('ordens_servico')
+          .update({
+            tecnico: formData.tecnico,
+            tipo_problema: formData.problemas,
+            descricao_problema: formData.problemas,
+            solucao_proposta: servicosPersonalizados,
+            pecas_necessarias: pecasUtilizadas,
+            tempo_estimado: formData.prazoEstimado,
+            observacoes_tecnicas: formData.observacoes,
+            prioridade: formData.prioridade.toLowerCase(),
+            data_analise: new Date().toISOString()
+          })
+          .eq('id', ordemExistente.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Ordem de serviço atualizada!",
+          description: "A ordem de serviço foi atualizada com sucesso.",
         });
+      } else {
+        // Criar nova ordem
+        const numeroOrdem = `OS-${Date.now()}`;
+        
+        const { error } = await supabase
+          .from('ordens_servico')
+          .insert({
+            recebimento_id: recebimento?.id || null,
+            numero_ordem: numeroOrdem,
+            cliente_nome: recebimento?.cliente || '',
+            equipamento: recebimento?.equipamento || '',
+            tecnico: formData.tecnico,
+            data_entrada: recebimento?.data_entrada || new Date().toISOString(),
+            data_analise: new Date().toISOString(),
+            status: 'em_andamento',
+            prioridade: formData.prioridade.toLowerCase(),
+            tipo_problema: formData.problemas,
+            descricao_problema: formData.problemas,
+            solucao_proposta: servicosPersonalizados,
+            pecas_necessarias: pecasUtilizadas,
+            tempo_estimado: formData.prazoEstimado,
+            observacoes_tecnicas: formData.observacoes
+          });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Ordem de serviço criada!",
-        description: "A ordem de serviço foi criada com sucesso.",
-      });
+        toast({
+          title: "Ordem de serviço criada!",
+          description: "A ordem de serviço foi criada com sucesso.",
+        });
+      }
 
       navigate('/analise');
     } catch (error) {
-      console.error('Erro ao criar ordem de serviço:', error);
+      console.error('Erro ao salvar ordem de serviço:', error);
       toast({
         title: "Erro",
-        description: "Erro ao criar a ordem de serviço. Tente novamente.",
+        description: "Erro ao salvar a ordem de serviço. Tente novamente.",
         variant: "destructive",
       });
     }
