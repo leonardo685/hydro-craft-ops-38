@@ -149,7 +149,7 @@ export default function Orcamentos() {
                           <Copy className="h-5 w-5 text-accent" />
                         </div>
                         <div>
-                          <CardTitle className="text-lg">Baseado em Análise</CardTitle>
+                          <CardTitle className="text-lg">Baseado em Ordem de Serviço</CardTitle>
                           <CardDescription>
                             Criar orçamento com base em uma análise técnica existente
                           </CardDescription>
