@@ -613,6 +613,42 @@ const NovaOrdemServico = () => {
     e.preventDefault();
     
     try {
+      // Preparar dados dos serviços selecionados
+      const servicosSelecionados = Object.entries(servicosPreDeterminados)
+        .filter(([_, selecionado]) => selecionado)
+        .map(([servico, _]) => ({
+          quantidade: servicosQuantidades[servico as keyof typeof servicosQuantidades],
+          nome: servicosNomes[servico as keyof typeof servicosNomes],
+          tipo: servico
+        }));
+
+      // Adicionar serviços personalizados se existirem
+      if (servicosPersonalizados.trim()) {
+        servicosSelecionados.push({
+          quantidade: servicosQuantidades.personalizado,
+          nome: servicosPersonalizados.trim(),
+          tipo: 'personalizado'
+        });
+      }
+
+      // Preparar dados das usinagens selecionadas
+      const usinagemSelecionada = Object.entries(usinagem)
+        .filter(([_, selecionado]) => selecionado)
+        .map(([tipo, _]) => ({
+          quantidade: usinagemQuantidades[tipo as keyof typeof usinagemQuantidades],
+          nome: usinagemNomes[tipo as keyof typeof usinagemNomes],
+          tipo: tipo
+        }));
+
+      // Adicionar usinagem personalizada se existir
+      if (usinagemPersonalizada.trim()) {
+        usinagemSelecionada.push({
+          quantidade: usinagemQuantidades.personalizada,
+          nome: usinagemPersonalizada.trim(),
+          tipo: 'personalizada'
+        });
+      }
+
       if (isEdicao && ordemExistente) {
         // Atualizar ordem existente
         const { error } = await supabase
@@ -623,6 +659,8 @@ const NovaOrdemServico = () => {
             descricao_problema: formData.problemas,
             solucao_proposta: servicosPersonalizados,
             pecas_necessarias: pecasUtilizadas,
+            servicos_necessarios: servicosSelecionados,
+            usinagem_necessaria: usinagemSelecionada,
             tempo_estimado: formData.prazoEstimado,
             observacoes_tecnicas: formData.observacoes,
             prioridade: formData.prioridade.toLowerCase(),
@@ -656,6 +694,8 @@ const NovaOrdemServico = () => {
             descricao_problema: formData.problemas,
             solucao_proposta: servicosPersonalizados,
             pecas_necessarias: pecasUtilizadas,
+            servicos_necessarios: servicosSelecionados,
+            usinagem_necessaria: usinagemSelecionada,
             tempo_estimado: formData.prazoEstimado,
             observacoes_tecnicas: formData.observacoes
           });
