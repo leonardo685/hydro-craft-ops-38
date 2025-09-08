@@ -7,30 +7,30 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { getOrcamentosPendentes, aprovarOrcamento, reprovarOrcamento, type Orcamento } from "@/lib/orcamento-utils";
+import { getOrcamentosPendentes, aprovarOrcamento, reprovarOrcamento, getOrdensServico, type Orcamento, type OrdemServico } from "@/lib/orcamento-utils";
 
 
 export default function Orcamentos() {
   const navigate = useNavigate();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [analises, setAnalises] = useState<any[]>([]);
-  const [selectedAnalise, setSelectedAnalise] = useState<any>(null);
+  const [ordensServico, setOrdensServico] = useState<OrdemServico[]>([]);
+  const [selectedOrdem, setSelectedOrdem] = useState<OrdemServico | null>(null);
   const [orcamentosData, setOrcamentosData] = useState<Orcamento[]>([]);
 
   const orcamentosPendentes = orcamentosData;
 
   useEffect(() => {
-    // Carregar análises do localStorage
-    const analisesStorage = JSON.parse(localStorage.getItem('analises') || '[]');
-    setAnalises(analisesStorage);
+    // Carregar ordens de serviço do localStorage
+    const ordensStorage = getOrdensServico();
+    setOrdensServico(ordensStorage);
 
     // Carregar orçamentos pendentes
     setOrcamentosData(getOrcamentosPendentes());
   }, []);
 
-  const handleCreateOrcamentoFromAnalise = (analise: any) => {
+  const handleCreateOrcamentoFromOrdem = (ordem: OrdemServico) => {
     setIsSheetOpen(false);
-    navigate(`/orcamentos/novo?analiseId=${analise.id}`);
+    navigate(`/orcamentos/novo?ordemId=${ordem.id}`);
   };
 
   const handleCreateNewOrcamento = () => {
@@ -158,21 +158,21 @@ export default function Orcamentos() {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="space-y-3 max-h-96 overflow-y-auto">
-                        {analises.length > 0 ? (
-                          analises.map((analise) => (
+                        {ordensServico.length > 0 ? (
+                          ordensServico.map((ordem) => (
                             <div 
-                              key={analise.id}
+                              key={ordem.id}
                               className="p-3 border rounded-lg hover:bg-accent/5 cursor-pointer transition-smooth"
-                              onClick={() => handleCreateOrcamentoFromAnalise(analise)}
+                              onClick={() => handleCreateOrcamentoFromOrdem(ordem)}
                             >
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <div className="font-medium text-sm">{analise.id}</div>
-                                  <div className="text-sm text-muted-foreground">{analise.cliente}</div>
-                                  <div className="text-xs text-muted-foreground">{analise.equipamento}</div>
+                                  <div className="font-medium text-sm">{ordem.id}</div>
+                                  <div className="text-sm text-muted-foreground">{ordem.cliente}</div>
+                                  <div className="text-xs text-muted-foreground">{ordem.equipamento}</div>
                                 </div>
                                 <Badge variant="outline" className="text-xs">
-                                  {analise.status}
+                                  {ordem.etapa}
                                 </Badge>
                               </div>
                             </div>
@@ -180,8 +180,8 @@ export default function Orcamentos() {
                         ) : (
                           <div className="text-center text-muted-foreground py-8">
                             <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                            <p>Nenhuma análise encontrada</p>
-                            <p className="text-xs">Faça uma análise técnica primeiro</p>
+                            <p>Nenhuma ordem de serviço encontrada</p>
+                            <p className="text-xs">Crie uma ordem de serviço primeiro</p>
                           </div>
                         )}
                       </div>
