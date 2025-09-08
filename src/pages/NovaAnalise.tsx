@@ -524,11 +524,14 @@ const NovaOrdemServico = () => {
     e.preventDefault();
     
     try {
+      // Generate unique order number for service order
+      const numeroOrdem = `OS-${Date.now()}`;
+      
       const { error } = await supabase
         .from('ordens_servico')
         .insert({
           recebimento_id: recebimento?.id || null,
-          numero_ordem: recebimento?.numero_ordem || '',
+          numero_ordem: numeroOrdem,
           cliente_nome: recebimento?.cliente_nome || '',
           equipamento: recebimento?.tipo_equipamento || '',
           tecnico: formData.tecnico,
