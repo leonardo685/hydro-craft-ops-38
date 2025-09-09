@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ReactNode } from "react";
 import mecHidroLogo from "@/assets/mec-hidro-logo.png";
 
@@ -31,6 +32,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   </p>
                 </div>
               </div>
+              <ThemeToggle />
             </div>
           </header>
           <div className="flex-1 p-6 overflow-auto bg-muted/30">
