@@ -9,10 +9,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   return (
-    <div className={cn(
-      "min-h-screen flex w-full bg-background",
-      "md:flex-row flex-col"
-    )}>
+    <div className="min-h-screen flex flex-col md:flex-row w-full bg-background">
       <AppSidebar />
       <main className="flex-1 flex flex-col">
         <header className="border-b border-border bg-card shadow-soft">
@@ -21,7 +18,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <h1 className="text-xl font-semibold text-foreground">
                 Sistema de Gestão ERP
               </h1>
-              <p className="text-sm text-muted-foreground hidden md:block">
+              <p className="text-sm text-muted-foreground hidden lg:block">
                 Controle completo dos seus equipamentos hidráulicos
               </p>
             </div>
