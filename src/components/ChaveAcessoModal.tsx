@@ -8,20 +8,22 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatarChaveAcesso, validarChaveAcesso, extrairDadosNFe, buscarClientePorCNPJ, type DadosNFe, type ItemNFe } from "@/lib/nfe-utils";
 import { ItensNFeModal } from "./ItensNFeModal";
+import { useRecebimentos } from "@/hooks/use-recebimentos";
 
 interface ChaveAcessoModalProps {
   open: boolean;
   onClose: () => void;
-  onConfirm: (dadosNFe: DadosNFe, itensSelecionados: ItemNFe[], cliente: string) => void;
 }
 
-export function ChaveAcessoModal({ open, onClose, onConfirm }: ChaveAcessoModalProps) {
+export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
   const navigate = useNavigate();
+  const { criarNotaFiscal, criarRecebimento, gerarNumeroOrdem } = useRecebimentos();
   const [chaveAcesso, setChaveAcesso] = useState("");
   const [dadosExtraidos, setDadosExtraidos] = useState<DadosNFe | null>(null);
   const [cliente, setCliente] = useState("");
   const [erro, setErro] = useState("");
   const [mostrarItens, setMostrarItens] = useState(false);
+  const [salvando, setSalvando] = useState(false);
 
   const handleChaveChange = (valor: string) => {
     const valorFormatado = formatarChaveAcesso(valor);
@@ -67,9 +69,63 @@ export function ChaveAcessoModal({ open, onClose, onConfirm }: ChaveAcessoModalP
     setMostrarItens(true);
   };
 
-  const handleConfirmarItens = (dadosNFe: DadosNFe, itensSelecionados: ItemNFe[]) => {
-    onConfirm(dadosNFe, itensSelecionados, cliente);
-    handleFechar();
+  const handleConfirmarItens = async (dadosNFe: DadosNFe, itensSelecionados: ItemNFe[]) => {
+    setSalvando(true);
+    try {
+      // 1. Salvar a nota fiscal no Supabase
+      const notaFiscalData = {
+        chave_acesso: dadosNFe.chaveAcesso,
+        cnpj_emitente: dadosNFe.cnpjEmitente,
+        numero: dadosNFe.numero,
+        serie: dadosNFe.serie,
+        modelo: dadosNFe.modelo || 'NFe',
+        data_emissao: new Date(dadosNFe.dataEmissao).toISOString(),
+        cliente_nome: cliente,
+        cliente_cnpj: dadosNFe.cnpjEmitente,
+        status: 'processada',
+        created_at: new Date().toISOString()
+      };
+
+      // Preparar itens da NFe para salvar
+      const itensParaSalvar = (dadosNFe.itens || []).map(item => ({
+        codigo: item.codigo,
+        descricao: item.descricao,
+        ncm: item.ncm || '',
+        quantidade: item.quantidade,
+        valor_unitario: item.valorUnitario,
+        valor_total: item.valorTotal
+      }));
+
+      await criarNotaFiscal(notaFiscalData, itensParaSalvar);
+
+      // 2. Criar ordens de serviço para cada item selecionado
+      for (const item of itensSelecionados) {
+        const numeroOrdem = await gerarNumeroOrdem();
+        
+        const recebimentoData = {
+          numero_ordem: numeroOrdem,
+          cliente_nome: cliente,
+          cliente_cnpj: dadosNFe.cnpjEmitente,
+          data_entrada: new Date().toISOString(),
+          nota_fiscal: `NF-${dadosNFe.numero}`,
+          chave_acesso_nfe: dadosNFe.chaveAcesso,
+          tipo_equipamento: item.descricao,
+          numero_serie: `${item.codigo}-${new Date().getFullYear()}`,
+          observacoes: `Item da NFe: ${item.codigo} - ${item.descricao}`,
+          urgente: false,
+          na_empresa: true,
+          status: 'recebido'
+        };
+
+        await criarRecebimento(recebimentoData);
+      }
+
+      handleFechar();
+    } catch (error) {
+      console.error('Erro ao salvar nota fiscal:', error);
+    } finally {
+      setSalvando(false);
+    }
   };
 
   const handleCadastrarCliente = () => {
@@ -190,6 +246,7 @@ export function ChaveAcessoModal({ open, onClose, onConfirm }: ChaveAcessoModalP
             onClose={() => setMostrarItens(false)}
             onConfirm={handleConfirmarItens}
             dadosNFe={dadosExtraidos}
+            salvando={salvando}
           />
         )}
       </DialogContent>

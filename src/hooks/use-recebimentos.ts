@@ -49,6 +49,7 @@ export interface NotaFiscal {
   cliente_cnpj?: string;
   valor_total?: number;
   status: string;
+  created_at: string;
   itens?: ItemNFe[];
 }
 

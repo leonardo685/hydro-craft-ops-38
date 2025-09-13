@@ -10,6 +10,7 @@ import { EquipmentLabel } from "@/components/EquipmentLabel";
 import { ChaveAcessoModal } from "@/components/ChaveAcessoModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ItensNFeModal } from "@/components/ItensNFeModal";
+import { CriarOrdemModal } from "@/components/CriarOrdemModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -25,6 +26,7 @@ export default function Recebimentos() {
   const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
   const [modalChaveAcesso, setModalChaveAcesso] = useState(false);
   const [notaFiscalSelecionada, setNotaFiscalSelecionada] = useState<any>(null);
+  const [modalCriarOrdem, setModalCriarOrdem] = useState<any>(null);
   
   // Estados para filtros
   const [dataInicio, setDataInicio] = useState<Date>();
@@ -260,10 +262,11 @@ export default function Recebimentos() {
                     <TableHead className="w-[150px]">Nº Nota Fiscal</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead className="w-[100px]">Série</TableHead>
-                    <TableHead className="w-[150px]">Data de Emissão</TableHead>
-                    <TableHead className="w-[100px]">Itens</TableHead>
-                    <TableHead className="w-[140px]">Status</TableHead>
-                    <TableHead className="w-[140px]">Ações</TableHead>
+                     <TableHead className="w-[150px]">Data de Emissão</TableHead>
+                     <TableHead className="w-[150px]">Data de Entrada</TableHead>
+                     <TableHead className="w-[100px]">Itens</TableHead>
+                     <TableHead className="w-[140px]">Status</TableHead>
+                     <TableHead className="w-[140px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -280,10 +283,13 @@ export default function Recebimentos() {
                       <TableCell className="text-muted-foreground">
                         {nota.serie}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(nota.data_emissao).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell className="text-center">
+                       <TableCell className="text-muted-foreground">
+                         {new Date(nota.data_emissao).toLocaleDateString('pt-BR')}
+                       </TableCell>
+                       <TableCell className="text-muted-foreground">
+                         {new Date(nota.created_at).toLocaleDateString('pt-BR')}
+                       </TableCell>
+                       <TableCell className="text-center">
                         <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
                           {nota.itens?.length || 0}
                         </span>
@@ -295,24 +301,15 @@ export default function Recebimentos() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              // Criar novas ordens para itens restantes da NFe
-                              const ordensExistentes = recebimentos.filter(r => r.chave_acesso_nfe === nota.chave_acesso);
-                              const itensDisponiveis = nota.itens || [];
-                              
-                              if (itensDisponiveis.length > 0) {
-                                // Aqui você pode abrir um modal para selecionar itens adicionais
-                                console.log('Itens disponíveis para nova ordem:', itensDisponiveis);
-                              }
-                            }}
-                            className="h-8"
-                            title="Criar nova ordem"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => setModalCriarOrdem(nota)}
+                             className="h-8"
+                             title="Criar nova ordem"
+                           >
+                             <Plus className="h-4 w-4" />
+                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -342,54 +339,15 @@ export default function Recebimentos() {
         <ChaveAcessoModal
           open={modalChaveAcesso}
           onClose={() => setModalChaveAcesso(false)}
-          onConfirm={(dadosNFe, itensSelecionados, cliente) => {
-            // Salvar a nota fiscal
-            const notaFiscal = {
-              id: Date.now().toString(),
-              chaveAcesso: dadosNFe.chaveAcesso,
-              numero: dadosNFe.numero,
-              serie: dadosNFe.serie,
-              cliente: cliente || 'Nome não informado',
-              cnpjEmitente: dadosNFe.cnpjEmitente,
-              dataEmissao: dadosNFe.dataEmissao,
-              itens: dadosNFe.itens || [],
-              status: 'recebida'
-            };
-
-            // Criar ordens para cada item selecionado
-            const novasOrdens = itensSelecionados.map((item, index) => ({
-              id: `${Date.now()}-${index}`,
-              numeroOrdem: `${String(Date.now()).slice(-4)}/${new Date().getFullYear().toString().slice(-2)}`,
-              cliente: cliente || 'Nome não informado',
-              dataEntrada: new Date().toLocaleDateString('pt-BR'),
-              notaFiscal: `NF-${dadosNFe.numero}`,
-              chaveAcessoNFe: dadosNFe.chaveAcesso,
-              naEmpresa: true,
-              tag: `EQ${String(Date.now()).slice(-3)}`,
-              tipoEquipamento: item.descricao.split(';')[0]?.replace('NOME ITEM:', '').trim() || item.descricao,
-              numeroSerie: `${item.codigo}-${new Date().getFullYear()}`,
-              urgencia: false,
-              solicitante: "",
-              pressaoTrabalho: "",
-              observacoesEntrada: `Item da NFe: ${item.codigo} - ${item.descricao}`,
-              camisa: "",
-              hasteComprimento: "",
-              curso: "",
-              conexaoA: "",
-              conexaoB: "",
-              observacoesPeritagem: "",
-              manutencaoCorretiva: false,
-              manutencaoPreventiva: true,
-              apresentarOrcamento: [false, false, false, false],
-              fotos: [null, null, null, null],
-              itemNFe: item
-            }));
-
-            // Dados serão atualizados automaticamente pelo hook useRecebimentos
-            console.log('Novas ordens criadas:', novasOrdens);
-            console.log('Nota fiscal criada:', notaFiscal);
-          }}
         />
+
+        {modalCriarOrdem && (
+          <CriarOrdemModal
+            open={!!modalCriarOrdem}
+            onClose={() => setModalCriarOrdem(null)}
+            notaFiscal={modalCriarOrdem}
+          />
+        )}
 
         {/* Modal de Visualização da Nota Fiscal */}
         <Dialog open={!!notaFiscalSelecionada} onOpenChange={() => setNotaFiscalSelecionada(null)}>

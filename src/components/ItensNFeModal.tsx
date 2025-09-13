@@ -12,9 +12,10 @@ interface ItensNFeModalProps {
   onClose: () => void;
   onConfirm: (dadosNFe: DadosNFe, itensSelecionados: ItemNFe[]) => void;
   dadosNFe: DadosNFe;
+  salvando?: boolean;
 }
 
-export function ItensNFeModal({ open, onClose, onConfirm, dadosNFe }: ItensNFeModalProps) {
+export function ItensNFeModal({ open, onClose, onConfirm, dadosNFe, salvando = false }: ItensNFeModalProps) {
   const [itensSelecionados, setItensSelecionados] = useState<string[]>([]);
 
   const handleItemToggle = (codigoItem: string) => {
@@ -138,9 +139,9 @@ export function ItensNFeModal({ open, onClose, onConfirm, dadosNFe }: ItensNFeMo
             <Button 
               onClick={handleConfirmar} 
               className="flex-1"
-              disabled={itensSelecionados.length === 0}
+              disabled={itensSelecionados.length === 0 || salvando}
             >
-              Criar {itensSelecionados.length} Ordem{itensSelecionados.length !== 1 ? 's' : ''}
+              {salvando ? "Salvando..." : `Criar ${itensSelecionados.length} Ordem${itensSelecionados.length !== 1 ? 's' : ''}`}
             </Button>
           </div>
         </div>
