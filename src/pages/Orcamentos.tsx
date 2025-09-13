@@ -58,7 +58,6 @@ export default function Orcamentos() {
       const { data, error } = await supabase
         .from('orcamentos')
         .select('*')
-        .eq('status', 'pendente')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -306,7 +305,7 @@ export default function Orcamentos() {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">Orçamentos Pendentes</h2>
+          <h2 className="text-xl font-semibold text-foreground">Todos os Orçamentos</h2>
           
           {orcamentos.length > 0 ? (
             orcamentos.map((item) => (
@@ -360,10 +359,10 @@ export default function Orcamentos() {
               <CardContent className="p-12 text-center">
                 <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                 <h3 className="text-lg font-medium text-foreground mb-2">
-                  Nenhum orçamento pendente
+                  Nenhum orçamento encontrado
                 </h3>
                 <p className="text-muted-foreground">
-                  Todos os orçamentos já foram aprovados ou reprovados
+                  Não há orçamentos cadastrados no sistema
                 </p>
               </CardContent>
             </Card>
