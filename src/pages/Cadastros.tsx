@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Users, Building, Tag, Edit, Trash2 } from "lucide-react";
-
+import { CategoriasFinanceiras } from "@/components/CategoriasFinanceiras";
 import { CNPJInput } from "@/components/CNPJInput";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
@@ -729,17 +729,7 @@ const Cadastros = () => {
           </TabsContent>
 
           <TabsContent value="categorias" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Categorias Financeiras</CardTitle>
-                <CardDescription>
-                  As categorias financeiras serão implementadas com integração ao Supabase.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Funcionalidade será desenvolvida em breve.</p>
-              </CardContent>
-            </Card>
+            <CategoriasFinanceiras />
           </TabsContent>
         </Tabs>
       </div>
