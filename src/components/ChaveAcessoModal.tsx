@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, AlertCircle, FileText } from "lucide-react";
+import { CheckCircle, AlertCircle, FileText, UserPlus } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { formatarChaveAcesso, validarChaveAcesso, extrairDadosNFe, buscarClientePorCNPJ, type DadosNFe, type ItemNFe } from "@/lib/nfe-utils";
 import { ItensNFeModal } from "./ItensNFeModal";
 
@@ -15,6 +16,7 @@ interface ChaveAcessoModalProps {
 }
 
 export function ChaveAcessoModal({ open, onClose, onConfirm }: ChaveAcessoModalProps) {
+  const navigate = useNavigate();
   const [chaveAcesso, setChaveAcesso] = useState("");
   const [dadosExtraidos, setDadosExtraidos] = useState<DadosNFe | null>(null);
   const [cliente, setCliente] = useState("");
@@ -70,6 +72,19 @@ export function ChaveAcessoModal({ open, onClose, onConfirm }: ChaveAcessoModalP
     handleFechar();
   };
 
+  const handleCadastrarCliente = () => {
+    if (!dadosExtraidos) return;
+    
+    // Navegar para página de cadastro com dados pré-preenchidos
+    navigate('/cadastros', { 
+      state: { 
+        cnpj: dadosExtraidos.cnpjEmitente,
+        activeTab: 'clientes'
+      } 
+    });
+    handleFechar();
+  };
+
   const handleFechar = () => {
     setChaveAcesso("");
     setDadosExtraidos(null);
@@ -108,7 +123,22 @@ export function ChaveAcessoModal({ open, onClose, onConfirm }: ChaveAcessoModalP
           {erro && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{erro}</AlertDescription>
+              <AlertDescription>
+                <div className="space-y-3">
+                  <p>{erro}</p>
+                  {dadosExtraidos && !cliente && (
+                    <Button 
+                      onClick={handleCadastrarCliente}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Cadastrar Cliente
+                    </Button>
+                  )}
+                </div>
+              </AlertDescription>
             </Alert>
           )}
 
