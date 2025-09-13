@@ -33,6 +33,8 @@ export default function OrdensServico() {
             tipo_equipamento
           )
         `)
+        .neq('status', 'aprovada')
+        .neq('status', 'reprovada')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
