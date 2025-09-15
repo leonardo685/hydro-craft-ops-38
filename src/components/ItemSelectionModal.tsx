@@ -11,9 +11,10 @@ interface ItemSelectionModalProps {
   items: any[];
   type: 'pecas' | 'usinagem' | 'servicos';
   children: React.ReactNode;
+  ordemId: string;
 }
 
-export function ItemSelectionModal({ title, items, type, children }: ItemSelectionModalProps) {
+export function ItemSelectionModal({ title, items, type, children, ordemId }: ItemSelectionModalProps) {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
 

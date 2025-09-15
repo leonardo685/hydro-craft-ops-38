@@ -154,10 +154,16 @@ export default function Aprovados() {
                     <CardContent className="space-y-4">
                       <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
                         <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Data de Entrada</p>
-                          <p className="text-lg font-semibold">
-                            {new Date(ordem.data_entrada).toLocaleDateString('pt-BR')}
-                          </p>
+                          <p className="text-sm text-muted-foreground">Prazo de Entrega</p>
+                          <input
+                            type="date"
+                            className="text-lg font-semibold bg-transparent border-none text-center outline-none"
+                            defaultValue={ordem.prazo_entrega || ''}
+                            onChange={(e) => {
+                              // Aqui você pode implementar a lógica para salvar a data
+                              console.log('Nova data:', e.target.value);
+                            }}
+                          />
                         </div>
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">Técnico</p>
@@ -184,6 +190,7 @@ export default function Aprovados() {
                           title="Peças Necessárias"
                           items={ordem.pecas_necessarias || []}
                           type="pecas"
+                          ordemId={ordem.id}
                         >
                           <Button variant="outline" size="sm">
                             <Package className="h-4 w-4 mr-2" />
@@ -195,6 +202,7 @@ export default function Aprovados() {
                           title="Usinagem Necessária"
                           items={ordem.usinagem_necessaria || []}
                           type="usinagem"
+                          ordemId={ordem.id}
                         >
                           <Button variant="outline" size="sm">
                             <Settings className="h-4 w-4 mr-2" />
@@ -206,6 +214,7 @@ export default function Aprovados() {
                           title="Serviços Necessários"
                           items={ordem.servicos_necessarios || []}
                           type="servicos"
+                          ordemId={ordem.id}
                         >
                           <Button variant="outline" size="sm">
                             <Wrench className="h-4 w-4 mr-2" />
