@@ -8,12 +8,13 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ItemSelectionModal } from "@/components/ItemSelectionModal";
-import { OrdemServicoModal } from "@/components/OrdemServicoModal";
+import { useNavigate } from "react-router-dom";
 
 export default function Aprovados() {
   const [ordensServico, setOrdensServico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadOrdensAprovadas();
@@ -133,11 +134,12 @@ export default function Aprovados() {
                           </div>
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
-                              <OrdemServicoModal ordem={ordem}>
-                                <button className="text-primary hover:underline cursor-pointer">
-                                  {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
-                                </button>
-                              </OrdemServicoModal> - {ordem.recebimentos?.tipo_equipamento || ordem.equipamento}
+                              <button 
+                                className="text-primary hover:underline cursor-pointer"
+                                onClick={() => navigate(`/ordem-servico/${ordem.recebimentos?.numero_ordem || ordem.numero_ordem}`)}
+                              >
+                                {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
+                              </button> - {ordem.recebimentos?.tipo_equipamento || ordem.equipamento}
                             </CardTitle>
                             <CardDescription className="mt-1 flex items-center gap-4">
                               <span className="flex items-center gap-1">

@@ -14,6 +14,7 @@ import NovaAnalise from "./pages/NovaAnalise";
 import Orcamentos from "./pages/Orcamentos";
 import NovoOrcamento from "./pages/NovoOrcamento";
 import Aprovados from "./pages/Aprovados";
+import VisualizarOrdemServico from "./pages/VisualizarOrdemServico";
 import Faturamento from "./pages/Faturamento";
 import Cadastros from "./pages/Cadastros";
 import Financeiro from "./pages/Financeiro";
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/orcamentos" element={<Orcamentos />} />
           <Route path="/orcamentos/novo" element={<NovoOrcamento />} />
           <Route path="/aprovados" element={<Aprovados />} />
+          <Route path="/ordem-servico/:id" element={<VisualizarOrdemServico />} />
           <Route path="/faturamento" element={<Faturamento />} />
           <Route path="/cadastros" element={<Cadastros />} />
           <Route path="/financeiro" element={<Financeiro />} />
