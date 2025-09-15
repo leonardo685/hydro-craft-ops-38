@@ -132,7 +132,12 @@ export default function Aprovados() {
                           </div>
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
-                              {ordem.recebimentos?.numero_ordem || ordem.numero_ordem} - {ordem.recebimentos?.tipo_equipamento || ordem.equipamento}
+                              <button 
+                                className="text-primary hover:underline cursor-pointer"
+                                onClick={() => window.open(`/analise?ordem=${ordem.id}`, '_blank')}
+                              >
+                                {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
+                              </button> - {ordem.recebimentos?.tipo_equipamento || ordem.equipamento}
                             </CardTitle>
                             <CardDescription className="mt-1 flex items-center gap-4">
                               <span className="flex items-center gap-1">

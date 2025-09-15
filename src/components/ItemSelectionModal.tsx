@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Package, Settings, Wrench } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 
 interface ItemSelectionModalProps {
@@ -17,6 +18,43 @@ interface ItemSelectionModalProps {
 export function ItemSelectionModal({ title, items, type, children, ordemId }: ItemSelectionModalProps) {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
+  const [realItems, setRealItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open && ordemId) {
+      loadRealData();
+    }
+  }, [open, ordemId, type]);
+
+  const loadRealData = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('ordens_servico')
+        .select('*')
+        .eq('id', ordemId)
+        .single();
+
+      if (error) throw error;
+      
+      let fieldData: any[] = [];
+      if (type === 'pecas' && data.pecas_necessarias) {
+        fieldData = Array.isArray(data.pecas_necessarias) ? data.pecas_necessarias : [];
+      } else if (type === 'usinagem' && data.usinagem_necessaria) {
+        fieldData = Array.isArray(data.usinagem_necessaria) ? data.usinagem_necessaria : [];
+      } else if (type === 'servicos' && data.servicos_necessarios) {
+        fieldData = Array.isArray(data.servicos_necessarios) ? data.servicos_necessarios : [];
+      }
+      
+      setRealItems(fieldData);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      setRealItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleItemToggle = (itemId: string) => {
     setSelectedItems(prev => 
@@ -28,7 +66,7 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
 
   const generatePDF = () => {
     const doc = new jsPDF();
-    const selectedData = items.filter((_, index) => selectedItems.includes(index.toString()));
+    const selectedData = realItems.filter((_, index) => selectedItems.includes(index.toString()));
     
     // Header
     doc.setFontSize(20);
@@ -145,10 +183,12 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
         </DialogHeader>
         
         <div className="space-y-4">
-          {items.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-8">Carregando...</div>
+          ) : realItems.length > 0 ? (
             <>
               <div className="space-y-3">
-                {items.map((item, index) => renderItem(item, index))}
+                {realItems.map((item, index) => renderItem(item, index))}
               </div>
               
               <div className="flex justify-between items-center pt-4 border-t">
