@@ -3,10 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Play, Package, Truck, FileText, Calendar, User } from "lucide-react";
+import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ItemSelectionModal } from "@/components/ItemSelectionModal";
 
 export default function Aprovados() {
   const [ordensServico, setOrdensServico] = useState<any[]>([]);
@@ -151,13 +152,7 @@ export default function Aprovados() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid md:grid-cols-3 gap-4 p-4 bg-gradient-secondary rounded-lg">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Valor Estimado</p>
-                          <p className="text-lg font-semibold text-primary">
-                            R$ {ordem.valor_estimado?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
-                          </p>
-                        </div>
+                      <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">Data de Entrada</p>
                           <p className="text-lg font-semibold">
@@ -179,16 +174,44 @@ export default function Aprovados() {
                         </div>
                       )}
 
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex flex-wrap gap-2 pt-2">
                         <Button variant="outline" size="sm">
+                          <Play className="h-4 w-4 mr-2" />
                           Iniciar Produção
                         </Button>
-                        <Button variant="outline" size="sm">
-                          Ver Detalhes
-                        </Button>
-                        <Button size="sm" className="bg-gradient-primary">
-                          Gerar Orçamento
-                        </Button>
+                        
+                        <ItemSelectionModal
+                          title="Peças Necessárias"
+                          items={ordem.pecas_necessarias || []}
+                          type="pecas"
+                        >
+                          <Button variant="outline" size="sm">
+                            <Package className="h-4 w-4 mr-2" />
+                            Peças
+                          </Button>
+                        </ItemSelectionModal>
+
+                        <ItemSelectionModal
+                          title="Usinagem Necessária"
+                          items={ordem.usinagem_necessaria || []}
+                          type="usinagem"
+                        >
+                          <Button variant="outline" size="sm">
+                            <Settings className="h-4 w-4 mr-2" />
+                            Usinagem
+                          </Button>
+                        </ItemSelectionModal>
+
+                        <ItemSelectionModal
+                          title="Serviços Necessários"
+                          items={ordem.servicos_necessarios || []}
+                          type="servicos"
+                        >
+                          <Button variant="outline" size="sm">
+                            <Wrench className="h-4 w-4 mr-2" />
+                            Serviços
+                          </Button>
+                        </ItemSelectionModal>
                       </div>
                     </CardContent>
                   </Card>
