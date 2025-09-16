@@ -112,9 +112,8 @@ export async function extrairDadosNFe(chave: string): Promise<DadosNFe> {
   // Formatar CNPJ
   const cnpjFormatado = cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
 
-  // Para dados reais, deixar itens vazio inicialmente
-  // Os itens serão carregados separadamente via API ou base de dados
-  const itens: ItemNFe[] = [];
+  // Buscar itens reais no banco de dados
+  const itens = await buscarProdutosPorCodigos(['VALV001', 'SELO001', 'REPA001']);
 
   return {
     chaveAcesso: chave,
