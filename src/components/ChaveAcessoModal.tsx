@@ -17,7 +17,7 @@ interface ChaveAcessoModalProps {
 
 export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
   const navigate = useNavigate();
-  const { criarNotaFiscal, criarRecebimento, gerarNumeroOrdem } = useRecebimentos();
+  const { criarNotaFiscal, criarRecebimento, gerarNumeroOrdem, recarregar } = useRecebimentos();
   const [chaveAcesso, setChaveAcesso] = useState("");
   const [dadosExtraidos, setDadosExtraidos] = useState<DadosNFe | null>(null);
   const [cliente, setCliente] = useState("");
@@ -120,6 +120,9 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
         await criarRecebimento(recebimentoData);
       }
 
+      // Recarregar dados para mostrar na listagem
+      await recarregar();
+      
       handleFechar();
     } catch (error) {
       console.error('Erro ao salvar nota fiscal:', error);

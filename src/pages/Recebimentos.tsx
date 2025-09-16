@@ -22,7 +22,7 @@ import { useRecebimentos } from "@/hooks/use-recebimentos";
 
 export default function Recebimentos() {
   const navigate = useNavigate();
-  const { recebimentos, notasFiscais, loading } = useRecebimentos();
+  const { recebimentos, notasFiscais, loading, recarregar } = useRecebimentos();
   const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
   const [modalChaveAcesso, setModalChaveAcesso] = useState(false);
   const [notaFiscalSelecionada, setNotaFiscalSelecionada] = useState<any>(null);
@@ -34,6 +34,7 @@ export default function Recebimentos() {
   const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroNotaEntrada, setFiltroNotaEntrada] = useState("");
   const [filtroNotaFiscal, setFiltroNotaFiscal] = useState("");
+  const [aplicandoFiltros, setAplicandoFiltros] = useState(false);
 
   // Limpar localStorage antigo na inicialização
   useEffect(() => {
@@ -71,6 +72,22 @@ export default function Recebimentos() {
       return matchCliente && matchNota && matchNotaFiscal;
     });
   }, [recebimentos, dataInicio, dataFim, filtroCliente, filtroNotaEntrada, filtroNotaFiscal]);
+
+  // Função para aplicar filtros e recarregar dados
+  const handleBuscar = async () => {
+    setAplicandoFiltros(true);
+    await recarregar();
+    setAplicandoFiltros(false);
+  };
+
+  // Função para limpar filtros
+  const handleLimparFiltros = () => {
+    setDataInicio(undefined);
+    setDataFim(undefined);
+    setFiltroCliente("");
+    setFiltroNotaEntrada("");
+    setFiltroNotaFiscal("");
+  };
 
   return (
     <AppLayout>
@@ -190,6 +207,25 @@ export default function Recebimentos() {
                 className="w-full"
               />
             </div>
+          </div>
+          
+          {/* Botões de ação dos filtros */}
+          <div className="flex gap-2 mt-4">
+            <Button 
+              onClick={handleBuscar}
+              disabled={aplicandoFiltros}
+              className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium"
+            >
+              <Search className="h-4 w-4 mr-2" />
+              {aplicandoFiltros ? "Buscando..." : "Buscar"}
+            </Button>
+            <Button 
+              onClick={handleLimparFiltros}
+              variant="outline"
+              className="border-muted-foreground text-muted-foreground hover:bg-muted hover:text-foreground transition-smooth"
+            >
+              Limpar Filtros
+            </Button>
           </div>
         </div>
 
