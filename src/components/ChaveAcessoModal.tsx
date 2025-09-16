@@ -60,7 +60,7 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
     setCliente(clienteEncontrado);
     
     if (!clienteEncontrado) {
-      setErro("Cliente não encontrado no cadastro. Os dados serão preenchidos, mas você precisará selecionar o cliente manualmente.");
+      setErro("Cliente não encontrado no cadastro. Navegue até a aba Cadastros para cadastrar o cliente.");
     }
   };
 
@@ -210,7 +210,20 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
                     <p><strong>Série:</strong> {dadosExtraidos.serie}</p>
                     <p><strong>Número:</strong> {dadosExtraidos.numero}</p>
                     <p><strong>Itens encontrados:</strong> {dadosExtraidos.itens?.length || 0}</p>
-                    {cliente && <p><strong>Cliente:</strong> {cliente}</p>}
+                    {cliente ? (
+                      <p><strong>Cliente:</strong> {cliente}</p>
+                    ) : (
+                      <div className="text-amber-600 mt-2">
+                        <p><strong>Cliente não encontrado no cadastro.</strong></p>
+                        <Button 
+                          variant="link" 
+                          className="p-0 h-auto text-amber-600 underline"
+                          onClick={handleCadastrarCliente}
+                        >
+                          Ir para Cadastros
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </AlertDescription>
