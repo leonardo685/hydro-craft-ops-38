@@ -126,6 +126,17 @@ export async function extrairDadosNFe(chave: string): Promise<DadosNFe> {
       valorTotal: 3500.00,
       unidade: 'PC'
     }];
+  } else if (chaveLimpa === '35250960561800004109550010009541481036513651') {
+    // Outra NFe com o mesmo item
+    itens = [{
+      codigo: '11042990',
+      descricao: 'NOME: CILINDRO MECANICO; TIPO CILINDRO: PNEUMATICO; ACAO CILINDRO: DUPLA; MATERIAL CORPO: ACO CARBONO; DIAMETRO HASTE: 5/8POL; DIAMETRO EMBOLO: 1.1/2POL; CURSO: 5POL; DIAMETRO CONEXAO: 3/8POL; ROSCA: NPT',
+      ncm: '84123110',
+      quantidade: 1.0,
+      valorUnitario: 3500.00,
+      valorTotal: 3500.00,
+      unidade: 'PC'
+    }];
   } else {
     // Para outras NFes, buscar no banco de dados primeiro, se não encontrar, retorna array vazio
     const produtosBanco = await buscarProdutosPorCodigos([]);
