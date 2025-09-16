@@ -79,9 +79,10 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
         numero: dadosNFe.numero,
         serie: dadosNFe.serie,
         modelo: dadosNFe.modelo || 'NFe',
-        data_emissao: new Date(dadosNFe.dataEmissao).toISOString(),
+        data_emissao: dadosNFe.dataEmissao, // Usar a data já formatada
         cliente_nome: cliente,
         cliente_cnpj: dadosNFe.cnpjEmitente,
+        valor_total: itensSelecionados.reduce((total, item) => total + item.valorTotal, 0),
         status: 'processada',
         created_at: new Date().toISOString()
       };
