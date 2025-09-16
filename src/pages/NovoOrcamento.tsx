@@ -111,7 +111,7 @@ export default function NovoOrcamento() {
             setDadosOrcamento(prev => ({
               ...prev,
               tipoOrdem: 'reforma', // Pode ajustar baseado no tipo_problema se necessário
-              cliente: ordemServico.recebimentos?.cliente_id || '',
+              cliente: ordemServico.recebimentos?.cliente_nome || ordemServico.cliente_nome || '',
               solicitante: '',
               numeroNota: ordemServico.recebimentos?.nota_fiscal || '',
               numeroSerie: ordemServico.recebimentos?.numero_serie || '',
@@ -772,19 +772,28 @@ export default function NovoOrcamento() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="cliente">Cliente *</Label>
-                  <Select value={dadosOrcamento.cliente} onValueChange={value => setDadosOrcamento(prev => ({
-                  ...prev,
-                  cliente: value
-                }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clientes.map(cliente => <SelectItem key={cliente.id} value={cliente.id}>
-                          {cliente.nome}
-                        </SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  {ordemServicoId ? (
+                    <Input 
+                      id="cliente" 
+                      value={dadosOrcamento.cliente} 
+                      disabled 
+                      className="bg-muted"
+                    />
+                  ) : (
+                    <Select value={dadosOrcamento.cliente} onValueChange={value => setDadosOrcamento(prev => ({
+                      ...prev,
+                      cliente: value
+                    }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clientes.map(cliente => <SelectItem key={cliente.id} value={cliente.id}>
+                            {cliente.nome}
+                          </SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="solicitante">Solicitante</Label>
