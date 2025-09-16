@@ -115,6 +115,10 @@ export async function extrairDadosNFe(chave: string): Promise<DadosNFe> {
   // Extrair dados reais da NFe baseado na chave de acesso
   let itens: ItemNFe[] = [];
   
+  // Debug - log da chave processada
+  console.log('Chave de acesso processada:', chaveLimpa);
+  console.log('Tamanho da chave:', chaveLimpa.length);
+  
   // Baseado na chave de acesso específica da NFe, retornar os itens reais
   if (chaveLimpa === '35250960561800004109550010009541751036583512') {
     itens = [{
