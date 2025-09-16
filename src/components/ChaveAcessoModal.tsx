@@ -37,7 +37,7 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
     }
   };
 
-  const handleValidar = () => {
+  const handleValidar = async () => {
     if (!chaveAcesso.trim()) {
       setErro("Por favor, digite a chave de acesso");
       return;
@@ -52,11 +52,11 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
       return;
     }
 
-    const dados = extrairDadosNFe(chaveAcesso);
+    const dados = await extrairDadosNFe(chaveAcesso);
     setDadosExtraidos(dados);
     
     // Buscar cliente pelo CNPJ
-    const clienteEncontrado = buscarClientePorCNPJ(dados.cnpjEmitente);
+    const clienteEncontrado = await buscarClientePorCNPJ(dados.cnpjEmitente);
     setCliente(clienteEncontrado);
     
     if (!clienteEncontrado) {

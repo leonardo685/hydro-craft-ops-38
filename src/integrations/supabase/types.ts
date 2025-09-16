@@ -65,6 +65,30 @@ export type Database = {
         }
         Relationships: []
       }
+      empresas_nfe: {
+        Row: {
+          cnpj: string
+          created_at: string
+          id: string
+          razao_social: string
+          updated_at: string
+        }
+        Insert: {
+          cnpj: string
+          created_at?: string
+          id?: string
+          razao_social: string
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string
+          created_at?: string
+          id?: string
+          razao_social?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fornecedores: {
         Row: {
           cep: string | null
@@ -378,6 +402,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      produtos_nfe: {
+        Row: {
+          codigo: string
+          created_at: string
+          descricao: string
+          id: string
+          ncm: string | null
+          updated_at: string
+        }
+        Insert: {
+          codigo: string
+          created_at?: string
+          descricao: string
+          id?: string
+          ncm?: string | null
+          updated_at?: string
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          ncm?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       recebimentos: {
         Row: {
