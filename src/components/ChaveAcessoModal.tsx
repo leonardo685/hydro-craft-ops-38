@@ -135,11 +135,15 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
   const handleCadastrarCliente = () => {
     if (!dadosExtraidos) return;
     
-    // Navegar para página de cadastro com dados pré-preenchidos
+    // Navegar para página de cadastro com dados pré-preenchidos da NFe
     navigate('/cadastros', { 
       state: { 
-        cnpj: dadosExtraidos.cnpjEmitente,
-        activeTab: 'clientes'
+        clienteData: {
+          cnpj_cpf: dadosExtraidos.clienteCnpj || dadosExtraidos.cnpjEmitente,
+          nome: dadosExtraidos.clienteNome || '',
+        },
+        activeTab: 'clientes',
+        autoFill: true
       } 
     });
     handleFechar();

@@ -12,6 +12,7 @@ import { CNPJInput } from "@/components/CNPJInput";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useLocation } from "react-router-dom";
 
 interface Cliente {
   id: string;
@@ -44,6 +45,7 @@ interface Fornecedor {
 }
 
 const Cadastros = () => {
+  const location = useLocation();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [showClienteForm, setShowClienteForm] = useState(false);
@@ -84,7 +86,21 @@ const Cadastros = () => {
   useEffect(() => {
     loadClientes();
     loadFornecedores();
-  }, []);
+    
+    // Verificar se há dados para preenchimento automático vindos da NFe
+    if (location.state?.autoFill && location.state?.clienteData) {
+      const clienteData = location.state.clienteData;
+      setClienteForm(prev => ({
+        ...prev,
+        cnpj_cpf: clienteData.cnpj_cpf || '',
+        nome: clienteData.nome || ''
+      }));
+      setShowClienteForm(true);
+      
+      // Limpar o state para não interferir em navegações futuras
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const loadClientes = async () => {
     try {
@@ -310,7 +326,7 @@ const Cadastros = () => {
           <p className="text-muted-foreground">Gerencie clientes, fornecedores e categorias financeiras</p>
         </div>
 
-        <Tabs defaultValue="clientes" className="w-full">
+        <Tabs defaultValue={location.state?.activeTab || "clientes"} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="clientes" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
