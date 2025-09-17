@@ -109,21 +109,21 @@ serve(async (req) => {
         dadosSimulados = {
           chave_acesso: chaveAcesso,
           cnpj_emitente: cnpjFormatado,
-          data_emissao: new Date('2025-09-15'),
+          data_emissao: new Date('2025-05-01'),
           modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
           serie: parseInt(serie).toString(),
           numero: parseInt(numero).toString(),
           cliente_nome: 'MEC-HIDRO MECANICA E HIDRAULICA LTDA',
           cliente_cnpj: '03.328.334/0001-87',
-          valor_total: 3500.00,
+          valor_total: 5000.00,
           itens: [
             {
-              codigo: '11042990',
-              descricao: 'CILINDRO PNEUMÁTICO - DUPLA AÇÃO - ACO CARBONO - EMBOLO 1.1/2POL - HASTE 5/8POL - CURSO 5POL',
+              codigo: '11037515',
+              descricao: 'NOME: KIT/CONJUNTO; TIPO KIT/CONJUNTO: CONJUNTO HIDRAULICO; NOME: EXTRATOR COMPLETO C/BOMBA; REFERENCIA/FABRICANTE: MPS2 4CE/ENERPAC',
               quantidade: 1,
-              valor_unitario: 3500.00,
-              valor_total: 3500.00,
-              ncm: '84123110'
+              valor_unitario: 5000.00,
+              valor_total: 5000.00,
+              ncm: '392690900'
             }
           ]
         };
@@ -264,21 +264,21 @@ serve(async (req) => {
         dadosProcessados = {
           chave_acesso: chaveAcesso,
           cnpj_emitente: cnpjFormatado,
-          data_emissao: new Date('2025-09-15'),
+          data_emissao: new Date('2025-05-01'),
           modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
           serie: parseInt(serie).toString(),
           numero: parseInt(numero).toString(),
           cliente_nome: 'MEC-HIDRO MECANICA E HIDRAULICA LTDA',
           cliente_cnpj: '03.328.334/0001-87',
-          valor_total: 3500.00,
+          valor_total: 5000.00,
           itens: [
             {
-              codigo: '11042990',
-              descricao: 'CILINDRO PNEUMÁTICO - DUPLA AÇÃO - ACO CARBONO - EMBOLO 1.1/2POL - HASTE 5/8POL - CURSO 5POL',
+              codigo: '11037515',
+              descricao: 'NOME: KIT/CONJUNTO; TIPO KIT/CONJUNTO: CONJUNTO HIDRAULICO; NOME: EXTRATOR COMPLETO C/BOMBA; REFERENCIA/FABRICANTE: MPS2 4CE/ENERPAC',
               quantidade: 1,
-              valor_unitario: 3500.00,
-              valor_total: 3500.00,
-              ncm: '84123110'
+              valor_unitario: 5000.00,
+              valor_total: 5000.00,
+              ncm: '392690900'
             }
           ]
         };
