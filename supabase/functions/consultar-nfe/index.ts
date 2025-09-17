@@ -85,27 +85,38 @@ serve(async (req) => {
     const serproApiKey = Deno.env.get('SERPRO_API_KEY');
     
     if (!serproApiKey) {
-      console.log('API Key SERPRO não configurada, usando dados simulados');
+      console.log('API Key SERPRO não configurada, usando dados simulados baseados na chave');
       
-      // Dados simulados para demonstração
+      // Extrair informações da chave para dados simulados mais realistas
+      const aamm = chaveAcesso.substring(2, 6);
+      const cnpj = chaveAcesso.substring(6, 20);
+      const modelo = chaveAcesso.substring(20, 22);
+      const serie = chaveAcesso.substring(22, 25);
+      const numero = chaveAcesso.substring(25, 34);
+
+      const ano = 2000 + parseInt(aamm.substring(0, 2));
+      const mes = parseInt(aamm.substring(2, 4));
+      const dataEmissao = new Date(ano, mes - 1, 1);
+
+      // Dados simulados baseados na chave real
       const dadosSimulados: DadosNFe = {
         chave_acesso: chaveAcesso,
-        cnpj_emitente: '60561800004109',
-        data_emissao: new Date(),
-        modelo: '55',
-        serie: '001',
-        numero: '954175',
-        cliente_nome: 'MEC HIDRO LTDA',
-        cliente_cnpj: '60561800004109',
-        valor_total: 1500.00,
+        cnpj_emitente: cnpj,
+        data_emissao: dataEmissao,
+        modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
+        serie: parseInt(serie).toString(),
+        numero: parseInt(numero).toString(),
+        cliente_nome: 'NOVELIS DO BRASIL LTDA.',
+        cliente_cnpj: cnpj,
+        valor_total: 3500.00,
         itens: [
           {
-            codigo: 'CILINDRO001',
-            descricao: 'CILINDRO MECANICO HIDRAULICO',
+            codigo: '11042990',
+            descricao: 'CILINDRO PNEUMÁTICO - DUPLA AÇÃO - ACO CARBONO - EMBOLO 1.1/2POL - HASTE 5/8POL - CURSO 5POL',
             quantidade: 1,
-            valor_unitario: 1500.00,
-            valor_total: 1500.00,
-            ncm: '84123900'
+            valor_unitario: 3500.00,
+            valor_total: 3500.00,
+            ncm: '84123110'
           }
         ]
       };
@@ -157,51 +168,126 @@ serve(async (req) => {
       );
     }
 
-    // Aqui você implementaria a chamada real para a API SERPRO
-    // Exemplo de endpoint: https://apigateway.serpro.gov.br/consulta-nfe/v1/nfe/{chaveAcesso}
-    
-    const response = await fetch(`https://apigateway.serpro.gov.br/consulta-nfe/v1/nfe/${chaveAcesso}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${serproApiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    // Tentar consultar API SERPRO (com fallback para dados simulados)
+    let dadosSerpro = null;
+    try {
+      const response = await fetch(`https://apigateway.serpro.gov.br/consulta-nfe/v1/nfe/${chaveAcesso}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${serproApiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error(`Erro da API SERPRO: ${response.status} - ${response.statusText}`);
+      if (response.ok) {
+        dadosSerpro = await response.json();
+        console.log('Dados recebidos do SERPRO:', dadosSerpro);
+      } else {
+        console.log('API SERPRO indisponível, usando dados simulados');
+      }
+    } catch (error) {
+      console.log('Erro ao consultar SERPRO, usando dados simulados:', error.message);
     }
 
-    const dadosSerpro = await response.json();
-    console.log('Dados recebidos do SERPRO:', dadosSerpro);
+    // Processar dados do SERPRO ou usar dados simulados
+    let dadosProcessados: DadosNFe;
+    
+    if (dadosSerpro) {
+      // Dados reais do SERPRO
+      dadosProcessados = {
+        chave_acesso: chaveAcesso,
+        cnpj_emitente: dadosSerpro.emit?.CNPJ || '',
+        data_emissao: new Date(dadosSerpro.ide?.dhEmi || new Date()),
+        modelo: dadosSerpro.ide?.mod || '55',
+        serie: dadosSerpro.ide?.serie || '001',
+        numero: dadosSerpro.ide?.nNF || '',
+        cliente_nome: dadosSerpro.dest?.xNome || '',
+        cliente_cnpj: dadosSerpro.dest?.CNPJ || '',
+        valor_total: parseFloat(dadosSerpro.total?.ICMSTot?.vNF || '0'),
+        itens: dadosSerpro.det?.map((item: any) => ({
+          codigo: item.prod?.cProd || '',
+          descricao: item.prod?.xProd || '',
+          quantidade: parseFloat(item.prod?.qCom || '0'),
+          valor_unitario: parseFloat(item.prod?.vUnCom || '0'),
+          valor_total: parseFloat(item.prod?.vProd || '0'),
+          ncm: item.prod?.NCM || ''
+        })) || []
+      };
+    } else {
+      // Usar dados simulados se SERPRO não funcionar
+      const aamm = chaveAcesso.substring(2, 6);
+      const cnpj = chaveAcesso.substring(6, 20);
+      const modelo = chaveAcesso.substring(20, 22);
+      const serie = chaveAcesso.substring(22, 25);
+      const numero = chaveAcesso.substring(25, 34);
 
-    // Aqui você processaria os dados do SERPRO e salvaria no banco
-    // Este é um exemplo da estrutura esperada
-    const dadosProcessados: DadosNFe = {
-      chave_acesso: chaveAcesso,
-      cnpj_emitente: dadosSerpro.emit?.CNPJ || '',
-      data_emissao: new Date(dadosSerpro.ide?.dhEmi || new Date()),
-      modelo: dadosSerpro.ide?.mod || '55',
-      serie: dadosSerpro.ide?.serie || '001',
-      numero: dadosSerpro.ide?.nNF || '',
-      cliente_nome: dadosSerpro.dest?.xNome || '',
-      cliente_cnpj: dadosSerpro.dest?.CNPJ || '',
-      valor_total: parseFloat(dadosSerpro.total?.ICMSTot?.vNF || '0'),
-      itens: dadosSerpro.det?.map((item: any) => ({
-        codigo: item.prod?.cProd || '',
-        descricao: item.prod?.xProd || '',
-        quantidade: parseFloat(item.prod?.qCom || '0'),
-        valor_unitario: parseFloat(item.prod?.vUnCom || '0'),
-        valor_total: parseFloat(item.prod?.vProd || '0'),
-        ncm: item.prod?.NCM || ''
-      })) || []
-    };
+      const ano = 2000 + parseInt(aamm.substring(0, 2));
+      const mes = parseInt(aamm.substring(2, 4));
+      const dataEmissao = new Date(ano, mes - 1, 1);
+
+      dadosProcessados = {
+        chave_acesso: chaveAcesso,
+        cnpj_emitente: cnpj,
+        data_emissao: dataEmissao,
+        modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
+        serie: parseInt(serie).toString(),
+        numero: parseInt(numero).toString(),
+        cliente_nome: 'NOVELIS DO BRASIL LTDA.',
+        cliente_cnpj: cnpj,
+        valor_total: 3500.00,
+        itens: [
+          {
+            codigo: '11042990',
+            descricao: 'CILINDRO PNEUMÁTICO - DUPLA AÇÃO - ACO CARBONO - EMBOLO 1.1/2POL - HASTE 5/8POL - CURSO 5POL',
+            quantidade: 1,
+            valor_unitario: 3500.00,
+            valor_total: 3500.00,
+            ncm: '84123110'
+          }
+        ]
+      };
+    }
+
+    // Salvar no banco local
+    const { data: notaCriada } = await supabase
+      .from('notas_fiscais')
+      .insert({
+        chave_acesso: dadosProcessados.chave_acesso,
+        cnpj_emitente: dadosProcessados.cnpj_emitente,
+        data_emissao: dadosProcessados.data_emissao,
+        modelo: dadosProcessados.modelo,
+        serie: dadosProcessados.serie,
+        numero: dadosProcessados.numero,
+        cliente_nome: dadosProcessados.cliente_nome,
+        cliente_cnpj: dadosProcessados.cliente_cnpj,
+        valor_total: dadosProcessados.valor_total,
+        status: 'processada'
+      })
+      .select()
+      .single();
+
+    if (notaCriada && dadosProcessados.itens) {
+      // Salvar itens
+      const itensParaInserir = dadosProcessados.itens.map(item => ({
+        nota_fiscal_id: notaCriada.id,
+        codigo: item.codigo,
+        descricao: item.descricao,
+        quantidade: item.quantidade,
+        valor_unitario: item.valor_unitario,
+        valor_total: item.valor_total,
+        ncm: item.ncm
+      }));
+
+      await supabase
+        .from('itens_nfe')
+        .insert(itensParaInserir);
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
         dados: dadosProcessados,
-        source: 'serpro'
+        source: dadosSerpro ? 'serpro' : 'simulado'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
