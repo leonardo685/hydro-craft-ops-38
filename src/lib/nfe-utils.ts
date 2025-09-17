@@ -1,4 +1,5 @@
 // Utilitários para validação e extração de dados de chave de acesso NFe
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ItemNFe {
   codigo: string;
@@ -20,6 +21,9 @@ export interface DadosNFe {
   codigoNumerico: string;
   digitoVerificador: string;
   valida: boolean;
+  valorTotal?: number;
+  clienteNome?: string;
+  clienteCnpj?: string;
   itens?: ItemNFe[];
 }
 
@@ -93,72 +97,84 @@ export async function extrairDadosNFe(chave: string): Promise<DadosNFe> {
     };
   }
 
-  // Estrutura da chave: UF(2) + AAMM(4) + CNPJ(14) + MOD(2) + SER(3) + NNF(9) + TPEMIS(1) + CNNN(8) + DV(1)
-  const uf = chaveLimpa.substring(0, 2);
-  const aamm = chaveLimpa.substring(2, 6);
-  const cnpj = chaveLimpa.substring(6, 20);
-  const modelo = chaveLimpa.substring(20, 22);
-  const serie = chaveLimpa.substring(22, 25);
-  const numero = chaveLimpa.substring(25, 34);
-  const tpEmis = chaveLimpa.substring(34, 35);
-  const codigoNumerico = chaveLimpa.substring(35, 43);
-  const digitoVerificador = chaveLimpa.substring(43, 44);
+  console.log('Iniciando consulta NFe via API:', chaveLimpa);
 
-  // Converter AAMM para data
-  const ano = 2000 + parseInt(aamm.substring(0, 2));
-  const mes = parseInt(aamm.substring(2, 4));
-  const dataEmissao = `${ano}-${mes.toString().padStart(2, '0')}-01`;
+  try {
+    // Chamar a edge function para consultar a NFe
+    const response = await supabase.functions.invoke('consultar-nfe', {
+      body: { chaveAcesso: chaveLimpa }
+    });
 
-  // Formatar CNPJ
-  const cnpjFormatado = cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    if (response.error) {
+      console.error('Erro na consulta NFe:', response.error);
+      throw new Error(`Erro na consulta: ${response.error.message}`);
+    }
 
-  // Extrair dados reais da NFe baseado na chave de acesso
-  let itens: ItemNFe[] = [];
-  
-  // Debug - log da chave processada
-  console.log('Chave de acesso processada:', chaveLimpa);
-  console.log('Tamanho da chave:', chaveLimpa.length);
-  
-  // Baseado na chave de acesso específica da NFe, retornar os itens reais
-  if (chaveLimpa === '35250960561800004109550010009541751036583512') {
-    itens = [{
-      codigo: '11042990',
-      descricao: 'NOME: CILINDRO MECANICO; TIPO CILINDRO: PNEUMATICO; ACAO CILINDRO: DUPLA; MATERIAL CORPO: ACO CARBONO; DIAMETRO HASTE: 5/8POL; DIAMETRO EMBOLO: 1.1/2POL; CURSO: 5POL; DIAMETRO CONEXAO: 3/8POL; ROSCA: NPT',
-      ncm: '84123110',
-      quantidade: 1.0,
-      valorUnitario: 3500.00,
-      valorTotal: 3500.00,
-      unidade: 'PC'
-    }];
-  } else if (chaveLimpa === '35250960561800004109550010009541481036513651') {
-    // Outra NFe com o mesmo item
-    itens = [{
-      codigo: '11042990',
-      descricao: 'NOME: CILINDRO MECANICO; TIPO CILINDRO: PNEUMATICO; ACAO CILINDRO: DUPLA; MATERIAL CORPO: ACO CARBONO; DIAMETRO HASTE: 5/8POL; DIAMETRO EMBOLO: 1.1/2POL; CURSO: 5POL; DIAMETRO CONEXAO: 3/8POL; ROSCA: NPT',
-      ncm: '84123110',
-      quantidade: 1.0,
-      valorUnitario: 3500.00,
-      valorTotal: 3500.00,
-      unidade: 'PC'
-    }];
-  } else {
-    // Para outras NFes, buscar no banco de dados primeiro, se não encontrar, retorna array vazio
-    const produtosBanco = await buscarProdutosPorCodigos([]);
-    itens = produtosBanco;
+    if (!response.data?.success) {
+      throw new Error(response.data?.error || 'Erro desconhecido na consulta');
+    }
+
+    const dados = response.data.dados;
+    console.log('Dados NFe recebidos:', dados);
+
+    return {
+      chaveAcesso: chave,
+      cnpjEmitente: dados.cliente_cnpj || dados.cnpj_emitente,
+      dataEmissao: dados.data_emissao,
+      modelo: dados.modelo === '55' ? 'NFe' : dados.modelo === '65' ? 'NFCe' : dados.modelo,
+      serie: dados.serie,
+      numero: dados.numero,
+      codigoNumerico: chaveLimpa.substring(35, 43),
+      digitoVerificador: chaveLimpa.substring(43, 44),
+      valida: true,
+      valorTotal: dados.valor_total,
+      clienteNome: dados.cliente_nome,
+      clienteCnpj: dados.cliente_cnpj,
+      itens: dados.itens?.map((item: any) => ({
+        codigo: item.codigo,
+        descricao: item.descricao,
+        ncm: item.ncm || '',
+        quantidade: item.quantidade,
+        valorUnitario: item.valor_unitario,
+        valorTotal: item.valor_total,
+        unidade: 'UN'
+      })) || []
+    };
+
+  } catch (error) {
+    console.error('Erro ao consultar NFe:', error);
+    
+    // Fallback para extrair informações básicas da chave se a API falhar
+    const aamm = chaveLimpa.substring(2, 6);
+    const cnpj = chaveLimpa.substring(6, 20);
+    const modelo = chaveLimpa.substring(20, 22);
+    const serie = chaveLimpa.substring(22, 25);
+    const numero = chaveLimpa.substring(25, 34);
+    const codigoNumerico = chaveLimpa.substring(35, 43);
+    const digitoVerificador = chaveLimpa.substring(43, 44);
+
+    const ano = 2000 + parseInt(aamm.substring(0, 2));
+    const mes = parseInt(aamm.substring(2, 4));
+    const dataEmissao = `${ano}-${mes.toString().padStart(2, '0')}-01`;
+
+    const cnpjFormatado = cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    const nomeCliente = await buscarClientePorCNPJ(cnpj);
+
+    return {
+      chaveAcesso: chave,
+      cnpjEmitente: cnpjFormatado,
+      dataEmissao,
+      modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
+      serie: parseInt(serie).toString(),
+      numero: parseInt(numero).toString(),
+      codigoNumerico,
+      digitoVerificador,
+      valida: true,
+      clienteNome: nomeCliente,
+      clienteCnpj: cnpjFormatado,
+      itens: [] // Sem itens quando a API falha
+    };
   }
-
-  return {
-    chaveAcesso: chave,
-    cnpjEmitente: cnpjFormatado,
-    dataEmissao,
-    modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
-    serie: parseInt(serie).toString(),
-    numero: parseInt(numero).toString(),
-    codigoNumerico,
-    digitoVerificador,
-    valida: true,
-    itens
-  };
 }
 
 /**

@@ -1,1 +1,24 @@
 project_id = "fmbfkufkxvyncadunlhh"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54324
+external_url = "http://127.0.0.1:54324"
+jwt_expiry = 3600
+refresh_token_rotation_enabled = true
+secure_password_change_enabled = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[functions.consultar-nfe]
+verify_jwt = false
