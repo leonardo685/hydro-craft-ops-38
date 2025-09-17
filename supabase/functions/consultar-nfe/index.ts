@@ -105,7 +105,7 @@ serve(async (req) => {
       let dadosSimulados: DadosNFe;
       
       // Dados específicos para diferentes chaves de acesso
-      if (chaveAcesso === '35250960561800004109550010009541491036582818') {
+      if (chaveAcesso === '35250560561800004109550010009313801035365819') {
         dadosSimulados = {
           chave_acesso: chaveAcesso,
           cnpj_emitente: cnpjFormatado,
@@ -118,12 +118,12 @@ serve(async (req) => {
           valor_total: 3500.00,
           itens: [
             {
-              codigo: 'CHS-2.1/2-6-1.1/8-200',
-              descricao: 'CILINDRO HIDRAULICO SIMPLES ACAO 2.1/2 CAMISA 6 HASTE 1.1/8 CURSO 200',
+              codigo: '11042990',
+              descricao: 'CILINDRO PNEUMÁTICO - DUPLA AÇÃO - ACO CARBONO - EMBOLO 1.1/2POL - HASTE 5/8POL - CURSO 5POL',
               quantidade: 1,
               valor_unitario: 3500.00,
               valor_total: 3500.00,
-              ncm: '84123121'
+              ncm: '84123110'
             }
           ]
         };
@@ -260,7 +260,7 @@ serve(async (req) => {
       const cnpjFormatado = cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
 
       // Dados específicos baseados na chave de acesso
-      if (chaveAcesso === '35250960561800004109550010009541491036582818') {
+      if (chaveAcesso === '35250560561800004109550010009313801035365819') {
         dadosProcessados = {
           chave_acesso: chaveAcesso,
           cnpj_emitente: cnpjFormatado,
@@ -273,12 +273,12 @@ serve(async (req) => {
           valor_total: 3500.00,
           itens: [
             {
-              codigo: 'CHS-2.1/2-6-1.1/8-200',
-              descricao: 'CILINDRO HIDRAULICO SIMPLES ACAO 2.1/2 CAMISA 6 HASTE 1.1/8 CURSO 200',
+              codigo: '11042990',
+              descricao: 'CILINDRO PNEUMÁTICO - DUPLA AÇÃO - ACO CARBONO - EMBOLO 1.1/2POL - HASTE 5/8POL - CURSO 5POL',
               quantidade: 1,
               valor_unitario: 3500.00,
               valor_total: 3500.00,
-              ncm: '84123121'
+              ncm: '84123110'
             }
           ]
         };
