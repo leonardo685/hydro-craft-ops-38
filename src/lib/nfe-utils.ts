@@ -157,8 +157,8 @@ export async function extrairDadosNFe(chave: string): Promise<DadosNFe> {
     const mes = parseInt(aamm.substring(2, 4));
     const dataEmissao = `${ano}-${mes.toString().padStart(2, '0')}-01`;
 
-    const cnpjFormatado = cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-    const nomeCliente = await buscarClientePorCNPJ(cnpj);
+    const cnpjFormatado = formatarCNPJ(cnpj);
+    const nomeCliente = await buscarClientePorCNPJ(cnpjFormatado);
 
     return {
       chaveAcesso: chave,
@@ -178,28 +178,58 @@ export async function extrairDadosNFe(chave: string): Promise<DadosNFe> {
 }
 
 /**
+ * Formatar CNPJ no padrão XX.XXX.XXX/XXXX-XX
+ */
+export function formatarCNPJ(cnpj: string): string {
+  // Remove todos os caracteres não numéricos
+  const apenasNumeros = cnpj.replace(/\D/g, '');
+  
+  // Se não tem 14 dígitos, retorna como está
+  if (apenasNumeros.length !== 14) {
+    return cnpj;
+  }
+  
+  // Aplica a formatação XX.XXX.XXX/XXXX-XX
+  return apenasNumeros.replace(
+    /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
+    '$1.$2.$3/$4-$5'
+  );
+}
+
+/**
+ * Limpar CNPJ removendo formatação
+ */
+export function limparCNPJ(cnpj: string): string {
+  return cnpj.replace(/\D/g, '');
+}
+
+/**
  * Buscar nome do cliente por CNPJ no banco de dados
  */
 export async function buscarClientePorCNPJ(cnpj: string): Promise<string> {
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     
-    // Primeiro buscar na tabela de clientes
+    // Tentar com CNPJ formatado e sem formatação
+    const cnpjFormatado = formatarCNPJ(cnpj);
+    const cnpjLimpo = limparCNPJ(cnpj);
+    
+    // Primeiro buscar na tabela de clientes com ambas as versões
     const { data: clienteData, error: clienteError } = await supabase
       .from('clientes')
       .select('nome')
-      .eq('cnpj_cpf', cnpj)
+      .or(`cnpj_cpf.eq.${cnpjFormatado},cnpj_cpf.eq.${cnpjLimpo}`)
       .maybeSingle();
 
     if (clienteData && !clienteError) {
       return clienteData.nome;
     }
 
-    // Se não encontrar, buscar na tabela empresas_nfe
+    // Se não encontrar, buscar na tabela empresas_nfe com ambas as versões
     const { data, error } = await supabase
       .from('empresas_nfe')
       .select('razao_social')
-      .eq('cnpj', cnpj)
+      .or(`cnpj.eq.${cnpjFormatado},cnpj.eq.${cnpjLimpo}`)
       .maybeSingle();
 
     if (data && !error) {

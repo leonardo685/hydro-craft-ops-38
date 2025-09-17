@@ -97,17 +97,20 @@ serve(async (req) => {
       const ano = 2000 + parseInt(aamm.substring(0, 2));
       const mes = parseInt(aamm.substring(2, 4));
       const dataEmissao = new Date(ano, mes - 1, 1);
+      
+      // Formatar CNPJ no padrão XX.XXX.XXX/XXXX-XX
+      const cnpjFormatado = cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
 
       // Dados simulados baseados na chave real
       const dadosSimulados: DadosNFe = {
         chave_acesso: chaveAcesso,
-        cnpj_emitente: cnpj,
+        cnpj_emitente: cnpjFormatado,
         data_emissao: dataEmissao,
         modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
         serie: parseInt(serie).toString(),
         numero: parseInt(numero).toString(),
         cliente_nome: 'NOVELIS DO BRASIL LTDA.',
-        cliente_cnpj: cnpj,
+        cliente_cnpj: cnpjFormatado,
         valor_total: 3500.00,
         itens: [
           {
@@ -224,16 +227,19 @@ serve(async (req) => {
       const ano = 2000 + parseInt(aamm.substring(0, 2));
       const mes = parseInt(aamm.substring(2, 4));
       const dataEmissao = new Date(ano, mes - 1, 1);
+      
+      // Formatar CNPJ no padrão XX.XXX.XXX/XXXX-XX
+      const cnpjFormatado = cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
 
       dadosProcessados = {
         chave_acesso: chaveAcesso,
-        cnpj_emitente: cnpj,
+        cnpj_emitente: cnpjFormatado,
         data_emissao: dataEmissao,
         modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
         serie: parseInt(serie).toString(),
         numero: parseInt(numero).toString(),
         cliente_nome: 'NOVELIS DO BRASIL LTDA.',
-        cliente_cnpj: cnpj,
+        cliente_cnpj: cnpjFormatado,
         valor_total: 3500.00,
         itens: [
           {
