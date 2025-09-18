@@ -37,7 +37,7 @@ export default function NovoOrcamento() {
   } = useClientes();
   const [dadosOrcamento, setDadosOrcamento] = useState({
     tipoOrdem: '',
-    numeroOrdem: `0001/${new Date().getFullYear().toString().slice(-2)}`,
+    numeroOrdem: '', // Will be generated automatically
     urgencia: false,
     cliente: '',
     tag: '',
@@ -75,8 +75,53 @@ export default function NovoOrcamento() {
     usinagem: []
   });
   const [analiseData, setAnaliseData] = useState<any>(null);
+
+  // Função para gerar próximo número de orçamento
+  const gerarProximoNumero = async () => {
+    try {
+      const anoAtual = new Date().getFullYear().toString().slice(-2);
+      
+      // Buscar o último orçamento do ano atual
+      const { data, error } = await supabase
+        .from('orcamentos')
+        .select('numero')
+        .ilike('numero', `%/${anoAtual}`)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Erro ao buscar último orçamento:', error);
+        return `0001/${anoAtual}`;
+      }
+
+      if (data && data.length > 0) {
+        // Extrair o número sequencial do último orçamento
+        const ultimoNumero = data[0].numero;
+        const partes = ultimoNumero.split('/');
+        if (partes.length === 2 && partes[1] === anoAtual) {
+          const sequencial = parseInt(partes[0]) + 1;
+          return `${sequencial.toString().padStart(4, '0')}/${anoAtual}`;
+        }
+      }
+
+      // Se não encontrou nenhum orçamento do ano atual, começar com 0001
+      return `0001/${anoAtual}`;
+    } catch (error) {
+      console.error('Erro ao gerar próximo número:', error);
+      const anoAtual = new Date().getFullYear().toString().slice(-2);
+      return `0001/${anoAtual}`;
+    }
+  };
+
   useEffect(() => {
     const carregarDados = async () => {
+      // Gerar número do orçamento primeiro
+      const proximoNumero = await gerarProximoNumero();
+      setDadosOrcamento(prev => ({
+        ...prev,
+        numeroOrdem: proximoNumero
+      }));
+
       if (ordemServicoId) {
         try {
           // Buscar dados da ordem de serviço no Supabase
