@@ -415,7 +415,7 @@ export default function NovoOrcamento() {
       valorComDesconto
     }));
   }, [itensAnalise, informacoesComerciais.desconto]);
-  const salvarOrcamento = () => {
+  const salvarOrcamento = async () => {
     const totalItens = itensAnalise.pecas.length + itensAnalise.servicos.length + itensAnalise.usinagem.length;
     if (!dadosOrcamento.tipoOrdem || !dadosOrcamento.cliente || totalItens === 0) {
       toast({
@@ -425,26 +425,53 @@ export default function NovoOrcamento() {
       });
       return;
     }
-    const orcamento = {
-      id: Date.now(),
-      ...dadosOrcamento,
-      ...informacoesComerciais,
-      itens: {
-        pecas: itensAnalise.pecas,
-        servicos: itensAnalise.servicos,
-        usinagem: itensAnalise.usinagem
-      },
-      dataCriacao: new Date().toLocaleDateString("pt-BR"),
-      analiseOrigem: analiseId
-    };
-    const orcamentos = JSON.parse(localStorage.getItem("orcamentos") || "[]");
-    orcamentos.push(orcamento);
-    localStorage.setItem("orcamentos", JSON.stringify(orcamentos));
-    toast({
-      title: "Sucesso",
-      description: `Orçamento ${orcamento.numeroOrdem} criado com sucesso!`
-    });
-    navigate("/orcamentos");
+
+    const valorFinal = calcularValorComDesconto();
+    
+    try {
+      // Criar dados para inserir no Supabase
+      const orcamentoData = {
+        numero: dadosOrcamento.numeroOrdem,
+        cliente_nome: dadosOrcamento.cliente,
+        equipamento: dadosOrcamento.tag || 'Equipamento não especificado',
+        descricao: dadosOrcamento.observacoes || '',
+        valor: valorFinal,
+        status: 'pendente',
+        observacoes: `Tipo: ${dadosOrcamento.tipoOrdem} | Solicitante: ${dadosOrcamento.solicitante} | Nota: ${dadosOrcamento.numeroNota} | Série: ${dadosOrcamento.numeroSerie}`,
+        ordem_servico_id: ordemServicoId || null
+      };
+
+      const { data, error } = await supabase
+        .from('orcamentos')
+        .insert(orcamentoData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao salvar orçamento no Supabase:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao salvar orçamento no banco de dados",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Orçamento salvo no Supabase:', data);
+      
+      toast({
+        title: "Sucesso",
+        description: `Orçamento ${dadosOrcamento.numeroOrdem} criado com sucesso!`
+      });
+      navigate("/orcamentos");
+    } catch (error) {
+      console.error('Erro ao salvar orçamento:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao salvar orçamento",
+        variant: "destructive"
+      });
+    }
   };
   const exportarPDF = async () => {
     const doc = new jsPDF();
