@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, DollarSign, Calendar, FileText, Download } from "lucide-react";
+import { Receipt, DollarSign, Calendar, FileText, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,11 @@ export default function Faturamento() {
   const [numeroNF, setNumeroNF] = useState("");
   const [formaPagamento, setFormaPagamento] = useState("");
   const [dataVencimento, setDataVencimento] = useState("");
+  const [expandedSections, setExpandedSections] = useState({
+    ordensRetorno: true,
+    orcamentosFaturamento: true,
+    notasFiscais: true
+  });
 
   useEffect(() => {
     loadData();
@@ -64,6 +69,13 @@ export default function Faturamento() {
     });
   };
 
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
   // Calcular resumo
   const totalEmFaturamento = orcamentosEmFaturamento.length > 0 ? orcamentosEmFaturamento.reduce((acc, orc) => acc + orc.valor, 0) : 0;
   const totalFaturado = orcamentosFinalizados.length > 0 ? orcamentosFinalizados.reduce((acc, orc) => acc + orc.valor, 0) : 0;
@@ -75,6 +87,7 @@ export default function Faturamento() {
     totalRecebido: totalFaturado,
     quantidadeNFs
   };
+  
   const getStatusColor = (status: string) => {
     switch (status) {
       case "faturamento":
@@ -246,161 +259,211 @@ export default function Faturamento() {
         </div>
 
         {/* Ordens Aguardando Retorno */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Ordens Aguardando Retorno</h3>
-          <OrdensAguardandoRetorno />
-        </div>
+        <OrdensAguardandoRetorno 
+          isExpanded={expandedSections.ordensRetorno}
+          onToggleExpand={() => toggleSection('ordensRetorno')}
+        />
 
         {/* Orçamentos em Faturamento */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Orçamentos Aguardando Faturamento</h3>
-          {orcamentosEmFaturamento.map((item) => (
-            <Card key={item.id} className="shadow-soft hover:shadow-medium transition-smooth">
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Receipt className="h-5 w-5 text-primary" />
-                      {item.numero}
-                    </CardTitle>
-                    <CardDescription className="mt-1">
-                      {item.equipamento} - {item.cliente}
-                    </CardDescription>
-                  </div>
-                  <Badge className={getStatusColor(item.status)}>
-                    {getStatusText(item.status)}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Valor do Orçamento</p>
-                    <p className="text-xl font-bold text-primary">
-                      R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Data de Aprovação</p>
-                    <p className="text-lg font-semibold">
-                      {item.dataAprovacao ? new Date(item.dataAprovacao).toLocaleDateString('pt-BR') : '-'}
-                    </p>
-                  </div>
-                </div>
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Orçamentos Aguardando Faturamento</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleSection('orcamentosFaturamento')}
+              className="flex items-center gap-2"
+            >
+              {expandedSections.orcamentosFaturamento ? (
+                <>
+                  <ChevronUp className="h-4 w-4" />
+                  Recolher
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4" />
+                  Expandir
+                </>
+              )}
+            </Button>
+          </div>
 
-                <div className="flex gap-2 pt-2">
-                  <Button 
-                    size="sm" 
-                    className="bg-gradient-primary"
-                    onClick={() => handleEmitirNF(item)}
-                  >
-                    <FileText className="h-4 w-4 mr-1" />
-                    Emitir Nota Fiscal
-                  </Button>
-                  {item.vinculadoOrdemServico && (
-                    <Badge variant="outline" className="text-xs">
-                      Vinculado à OS: {item.ordemServicoId}
-                    </Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          
-          {orcamentosEmFaturamento.length === 0 && (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  Nenhum orçamento aguardando faturamento
-                </h3>
-                <p className="text-muted-foreground">
-                  Aprove orçamentos para que apareçam aqui
-                </p>
-              </CardContent>
-            </Card>
+          {expandedSections.orcamentosFaturamento && (
+            <div className="space-y-4">
+              {orcamentosEmFaturamento.map((item) => (
+                <Card key={item.id} className="shadow-soft hover:shadow-medium transition-smooth">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Receipt className="h-5 w-5 text-primary" />
+                          {item.numero}
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          {item.equipamento} - {item.cliente}
+                        </CardDescription>
+                      </div>
+                      <Badge className={getStatusColor(item.status)}>
+                        {getStatusText(item.status)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Valor do Orçamento</p>
+                        <p className="text-xl font-bold text-primary">
+                          R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Data de Aprovação</p>
+                        <p className="text-lg font-semibold">
+                          {item.dataAprovacao ? new Date(item.dataAprovacao).toLocaleDateString('pt-BR') : '-'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <Button 
+                        size="sm" 
+                        className="bg-gradient-primary"
+                        onClick={() => handleEmitirNF(item)}
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        Emitir Nota Fiscal
+                      </Button>
+                      {item.vinculadoOrdemServico && (
+                        <Badge variant="outline" className="text-xs">
+                          Vinculado à OS: {item.ordemServicoId}
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {orcamentosEmFaturamento.length === 0 && (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      Nenhum orçamento aguardando faturamento
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Aprove orçamentos para que apareçam aqui
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
         </div>
 
         {/* Lista de Notas Fiscais */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Notas Fiscais Emitidas</h3>
-          {orcamentosFinalizados.map((item) => (
-            <Card key={item.id} className="shadow-soft hover:shadow-medium transition-smooth">
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Receipt className="h-5 w-5 text-primary" />
-                      {item.numeroNF || item.numero}
-                    </CardTitle>
-                    <CardDescription className="mt-1">
-                      {item.equipamento} - {item.cliente}
-                    </CardDescription>
-                  </div>
-                  <Badge className={getStatusColor(item.status)}>
-                    {getStatusText(item.status)}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Valor da Nota</p>
-                    <p className="text-xl font-bold text-primary">
-                      R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Forma de Pagamento</p>
-                    <p className="text-lg font-semibold">{item.formaPagamento || '-'}</p>
-                  </div>
-                </div>
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Notas Fiscais Emitidas</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleSection('notasFiscais')}
+              className="flex items-center gap-2"
+            >
+              {expandedSections.notasFiscais ? (
+                <>
+                  <ChevronUp className="h-4 w-4" />
+                  Recolher
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4" />
+                  Expandir
+                </>
+              )}
+            </Button>
+          </div>
 
-                <div className="grid md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Data Emissão:</span>
-                    <p className="font-medium">
-                      {item.dataEmissao ? new Date(item.dataEmissao).toLocaleDateString('pt-BR') : '-'}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Vencimento:</span>
-                    <p className="font-medium">
-                      {item.dataVencimento ? new Date(item.dataVencimento).toLocaleDateString('pt-BR') : '-'}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Orçamento:</span>
-                    <p className="font-medium">{item.numero}</p>
-                  </div>
-                </div>
+          {expandedSections.notasFiscais && (
+            <div className="space-y-4">
+              {orcamentosFinalizados.map((item) => (
+                <Card key={item.id} className="shadow-soft hover:shadow-medium transition-smooth">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Receipt className="h-5 w-5 text-primary" />
+                          {item.numeroNF || item.numero}
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          {item.equipamento} - {item.cliente}
+                        </CardDescription>
+                      </div>
+                      <Badge className={getStatusColor(item.status)}>
+                        {getStatusText(item.status)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Valor da Nota</p>
+                        <p className="text-xl font-bold text-primary">
+                          R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Forma de Pagamento</p>
+                        <p className="text-lg font-semibold">{item.formaPagamento || '-'}</p>
+                      </div>
+                    </div>
 
-                <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-1" />
-                    Download PDF
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Enviar por Email
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          
-          {orcamentosFinalizados.length === 0 && (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  Nenhuma nota fiscal emitida
-                </h3>
-                <p className="text-muted-foreground">
-                  Emita notas fiscais dos orçamentos aprovados
-                </p>
-              </CardContent>
-            </Card>
+                    <div className="grid md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Data Emissão:</span>
+                        <p className="font-medium">
+                          {item.dataEmissao ? new Date(item.dataEmissao).toLocaleDateString('pt-BR') : '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Vencimento:</span>
+                        <p className="font-medium">
+                          {item.dataVencimento ? new Date(item.dataVencimento).toLocaleDateString('pt-BR') : '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Orçamento:</span>
+                        <p className="font-medium">{item.numero}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <Button variant="outline" size="sm">
+                        <Download className="h-4 w-4 mr-1" />
+                        Download PDF
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        Enviar por Email
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {orcamentosFinalizados.length === 0 && (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      Nenhuma nota fiscal emitida
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Emita notas fiscais dos orçamentos aprovados
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
         </div>
       </div>
