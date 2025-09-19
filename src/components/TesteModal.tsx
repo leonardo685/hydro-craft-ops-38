@@ -76,27 +76,23 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
         videoUrl = urlData.publicUrl;
       }
 
-      // Salvar dados do teste
-      const { error } = await supabase
-        .from('testes_equipamentos')
-        .insert({
-          ordem_servico_id: ordem.id,
-          tipo_teste: formData.tipoTeste,
-          pressao_teste: formData.pressaoTeste,
-          temperatura_operacao: formData.temperaturaOperacao,
-          observacoes_teste: formData.observacoesTeste,
-          resultado_teste: formData.resultadoTeste,
-          data_hora_teste: formData.dataHoraTeste,
-          video_url: videoUrl
-        });
+      // Salvar dados do teste usando edge function
+      const { data: result, error } = await supabase.functions.invoke('salvar-teste', {
+        body: {
+          ordemId: ordem.id,
+          dadosTeste: {
+            tipoTeste: formData.tipoTeste,
+            pressaoTeste: formData.pressaoTeste,
+            temperaturaOperacao: formData.temperaturaOperacao,
+            observacoesTeste: formData.observacoesTeste,
+            resultadoTeste: formData.resultadoTeste,
+            dataHoraTeste: formData.dataHoraTeste,
+            videoUrl: videoUrl
+          }
+        }
+      });
 
-      if (error) throw error;
-
-      // Atualizar status da ordem para "em_teste"
-      await supabase
-        .from('ordens_servico')
-        .update({ status: 'em_teste' })
-        .eq('id', ordem.id);
+      if (error || !result?.success) throw error || new Error('Falha ao salvar teste');
 
       toast({
         title: "Sucesso",

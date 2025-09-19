@@ -513,6 +513,56 @@ export type Database = {
           },
         ]
       }
+      testes_equipamentos: {
+        Row: {
+          created_at: string
+          data_hora_teste: string
+          id: string
+          observacoes_teste: string | null
+          ordem_servico_id: string
+          pressao_teste: string | null
+          resultado_teste: string
+          temperatura_operacao: string | null
+          tipo_teste: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_hora_teste: string
+          id?: string
+          observacoes_teste?: string | null
+          ordem_servico_id: string
+          pressao_teste?: string | null
+          resultado_teste: string
+          temperatura_operacao?: string | null
+          tipo_teste: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_hora_teste?: string
+          id?: string
+          observacoes_teste?: string | null
+          ordem_servico_id?: string
+          pressao_teste?: string | null
+          resultado_teste?: string
+          temperatura_operacao?: string | null
+          tipo_teste?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "testes_equipamentos_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

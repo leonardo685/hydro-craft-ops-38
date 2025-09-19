@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 export default function Aprovados() {
   const [ordensServico, setOrdensServico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ordensEmProducao, setOrdensEmProducao] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -33,11 +34,18 @@ export default function Aprovados() {
             tipo_equipamento
           )
         `)
-        .eq('status', 'aprovada')
+        .in('status', ['aprovada', 'em_producao', 'em_teste'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setOrdensServico(data || []);
+      
+      // Identificar quais ordens estão em produção ou teste
+      const ordensEmProducaoSet = new Set(
+        data?.filter(ordem => ordem.status === 'em_producao' || ordem.status === 'em_teste')
+             .map(ordem => ordem.id) || []
+      );
+      setOrdensEmProducao(ordensEmProducaoSet);
     } catch (error) {
       console.error('Erro ao carregar ordens aprovadas:', error);
       toast({
@@ -49,12 +57,53 @@ export default function Aprovados() {
       setLoading(false);
     }
   };
+
+  const iniciarProducao = async (ordemId: string) => {
+    try {
+      const { error } = await supabase
+        .from('ordens_servico')
+        .update({ status: 'em_producao' })
+        .eq('id', ordemId);
+
+      if (error) throw error;
+
+      setOrdensEmProducao(prev => new Set([...prev, ordemId]));
+      
+      toast({
+        title: "Produção iniciada",
+        description: "Ordem de serviço está agora em produção",
+      });
+    } catch (error) {
+      console.error('Erro ao iniciar produção:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao iniciar produção",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getSidebarColor = (ordem: any) => {
+    if (!ordem.prazo_entrega) return "border-l-green-500";
+    
+    const hoje = new Date();
+    const prazoEntrega = new Date(ordem.prazo_entrega);
+    const diffTime = prazoEntrega.getTime() - hoje.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 0) return "border-l-red-500"; // No dia da entrega ou atrasado
+    if (diffDays === 1) return "border-l-yellow-500"; // Falta 1 dia
+    return "border-l-green-500"; // Normal
+  };
+
   const getEtapaColor = (etapa: string) => {
     switch (etapa) {
       case "aguardando_inicio":
         return "bg-warning-light text-warning border-warning/20";
       case "em_producao":
         return "bg-primary-light text-primary border-primary/20";
+      case "em_teste":
+        return "bg-blue-100 text-blue-700 border-blue-200";
       case "finalizado":
         return "bg-accent-light text-accent border-accent/20";
       case "entregue":
@@ -70,6 +119,8 @@ export default function Aprovados() {
         return "Aguardando Início";
       case "em_producao":
         return "Em Produção";
+      case "em_teste":
+        return "Em Teste";
       case "finalizado":
         return "Finalizado";
       case "entregue":
@@ -85,6 +136,8 @@ export default function Aprovados() {
         return <Play className="h-4 w-4" />;
       case "em_producao":
         return <Package className="h-4 w-4" />;
+      case "em_teste":
+        return <Settings className="h-4 w-4" />;
       case "finalizado":
         return <CheckCircle className="h-4 w-4" />;
       case "entregue":
@@ -117,16 +170,16 @@ export default function Aprovados() {
         ) : (
           <div className="space-y-4">
             <div>
-              <h3 className="text-xl font-semibold text-foreground">Análises Aprovadas</h3>
+              <h3 className="text-xl font-semibold text-foreground">Projetos em Produção</h3>
               <p className="text-muted-foreground">
-                Análises técnicas aprovadas prontas para produção ({ordensServico.length})
+                Análises técnicas aprovadas e em diferentes etapas de produção ({ordensServico.length})
               </p>
             </div>
 
             <div className="grid gap-6">
               {ordensServico.length > 0 ? (
                 ordensServico.map((ordem) => (
-                  <Card key={ordem.id} className="shadow-soft hover:shadow-medium transition-smooth border-l-4 border-l-green-500">
+                  <Card key={ordem.id} className={`shadow-soft hover:shadow-medium transition-smooth border-l-4 ${getSidebarColor(ordem)}`}>
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
@@ -154,8 +207,8 @@ export default function Aprovados() {
                             </CardDescription>
                           </div>
                         </div>
-                        <Badge className="bg-green-100 text-green-700 border-green-200">
-                          Aprovada
+                        <Badge className={`${getEtapaColor(ordem.status)}`}>
+                          {getEtapaText(ordem.status)}
                         </Badge>
                       </div>
                     </CardHeader>
@@ -189,10 +242,31 @@ export default function Aprovados() {
                       )}
 
                       <div className="flex flex-wrap gap-2 pt-2">
-                        <Button variant="outline" size="sm">
-                          <Play className="h-4 w-4 mr-2" />
-                          Iniciar Produção
-                        </Button>
+                        {ordem.status === 'aprovada' ? (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => iniciarProducao(ordem.id)}
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Iniciar Produção
+                          </Button>
+                        ) : ordem.status === 'em_producao' ? (
+                          <TesteModal 
+                            ordem={ordem}
+                            onTesteIniciado={() => loadOrdensAprovadas()}
+                          >
+                            <Button variant="outline" size="sm">
+                              <Settings className="h-4 w-4 mr-2" />
+                              Iniciar Teste
+                            </Button>
+                          </TesteModal>
+                        ) : ordem.status === 'em_teste' ? (
+                          <Button variant="outline" size="sm" disabled>
+                            <Settings className="h-4 w-4 mr-2" />
+                            Em Teste
+                          </Button>
+                        ) : null}
                         
                         <ItemSelectionModal
                           title="Peças Necessárias"
@@ -238,7 +312,7 @@ export default function Aprovados() {
                   <CardContent className="p-12 text-center">
                     <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                     <h3 className="text-lg font-medium text-foreground mb-2">
-                      Nenhuma análise aprovada ainda
+                      Nenhum projeto em produção
                     </h3>
                     <p className="text-muted-foreground">
                       Aprove análises técnicas para que apareçam aqui
