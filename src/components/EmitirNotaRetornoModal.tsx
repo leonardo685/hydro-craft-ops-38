@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Copy, Check, Calendar, FileText, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { UploadPdfModal } from "./UploadPdfModal";
 
 interface EmitirNotaRetornoModalProps {
   open: boolean;
@@ -16,7 +17,7 @@ interface EmitirNotaRetornoModalProps {
     data_entrada: string;
     nota_fiscal?: string;
   };
-  onConfirm: () => void;
+  onConfirm: (ordemId: string) => void;
 }
 
 export function EmitirNotaRetornoModal({ 
@@ -26,6 +27,7 @@ export function EmitirNotaRetornoModal({
   onConfirm 
 }: EmitirNotaRetornoModalProps) {
   const [copied, setCopied] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const { toast } = useToast();
 
   const textoNota = `I - Retorno da NF ${ordem.nota_fiscal || 'N/A'}.
@@ -50,8 +52,13 @@ II - Pedido N (a configurar)`;
   };
 
   const handleConfirm = () => {
-    onConfirm();
+    setShowUploadModal(true);
+  };
+
+  const handleUploadComplete = () => {
+    onConfirm(ordem.id);
     onOpenChange(false);
+    setShowUploadModal(false);
   };
 
   return (
@@ -133,6 +140,14 @@ II - Pedido N (a configurar)`;
           </div>
         </div>
       </DialogContent>
+
+      <UploadPdfModal
+        open={showUploadModal}
+        onOpenChange={setShowUploadModal}
+        ordemId={ordem.id}
+        onUploadComplete={handleUploadComplete}
+        tipoUpload="nota_retorno"
+      />
     </Dialog>
   );
 }

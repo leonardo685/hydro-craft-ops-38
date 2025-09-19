@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, DollarSign, Calendar, FileText, Download, ChevronDown, ChevronUp } from "lucide-react";
+import { Receipt, DollarSign, Calendar, FileText, Download, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,10 +11,23 @@ import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getOrcamentosEmFaturamento, getOrcamentosFinalizados, emitirNotaFiscal, type Orcamento } from "@/lib/orcamento-utils";
 import { OrdensAguardandoRetorno } from "@/components/OrdensAguardandoRetorno";
+import { supabase } from "@/integrations/supabase/client";
+
+interface NotaFaturada {
+  id: string;
+  numero_ordem: string;
+  cliente_nome: string;
+  equipamento: string;
+  data_entrada: string;
+  pdf_nota_fiscal?: string;
+  pdf_nota_retorno?: string;
+  tipo: 'nota_fiscal' | 'nota_retorno';
+}
 
 export default function Faturamento() {
   const [orcamentosEmFaturamento, setOrcamentosEmFaturamento] = useState<Orcamento[]>([]);
   const [orcamentosFinalizados, setOrcamentosFinalizados] = useState<Orcamento[]>([]);
+  const [notasFaturadas, setNotasFaturadas] = useState<NotaFaturada[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(null);
   const [numeroNF, setNumeroNF] = useState("");
@@ -23,7 +36,8 @@ export default function Faturamento() {
   const [expandedSections, setExpandedSections] = useState({
     ordensRetorno: true,
     orcamentosFaturamento: true,
-    notasFiscais: true
+    notasFiscais: true,
+    notasFaturadas: true
   });
 
   useEffect(() => {
@@ -33,6 +47,53 @@ export default function Faturamento() {
   const loadData = () => {
     setOrcamentosEmFaturamento(getOrcamentosEmFaturamento());
     setOrcamentosFinalizados(getOrcamentosFinalizados());
+    loadNotasFaturadas();
+  };
+
+  const loadNotasFaturadas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ordens_servico')
+        .select(`
+          id,
+          numero_ordem,
+          cliente_nome,
+          equipamento,
+          data_entrada,
+          pdf_nota_fiscal,
+          recebimentos(pdf_nota_retorno)
+        `)
+        .eq('status', 'faturado')
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+
+      const notasFormatadas: NotaFaturada[] = [];
+      
+      data?.forEach(ordem => {
+        // Adicionar nota fiscal se existe PDF
+        if (ordem.pdf_nota_fiscal) {
+          notasFormatadas.push({
+            ...ordem,
+            tipo: 'nota_fiscal',
+            pdf_nota_retorno: ordem.recebimentos?.pdf_nota_retorno
+          });
+        }
+        
+        // Adicionar nota de retorno se existe PDF
+        if (ordem.recebimentos?.pdf_nota_retorno) {
+          notasFormatadas.push({
+            ...ordem,
+            tipo: 'nota_retorno',
+            pdf_nota_retorno: ordem.recebimentos.pdf_nota_retorno
+          });
+        }
+      });
+
+      setNotasFaturadas(notasFormatadas);
+    } catch (error) {
+      console.error('Erro ao carregar notas faturadas:', error);
+    }
   };
 
   const handleEmitirNF = (orcamento: Orcamento) => {
@@ -74,6 +135,33 @@ export default function Faturamento() {
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  const handleDownloadPdf = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({
+        title: "Download iniciado",
+        description: "O PDF está sendo baixado",
+      });
+    } catch (error) {
+      console.error('Erro ao baixar PDF:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao baixar o PDF",
+        variant: "destructive",
+      });
+    }
   };
 
   // Calcular resumo
@@ -459,6 +547,123 @@ export default function Faturamento() {
                     </h3>
                     <p className="text-muted-foreground">
                       Emita notas fiscais dos orçamentos aprovados
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Notas Faturadas */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Notas Faturadas</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleSection('notasFaturadas')}
+              className="flex items-center gap-2"
+            >
+              {expandedSections.notasFaturadas ? (
+                <>
+                  <ChevronUp className="h-4 w-4" />
+                  Recolher
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4" />
+                  Expandir
+                </>
+              )}
+            </Button>
+          </div>
+
+          {expandedSections.notasFaturadas && (
+            <div className="space-y-4">
+              {notasFaturadas.map((nota) => (
+                <Card key={`${nota.id}-${nota.tipo}`} className="shadow-soft hover:shadow-medium transition-smooth">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-primary" />
+                          {nota.tipo === 'nota_fiscal' ? 'Nota Fiscal' : 'Nota de Retorno'} - Ordem {nota.numero_ordem}
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          {nota.equipamento} - {nota.cliente_nome}
+                        </CardDescription>
+                      </div>
+                      <Badge className="bg-green-100 text-green-700 border-green-200">
+                        Faturado
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Data de Entrada</p>
+                          <p className="font-medium">
+                            {new Date(nota.data_entrada).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Tipo</p>
+                          <p className="font-medium">
+                            {nota.tipo === 'nota_fiscal' ? 'Nota Fiscal' : 'Nota de Retorno'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          const pdfUrl = nota.tipo === 'nota_fiscal' ? nota.pdf_nota_fiscal : nota.pdf_nota_retorno;
+                          if (pdfUrl) {
+                            handleDownloadPdf(pdfUrl, `${nota.tipo}_${nota.numero_ordem}.pdf`);
+                          }
+                        }}
+                        disabled={!((nota.tipo === 'nota_fiscal' && nota.pdf_nota_fiscal) || (nota.tipo === 'nota_retorno' && nota.pdf_nota_retorno))}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download PDF
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          const pdfUrl = nota.tipo === 'nota_fiscal' ? nota.pdf_nota_fiscal : nota.pdf_nota_retorno;
+                          if (pdfUrl) {
+                            window.open(pdfUrl, '_blank');
+                          }
+                        }}
+                        disabled={!((nota.tipo === 'nota_fiscal' && nota.pdf_nota_fiscal) || (nota.tipo === 'nota_retorno' && nota.pdf_nota_retorno))}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Visualizar PDF
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {notasFaturadas.length === 0 && (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      Nenhuma nota faturada
+                    </h3>
+                    <p className="text-muted-foreground">
+                      PDFs de notas fiscais e notas de retorno aparecerão aqui
                     </p>
                   </CardContent>
                 </Card>

@@ -72,28 +72,26 @@ export function OrdensAguardandoRetorno({ isExpanded = true, onToggleExpand }: {
     navigate(`/ordem-servico/${numeroOrdem}`);
   };
 
-  const handleEmitirNotaRetorno = async () => {
-    if (!ordemSelecionada) return;
-
+  const handleEmitirNotaRetorno = async (ordemId: string) => {
     try {
       const { error } = await supabase
         .from('ordens_servico')
-        .update({ status: 'retornado' })
-        .eq('id', ordemSelecionada.id);
+        .update({ status: 'faturado' })
+        .eq('id', ordemId);
 
       if (error) throw error;
 
       toast({
-        title: "Nota de retorno emitida",
-        description: `Nota de retorno para ordem ${ordemSelecionada.numero_ordem} foi emitida`,
+        title: "Nota de retorno confirmada",
+        description: "A ordem foi movida para faturadas",
       });
 
       loadOrdens();
     } catch (error) {
-      console.error('Erro ao emitir nota de retorno:', error);
+      console.error('Erro ao confirmar emissão:', error);
       toast({
         title: "Erro",
-        description: "Erro ao emitir nota de retorno",
+        description: "Erro ao confirmar emissão da nota",
         variant: "destructive",
       });
     }

@@ -334,6 +334,7 @@ export type Database = {
           id: string
           numero_ordem: string
           observacoes_tecnicas: string | null
+          pdf_nota_fiscal: string | null
           pecas_necessarias: Json | null
           prioridade: string
           recebimento_id: number | null
@@ -357,6 +358,7 @@ export type Database = {
           id?: string
           numero_ordem: string
           observacoes_tecnicas?: string | null
+          pdf_nota_fiscal?: string | null
           pecas_necessarias?: Json | null
           prioridade?: string
           recebimento_id?: number | null
@@ -380,6 +382,7 @@ export type Database = {
           id?: string
           numero_ordem?: string
           observacoes_tecnicas?: string | null
+          pdf_nota_fiscal?: string | null
           pecas_necessarias?: Json | null
           prioridade?: string
           recebimento_id?: number | null
@@ -447,6 +450,7 @@ export type Database = {
           numero_ordem: string
           numero_serie: string | null
           observacoes: string | null
+          pdf_nota_retorno: string | null
           potencia: string | null
           pressao_trabalho: string | null
           status: string | null
@@ -471,6 +475,7 @@ export type Database = {
           numero_ordem: string
           numero_serie?: string | null
           observacoes?: string | null
+          pdf_nota_retorno?: string | null
           potencia?: string | null
           pressao_trabalho?: string | null
           status?: string | null
@@ -495,6 +500,7 @@ export type Database = {
           numero_ordem?: string
           numero_serie?: string | null
           observacoes?: string | null
+          pdf_nota_retorno?: string | null
           potencia?: string | null
           pressao_trabalho?: string | null
           status?: string | null
