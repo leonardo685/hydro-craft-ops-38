@@ -278,9 +278,36 @@ export default function Aprovados() {
                             </Button>
                           </TesteModal>
                         ) : ordem.status === 'em_teste' ? (
-                          <Button variant="outline" size="sm" disabled>
-                            <Settings className="h-4 w-4 mr-2" />
-                            Em Teste
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                const { error } = await supabase
+                                  .from('ordens_servico')
+                                  .update({ status: 'aguardando_retorno' })
+                                  .eq('id', ordem.id);
+
+                                if (error) throw error;
+
+                                toast({
+                                  title: "Ordem finalizada",
+                                  description: "A ordem foi finalizada e enviada para faturamento",
+                                });
+
+                                loadOrdensAprovadas();
+                              } catch (error) {
+                                console.error('Erro ao finalizar ordem:', error);
+                                toast({
+                                  title: "Erro",
+                                  description: "Erro ao finalizar ordem",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Finalizar
                           </Button>
                         ) : null}
                         

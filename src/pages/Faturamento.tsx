@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getOrcamentosEmFaturamento, getOrcamentosFinalizados, emitirNotaFiscal, type Orcamento } from "@/lib/orcamento-utils";
+import { OrdensAguardandoRetorno } from "@/components/OrdensAguardandoRetorno";
 
 export default function Faturamento() {
   const [orcamentosEmFaturamento, setOrcamentosEmFaturamento] = useState<Orcamento[]>([]);
@@ -242,6 +243,12 @@ export default function Faturamento() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Ordens Aguardando Retorno */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Ordens Aguardando Retorno</h3>
+          <OrdensAguardandoRetorno />
         </div>
 
         {/* Orçamentos em Faturamento */}
