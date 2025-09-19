@@ -84,12 +84,16 @@ export default function Aprovados() {
   };
 
   const getSidebarColor = (ordem: any) => {
-    if (!ordem.prazo_entrega) return "border-l-green-500";
+    // Verificar se existe prazo_entrega nos dados do recebimento ou na ordem
+    const prazoEntrega = ordem.tempo_estimado || ordem.prazo_entrega;
+    if (!prazoEntrega) return "border-l-green-500";
     
     const hoje = new Date();
-    const prazoEntrega = new Date(ordem.prazo_entrega);
-    const diffTime = prazoEntrega.getTime() - hoje.getTime();
+    const dataEntrega = new Date(prazoEntrega);
+    const diffTime = dataEntrega.getTime() - hoje.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    console.log('Prazo entrega:', prazoEntrega, 'Dias restantes:', diffDays);
     
     if (diffDays <= 0) return "border-l-red-500"; // No dia da entrega ou atrasado
     if (diffDays === 1) return "border-l-yellow-500"; // Falta 1 dia
@@ -219,10 +223,22 @@ export default function Aprovados() {
                           <input
                             type="date"
                             className="text-lg font-semibold bg-transparent border-none text-center outline-none"
-                            defaultValue={ordem.prazo_entrega || ''}
-                            onChange={(e) => {
-                              // Aqui você pode implementar a lógica para salvar a data
-                              console.log('Nova data:', e.target.value);
+                            defaultValue={ordem.tempo_estimado || ordem.prazo_entrega || ''}
+                            onChange={async (e) => {
+                              // Salvar a data no banco
+                              try {
+                                const { error } = await supabase
+                                  .from('ordens_servico')
+                                  .update({ tempo_estimado: e.target.value })
+                                  .eq('id', ordem.id);
+                                
+                                if (!error) {
+                                  // Atualizar estado local para re-renderizar a cor da barra
+                                  loadOrdensAprovadas();
+                                }
+                              } catch (error) {
+                                console.error('Erro ao salvar prazo:', error);
+                              }
                             }}
                           />
                         </div>

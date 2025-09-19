@@ -34,6 +34,16 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
     if (file) {
       // Verificar se é um arquivo de vídeo
       if (file.type.startsWith('video/')) {
+        // Verificar tamanho do arquivo (máximo 50MB)
+        const maxSize = 50 * 1024 * 1024; // 50MB em bytes
+        if (file.size > maxSize) {
+          toast({
+            title: "Arquivo muito grande",
+            description: "O vídeo deve ter no máximo 50MB. Tente comprimir o arquivo.",
+            variant: "destructive",
+          });
+          return;
+        }
         setVideoFile(file);
       } else {
         toast({
@@ -59,21 +69,32 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
     try {
       let videoUrl = null;
 
-      // Upload do vídeo se fornecido
+      // Upload do vídeo se fornecido (agora opcional)
       if (videoFile) {
-        const fileName = `teste_${ordem.id}_${Date.now()}_${videoFile.name}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('videos-teste')
-          .upload(fileName, videoFile);
+        try {
+          const fileName = `teste_${ordem.id}_${Date.now()}_${videoFile.name}`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('videos-teste')
+            .upload(fileName, videoFile);
 
-        if (uploadError) throw uploadError;
-
-        // Obter URL pública do vídeo
-        const { data: urlData } = supabase.storage
-          .from('videos-teste')
-          .getPublicUrl(fileName);
-        
-        videoUrl = urlData.publicUrl;
+          if (uploadError) {
+            console.warn('Erro no upload do vídeo:', uploadError);
+            toast({
+              title: "Aviso",
+              description: "Teste salvo, mas o vídeo não pôde ser enviado. Arquivo muito grande ou erro de conexão.",
+              variant: "default",
+            });
+          } else {
+            // Obter URL pública do vídeo
+            const { data: urlData } = supabase.storage
+              .from('videos-teste')
+              .getPublicUrl(fileName);
+            
+            videoUrl = urlData.publicUrl;
+          }
+        } catch (videoError) {
+          console.warn('Erro no upload do vídeo:', videoError);
+        }
       }
 
       // Salvar dados do teste usando edge function
@@ -229,7 +250,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
 
             {/* Upload de Vídeo */}
             <div>
-              <Label htmlFor="videoTeste">Vídeo do Teste</Label>
+              <Label htmlFor="videoTeste">Vídeo do Teste (Opcional - máx. 50MB)</Label>
               <div className="mt-2 space-y-2">
                 <div className="flex items-center gap-4">
                   <Input
@@ -248,6 +269,9 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                     <span>({(videoFile.size / 1024 / 1024).toFixed(2)} MB)</span>
                   </div>
                 )}
+                <p className="text-xs text-muted-foreground">
+                  O vídeo é opcional. Se for muito grande, o teste será salvo sem o vídeo.
+                </p>
               </div>
             </div>
           </div>
