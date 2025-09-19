@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ItemSelectionModal } from "@/components/ItemSelectionModal";
+import { TesteModal } from "@/components/TesteModal";
 import { useNavigate } from "react-router-dom";
 
 export default function Aprovados() {
