@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Eye, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { EmitirNotaRetornoModal } from "./EmitirNotaRetornoModal";
 
 interface OrdemAguardandoRetorno {
   id: string;
@@ -14,11 +15,15 @@ interface OrdemAguardandoRetorno {
   data_entrada: string;
   status: string;
   observacoes_tecnicas?: string;
+  recebimento_id?: number;
+  nota_fiscal?: string;
 }
 
 export function OrdensAguardandoRetorno() {
   const [ordens, setOrdens] = useState<OrdemAguardandoRetorno[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [ordemSelecionada, setOrdemSelecionada] = useState<OrdemAguardandoRetorno | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -29,12 +34,21 @@ export function OrdensAguardandoRetorno() {
     try {
       const { data, error } = await supabase
         .from('ordens_servico')
-        .select('*')
+        .select(`
+          *,
+          recebimentos(nota_fiscal)
+        `)
         .eq('status', 'aguardando_retorno')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrdens(data || []);
+      
+      const ordensFormatadas = data?.map(ordem => ({
+        ...ordem,
+        nota_fiscal: ordem.recebimentos?.nota_fiscal
+      })) || [];
+      
+      setOrdens(ordensFormatadas);
     } catch (error) {
       console.error('Erro ao carregar ordens:', error);
       toast({
@@ -47,18 +61,25 @@ export function OrdensAguardandoRetorno() {
     }
   };
 
-  const handleEmitirNotaRetorno = async (ordem: OrdemAguardandoRetorno) => {
+  const handleAbrirModal = (ordem: OrdemAguardandoRetorno) => {
+    setOrdemSelecionada(ordem);
+    setModalOpen(true);
+  };
+
+  const handleEmitirNotaRetorno = async () => {
+    if (!ordemSelecionada) return;
+
     try {
       const { error } = await supabase
         .from('ordens_servico')
         .update({ status: 'retornado' })
-        .eq('id', ordem.id);
+        .eq('id', ordemSelecionada.id);
 
       if (error) throw error;
 
       toast({
         title: "Nota de retorno emitida",
-        description: `Nota de retorno para ordem ${ordem.numero_ordem} foi emitida`,
+        description: `Nota de retorno para ordem ${ordemSelecionada.numero_ordem} foi emitida`,
       });
 
       loadOrdens();
@@ -99,8 +120,9 @@ export function OrdensAguardandoRetorno() {
   }
 
   return (
-    <div className="space-y-4">
-      {ordens.map((ordem) => (
+    <>
+      <div className="space-y-4">
+        {ordens.map((ordem) => (
         <Card key={ordem.id} className="shadow-soft hover:shadow-medium transition-smooth">
           <CardHeader className="pb-4">
             <div className="flex items-start justify-between">
@@ -149,7 +171,7 @@ export function OrdensAguardandoRetorno() {
               <Button 
                 size="sm" 
                 className="bg-gradient-primary"
-                onClick={() => handleEmitirNotaRetorno(ordem)}
+                onClick={() => handleAbrirModal(ordem)}
               >
                 <FileText className="h-4 w-4 mr-1" />
                 Emitir Nota de Retorno
@@ -160,8 +182,18 @@ export function OrdensAguardandoRetorno() {
               </Button>
             </div>
           </CardContent>
-        </Card>
-      ))}
-    </div>
+          </Card>
+        ))}
+      </div>
+
+      {ordemSelecionada && (
+        <EmitirNotaRetornoModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          ordem={ordemSelecionada}
+          onConfirm={handleEmitirNotaRetorno}
+        />
+      )}
+    </>
   );
 }
