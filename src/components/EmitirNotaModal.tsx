@@ -235,7 +235,7 @@ II - Pedido N (a configurar)`;
               <div className="flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
                 <div>
-                  <p className="font-medium text-yellow-800">Faça upload do PDF da nota de retorno</p>
+                  <p className="font-medium text-yellow-800">Faça upload do PDF da nota de Faturamento</p>
                   <p className="text-sm text-yellow-700">Arquivo deve ser PDF, máximo 10MB</p>
                 </div>
               </div>
