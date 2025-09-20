@@ -223,7 +223,7 @@ II - Pedido N (a configurar)`;
             <DialogHeader className="pb-4">
               <div className="flex items-center gap-2">
                 <Upload className="h-5 w-5 text-red-500" />
-                <DialogTitle className="text-lg font-semibold">Anexar Nota de Retorno</DialogTitle>
+                <DialogTitle className="text-lg font-semibold">Anexar Nota de Faturamento</DialogTitle>
               </div>
               <Button variant="ghost" size="sm" className="absolute right-4 top-4 p-0 h-6 w-6" onClick={handleFechar}>
                 <X className="h-4 w-4" />
