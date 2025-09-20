@@ -21,7 +21,7 @@ interface NotaFaturada {
   data_entrada: string;
   pdf_nota_fiscal?: string;
   pdf_nota_retorno?: string;
-  tipo: 'nota_fiscal' | 'nota_retorno';
+  tipo: 'nota_fiscal' | 'nota_retorno' | 'orcamento_com_entrada' | 'orcamento_simples';
 }
 
 export default function Faturamento() {
@@ -52,7 +52,8 @@ export default function Faturamento() {
 
   const loadNotasFaturadas = async () => {
     try {
-      const { data, error } = await supabase
+      // Buscar ordens de serviço com status 'faturado'
+      const { data: ordensData, error: ordensError } = await supabase
         .from('ordens_servico')
         .select(`
           id,
@@ -66,11 +67,25 @@ export default function Faturamento() {
         .eq('status', 'faturado')
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (ordensError) {
+        console.error('Erro ao carregar ordens faturadas:', ordensError);
+      }
+
+      // Buscar orçamentos aprovados
+      const { data: orcamentosData, error: orcamentosError } = await supabase
+        .from('orcamentos')
+        .select('*')
+        .eq('status', 'aprovado')
+        .order('updated_at', { ascending: false });
+
+      if (orcamentosError) {
+        console.error('Erro ao carregar orçamentos aprovados:', orcamentosError);
+      }
 
       const notasFormatadas: NotaFaturada[] = [];
       
-      data?.forEach(ordem => {
+      // Adicionar notas das ordens de serviço
+      ordensData?.forEach(ordem => {
         // Adicionar nota fiscal se existe PDF
         if (ordem.pdf_nota_fiscal) {
           notasFormatadas.push({
@@ -86,6 +101,34 @@ export default function Faturamento() {
             ...ordem,
             tipo: 'nota_retorno',
             pdf_nota_retorno: ordem.recebimentos.pdf_nota_retorno
+          });
+        }
+      });
+
+      // Adicionar orçamentos aprovados para faturamento
+      orcamentosData?.forEach(orcamento => {
+        // Se o orçamento tem ordem de serviço vinculada, buscar a nota de entrada
+        if (orcamento.ordem_servico_id) {
+          const ordemRelacionada = ordensData?.find(ordem => ordem.id === orcamento.ordem_servico_id);
+          if (ordemRelacionada?.recebimentos?.pdf_nota_retorno) {
+            notasFormatadas.push({
+              ...orcamento,
+              numero_ordem: orcamento.numero,
+              data_entrada: orcamento.data_criacao,
+              tipo: 'orcamento_com_entrada',
+              pdf_nota_retorno: ordemRelacionada.recebimentos.pdf_nota_retorno,
+              pdf_nota_fiscal: null
+            });
+          }
+        } else {
+          // Orçamento sem ordem de serviço vinculada
+          notasFormatadas.push({
+            ...orcamento,
+            numero_ordem: orcamento.numero,
+            data_entrada: orcamento.data_criacao,
+            tipo: 'orcamento_simples',
+            pdf_nota_retorno: null,
+            pdf_nota_fiscal: null
           });
         }
       });
@@ -615,7 +658,10 @@ export default function Faturamento() {
                         <div>
                           <p className="text-sm text-muted-foreground">Tipo</p>
                           <p className="font-medium">
-                            {nota.tipo === 'nota_fiscal' ? 'Nota Fiscal' : 'Nota de Retorno'}
+                            {nota.tipo === 'nota_fiscal' ? 'Nota Fiscal' : 
+                             nota.tipo === 'nota_retorno' ? 'Nota de Retorno' :
+                             nota.tipo === 'orcamento_com_entrada' ? 'Orçamento c/ Nota Entrada' :
+                             'Orçamento Simples'}
                           </p>
                         </div>
                       </div>

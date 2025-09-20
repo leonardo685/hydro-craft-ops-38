@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, FileText, Edit, Check, X, Copy, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 
 export default function Orcamentos() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -101,27 +102,21 @@ export default function Orcamentos() {
     setIsSheetOpen(false);
   };
 
-  const handleAprovarOrcamento = async (id: string) => {
+  const [showAprovarModal, setShowAprovarModal] = useState(false);
+  const [orcamentoParaAprovar, setOrcamentoParaAprovar] = useState<any>(null);
+
+  const handleAprovarOrcamento = (orcamento: any) => {
+    setOrcamentoParaAprovar(orcamento);
+    setShowAprovarModal(true);
+  };
+
+  const confirmarAprovacao = async () => {
     try {
-      const { error } = await supabase
-        .from('orcamentos')
-        .update({ 
-          status: 'aprovado',
-          data_aprovacao: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) {
-        console.error('Erro ao aprovar orçamento:', error);
-        toast.error('Erro ao aprovar orçamento');
-        return;
-      }
-
       await carregarOrcamentos();
-      toast.success("Orçamento aprovado com sucesso!");
+      setShowAprovarModal(false);
+      setOrcamentoParaAprovar(null);
     } catch (error) {
-      console.error('Erro ao aprovar orçamento:', error);
-      toast.error('Erro ao aprovar orçamento');
+      console.error('Erro ao recarregar orçamentos:', error);
     }
   };
 
@@ -344,7 +339,7 @@ export default function Orcamentos() {
                       </Button>
                       <Button
                         size="sm"
-                        onClick={() => handleAprovarOrcamento(item.id)}
+                        onClick={() => handleAprovarOrcamento(item)}
                         className="bg-green-600 hover:bg-green-700 text-white"
                       >
                         <Check className="h-4 w-4" />
@@ -369,6 +364,13 @@ export default function Orcamentos() {
           )}
         </div>
       </div>
+      
+      <AprovarOrcamentoModal
+        open={showAprovarModal}
+        onOpenChange={setShowAprovarModal}
+        orcamento={orcamentoParaAprovar}
+        onConfirm={confirmarAprovacao}
+      />
     </AppLayout>
   );
 }
