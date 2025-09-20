@@ -323,25 +323,26 @@ II - Pedido N (a configurar)`;
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Valor</Label>
+                    <Label className="text-sm font-medium">Valor</Label>
                     <Input 
                       value={`R$ ${orcamento.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`} 
                       readOnly 
-                      className="bg-muted"
+                      className="bg-muted/50 font-medium"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Data de Vencimento</Label>
+                    <Label className="text-sm font-medium">Data de Vencimento</Label>
                     <Input 
                       type="date" 
                       defaultValue={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                      className="font-medium"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Forma de Pagamento</Label>
-                  <select className="w-full p-2 border border-border rounded-md bg-background">
+                  <Label className="text-sm font-medium">Forma de Pagamento</Label>
+                  <select className="w-full p-3 border border-input rounded-md bg-background font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
                     <option value="boleto">Boleto Bancário</option>
                     <option value="pix">PIX</option>
                     <option value="cartao">Cartão de Crédito</option>
@@ -351,10 +352,10 @@ II - Pedido N (a configurar)`;
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Observações</Label>
+                  <Label className="text-sm font-medium">Observações</Label>
                   <Textarea 
                     placeholder="Observações adicionais sobre o recebimento..."
-                    className="min-h-[80px]"
+                    className="min-h-[100px] resize-none"
                   />
                 </div>
               </div>
