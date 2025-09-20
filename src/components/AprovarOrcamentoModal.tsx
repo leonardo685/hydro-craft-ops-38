@@ -31,6 +31,20 @@ export const AprovarOrcamentoModal = ({
     numeroPedido: '',
     observacoes: ''
   });
+
+  // Update form data when orcamento changes
+  React.useEffect(() => {
+    if (orcamento) {
+      setFormData({
+        valor: orcamento.valor || 0,
+        prazoPagamento: '',
+        descontoPercentual: 0,
+        valorComDesconto: orcamento.valor || 0,
+        numeroPedido: '',
+        observacoes: ''
+      });
+    }
+  }, [orcamento]);
   const [anexoPedido, setAnexoPedido] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
