@@ -7,14 +7,12 @@ import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, Copy, FileText, Calendar, User, FileImage, X, AlertCircle } from "lucide-react";
-
 interface EmitirNotaModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orcamento: any;
   onConfirm: () => void;
 }
-
 export default function EmitirNotaModal({
   open,
   onOpenChange,
@@ -31,7 +29,6 @@ export default function EmitirNotaModal({
   const [anexoNota, setAnexoNota] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -43,7 +40,8 @@ export default function EmitirNotaModal({
         });
         return;
       }
-      if (file.size > 10 * 1024 * 1024) { // 10MB
+      if (file.size > 10 * 1024 * 1024) {
+        // 10MB
         toast({
           title: "Arquivo muito grande",
           description: "O arquivo deve ter no máximo 10MB",
@@ -54,39 +52,33 @@ export default function EmitirNotaModal({
       setAnexoNota(file);
     }
   };
-
   const uploadAnexo = async (): Promise<string | null> => {
     if (!anexoNota || !orcamento) return null;
-
     try {
       const fileExt = anexoNota.name.split('.').pop();
       const fileName = `nota-fiscal-${orcamento.numero}-${Date.now()}.${fileExt}`;
       const filePath = `notas-fiscais/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('documentos')
-        .upload(filePath, anexoNota);
-
+      const {
+        error: uploadError
+      } = await supabase.storage.from('documentos').upload(filePath, anexoNota);
       if (uploadError) {
         console.error('Erro no upload:', uploadError);
         throw uploadError;
       }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('documentos')
-        .getPublicUrl(filePath);
-
+      const {
+        data: {
+          publicUrl
+        }
+      } = supabase.storage.from('documentos').getPublicUrl(filePath);
       return publicUrl;
     } catch (error) {
       console.error('Erro ao fazer upload:', error);
       throw error;
     }
   };
-
   const copiarParaAreaTransferencia = async () => {
     const texto = `I - Retorno da NF ${numeroNF}.
 II - Pedido N (a configurar)`;
-    
     try {
       await navigator.clipboard.writeText(texto);
       setCopied(true);
@@ -104,11 +96,9 @@ II - Pedido N (a configurar)`;
       });
     }
   };
-
   const handleConfirmarDados = () => {
     setEtapa('anexo');
   };
-
   const handleAnexarPDF = async () => {
     if (!anexoNota) {
       toast({
@@ -118,35 +108,29 @@ II - Pedido N (a configurar)`;
       });
       return;
     }
-
     setUploading(true);
-
     try {
       const urlAnexo = await uploadAnexo();
 
       // Atualizar orçamento no Supabase
-      const { error } = await supabase
-        .from('orcamentos')
-        .update({
-          status: 'finalizado',
-          numero_nf: numeroNF,
-          pdf_nota_fiscal: urlAnexo
-        })
-        .eq('id', orcamento.id);
-
+      const {
+        error
+      } = await supabase.from('orcamentos').update({
+        status: 'finalizado',
+        numero_nf: numeroNF,
+        pdf_nota_fiscal: urlAnexo
+      }).eq('id', orcamento.id);
       if (error) {
         console.error('Erro ao atualizar orçamento:', error);
         throw error;
       }
-
       toast({
         title: "Nota fiscal emitida!",
         description: `Nota fiscal ${numeroNF} emitida com sucesso`
       });
-
       onConfirm();
       onOpenChange(false);
-      
+
       // Reset
       setEtapa('dados');
       setAnexoNota(null);
@@ -161,39 +145,27 @@ II - Pedido N (a configurar)`;
       setUploading(false);
     }
   };
-
   const handleFechar = () => {
     setEtapa('dados');
     setAnexoNota(null);
     onOpenChange(false);
   };
-
   if (!orcamento) return null;
-
   const formatarData = (data: string) => {
     return new Date(data).toLocaleDateString('pt-BR');
   };
-
   const textoNota = `I - Retorno da NF ${numeroNF}.
 II - Pedido N (a configurar)`;
-
-  return (
-    <Dialog open={open} onOpenChange={handleFechar}>
+  return <Dialog open={open} onOpenChange={handleFechar}>
       <DialogContent className="sm:max-w-lg">
-        {etapa === 'dados' ? (
-          <>
+        {etapa === 'dados' ? <>
             {/* Primeira tela - Dados da Nota */}
             <DialogHeader className="pb-4">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-red-500" />
-                <DialogTitle className="text-lg font-semibold">Emitir Nota de Retorno</DialogTitle>
+                <DialogTitle className="text-lg font-semibold">Emitir Nota de Faturamento</DialogTitle>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-4 top-4 p-0 h-6 w-6"
-                onClick={handleFechar}
-              >
+              <Button variant="ghost" size="sm" className="absolute right-4 top-4 p-0 h-6 w-6" onClick={handleFechar}>
                 <X className="h-4 w-4" />
               </Button>
             </DialogHeader>
@@ -229,17 +201,9 @@ II - Pedido N (a configurar)`;
               {/* Texto da nota */}
               <div className="space-y-3">
                 <Label className="text-base font-semibold">Texto da Nota de Retorno:</Label>
-                <Textarea
-                  value={textoNota}
-                  readOnly
-                  className="min-h-[100px] border-2 border-red-200 bg-red-50/30 resize-none"
-                />
+                <Textarea value={textoNota} readOnly className="min-h-[100px] border-2 border-red-200 bg-red-50/30 resize-none" />
                 
-                <Button
-                  variant="outline"
-                  onClick={copiarParaAreaTransferencia}
-                  className="w-full flex items-center gap-2"
-                >
+                <Button variant="outline" onClick={copiarParaAreaTransferencia} className="w-full flex items-center gap-2">
                   <Copy className="h-4 w-4" />
                   {copied ? "Copiado!" : "Copiar para Área de Transferência"}
                 </Button>
@@ -247,35 +211,21 @@ II - Pedido N (a configurar)`;
             </div>
 
             <div className="flex gap-3 pt-6">
-              <Button 
-                variant="outline" 
-                onClick={handleFechar}
-                className="flex-1"
-              >
+              <Button variant="outline" onClick={handleFechar} className="flex-1">
                 Cancelar
               </Button>
-              <Button 
-                onClick={handleConfirmarDados}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white"
-              >
+              <Button onClick={handleConfirmarDados} className="flex-1 bg-red-500 hover:bg-red-600 text-white">
                 Confirmar Emissão
               </Button>
             </div>
-          </>
-        ) : (
-          <>
+          </> : <>
             {/* Segunda tela - Anexar PDF */}
             <DialogHeader className="pb-4">
               <div className="flex items-center gap-2">
                 <Upload className="h-5 w-5 text-red-500" />
                 <DialogTitle className="text-lg font-semibold">Anexar Nota de Retorno</DialogTitle>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-4 top-4 p-0 h-6 w-6"
-                onClick={handleFechar}
-              >
+              <Button variant="ghost" size="sm" className="absolute right-4 top-4 p-0 h-6 w-6" onClick={handleFechar}>
                 <X className="h-4 w-4" />
               </Button>
             </DialogHeader>
@@ -294,52 +244,28 @@ II - Pedido N (a configurar)`;
               <div className="space-y-3">
                 <Label className="text-base font-semibold">Selecione o arquivo PDF</Label>
                 <div className="border-2 border-red-200 border-dashed rounded-lg p-6">
-                  <Input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileChange}
-                    className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
-                  />
-                  {anexoNota ? (
-                    <p className="text-sm text-green-600 mt-2 font-medium">
+                  <Input type="file" accept=".pdf" onChange={handleFileChange} className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100" />
+                  {anexoNota ? <p className="text-sm text-green-600 mt-2 font-medium">
                       ✓ {anexoNota.name}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground mt-2">
+                    </p> : <p className="text-sm text-muted-foreground mt-2">
                       Nenhum arquivo escolhido
-                    </p>
-                  )}
+                    </p>}
                 </div>
               </div>
             </div>
 
             <div className="flex gap-3 pt-6">
-              <Button 
-                variant="outline" 
-                onClick={() => setEtapa('dados')}
-                className="flex-1"
-                disabled={uploading}
-              >
+              <Button variant="outline" onClick={() => setEtapa('dados')} className="flex-1" disabled={uploading}>
                 Cancelar
               </Button>
-              <Button 
-                onClick={handleAnexarPDF}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white"
-                disabled={uploading || !anexoNota}
-              >
-                {uploading ? (
-                  <>
+              <Button onClick={handleAnexarPDF} className="flex-1 bg-red-500 hover:bg-red-600 text-white" disabled={uploading || !anexoNota}>
+                {uploading ? <>
                     <Upload className="h-4 w-4 mr-2 animate-spin" />
                     Anexando...
-                  </>
-                ) : (
-                  "Anexar PDF"
-                )}
+                  </> : "Anexar PDF"}
               </Button>
             </div>
-          </>
-        )}
+          </>}
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 }
