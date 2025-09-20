@@ -192,8 +192,8 @@ II - Pedido N (a configurar)`;
                 <div className="flex items-center gap-3">
                   <FileImage className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Nº da Nota</p>
-                    <p className="font-semibold">{numeroNF}</p>
+                    <p className="text-sm text-muted-foreground">Nº do Pedido</p>
+                    <p className="font-semibold">{orcamento.numero}</p>
                   </div>
                 </div>
               </div>
