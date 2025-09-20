@@ -2,12 +2,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Copy, FileText } from "lucide-react";
+import { Upload, Copy, FileText, Calendar, User, FileImage, X, AlertCircle } from "lucide-react";
 
 interface EmitirNotaModalProps {
   open: boolean;
@@ -22,12 +21,16 @@ export default function EmitirNotaModal({
   orcamento,
   onConfirm
 }: EmitirNotaModalProps) {
-  const [numeroNF, setNumeroNF] = useState("");
-  const [formaPagamento, setFormaPagamento] = useState("");
-  const [dataVencimento, setDataVencimento] = useState("");
-  const [observacoes, setObservacoes] = useState("");
+  const [etapa, setEtapa] = useState<'dados' | 'anexo'>('dados');
+  const [numeroNF, setNumeroNF] = useState(() => {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const numero = Math.floor(Math.random() * 90000) + 10000;
+    return numero.toString();
+  });
   const [anexoNota, setAnexoNota] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -80,12 +83,17 @@ export default function EmitirNotaModal({
     }
   };
 
-  const copiarParaAreaTransferencia = async (texto: string) => {
+  const copiarParaAreaTransferencia = async () => {
+    const texto = `I - Retorno da NF ${numeroNF}.
+II - Pedido N (a configurar)`;
+    
     try {
       await navigator.clipboard.writeText(texto);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
       toast({
         title: "Copiado!",
-        description: "Informações copiadas para área de transferência"
+        description: "Texto copiado para área de transferência"
       });
     } catch (error) {
       console.error('Erro ao copiar:', error);
@@ -97,11 +105,15 @@ export default function EmitirNotaModal({
     }
   };
 
-  const handleConfirmar = async () => {
-    if (!numeroNF || !formaPagamento || !dataVencimento) {
+  const handleConfirmarDados = () => {
+    setEtapa('anexo');
+  };
+
+  const handleAnexarPDF = async () => {
+    if (!anexoNota) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios",
+        title: "Arquivo obrigatório",
+        description: "Selecione um arquivo PDF",
         variant: "destructive"
       });
       return;
@@ -110,11 +122,7 @@ export default function EmitirNotaModal({
     setUploading(true);
 
     try {
-      let urlAnexo = null;
-      
-      if (anexoNota) {
-        urlAnexo = await uploadAnexo();
-      }
+      const urlAnexo = await uploadAnexo();
 
       // Atualizar orçamento no Supabase
       const { error } = await supabase
@@ -122,9 +130,6 @@ export default function EmitirNotaModal({
         .update({
           status: 'finalizado',
           numero_nf: numeroNF,
-          forma_pagamento: formaPagamento,
-          data_vencimento: dataVencimento,
-          observacoes_nota: observacoes,
           pdf_nota_fiscal: urlAnexo
         })
         .eq('id', orcamento.id);
@@ -134,21 +139,6 @@ export default function EmitirNotaModal({
         throw error;
       }
 
-      // Preparar texto para área de transferência
-      const textoParaCopiar = `
-NOTA FISCAL EMITIDA
-Número: ${numeroNF}
-Orçamento: ${orcamento.numero}
-Cliente: ${orcamento.cliente_nome}
-Equipamento: ${orcamento.equipamento}
-Valor: R$ ${orcamento.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-Forma de Pagamento: ${formaPagamento}
-Data de Vencimento: ${dataVencimento}
-${observacoes ? `Observações: ${observacoes}` : ''}
-      `.trim();
-
-      await copiarParaAreaTransferencia(textoParaCopiar);
-
       toast({
         title: "Nota fiscal emitida!",
         description: `Nota fiscal ${numeroNF} emitida com sucesso`
@@ -157,11 +147,8 @@ ${observacoes ? `Observações: ${observacoes}` : ''}
       onConfirm();
       onOpenChange(false);
       
-      // Limpar campos
-      setNumeroNF("");
-      setFormaPagamento("");
-      setDataVencimento("");
-      setObservacoes("");
+      // Reset
+      setEtapa('dados');
       setAnexoNota(null);
     } catch (error) {
       console.error('Erro ao emitir nota fiscal:', error);
@@ -175,138 +162,183 @@ ${observacoes ? `Observações: ${observacoes}` : ''}
     }
   };
 
+  const handleFechar = () => {
+    setEtapa('dados');
+    setAnexoNota(null);
+    onOpenChange(false);
+  };
+
   if (!orcamento) return null;
 
+  const formatarData = (data: string) => {
+    return new Date(data).toLocaleDateString('pt-BR');
+  };
+
+  const textoNota = `I - Retorno da NF ${numeroNF}.
+II - Pedido N (a configurar)`;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Emitir Nota Fiscal</DialogTitle>
-          <DialogDescription>
-            Emitir NF para {orcamento.numero} - {orcamento.cliente_nome}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          {/* Informações do Orçamento */}
-          <div className="p-4 bg-gradient-secondary rounded-lg space-y-2">
-            <h4 className="font-medium text-foreground">Informações do Orçamento</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-muted-foreground">Número:</span>
-                <span className="ml-2 font-medium">{orcamento.numero}</span>
+    <Dialog open={open} onOpenChange={handleFechar}>
+      <DialogContent className="sm:max-w-lg">
+        {etapa === 'dados' ? (
+          <>
+            {/* Primeira tela - Dados da Nota */}
+            <DialogHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-red-500" />
+                <DialogTitle className="text-lg font-semibold">Emitir Nota de Retorno</DialogTitle>
               </div>
-              <div>
-                <span className="text-muted-foreground">Valor:</span>
-                <span className="ml-2 font-medium text-primary">
-                  R$ {orcamento.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-4 top-4 p-0 h-6 w-6"
+                onClick={handleFechar}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Informações principais */}
+              <div className="bg-muted/30 p-4 rounded-lg space-y-4">
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Data de Entrada</p>
+                    <p className="font-semibold">{formatarData(orcamento.data_criacao)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <User className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Cliente</p>
+                    <p className="font-semibold">{orcamento.cliente_nome}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <FileImage className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Nº da Nota</p>
+                    <p className="font-semibold">{numeroNF}</p>
+                  </div>
+                </div>
               </div>
-              <div className="col-span-2">
-                <span className="text-muted-foreground">Cliente:</span>
-                <span className="ml-2 font-medium">{orcamento.cliente_nome}</span>
+
+              {/* Texto da nota */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Texto da Nota de Retorno:</Label>
+                <Textarea
+                  value={textoNota}
+                  readOnly
+                  className="min-h-[100px] border-2 border-red-200 bg-red-50/30 resize-none"
+                />
+                
+                <Button
+                  variant="outline"
+                  onClick={copiarParaAreaTransferencia}
+                  className="w-full flex items-center gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  {copied ? "Copiado!" : "Copiar para Área de Transferência"}
+                </Button>
               </div>
-              <div className="col-span-2">
-                <span className="text-muted-foreground">Equipamento:</span>
-                <span className="ml-2 font-medium">{orcamento.equipamento}</span>
+            </div>
+
+            <div className="flex gap-3 pt-6">
+              <Button 
+                variant="outline" 
+                onClick={handleFechar}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleConfirmarDados}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+              >
+                Confirmar Emissão
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Segunda tela - Anexar PDF */}
+            <DialogHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <Upload className="h-5 w-5 text-red-500" />
+                <DialogTitle className="text-lg font-semibold">Anexar Nota de Retorno</DialogTitle>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-4 top-4 p-0 h-6 w-6"
+                onClick={handleFechar}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Aviso */}
+              <div className="flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <div>
+                  <p className="font-medium text-yellow-800">Faça upload do PDF da nota de retorno</p>
+                  <p className="text-sm text-yellow-700">Arquivo deve ser PDF, máximo 10MB</p>
+                </div>
+              </div>
+
+              {/* Seleção de arquivo */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Selecione o arquivo PDF</Label>
+                <div className="border-2 border-red-200 border-dashed rounded-lg p-6">
+                  <Input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+                  />
+                  {anexoNota ? (
+                    <p className="text-sm text-green-600 mt-2 font-medium">
+                      ✓ {anexoNota.name}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Nenhum arquivo escolhido
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Dados da Nota Fiscal */}
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="numeroNF">Número da NF *</Label>
-              <Input
-                id="numeroNF"
-                value={numeroNF}
-                onChange={(e) => setNumeroNF(e.target.value)}
-                placeholder="Ex: NF-2024-001"
-              />
+            <div className="flex gap-3 pt-6">
+              <Button 
+                variant="outline" 
+                onClick={() => setEtapa('dados')}
+                className="flex-1"
+                disabled={uploading}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleAnexarPDF}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                disabled={uploading || !anexoNota}
+              >
+                {uploading ? (
+                  <>
+                    <Upload className="h-4 w-4 mr-2 animate-spin" />
+                    Anexando...
+                  </>
+                ) : (
+                  "Anexar PDF"
+                )}
+              </Button>
             </div>
-
-            <div>
-              <Label htmlFor="formaPagamento">Forma de Pagamento *</Label>
-              <Select value={formaPagamento} onValueChange={setFormaPagamento}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a forma de pagamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="boleto">Boleto Bancário</SelectItem>
-                  <SelectItem value="pix">PIX</SelectItem>
-                  <SelectItem value="cartao">Cartão de Crédito</SelectItem>
-                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                  <SelectItem value="transferencia">Transferência Bancária</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="dataVencimento">Data de Vencimento *</Label>
-              <Input
-                id="dataVencimento"
-                type="date"
-                value={dataVencimento}
-                onChange={(e) => setDataVencimento(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="observacoes">Observações</Label>
-              <Textarea
-                id="observacoes"
-                value={observacoes}
-                onChange={(e) => setObservacoes(e.target.value)}
-                placeholder="Observações adicionais..."
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="anexoNota">Anexar PDF da Nota Fiscal</Label>
-              <Input
-                id="anexoNota"
-                type="file"
-                accept=".pdf"
-                onChange={handleFileChange}
-                className="mt-1"
-              />
-              {anexoNota && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Arquivo selecionado: {anexoNota.name}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-2 pt-4">
-          <Button 
-            variant="outline" 
-            onClick={() => onOpenChange(false)} 
-            className="flex-1"
-            disabled={uploading}
-          >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={handleConfirmar} 
-            className="flex-1 bg-gradient-primary"
-            disabled={uploading}
-          >
-            {uploading ? (
-              <>
-                <Upload className="h-4 w-4 mr-2 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <FileText className="h-4 w-4 mr-2" />
-                Emitir NF
-              </>
-            )}
-          </Button>
-        </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
