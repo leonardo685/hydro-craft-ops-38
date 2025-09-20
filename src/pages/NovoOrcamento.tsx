@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useClientes } from "@/hooks/use-clientes";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
@@ -29,13 +29,17 @@ interface ItemOrcamento {
 }
 export default function NovoOrcamento() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const analiseId = searchParams.get('analiseId');
   const ordemServicoId = searchParams.get('ordemServicoId');
+  const orcamentoParaEdicao = location.state?.orcamento;
   const {
     clientes
   } = useClientes();
+  
   const [dadosOrcamento, setDadosOrcamento] = useState({
+    id: '', // Add id for editing
     tipoOrdem: '',
     numeroOrdem: '', // Will be generated automatically
     urgencia: false,
@@ -115,7 +119,33 @@ export default function NovoOrcamento() {
 
   useEffect(() => {
     const carregarDados = async () => {
-      // Gerar número do orçamento primeiro
+      // Se é edição, carregar dados do orçamento
+      if (orcamentoParaEdicao) {
+        setDadosOrcamento({
+          id: orcamentoParaEdicao.id,
+          tipoOrdem: 'reforma', // Você pode ajustar baseado no tipo
+          numeroOrdem: orcamentoParaEdicao.numero,
+          urgencia: false,
+          cliente: orcamentoParaEdicao.cliente_nome,
+          tag: orcamentoParaEdicao.equipamento,
+          solicitante: '',
+          dataAbertura: new Date(orcamentoParaEdicao.data_criacao).toISOString().split('T')[0],
+          numeroNota: '',
+          numeroSerie: '',
+          observacoes: orcamentoParaEdicao.observacoes || '',
+          status: orcamentoParaEdicao.status
+        });
+
+        setInformacoesComerciais(prev => ({
+          ...prev,
+          valorTotal: orcamentoParaEdicao.valor || 0,
+          valorComDesconto: orcamentoParaEdicao.valor || 0
+        }));
+
+        return; // Skip other loading logic for editing
+      }
+
+      // Gerar número do orçamento apenas se for novo
       const proximoNumero = await gerarProximoNumero();
       setDadosOrcamento(prev => ({
         ...prev,
@@ -368,7 +398,7 @@ export default function NovoOrcamento() {
     };
 
     carregarDados();
-  }, [analiseId, ordemServicoId]);
+  }, [analiseId, ordemServicoId, orcamentoParaEdicao]);
   const atualizarValorItem = (categoria: 'pecas' | 'servicos' | 'usinagem', id: string, valorUnitario: number) => {
     setItensAnalise(prev => {
       const novoItens = {
@@ -486,11 +516,25 @@ export default function NovoOrcamento() {
         ordem_servico_id: ordemServicoId || null
       };
 
-      const { data, error } = await supabase
-        .from('orcamentos')
-        .insert(orcamentoData)
-        .select()
-        .single();
+      let response;
+      if (dadosOrcamento.id) {
+        // Atualizar orçamento existente
+        response = await supabase
+          .from('orcamentos')
+          .update(orcamentoData)
+          .eq('id', dadosOrcamento.id)
+          .select()
+          .single();
+      } else {
+        // Criar novo orçamento
+        response = await supabase
+          .from('orcamentos')
+          .insert(orcamentoData)
+          .select()
+          .single();
+      }
+
+      const { data, error } = response;
 
       if (error) {
         console.error('Erro ao salvar orçamento no Supabase:', error);
@@ -506,7 +550,7 @@ export default function NovoOrcamento() {
       
       toast({
         title: "Sucesso",
-        description: `Orçamento ${dadosOrcamento.numeroOrdem} criado com sucesso!`
+        description: `Orçamento ${dadosOrcamento.numeroOrdem} ${dadosOrcamento.id ? 'atualizado' : 'criado'} com sucesso!`
       });
       navigate("/orcamentos");
     } catch (error) {
