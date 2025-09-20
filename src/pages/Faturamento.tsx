@@ -3,15 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Receipt, DollarSign, Calendar, FileText, Download, ChevronDown, ChevronUp, Eye } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getOrcamentosEmFaturamento, getOrcamentosFinalizados, emitirNotaFiscal, type Orcamento } from "@/lib/orcamento-utils";
 import { OrdensAguardandoRetorno } from "@/components/OrdensAguardandoRetorno";
 import { supabase } from "@/integrations/supabase/client";
+import EmitirNotaModal from "@/components/EmitirNotaModal";
 
 interface NotaFaturada {
   id: string;
@@ -25,14 +22,11 @@ interface NotaFaturada {
 }
 
 export default function Faturamento() {
-  const [orcamentosEmFaturamento, setOrcamentosEmFaturamento] = useState<Orcamento[]>([]);
+  const [orcamentosEmFaturamento, setOrcamentosEmFaturamento] = useState<any[]>([]);
   const [orcamentosFinalizados, setOrcamentosFinalizados] = useState<Orcamento[]>([]);
   const [notasFaturadas, setNotasFaturadas] = useState<NotaFaturada[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(null);
-  const [numeroNF, setNumeroNF] = useState("");
-  const [formaPagamento, setFormaPagamento] = useState("");
-  const [dataVencimento, setDataVencimento] = useState("");
+  const [isEmitirNotaModalOpen, setIsEmitirNotaModalOpen] = useState(false);
+  const [selectedOrcamento, setSelectedOrcamento] = useState<any>(null);
   const [expandedSections, setExpandedSections] = useState({
     ordensRetorno: true,
     orcamentosFaturamento: true,
@@ -44,8 +38,20 @@ export default function Faturamento() {
     loadData();
   }, []);
 
-  const loadData = () => {
-    setOrcamentosEmFaturamento(getOrcamentosEmFaturamento());
+  const loadData = async () => {
+    // Carregar orçamentos aprovados para a seção "Aguardando Faturamento"
+    const { data: orcamentosAprovados, error: orcamentosError } = await supabase
+      .from('orcamentos')
+      .select('*')
+      .eq('status', 'aprovado')
+      .order('updated_at', { ascending: false });
+
+    if (orcamentosError) {
+      console.error('Erro ao carregar orçamentos aprovados:', orcamentosError);
+    } else {
+      setOrcamentosEmFaturamento(orcamentosAprovados || []);
+    }
+
     setOrcamentosFinalizados(getOrcamentosFinalizados());
     loadNotasFaturadas();
   };
@@ -71,21 +77,21 @@ export default function Faturamento() {
         console.error('Erro ao carregar ordens faturadas:', ordensError);
       }
 
-      // Buscar orçamentos aprovados (notas de faturamento)
+      // Buscar orçamentos faturados (status 'finalizado')
       const { data: orcamentosData, error: orcamentosError } = await supabase
         .from('orcamentos')
         .select('*')
-        .eq('status', 'aprovado')
+        .eq('status', 'finalizado')
         .order('updated_at', { ascending: false });
 
       if (orcamentosError) {
-        console.error('Erro ao carregar orçamentos aprovados:', orcamentosError);
+        console.error('Erro ao carregar orçamentos faturados:', orcamentosError);
       }
 
       const notasRetorno: NotaFaturada[] = [];
       const notasFaturamento: NotaFaturada[] = [];
       
-      // Processar ordens de serviço para notas de retorno
+      // Processar ordens de serviço para notas de retorno (vão para "Notas Fiscais Emitidas")
       ordensData?.forEach(ordem => {
         notasRetorno.push({
           ...ordem,
@@ -93,7 +99,7 @@ export default function Faturamento() {
         });
       });
 
-      // Processar orçamentos aprovados para notas de faturamento
+      // Processar orçamentos faturados para notas de faturamento (vão para "Notas Faturadas")
       orcamentosData?.forEach(orcamento => {
         notasFaturamento.push({
           ...orcamento,
@@ -112,38 +118,14 @@ export default function Faturamento() {
     }
   };
 
-  const handleEmitirNF = (orcamento: Orcamento) => {
+  const handleEmitirNF = (orcamento: any) => {
     setSelectedOrcamento(orcamento);
-    setNumeroNF(`NF-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`);
-    setFormaPagamento("");
-    setDataVencimento("");
-    setIsDialogOpen(true);
+    setIsEmitirNotaModalOpen(true);
   };
 
   const handleConfirmarEmissao = () => {
-    if (!selectedOrcamento || !numeroNF || !formaPagamento || !dataVencimento) {
-      toast({
-        title: "Erro",
-        description: "Preencha todos os campos obrigatórios",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    emitirNotaFiscal(selectedOrcamento.id, {
-      numeroNF,
-      formaPagamento,
-      dataVencimento
-    });
-
     loadData(); // Recarregar dados
-    setIsDialogOpen(false);
     setSelectedOrcamento(null);
-    
-    toast({
-      title: "Nota Fiscal Emitida",
-      description: `Nota fiscal ${numeroNF} emitida com sucesso!`,
-    });
   };
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -181,8 +163,8 @@ export default function Faturamento() {
   };
 
   // Calcular resumo
-  const totalEmFaturamento = orcamentosEmFaturamento.length > 0 ? orcamentosEmFaturamento.reduce((acc, orc) => acc + orc.valor, 0) : 0;
-  const totalFaturado = orcamentosFinalizados.length > 0 ? orcamentosFinalizados.reduce((acc, orc) => acc + orc.valor, 0) : 0;
+  const totalEmFaturamento = orcamentosEmFaturamento.length > 0 ? orcamentosEmFaturamento.reduce((acc, orc) => acc + (orc.valor || 0), 0) : 0;
+  const totalFaturado = orcamentosFinalizados.length > 0 ? orcamentosFinalizados.reduce((acc, orc) => acc + (orc.valor || 0), 0) : 0;
   const quantidadeNFs = orcamentosFinalizados.length;
 
   const resumoMensal = {
@@ -236,65 +218,6 @@ export default function Faturamento() {
               Controle financeiro e emissão de notas fiscais
             </p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium">
-                <FileText className="h-4 w-4 mr-2" />
-                Emitir Nota Fiscal
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Emitir Nota Fiscal</DialogTitle>
-                <DialogDescription>
-                  {selectedOrcamento && `Emitir NF para ${selectedOrcamento.numero} - ${selectedOrcamento.cliente}`}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="numeroNF">Número da NF</Label>
-                  <Input
-                    id="numeroNF"
-                    value={numeroNF}
-                    onChange={(e) => setNumeroNF(e.target.value)}
-                    placeholder="NF-2024-001"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="formaPagamento">Forma de Pagamento</Label>
-                  <Select value={formaPagamento} onValueChange={setFormaPagamento}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a forma de pagamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="boleto">Boleto Bancário</SelectItem>
-                      <SelectItem value="pix">PIX</SelectItem>
-                      <SelectItem value="cartao">Cartão de Crédito</SelectItem>
-                      <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                      <SelectItem value="transferencia">Transferência Bancária</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="dataVencimento">Data de Vencimento</Label>
-                  <Input
-                    id="dataVencimento"
-                    type="date"
-                    value={dataVencimento}
-                    onChange={(e) => setDataVencimento(e.target.value)}
-                  />
-                </div>
-                <div className="flex gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleConfirmarEmissao} className="flex-1 bg-gradient-primary">
-                    Emitir NF
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
 
         {/* Resumo Financeiro */}
@@ -404,7 +327,7 @@ export default function Faturamento() {
                           {item.numero}
                         </CardTitle>
                         <CardDescription className="mt-1">
-                          {item.equipamento} - {item.cliente}
+                          {item.equipamento} - {item.cliente_nome}
                         </CardDescription>
                       </div>
                       <Badge className={getStatusColor(item.status)}>
@@ -423,7 +346,7 @@ export default function Faturamento() {
                       <div>
                         <p className="text-sm text-muted-foreground">Data de Aprovação</p>
                         <p className="text-lg font-semibold">
-                          {item.dataAprovacao ? new Date(item.dataAprovacao).toLocaleDateString('pt-BR') : '-'}
+                          {item.data_aprovacao ? new Date(item.data_aprovacao).toLocaleDateString('pt-BR') : '-'}
                         </p>
                       </div>
                     </div>
@@ -437,9 +360,9 @@ export default function Faturamento() {
                         <FileText className="h-4 w-4 mr-1" />
                         Emitir Nota Fiscal
                       </Button>
-                      {item.vinculadoOrdemServico && (
+                      {item.ordem_servico_id && (
                         <Badge variant="outline" className="text-xs">
-                          Vinculado à OS: {item.ordemServicoId}
+                          Vinculado à OS: {item.ordem_servico_id}
                         </Badge>
                       )}
                     </div>
@@ -763,6 +686,14 @@ export default function Faturamento() {
           )}
         </div>
       </div>
+
+      {/* Modal para Emitir Nota Fiscal */}
+      <EmitirNotaModal
+        open={isEmitirNotaModalOpen}
+        onOpenChange={setIsEmitirNotaModalOpen}
+        orcamento={selectedOrcamento}
+        onConfirm={handleConfirmarEmissao}
+      />
     </AppLayout>
   );
 }
