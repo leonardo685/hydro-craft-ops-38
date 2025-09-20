@@ -273,12 +273,17 @@ export type Database = {
           created_at: string
           data_aprovacao: string | null
           data_criacao: string
+          data_vencimento: string | null
           descricao: string | null
           equipamento: string
+          forma_pagamento: string | null
           id: string
           numero: string
+          numero_nf: string | null
           observacoes: string | null
+          observacoes_nota: string | null
           ordem_servico_id: string | null
+          pdf_nota_fiscal: string | null
           status: string
           updated_at: string
           valor: number
@@ -288,12 +293,17 @@ export type Database = {
           created_at?: string
           data_aprovacao?: string | null
           data_criacao?: string
+          data_vencimento?: string | null
           descricao?: string | null
           equipamento: string
+          forma_pagamento?: string | null
           id?: string
           numero: string
+          numero_nf?: string | null
           observacoes?: string | null
+          observacoes_nota?: string | null
           ordem_servico_id?: string | null
+          pdf_nota_fiscal?: string | null
           status?: string
           updated_at?: string
           valor?: number
@@ -303,12 +313,17 @@ export type Database = {
           created_at?: string
           data_aprovacao?: string | null
           data_criacao?: string
+          data_vencimento?: string | null
           descricao?: string | null
           equipamento?: string
+          forma_pagamento?: string | null
           id?: string
           numero?: string
+          numero_nf?: string | null
           observacoes?: string | null
+          observacoes_nota?: string | null
           ordem_servico_id?: string | null
+          pdf_nota_fiscal?: string | null
           status?: string
           updated_at?: string
           valor?: number
