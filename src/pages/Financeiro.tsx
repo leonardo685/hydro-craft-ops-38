@@ -26,7 +26,16 @@ export default function Financeiro() {
   const [dataInicial, setDataInicial] = useState("");
   const [dataFinal, setDataFinal] = useState("");
   const [periodoSelecionado, setPeriodoSelecionado] = useState("");
+  const [contaBancariaFiltro, setContaBancariaFiltro] = useState("todas");
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
+
+  // Estados para valores dinâmicos dos cards financeiros
+  const [valoresFinanceiros, setValoresFinanceiros] = useState({
+    aReceber: 142500,
+    aPagar: 98700,
+    titulosAberto: 25,
+    contasVencer: 18
+  });
 
   // Dados mensais para cada indicador
   const [monthlyData] = useState([
@@ -594,6 +603,30 @@ export default function Financeiro() {
       dataInicio = new Date(dataInicial);
       dataFim = new Date(dataFinal);
     }
+
+    // Simular filtro e atualizar valores dos cards baseado na conta bancária selecionada
+    let novoAReceber = 142500;
+    let novoAPagar = 98700;
+    let novoTitulosAberto = 25;
+    let novoContasVencer = 18;
+
+    // Aplicar filtro por conta bancária
+    if (contaBancariaFiltro !== 'todas') {
+      // Simular redução de valores baseado na conta específica
+      const fatorReducao = 0.6; // 60% dos valores quando filtrado por conta específica
+      novoAReceber = Math.round(novoAReceber * fatorReducao);
+      novoAPagar = Math.round(novoAPagar * fatorReducao);
+      novoTitulosAberto = Math.round(novoTitulosAberto * fatorReducao);
+      novoContasVencer = Math.round(novoContasVencer * fatorReducao);
+    }
+
+    // Atualizar os valores dos cards
+    setValoresFinanceiros({
+      aReceber: novoAReceber,
+      aPagar: novoAPagar,
+      titulosAberto: novoTitulosAberto,
+      contasVencer: novoContasVencer
+    });
 
     // Simular filtro (retorna todas as movimentações de exemplo quando um período é selecionado)
     if (periodoSelecionado) {
@@ -1981,13 +2014,13 @@ export default function Financeiro() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold text-green-600">
-                        {formatCurrency(142500)}
+                        {formatCurrency(valoresFinanceiros.aReceber)}
                       </div>
                       <Badge variant="outline" className="text-xs mt-1">
                         Próximos 30 dias
                       </Badge>
                       <div className="mt-2 text-xs text-muted-foreground">
-                        25 títulos em aberto
+                        {valoresFinanceiros.titulosAberto} títulos em aberto
                       </div>
                     </CardContent>
                   </Card>
@@ -2001,13 +2034,13 @@ export default function Financeiro() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold text-destructive">
-                        {formatCurrency(98700)}
+                        {formatCurrency(valoresFinanceiros.aPagar)}
                       </div>
                       <Badge variant="outline" className="text-xs mt-1">
                         Próximos 30 dias
                       </Badge>
                       <div className="mt-2 text-xs text-muted-foreground">
-                        18 contas a vencer
+                        {valoresFinanceiros.contasVencer} contas a vencer
                       </div>
                     </CardContent>
                   </Card>
@@ -2021,13 +2054,13 @@ export default function Financeiro() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold text-primary">
-                        {formatCurrency(142500 - 98700 + saldoTotal)}
+                        {formatCurrency(valoresFinanceiros.aReceber - valoresFinanceiros.aPagar + saldoTotal)}
                       </div>
                       <Badge variant="outline" className="text-xs mt-1">
                         Saldo final projetado
                       </Badge>
                       <div className="mt-2 text-xs text-muted-foreground">
-                        {((142500 - 98700) / saldoTotal * 100).toFixed(1)}% de crescimento
+                        {(((valoresFinanceiros.aReceber - valoresFinanceiros.aPagar) / saldoTotal * 100) || 0).toFixed(1)}% de crescimento
                       </div>
                     </CardContent>
                   </Card>
@@ -2039,7 +2072,7 @@ export default function Financeiro() {
                     <CardTitle>Filtros de Consulta</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                       <div>
                         <Label htmlFor="dataInicial">Data Inicial</Label>
                         <Input
@@ -2070,6 +2103,21 @@ export default function Financeiro() {
                             <SelectItem value="15dias">15 Dias</SelectItem>
                             <SelectItem value="1mes">1 Mês</SelectItem>
                             <SelectItem value="1ano">1 Ano</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="contaBancaria">Conta Bancária</Label>
+                        <Select value={contaBancariaFiltro} onValueChange={setContaBancariaFiltro}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a conta" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todas">Todas as Contas</SelectItem>
+                            <SelectItem value="conta_corrente">001 - Conta Corrente Banco do Brasil</SelectItem>
+                            <SelectItem value="conta_poupanca">013 - Poupança Banco do Brasil</SelectItem>
+                            <SelectItem value="conta_itau">341 - Conta Corrente Itaú</SelectItem>
+                            <SelectItem value="conta_santander">033 - Conta Corrente Santander</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
