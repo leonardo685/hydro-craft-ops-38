@@ -197,8 +197,8 @@ export default function NovoOrcamento() {
 
             // Carregar peças necessárias se existirem
             const pecasOS: ItemOrcamento[] = [];
-            if (ordemServico.pecas_necessarias) {
-              (ordemServico.pecas_necessarias as any[]).forEach((peca: any, index: number) => {
+            if (ordemServico.pecas_necessarias && Array.isArray(ordemServico.pecas_necessarias)) {
+              ordemServico.pecas_necessarias.forEach((peca: any, index: number) => {
                 pecasOS.push({
                   id: `peca-os-${index}`,
                   tipo: 'peca' as const,
@@ -216,12 +216,12 @@ export default function NovoOrcamento() {
 
             // Carregar serviços necessários se existirem
             const servicosOS: ItemOrcamento[] = [];
-            if (ordemServico.servicos_necessarios) {
-              (ordemServico.servicos_necessarios as any[]).forEach((servico: any, index: number) => {
+            if (ordemServico.servicos_necessarios && Array.isArray(ordemServico.servicos_necessarios)) {
+              ordemServico.servicos_necessarios.forEach((servico: any, index: number) => {
                 servicosOS.push({
                   id: `servico-os-${index}`,
                   tipo: 'servico' as const,
-                  descricao: servico.descricao || servico.nome || '',
+                  descricao: servico.descricao || servico.servico || servico.nome || '',
                   quantidade: servico.quantidade || 1,
                   valorUnitario: 0,
                   valorTotal: 0
@@ -231,18 +231,22 @@ export default function NovoOrcamento() {
 
             // Carregar usinagem necessária se existir
             const usinagemOS: ItemOrcamento[] = [];
-            if (ordemServico.usinagem_necessaria) {
-              (ordemServico.usinagem_necessaria as any[]).forEach((usinagem: any, index: number) => {
+            if (ordemServico.usinagem_necessaria && Array.isArray(ordemServico.usinagem_necessaria)) {
+              ordemServico.usinagem_necessaria.forEach((usinagem: any, index: number) => {
                 usinagemOS.push({
                   id: `usinagem-os-${index}`,
                   tipo: 'usinagem' as const,
-                  descricao: usinagem.descricao || usinagem.nome || '',
+                  descricao: usinagem.descricao || usinagem.trabalho || usinagem.nome || '',
                   quantidade: usinagem.quantidade || 1,
                   valorUnitario: 0,
                   valorTotal: 0
                 });
               });
             }
+
+            console.log('Peças carregadas:', pecasOS);
+            console.log('Serviços carregados:', servicosOS);
+            console.log('Usinagem carregada:', usinagemOS);
 
             setItensAnalise({
               pecas: pecasOS,
