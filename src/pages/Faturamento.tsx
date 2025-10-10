@@ -44,7 +44,7 @@ export default function Faturamento() {
       .from('orcamentos')
       .select(`
         *,
-        ordens_servico!ordem_servico_id(numero_ordem)
+        ordens_servico:ordem_servico_id(numero_ordem)
       `)
       .eq('status', 'aprovado')
       .order('updated_at', { ascending: false });
@@ -52,6 +52,7 @@ export default function Faturamento() {
     if (orcamentosError) {
       console.error('Erro ao carregar orçamentos aprovados:', orcamentosError);
     } else {
+      console.log('Orçamentos carregados:', orcamentosAprovados);
       setOrcamentosEmFaturamento(orcamentosAprovados || []);
     }
 
