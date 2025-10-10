@@ -42,7 +42,10 @@ export default function Faturamento() {
     // Carregar orçamentos aprovados para a seção "Aguardando Faturamento"
     const { data: orcamentosAprovados, error: orcamentosError } = await supabase
       .from('orcamentos')
-      .select('*')
+      .select(`
+        *,
+        ordens_servico!ordem_servico_id(numero_ordem)
+      `)
       .eq('status', 'aprovado')
       .order('updated_at', { ascending: false });
 
@@ -362,7 +365,7 @@ export default function Faturamento() {
                       </Button>
                       {item.ordem_servico_id && (
                         <Badge variant="outline" className="text-xs">
-                          Vinculado à OS: {item.ordem_servico_id}
+                          Vinculado à OS: {item.ordens_servico?.numero_ordem || item.ordem_servico_id}
                         </Badge>
                       )}
                     </div>
