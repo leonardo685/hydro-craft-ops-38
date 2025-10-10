@@ -2,13 +2,15 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, DollarSign, Calendar, FileText, Download, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { Receipt, DollarSign, Calendar, FileText, Download, ChevronDown, ChevronUp, Eye, Filter } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getOrcamentosEmFaturamento, getOrcamentosFinalizados, emitirNotaFiscal, type Orcamento } from "@/lib/orcamento-utils";
 import { OrdensAguardandoRetorno } from "@/components/OrdensAguardandoRetorno";
 import { supabase } from "@/integrations/supabase/client";
 import EmitirNotaModal from "@/components/EmitirNotaModal";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface NotaFaturada {
   id: string;
@@ -25,20 +27,40 @@ export default function Faturamento() {
   const [orcamentosEmFaturamento, setOrcamentosEmFaturamento] = useState<any[]>([]);
   const [orcamentosFinalizados, setOrcamentosFinalizados] = useState<Orcamento[]>([]);
   const [notasFaturadas, setNotasFaturadas] = useState<NotaFaturada[]>([]);
+  const [ordensRetorno, setOrdensRetorno] = useState<any[]>([]);
   const [isEmitirNotaModalOpen, setIsEmitirNotaModalOpen] = useState(false);
   const [selectedOrcamento, setSelectedOrcamento] = useState<any>(null);
   const [expandedSections, setExpandedSections] = useState({
     ordensRetorno: true,
     orcamentosFaturamento: true,
-    notasFiscais: true,
+    notasRetorno: true,
     notasFaturadas: true
   });
+  
+  // Estados para filtros
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
+  const [tipoNota, setTipoNota] = useState<string>("todos");
+  const [clienteFiltro, setClienteFiltro] = useState("");
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
+    // Carregar ordens aguardando retorno
+    const { data: ordensData, error: ordensError } = await supabase
+      .from('ordens_servico')
+      .select('*')
+      .eq('status', 'aguardando_retorno')
+      .order('updated_at', { ascending: false });
+
+    if (ordensError) {
+      console.error('Erro ao carregar ordens:', ordensError);
+    } else {
+      setOrdensRetorno(ordensData || []);
+    }
+
     // Carregar orçamentos aprovados para a seção "Aguardando Faturamento"
     const { data: orcamentosAprovados, error: orcamentosError } = await supabase
       .from('orcamentos')
@@ -72,7 +94,6 @@ export default function Faturamento() {
       setOrcamentosEmFaturamento(orcamentosComOS);
     }
 
-    setOrcamentosFinalizados(getOrcamentosFinalizados());
     loadNotasFaturadas();
   };
 
@@ -182,17 +203,47 @@ export default function Faturamento() {
     }
   };
 
-  // Calcular resumo
-  const totalEmFaturamento = orcamentosEmFaturamento.length > 0 ? orcamentosEmFaturamento.reduce((acc, orc) => acc + (orc.valor || 0), 0) : 0;
-  const totalFaturado = orcamentosFinalizados.length > 0 ? orcamentosFinalizados.reduce((acc, orc) => acc + (orc.valor || 0), 0) : 0;
-  const quantidadeNFs = orcamentosFinalizados.length;
+  // Calcular contagens corretas
+  const totalNotasServico = notasFaturadas.filter(n => n.tipo === 'nota_retorno').length;
+  const totalNotasVenda = notasFaturadas.filter(n => n.tipo.includes('orcamento')).length;
+  const numeroNotasRetorno = ordensRetorno.length;
+  const totalNotasFiscais = totalNotasServico + totalNotasVenda;
 
-  const resumoMensal = {
-    totalFaturado: totalEmFaturamento + totalFaturado,
-    totalPendente: totalEmFaturamento,
-    totalRecebido: totalFaturado,
-    quantidadeNFs
-  };
+  // Filtrar notas faturadas
+  const notasFiltradas = notasFaturadas.filter(nota => {
+    let passa = true;
+    
+    // Filtro de data
+    if (dataInicio) {
+      const dataNotaStr = nota.tipo === 'nota_retorno' ? nota.data_entrada : nota.data_entrada;
+      const dataNota = new Date(dataNotaStr);
+      const dataInicioDate = new Date(dataInicio);
+      passa = passa && dataNota >= dataInicioDate;
+    }
+    
+    if (dataFim) {
+      const dataNotaStr = nota.tipo === 'nota_retorno' ? nota.data_entrada : nota.data_entrada;
+      const dataNota = new Date(dataNotaStr);
+      const dataFimDate = new Date(dataFim);
+      passa = passa && dataNota <= dataFimDate;
+    }
+    
+    // Filtro de tipo
+    if (tipoNota !== "todos") {
+      if (tipoNota === "retorno") {
+        passa = passa && nota.tipo === 'nota_retorno';
+      } else if (tipoNota === "faturamento") {
+        passa = passa && nota.tipo.includes('orcamento');
+      }
+    }
+    
+    // Filtro de cliente
+    if (clienteFiltro) {
+      passa = passa && nota.cliente_nome.toLowerCase().includes(clienteFiltro.toLowerCase());
+    }
+    
+    return passa;
+  });
   
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -251,7 +302,7 @@ export default function Faturamento() {
                 <div>
                   <p className="text-sm text-muted-foreground">Total de Notas de Serviço</p>
                   <p className="text-lg font-semibold text-primary">
-                    {Math.floor(orcamentosFinalizados.length * 0.6)}
+                    {totalNotasServico}
                   </p>
                 </div>
               </div>
@@ -267,7 +318,7 @@ export default function Faturamento() {
                 <div>
                   <p className="text-sm text-muted-foreground">Total de Notas de Venda</p>
                   <p className="text-lg font-semibold text-accent">
-                    {Math.floor(orcamentosFinalizados.length * 0.3)}
+                    {totalNotasVenda}
                   </p>
                 </div>
               </div>
@@ -283,7 +334,7 @@ export default function Faturamento() {
                 <div>
                   <p className="text-sm text-muted-foreground">Número de Notas de Retorno</p>
                   <p className="text-lg font-semibold text-warning">
-                    {Math.floor(orcamentosFinalizados.length * 0.1)}
+                    {numeroNotasRetorno}
                   </p>
                 </div>
               </div>
@@ -298,12 +349,64 @@ export default function Faturamento() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Notas Fiscais</p>
-                  <p className="text-lg font-semibold">{resumoMensal.quantidadeNFs}</p>
+                  <p className="text-lg font-semibold">{totalNotasFiscais}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Filtros */}
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filtros
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Data Início</label>
+                <Input
+                  type="date"
+                  value={dataInicio}
+                  onChange={(e) => setDataInicio(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Data Fim</label>
+                <Input
+                  type="date"
+                  value={dataFim}
+                  onChange={(e) => setDataFim(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Tipo de Nota</label>
+                <Select value={tipoNota} onValueChange={setTipoNota}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="retorno">Retorno</SelectItem>
+                    <SelectItem value="faturamento">Faturamento</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">Cliente</label>
+                <Input
+                  type="text"
+                  placeholder="Buscar por cliente"
+                  value={clienteFiltro}
+                  onChange={(e) => setClienteFiltro(e.target.value)}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Ordens Aguardando Retorno */}
         <OrdensAguardandoRetorno 
@@ -407,112 +510,6 @@ export default function Faturamento() {
           )}
         </div>
 
-        {/* Lista de Notas Fiscais */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Notas Fiscais Emitidas</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleSection('notasFiscais')}
-              className="flex items-center gap-2"
-            >
-              {expandedSections.notasFiscais ? (
-                <>
-                  <ChevronUp className="h-4 w-4" />
-                  Recolher
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4" />
-                  Expandir
-                </>
-              )}
-            </Button>
-          </div>
-
-          {expandedSections.notasFiscais && (
-            <div className="space-y-4">
-              {orcamentosFinalizados.map((item) => (
-                <Card key={item.id} className="shadow-soft hover:shadow-medium transition-smooth">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Receipt className="h-5 w-5 text-primary" />
-                          {item.numeroNF || item.numero}
-                        </CardTitle>
-                        <CardDescription className="mt-1">
-                          {item.equipamento} - {item.cliente}
-                        </CardDescription>
-                      </div>
-                      <Badge className={getStatusColor(item.status)}>
-                        {getStatusText(item.status)}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Valor da Nota</p>
-                        <p className="text-xl font-bold text-primary">
-                          R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Forma de Pagamento</p>
-                        <p className="text-lg font-semibold">{item.formaPagamento || '-'}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Data Emissão:</span>
-                        <p className="font-medium">
-                          {item.dataEmissao ? new Date(item.dataEmissao).toLocaleDateString('pt-BR') : '-'}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Vencimento:</span>
-                        <p className="font-medium">
-                          {item.dataVencimento ? new Date(item.dataVencimento).toLocaleDateString('pt-BR') : '-'}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Orçamento:</span>
-                        <p className="font-medium">{item.numero}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-1" />
-                        Download PDF
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        Enviar por Email
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {orcamentosFinalizados.length === 0 && (
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      Nenhuma nota fiscal emitida
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Emita notas fiscais dos orçamentos aprovados
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-        </div>
 
         {/* Notas Fiscais Emitidas (Retorno) */}
         <div>
@@ -521,10 +518,10 @@ export default function Faturamento() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => toggleSection('notasFaturadas')}
+              onClick={() => toggleSection('notasRetorno')}
               className="flex items-center gap-2"
             >
-              {expandedSections.notasFaturadas ? (
+              {expandedSections.notasRetorno ? (
                 <>
                   <ChevronUp className="h-4 w-4" />
                   Recolher
@@ -538,9 +535,9 @@ export default function Faturamento() {
             </Button>
           </div>
 
-          {expandedSections.notasFaturadas && (
+          {expandedSections.notasRetorno && (
             <div className="space-y-4">
-              {notasFaturadas.filter(nota => nota.tipo === 'nota_retorno').map((nota) => (
+              {notasFiltradas.filter(nota => nota.tipo === 'nota_retorno').map((nota) => (
                 <Card key={`${nota.id}-${nota.tipo}`} className="shadow-soft hover:shadow-medium transition-smooth">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
@@ -592,7 +589,7 @@ export default function Faturamento() {
                 </Card>
               ))}
               
-              {notasFaturadas.filter(nota => nota.tipo === 'nota_retorno').length === 0 && (
+              {notasFiltradas.filter(nota => nota.tipo === 'nota_retorno').length === 0 && (
                 <Card>
                   <CardContent className="p-12 text-center">
                     <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
@@ -635,7 +632,7 @@ export default function Faturamento() {
 
           {expandedSections.notasFaturadas && (
             <div className="space-y-4">
-              {notasFaturadas.filter(nota => nota.tipo.includes('orcamento')).map((nota) => (
+              {notasFiltradas.filter(nota => nota.tipo.includes('orcamento')).map((nota) => (
                 <Card key={`${nota.id}-${nota.tipo}`} className="shadow-soft hover:shadow-medium transition-smooth">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
@@ -689,7 +686,7 @@ export default function Faturamento() {
                 </Card>
               ))}
               
-              {notasFaturadas.filter(nota => nota.tipo.includes('orcamento')).length === 0 && (
+              {notasFiltradas.filter(nota => nota.tipo.includes('orcamento')).length === 0 && (
                 <Card>
                   <CardContent className="p-12 text-center">
                     <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
