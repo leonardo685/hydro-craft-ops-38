@@ -42,18 +42,34 @@ export default function Faturamento() {
     // Carregar orçamentos aprovados para a seção "Aguardando Faturamento"
     const { data: orcamentosAprovados, error: orcamentosError } = await supabase
       .from('orcamentos')
-      .select(`
-        *,
-        ordens_servico:ordem_servico_id(numero_ordem)
-      `)
+      .select('*')
       .eq('status', 'aprovado')
       .order('updated_at', { ascending: false });
 
     if (orcamentosError) {
       console.error('Erro ao carregar orçamentos aprovados:', orcamentosError);
-    } else {
-      console.log('Orçamentos carregados:', orcamentosAprovados);
-      setOrcamentosEmFaturamento(orcamentosAprovados || []);
+      setOrcamentosEmFaturamento([]);
+    } else if (orcamentosAprovados) {
+      // Buscar numero_ordem para cada orçamento que tem ordem_servico_id
+      const orcamentosComOS = await Promise.all(
+        orcamentosAprovados.map(async (orc) => {
+          if (orc.ordem_servico_id) {
+            const { data: osData } = await supabase
+              .from('ordens_servico')
+              .select('numero_ordem')
+              .eq('id', orc.ordem_servico_id)
+              .single();
+            
+            return {
+              ...orc,
+              ordem_numero: osData?.numero_ordem
+            };
+          }
+          return orc;
+        })
+      );
+      
+      setOrcamentosEmFaturamento(orcamentosComOS);
     }
 
     setOrcamentosFinalizados(getOrcamentosFinalizados());
@@ -366,7 +382,7 @@ export default function Faturamento() {
                       </Button>
                       {item.ordem_servico_id && (
                         <Badge variant="outline" className="text-xs">
-                          Vinculado à OS: {item.ordens_servico?.numero_ordem || item.ordem_servico_id}
+                          Vinculado à OS: {item.ordem_numero || item.ordem_servico_id}
                         </Badge>
                       )}
                     </div>
