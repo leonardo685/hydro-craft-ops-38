@@ -618,7 +618,8 @@ const NovaOrdemServico = () => {
         .filter(([_, selecionado]) => selecionado)
         .map(([servico, _]) => ({
           quantidade: servicosQuantidades[servico as keyof typeof servicosQuantidades],
-          nome: servicosNomes[servico as keyof typeof servicosNomes],
+          servico: servicosNomes[servico as keyof typeof servicosNomes],
+          descricao: servicosNomes[servico as keyof typeof servicosNomes],
           tipo: servico
         }));
 
@@ -626,7 +627,8 @@ const NovaOrdemServico = () => {
       if (servicosPersonalizados.trim()) {
         servicosSelecionados.push({
           quantidade: servicosQuantidades.personalizado,
-          nome: servicosPersonalizados.trim(),
+          servico: servicosPersonalizados.trim(),
+          descricao: servicosPersonalizados.trim(),
           tipo: 'personalizado'
         });
       }
@@ -636,7 +638,8 @@ const NovaOrdemServico = () => {
         .filter(([_, selecionado]) => selecionado)
         .map(([tipo, _]) => ({
           quantidade: usinagemQuantidades[tipo as keyof typeof usinagemQuantidades],
-          nome: usinagemNomes[tipo as keyof typeof usinagemNomes],
+          trabalho: usinagemNomes[tipo as keyof typeof usinagemNomes],
+          descricao: usinagemNomes[tipo as keyof typeof usinagemNomes],
           tipo: tipo
         }));
 
@@ -644,7 +647,8 @@ const NovaOrdemServico = () => {
       if (usinagemPersonalizada.trim()) {
         usinagemSelecionada.push({
           quantidade: usinagemQuantidades.personalizada,
-          nome: usinagemPersonalizada.trim(),
+          trabalho: usinagemPersonalizada.trim(),
+          descricao: usinagemPersonalizada.trim(),
           tipo: 'personalizada'
         });
       }
