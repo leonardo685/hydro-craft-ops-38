@@ -88,23 +88,19 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
       doc.setFontSize(10);
       
       if (type === 'pecas') {
-        doc.text(`${index + 1}. Peça: ${item.descricao || 'N/A'}`, 20, yPosition);
+        doc.text(`${index + 1}. Peça: ${item.peca || item.descricao || 'N/A'}`, 20, yPosition);
         yPosition += 8;
         doc.text(`   Quantidade: ${item.quantidade || 'N/A'}`, 25, yPosition);
         yPosition += 8;
         doc.text(`   Valor: R$ ${item.valor?.toFixed(2) || '0,00'}`, 25, yPosition);
       } else if (type === 'usinagem') {
-        doc.text(`${index + 1}. Operação: ${item.operacao || 'N/A'}`, 20, yPosition);
+        doc.text(`${index + 1}. Operação: ${item.trabalho || item.operacao || item.descricao || 'N/A'}`, 20, yPosition);
         yPosition += 8;
-        doc.text(`   Descrição: ${item.descricao || 'N/A'}`, 25, yPosition);
-        yPosition += 8;
-        doc.text(`   Tempo estimado: ${item.tempo || 'N/A'}`, 25, yPosition);
+        doc.text(`   Quantidade: ${item.quantidade || 'N/A'}`, 25, yPosition);
       } else if (type === 'servicos') {
-        doc.text(`${index + 1}. Serviço: ${item.descricao || 'N/A'}`, 20, yPosition);
+        doc.text(`${index + 1}. Serviço: ${item.servico || item.descricao || 'N/A'}`, 20, yPosition);
         yPosition += 8;
-        doc.text(`   Responsável: ${item.responsavel || 'N/A'}`, 25, yPosition);
-        yPosition += 8;
-        doc.text(`   Prazo: ${item.prazo || 'N/A'}`, 25, yPosition);
+        doc.text(`   Quantidade: ${item.quantidade || 'N/A'}`, 25, yPosition);
       }
       
       yPosition += 15;
@@ -139,7 +135,7 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
         <div className="flex-1 space-y-1">
           {type === 'pecas' && (
             <>
-              <p className="font-medium">{item.descricao || 'Peça não especificada'}</p>
+              <p className="font-medium">{item.peca || item.descricao || 'Peça não especificada'}</p>
               <p className="text-sm text-muted-foreground">
                 Quantidade: {item.quantidade || 'N/A'} | Valor: R$ {item.valor?.toFixed(2) || '0,00'}
               </p>
@@ -147,20 +143,17 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
           )}
           {type === 'usinagem' && (
             <>
-              <p className="font-medium">{item.operacao || 'Operação não especificada'}</p>
+              <p className="font-medium">{item.trabalho || item.operacao || item.descricao || 'Operação não especificada'}</p>
               <p className="text-sm text-muted-foreground">
-                {item.descricao || 'Descrição não disponível'}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Tempo estimado: {item.tempo || 'N/A'}
+                Quantidade: {item.quantidade || 'N/A'}
               </p>
             </>
           )}
           {type === 'servicos' && (
             <>
-              <p className="font-medium">{item.descricao || 'Serviço não especificado'}</p>
+              <p className="font-medium">{item.servico || item.descricao || 'Serviço não especificado'}</p>
               <p className="text-sm text-muted-foreground">
-                Responsável: {item.responsavel || 'N/A'} | Prazo: {item.prazo || 'N/A'}
+                Quantidade: {item.quantidade || 'N/A'}
               </p>
             </>
           )}
