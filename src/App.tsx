@@ -18,6 +18,7 @@ import VisualizarOrdemServico from "./pages/VisualizarOrdemServico";
 import Faturamento from "./pages/Faturamento";
 import Cadastros from "./pages/Cadastros";
 import Financeiro from "./pages/Financeiro";
+import OrdemPorQRCode from "./pages/OrdemPorQRCode";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
           <Route path="/faturamento" element={<Faturamento />} />
           <Route path="/cadastros" element={<Cadastros />} />
           <Route path="/financeiro" element={<Financeiro />} />
+          <Route path="/ordem/:numeroOrdem" element={<OrdemPorQRCode />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

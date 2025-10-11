@@ -19,12 +19,8 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
 
   useEffect(() => {
     const generateQRCode = async () => {
-      const qrData = JSON.stringify({
-        ordem: equipment.numeroOrdem,
-        cliente: equipment.cliente,
-        dataEntrada: equipment.dataEntrada,
-        status: "Aguardando Análise"
-      });
+      const baseUrl = window.location.origin;
+      const qrData = `${baseUrl}/ordem/${equipment.numeroOrdem}`;
       
       try {
         const dataUrl = await QRCode.toDataURL(qrData, {
