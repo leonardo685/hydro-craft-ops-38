@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Upload, Camera } from "lucide-react";
+import { ArrowLeft, Upload, Camera, UserPlus } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useClientes } from "@/hooks/use-clientes";
@@ -190,6 +190,16 @@ export default function NovoRecebimento() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={() => navigate("/cadastros")}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Cadastrar Cliente
+                  </Button>
                 </div>
 
                 <div className="space-y-2">
