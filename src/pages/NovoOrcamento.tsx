@@ -8,12 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera } from "lucide-react";
+import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useClientes } from "@/hooks/use-clientes";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { FotoEquipamento } from "@/hooks/use-recebimentos";
 import jsPDF from "jspdf";
 interface ItemOrcamento {
   id: string;
@@ -79,6 +80,8 @@ export default function NovoOrcamento() {
     usinagem: []
   });
   const [analiseData, setAnaliseData] = useState<any>(null);
+  const [fotos, setFotos] = useState<FotoEquipamento[]>([]);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
 
   // Função para gerar próximo número de orçamento
   const gerarProximoNumero = async () => {
@@ -165,7 +168,13 @@ export default function NovoOrcamento() {
                 numero_serie,
                 cliente_nome,
                 cliente_cnpj,
-                cliente_id
+                cliente_id,
+                fotos_equipamentos (
+                  id,
+                  arquivo_url,
+                  nome_arquivo,
+                  apresentar_orcamento
+                )
               )
             `)
             .eq('id', ordemServicoId)
@@ -259,6 +268,11 @@ export default function NovoOrcamento() {
               ...prev,
               assuntoProposta: `${ordemServico.tipo_problema?.toUpperCase() || 'SERVIÇO'} ${ordemServico.equipamento?.toUpperCase() || ''}`.substring(0, 100)
             }));
+
+            // Carregar fotos do equipamento
+            if (ordemServico.recebimentos?.fotos_equipamentos) {
+              setFotos(ordemServico.recebimentos.fotos_equipamentos);
+            }
           }
         } catch (error) {
           console.error('Erro ao carregar ordem de serviço:', error);
@@ -403,6 +417,89 @@ export default function NovoOrcamento() {
 
     carregarDados();
   }, [analiseId, ordemServicoId, orcamentoParaEdicao]);
+
+  const handleUploadFoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingFoto(true);
+    try {
+      for (const arquivo of Array.from(files)) {
+        // Validação do arquivo
+        if (!arquivo.type.startsWith('image/')) {
+          toast({
+            title: "Erro",
+            description: `O arquivo ${arquivo.name} não é uma imagem válida`,
+            variant: "destructive"
+          });
+          continue;
+        }
+
+        if (arquivo.size > 10 * 1024 * 1024) {
+          toast({
+            title: "Erro",
+            description: `O arquivo ${arquivo.name} excede o tamanho máximo de 10MB`,
+            variant: "destructive"
+          });
+          continue;
+        }
+
+        // Sanitiza o nome do arquivo
+        const nomeArquivoLimpo = arquivo.name
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-zA-Z0-9.-]/g, '_')
+          .replace(/_{2,}/g, '_');
+        
+        const nomeArquivo = `orcamentos/${Date.now()}_${nomeArquivoLimpo}`;
+        
+        // Upload do arquivo
+        const { error: uploadError } = await supabase.storage
+          .from('equipamentos')
+          .upload(nomeArquivo, arquivo);
+
+        if (uploadError) throw uploadError;
+
+        // Obter URL pública
+        const { data: urlData } = supabase.storage
+          .from('equipamentos')
+          .getPublicUrl(nomeArquivo);
+
+        // Adicionar à lista de fotos
+        const novaFoto: FotoEquipamento = {
+          id: `temp-${Date.now()}-${Math.random()}`,
+          arquivo_url: urlData.publicUrl,
+          nome_arquivo: arquivo.name,
+          apresentar_orcamento: true
+        };
+
+        setFotos(prev => [...prev, novaFoto]);
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Fotos enviadas com sucesso"
+      });
+    } catch (error) {
+      console.error('Erro ao fazer upload da foto:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar fotos",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingFoto(false);
+      event.target.value = '';
+    }
+  };
+
+  const removerFoto = (fotoId: string) => {
+    setFotos(prev => prev.filter(f => f.id !== fotoId));
+    toast({
+      title: "Sucesso",
+      description: "Foto removida"
+    });
+  };
   const atualizarValorItem = (categoria: 'pecas' | 'servicos' | 'usinagem', id: string, valorUnitario: number) => {
     setItensAnalise(prev => {
       const novoItens = {
@@ -961,7 +1058,83 @@ export default function NovoOrcamento() {
           </Card>
         </div>
 
-        {/* Fotos da Análise */}
+        {/* Fotos do Equipamento */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5 text-primary" />
+              Fotos do Equipamento
+            </CardTitle>
+            <CardDescription>
+              {ordemServicoId ? 'Fotos vinculadas à ordem de serviço' : 'Faça upload de fotos do equipamento'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!ordemServicoId && (
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                <input
+                  type="file"
+                  id="upload-fotos"
+                  multiple
+                  accept="image/*"
+                  onChange={handleUploadFoto}
+                  className="hidden"
+                />
+                <label htmlFor="upload-fotos" className="cursor-pointer">
+                  <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Clique para fazer upload de fotos
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    PNG, JPG até 10MB
+                  </p>
+                </label>
+                {uploadingFoto && (
+                  <p className="text-sm text-primary mt-2">Enviando...</p>
+                )}
+              </div>
+            )}
+
+            {fotos.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-foreground mb-3">
+                  Fotos ({fotos.length})
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {fotos.map((foto) => (
+                    <div key={foto.id} className="relative group">
+                      <img
+                        src={foto.arquivo_url}
+                        alt={foto.nome_arquivo}
+                        className="w-full h-32 object-cover rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => window.open(foto.arquivo_url, '_blank')}
+                      />
+                      {!ordemServicoId && (
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removerFoto(foto.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg pointer-events-none"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {fotos.length === 0 && ordemServicoId && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhuma foto vinculada a esta ordem de serviço
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Fotos da Análise - apenas se vier de análise */}
         {analiseId && analiseData && (analiseData.fotosChegada || analiseData.fotosAnalise) && <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
