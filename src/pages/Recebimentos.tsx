@@ -268,7 +268,11 @@ export default function Recebimentos() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setSelectedEquipment(item)}
+                            onClick={() => setSelectedEquipment({
+                              numeroOrdem: item.numero_ordem,
+                              cliente: item.clientes?.nome || item.cliente_nome || 'Cliente não encontrado',
+                              dataEntrada: new Date(item.data_entrada).toLocaleDateString('pt-BR')
+                            })}
                             className="h-8"
                           >
                             <QrCode className="h-4 w-4" />
