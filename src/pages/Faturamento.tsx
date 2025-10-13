@@ -344,187 +344,24 @@ export default function Faturamento() {
           </Card>
         </div>
 
-        {/* Filtros */}
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filtros
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Data Início</label>
-                <Input
-                  type="date"
-                  value={dataInicio}
-                  onChange={(e) => setDataInicio(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Data Fim</label>
-                <Input
-                  type="date"
-                  value={dataFim}
-                  onChange={(e) => setDataFim(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Tipo de Nota</label>
-                <Select value={tipoNota} onValueChange={setTipoNota}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="retorno">Retorno</SelectItem>
-                    <SelectItem value="faturamento">Faturamento</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Cliente</label>
-                <Input
-                  type="text"
-                  placeholder="Buscar por cliente"
-                  value={clienteFiltro}
-                  onChange={(e) => setClienteFiltro(e.target.value)}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="faturamento" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="faturamento">
+              Faturamento ({ordensRetorno.length + orcamentosEmFaturamento.length})
+            </TabsTrigger>
+            <TabsTrigger value="faturadas">
+              Faturadas ({notasFaturadas.length})
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Notas Pesquisadas */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Notas Pesquisadas</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleSection('notasPesquisadas')}
-              className="flex items-center gap-2"
-            >
-              {expandedSections.notasPesquisadas ? (
-                <>
-                  <ChevronUp className="h-4 w-4" />
-                  Recolher
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4" />
-                  Expandir
-                </>
-              )}
-            </Button>
-          </div>
+          <TabsContent value="faturamento" className="space-y-6 mt-6">
+            {/* Ordens Aguardando Retorno */}
+            <OrdensAguardandoRetorno />
 
-          {expandedSections.notasPesquisadas && (
-            <div className="space-y-4">
-              {notasFiltradas.map((nota) => (
-                <Card key={`${nota.id}-${nota.tipo}`} className="shadow-soft hover:shadow-medium transition-smooth">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <FileText className="h-5 w-5 text-primary" />
-                          {nota.tipo === 'nota_retorno' ? 'Nota de Retorno' : nota.tipo === 'orcamento_com_entrada' ? 'Nota de Faturamento - OS' : 'Nota de Faturamento'} - {nota.numero_ordem}
-                        </CardTitle>
-                        <CardDescription className="mt-1">
-                          {nota.equipamento} - {nota.cliente_nome}
-                        </CardDescription>
-                      </div>
-                      <Badge className="bg-green-100 text-green-700 border-green-200">
-                        Faturado
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Data de Entrada</p>
-                          <p className="font-medium">
-                            {new Date(nota.data_entrada).toLocaleDateString('pt-BR')}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Tipo</p>
-                          <p className="font-medium">
-                            {nota.tipo === 'nota_retorno' ? 'Nota de Retorno' : nota.tipo === 'orcamento_com_entrada' ? 'Nota de Faturamento - OS' : 'Nota de Faturamento'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-1" />
-                        Download PDF
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-1" />
-                        Visualizar PDF
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {notasFiltradas.length === 0 && (
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      Nenhuma nota encontrada
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Ajuste os filtros para encontrar notas fiscais
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Ordens Aguardando Retorno */}
-        <OrdensAguardandoRetorno 
-          isExpanded={expandedSections.ordensRetorno}
-          onToggleExpand={() => toggleSection('ordensRetorno')}
-        />
-
-        {/* Orçamentos em Faturamento */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Orçamentos Aguardando Faturamento</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleSection('orcamentosFaturamento')}
-              className="flex items-center gap-2"
-            >
-              {expandedSections.orcamentosFaturamento ? (
-                <>
-                  <ChevronUp className="h-4 w-4" />
-                  Recolher
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4" />
-                  Expandir
-                </>
-              )}
-            </Button>
-          </div>
-
-          {expandedSections.orcamentosFaturamento && (
-            <div className="space-y-4">
+            {/* Orçamentos Aguardando Faturamento */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Orçamentos Aguardando Faturamento</h3>
+              <div className="space-y-4">
               {orcamentosEmFaturamento.map((item) => (
                 <Card key={item.id} className="shadow-soft hover:shadow-medium transition-smooth">
                   <CardHeader className="pb-4">
@@ -592,35 +429,140 @@ export default function Faturamento() {
                 </Card>
               )}
             </div>
-          )}
-        </div>
-
-        {/* Notas Fiscais Emitidas (Retorno) */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Notas Fiscais Emitidas (Retorno)</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleSection('notasRetorno')}
-              className="flex items-center gap-2"
-            >
-              {expandedSections.notasRetorno ? (
-                <>
-                  <ChevronUp className="h-4 w-4" />
-                  Recolher
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4" />
-                  Expandir
-                </>
-              )}
-            </Button>
           </div>
+          </TabsContent>
 
-          {expandedSections.notasRetorno && (
-            <div className="space-y-4">
+          <TabsContent value="faturadas" className="space-y-6 mt-6">
+            {/* Filtros */}
+            <Card className="shadow-soft">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Filter className="h-5 w-5" />
+                  Filtros
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Data Início</label>
+                    <Input
+                      type="date"
+                      value={dataInicio}
+                      onChange={(e) => setDataInicio(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Data Fim</label>
+                    <Input
+                      type="date"
+                      value={dataFim}
+                      onChange={(e) => setDataFim(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Tipo de Nota</label>
+                    <Select value={tipoNota} onValueChange={setTipoNota}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="retorno">Retorno</SelectItem>
+                        <SelectItem value="faturamento">Faturamento</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Cliente</label>
+                    <Input
+                      type="text"
+                      placeholder="Buscar por cliente"
+                      value={clienteFiltro}
+                      onChange={(e) => setClienteFiltro(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Notas Pesquisadas */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Notas Pesquisadas</h3>
+              <div className="space-y-4">
+                {notasFiltradas.map((nota) => (
+                  <Card key={`${nota.id}-${nota.tipo}`} className="shadow-soft hover:shadow-medium transition-smooth">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-primary" />
+                            {nota.tipo === 'nota_retorno' ? 'Nota de Retorno' : nota.tipo === 'orcamento_com_entrada' ? 'Nota de Faturamento - OS' : 'Nota de Faturamento'} - {nota.numero_ordem}
+                          </CardTitle>
+                          <CardDescription className="mt-1">
+                            {nota.equipamento} - {nota.cliente_nome}
+                          </CardDescription>
+                        </div>
+                        <Badge className="bg-green-100 text-green-700 border-green-200">
+                          Faturado
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">Data de Entrada</p>
+                            <p className="font-medium">
+                              {new Date(nota.data_entrada).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">Tipo</p>
+                            <p className="font-medium">
+                              {nota.tipo === 'nota_retorno' ? 'Nota de Retorno' : nota.tipo === 'orcamento_com_entrada' ? 'Nota de Faturamento - OS' : 'Nota de Faturamento'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        <Button variant="outline" size="sm">
+                          <Download className="h-4 w-4 mr-1" />
+                          Download PDF
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-1" />
+                          Visualizar PDF
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                
+                {notasFiltradas.length === 0 && (
+                  <Card>
+                    <CardContent className="p-12 text-center">
+                      <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">
+                        Nenhuma nota encontrada
+                      </h3>
+                      <p className="text-muted-foreground">
+                        Ajuste os filtros para encontrar notas fiscais
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+
+            {/* Notas Fiscais Emitidas (Retorno) */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Notas Fiscais Emitidas (Retorno)</h3>
+              <div className="space-y-4">
               {notasFaturadas.filter(nota => nota.tipo === 'nota_retorno').map((nota) => (
                 <Card key={`${nota.id}-${nota.tipo}`} className="shadow-soft hover:shadow-medium transition-smooth">
                   <CardHeader className="pb-4">
@@ -687,34 +629,11 @@ export default function Faturamento() {
                 </Card>
               )}
             </div>
-          )}
-        </div>
-
-        {/* Notas Faturadas (Orçamentos) */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Notas Faturadas (Orçamentos)</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleSection('notasFaturadas')}
-              className="flex items-center gap-2"
-            >
-              {expandedSections.notasFaturadas ? (
-                <>
-                  <ChevronUp className="h-4 w-4" />
-                  Recolher
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4" />
-                  Expandir
-                </>
-              )}
-            </Button>
           </div>
 
-          {expandedSections.notasFaturadas && (
+          {/* Notas Faturadas (Orçamentos) */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Notas Faturadas (Orçamentos)</h3>
             <div className="space-y-4">
               {notasFaturadas.filter(nota => nota.tipo.includes('orcamento')).map((nota) => (
                 <Card key={`${nota.id}-${nota.tipo}`} className="shadow-soft hover:shadow-medium transition-smooth">
@@ -784,8 +703,9 @@ export default function Faturamento() {
                 </Card>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        </TabsContent>
+        </Tabs>
       </div>
 
       {/* Modal para Emitir Nota Fiscal */}
