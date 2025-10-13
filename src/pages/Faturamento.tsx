@@ -210,8 +210,14 @@ export default function Faturamento() {
   const numeroNotasRetorno = ordensRetorno.length;
   const totalNotasFiscais = totalNotasServico + totalNotasVenda;
 
+  // Verificar se há algum filtro aplicado
+  const temFiltrosAtivos = dataInicio || dataFim || tipoNota !== "todos" || clienteFiltro;
+
   // Filtrar notas faturadas
   const notasFiltradas = notasFaturadas.filter(nota => {
+    // Se não há filtros, retorna todas
+    if (!temFiltrosAtivos) return true;
+    
     let passa = true;
     
     // Filtro de data
@@ -543,7 +549,9 @@ export default function Faturamento() {
 
             {/* Notas Pesquisadas */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Notas Pesquisadas</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                {temFiltrosAtivos ? 'Notas Pesquisadas' : 'Todas as Notas Faturadas'}
+              </h3>
               <div className="space-y-4">
                 {notasFiltradas.map((nota) => (
                   <Card key={`${nota.id}-${nota.tipo}`} className="shadow-soft hover:shadow-medium transition-smooth">
@@ -607,160 +615,14 @@ export default function Faturamento() {
                         Nenhuma nota encontrada
                       </h3>
                       <p className="text-muted-foreground">
-                        Ajuste os filtros para encontrar notas fiscais
+                        {temFiltrosAtivos ? 'Ajuste os filtros para encontrar notas fiscais' : 'Nenhuma nota fiscal faturada ainda'}
                       </p>
                     </CardContent>
                   </Card>
                 )}
               </div>
             </div>
-
-            {/* Notas Fiscais Emitidas (Retorno) */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Notas Fiscais Emitidas (Retorno)</h3>
-              <div className="space-y-4">
-              {notasFiltradas.filter(nota => nota.tipo === 'nota_retorno').map((nota) => (
-                <Card key={`${nota.id}-${nota.tipo}`} className="shadow-soft hover:shadow-medium transition-smooth">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <FileText className="h-5 w-5 text-blue-500" />
-                          Nota de Retorno - Ordem {nota.numero_ordem}
-                        </CardTitle>
-                        <CardDescription className="mt-1">
-                          {nota.equipamento} - {nota.cliente_nome}
-                        </CardDescription>
-                      </div>
-                      <Badge className="bg-green-100 text-green-700 border-green-200">
-                        Faturado
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Data de Entrada</p>
-                          <p className="font-medium">
-                            {new Date(nota.data_entrada).toLocaleDateString('pt-BR')}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Tipo</p>
-                          <p className="font-medium">Nota de Retorno</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-1" />
-                        Download PDF
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-1" />
-                        Visualizar PDF
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {notasFiltradas.filter(nota => nota.tipo === 'nota_retorno').length === 0 && (
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      Nenhuma nota de retorno emitida
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Notas de retorno de ordens de serviço faturadas aparecerão aqui
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-
-          {/* Notas Faturadas (Orçamentos) */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Notas Faturadas (Orçamentos)</h3>
-            <div className="space-y-4">
-              {notasFiltradas.filter(nota => nota.tipo.includes('orcamento')).map((nota) => (
-                <Card key={`${nota.id}-${nota.tipo}`} className="shadow-soft hover:shadow-medium transition-smooth">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <FileText className="h-5 w-5 text-green-500" />
-                          {nota.tipo === 'orcamento_com_entrada' ? 'Nota de Faturamento - OS' : 'Nota de Faturamento'} - {nota.numero_ordem}
-                        </CardTitle>
-                        <CardDescription className="mt-1">
-                          {nota.equipamento} - {nota.cliente_nome}
-                        </CardDescription>
-                      </div>
-                      <Badge className="bg-green-100 text-green-700 border-green-200">
-                        Faturado
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Data de Entrada</p>
-                          <p className="font-medium">
-                            {nota.tipo === 'orcamento_com_entrada' ? 'Ver OS associada' : 'N/A'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Tipo</p>
-                          <p className="font-medium">
-                            {nota.tipo === 'orcamento_com_entrada' ? 'Nota de Faturamento - OS' : 'Nota de Faturamento'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-1" />
-                        Download PDF
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-1" />
-                        Visualizar PDF
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {notasFiltradas.filter(nota => nota.tipo.includes('orcamento')).length === 0 && (
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      Nenhuma nota de faturamento
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Notas de faturamento de orçamentos aprovados aparecerão aqui
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-        </TabsContent>
+          </TabsContent>
         </Tabs>
       </div>
 
