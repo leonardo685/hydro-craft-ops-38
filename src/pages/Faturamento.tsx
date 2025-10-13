@@ -619,7 +619,7 @@ export default function Faturamento() {
             <div>
               <h3 className="text-lg font-semibold mb-4">Notas Fiscais Emitidas (Retorno)</h3>
               <div className="space-y-4">
-              {notasFaturadas.filter(nota => nota.tipo === 'nota_retorno').map((nota) => (
+              {notasFiltradas.filter(nota => nota.tipo === 'nota_retorno').map((nota) => (
                 <Card key={`${nota.id}-${nota.tipo}`} className="shadow-soft hover:shadow-medium transition-smooth">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
@@ -671,7 +671,7 @@ export default function Faturamento() {
                 </Card>
               ))}
               
-              {notasFaturadas.filter(nota => nota.tipo === 'nota_retorno').length === 0 && (
+              {notasFiltradas.filter(nota => nota.tipo === 'nota_retorno').length === 0 && (
                 <Card>
                   <CardContent className="p-12 text-center">
                     <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
@@ -691,7 +691,7 @@ export default function Faturamento() {
           <div>
             <h3 className="text-lg font-semibold mb-4">Notas Faturadas (Orçamentos)</h3>
             <div className="space-y-4">
-              {notasFaturadas.filter(nota => nota.tipo.includes('orcamento')).map((nota) => (
+              {notasFiltradas.filter(nota => nota.tipo.includes('orcamento')).map((nota) => (
                 <Card key={`${nota.id}-${nota.tipo}`} className="shadow-soft hover:shadow-medium transition-smooth">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
@@ -745,7 +745,7 @@ export default function Faturamento() {
                 </Card>
               ))}
               
-              {notasFaturadas.filter(nota => nota.tipo.includes('orcamento')).length === 0 && (
+              {notasFiltradas.filter(nota => nota.tipo.includes('orcamento')).length === 0 && (
                 <Card>
                   <CardContent className="p-12 text-center">
                     <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
