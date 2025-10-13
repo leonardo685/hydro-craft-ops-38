@@ -1108,10 +1108,9 @@ export default function NovoOrcamento() {
 
             {/* Grid de Fotos com Preview */}
             {fotos.length > 0 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {fotos.map((foto) => (
-                    <div key={foto.id} className="border-2 border-dashed border-border rounded-lg p-2 space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {fotos.map((foto) => (
+                  <div key={foto.id} className="border-2 border-dashed border-border rounded-lg p-2 space-y-2">
                       <div className="relative group">
                         <img
                           src={foto.arquivo_url}
@@ -1145,7 +1144,6 @@ export default function NovoOrcamento() {
                       </div>
                     </div>
                   ))}
-                </div>
                 
                 {/* Botão para adicionar mais fotos se já houver fotos */}
                 {!ordemServicoId && (
