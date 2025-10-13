@@ -80,7 +80,7 @@ export default function NovoOrcamento() {
     usinagem: []
   });
   const [analiseData, setAnaliseData] = useState<any>(null);
-  const [fotos, setFotos] = useState<FotoEquipamento[]>([]);
+  const [fotos, setFotos] = useState<Array<FotoEquipamento & { apresentar_orcamento?: boolean }>>([]);
   const [uploadingFoto, setUploadingFoto] = useState(false);
 
   // Função para gerar próximo número de orçamento
@@ -466,11 +466,12 @@ export default function NovoOrcamento() {
           .getPublicUrl(nomeArquivo);
 
         // Adicionar à lista de fotos
-        const novaFoto: FotoEquipamento = {
+        const novaFoto = {
           id: `temp-${Date.now()}-${Math.random()}`,
           arquivo_url: urlData.publicUrl,
           nome_arquivo: arquivo.name,
-          apresentar_orcamento: true
+          apresentar_orcamento: true,
+          recebimento_id: null
         };
 
         setFotos(prev => [...prev, novaFoto]);
@@ -499,6 +500,14 @@ export default function NovoOrcamento() {
       title: "Sucesso",
       description: "Foto removida"
     });
+  };
+
+  const toggleApresentarOrcamento = (fotoId: string) => {
+    setFotos(prev => prev.map(foto => 
+      foto.id === fotoId 
+        ? { ...foto, apresentar_orcamento: !foto.apresentar_orcamento }
+        : foto
+    ));
   };
   const atualizarValorItem = (categoria: 'pecas' | 'servicos' | 'usinagem', id: string, valorUnitario: number) => {
     setItensAnalise(prev => {
@@ -1058,7 +1067,7 @@ export default function NovoOrcamento() {
           </Card>
         </div>
 
-        {/* Fotos do Equipamento */}
+         {/* Fotos do Equipamento */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -1066,12 +1075,13 @@ export default function NovoOrcamento() {
               Fotos do Equipamento
             </CardTitle>
             <CardDescription>
-              {ordemServicoId ? 'Fotos vinculadas à ordem de serviço' : 'Faça upload de fotos do equipamento'}
+              Faça upload de fotos do equipamento
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!ordemServicoId && (
-              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+            {/* Upload Area - sempre visível quando não há fotos OU quando não é ordem de serviço */}
+            {(!ordemServicoId || fotos.length === 0) && (
+              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
                 <input
                   type="file"
                   id="upload-fotos"
@@ -1079,10 +1089,11 @@ export default function NovoOrcamento() {
                   accept="image/*"
                   onChange={handleUploadFoto}
                   className="hidden"
+                  disabled={uploadingFoto}
                 />
-                <label htmlFor="upload-fotos" className="cursor-pointer">
-                  <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground mb-2">
+                <label htmlFor="upload-fotos" className="cursor-pointer block">
+                  <Upload className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-primary font-medium mb-1">
                     Clique para fazer upload de fotos
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -1090,46 +1101,73 @@ export default function NovoOrcamento() {
                   </p>
                 </label>
                 {uploadingFoto && (
-                  <p className="text-sm text-primary mt-2">Enviando...</p>
+                  <p className="text-sm text-primary mt-3 animate-pulse">Enviando...</p>
                 )}
               </div>
             )}
 
+            {/* Grid de Fotos com Preview */}
             {fotos.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-foreground mb-3">
-                  Fotos ({fotos.length})
-                </h4>
+              <div className="space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {fotos.map((foto) => (
-                    <div key={foto.id} className="relative group">
-                      <img
-                        src={foto.arquivo_url}
-                        alt={foto.nome_arquivo}
-                        className="w-full h-32 object-cover rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => window.open(foto.arquivo_url, '_blank')}
-                      />
-                      {!ordemServicoId && (
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => removerFoto(foto.id)}
+                    <div key={foto.id} className="border-2 border-dashed border-border rounded-lg p-2 space-y-2">
+                      <div className="relative group">
+                        <img
+                          src={foto.arquivo_url}
+                          alt={foto.nome_arquivo}
+                          className="w-full h-32 object-cover rounded-md cursor-pointer"
+                          onClick={() => window.open(foto.arquivo_url, '_blank')}
+                        />
+                        {!ordemServicoId && (
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6 rounded-full shadow-lg"
+                            onClick={() => removerFoto(foto.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 px-1">
+                        <Checkbox
+                          id={`apresentar-${foto.id}`}
+                          checked={foto.apresentar_orcamento ?? false}
+                          onCheckedChange={() => toggleApresentarOrcamento(foto.id)}
+                        />
+                        <label
+                          htmlFor={`apresentar-${foto.id}`}
+                          className="text-xs text-foreground cursor-pointer select-none"
                         >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg pointer-events-none"></div>
+                          Apresentar Orçamento
+                        </label>
+                      </div>
                     </div>
                   ))}
                 </div>
+                
+                {/* Botão para adicionar mais fotos se já houver fotos */}
+                {!ordemServicoId && (
+                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                    <input
+                      type="file"
+                      id="upload-fotos-additional"
+                      multiple
+                      accept="image/*"
+                      onChange={handleUploadFoto}
+                      className="hidden"
+                      disabled={uploadingFoto}
+                    />
+                    <label htmlFor="upload-fotos-additional" className="cursor-pointer block">
+                      <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-primary font-medium text-sm">
+                        Adicionar mais fotos
+                      </p>
+                    </label>
+                  </div>
+                )}
               </div>
-            )}
-
-            {fotos.length === 0 && ordemServicoId && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhuma foto vinculada a esta ordem de serviço
-              </p>
             )}
           </CardContent>
         </Card>
