@@ -175,6 +175,41 @@ export type Database = {
           },
         ]
       }
+      fotos_orcamento: {
+        Row: {
+          apresentar_orcamento: boolean
+          arquivo_url: string
+          created_at: string
+          id: string
+          nome_arquivo: string
+          orcamento_id: string
+        }
+        Insert: {
+          apresentar_orcamento?: boolean
+          arquivo_url: string
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          orcamento_id: string
+        }
+        Update: {
+          apresentar_orcamento?: boolean
+          arquivo_url?: string
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          orcamento_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fotos_orcamento_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       itens_nfe: {
         Row: {
           codigo: string
@@ -215,6 +250,50 @@ export type Database = {
             columns: ["nota_fiscal_id"]
             isOneToOne: false
             referencedRelation: "notas_fiscais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itens_orcamento: {
+        Row: {
+          created_at: string
+          descricao: string
+          detalhes: Json | null
+          id: string
+          orcamento_id: string
+          quantidade: number
+          tipo: string
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          detalhes?: Json | null
+          id?: string
+          orcamento_id: string
+          quantidade?: number
+          tipo: string
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          detalhes?: Json | null
+          id?: string
+          orcamento_id?: string
+          quantidade?: number
+          tipo?: string
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_orcamento_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
             referencedColumns: ["id"]
           },
         ]

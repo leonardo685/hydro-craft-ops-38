@@ -124,26 +124,104 @@ export default function NovoOrcamento() {
     const carregarDados = async () => {
       // Se é edição, carregar dados do orçamento
       if (orcamentoParaEdicao) {
+        console.log('Carregando orçamento para edição:', orcamentoParaEdicao);
         setDadosOrcamento({
           id: orcamentoParaEdicao.id,
-          tipoOrdem: 'reforma', // Você pode ajustar baseado no tipo
+          tipoOrdem: orcamentoParaEdicao.observacoes?.split('|')[0]?.replace('Tipo:', '')?.trim() || 'reforma',
           numeroOrdem: orcamentoParaEdicao.numero,
           urgencia: false,
           cliente: orcamentoParaEdicao.cliente_nome,
           tag: orcamentoParaEdicao.equipamento,
-          solicitante: '',
+          solicitante: orcamentoParaEdicao.observacoes?.split('|')[1]?.replace('Solicitante:', '')?.trim() || '',
           dataAbertura: new Date(orcamentoParaEdicao.data_criacao).toISOString().split('T')[0],
-          numeroNota: '',
-          numeroSerie: '',
-          observacoes: orcamentoParaEdicao.observacoes || '',
+          numeroNota: orcamentoParaEdicao.observacoes?.split('|')[2]?.replace('Nota:', '')?.trim() || '',
+          numeroSerie: orcamentoParaEdicao.observacoes?.split('|')[3]?.replace('Série:', '')?.trim() || '',
+          observacoes: orcamentoParaEdicao.descricao || '',
           status: orcamentoParaEdicao.status
         });
 
-        setInformacoesComerciais(prev => ({
-          ...prev,
-          valorTotal: orcamentoParaEdicao.valor || 0,
-          valorComDesconto: orcamentoParaEdicao.valor || 0
-        }));
+        // Carregar itens do orçamento
+        const { data: itensData, error: itensError } = await supabase
+          .from('itens_orcamento')
+          .select('*')
+          .eq('orcamento_id', orcamentoParaEdicao.id);
+
+        if (!itensError && itensData) {
+          const pecas = itensData.filter(i => i.tipo === 'peca').map(i => ({
+            id: `peca-${i.id}`,
+            tipo: 'peca' as const,
+            descricao: i.descricao,
+            quantidade: Number(i.quantidade),
+            valorUnitario: Number(i.valor_unitario),
+            valorTotal: Number(i.valor_total),
+            detalhes: i.detalhes as { material?: string; medidas?: string } | undefined
+          }));
+
+          const servicos = itensData.filter(i => i.tipo === 'servico').map(i => ({
+            id: `servico-${i.id}`,
+            tipo: 'servico' as const,
+            descricao: i.descricao,
+            quantidade: Number(i.quantidade),
+            valorUnitario: Number(i.valor_unitario),
+            valorTotal: Number(i.valor_total),
+            detalhes: i.detalhes as { material?: string; medidas?: string } | undefined
+          }));
+
+          const usinagem = itensData.filter(i => i.tipo === 'usinagem').map(i => ({
+            id: `usinagem-${i.id}`,
+            tipo: 'usinagem' as const,
+            descricao: i.descricao,
+            quantidade: Number(i.quantidade),
+            valorUnitario: Number(i.valor_unitario),
+            valorTotal: Number(i.valor_total),
+            detalhes: i.detalhes as { material?: string; medidas?: string } | undefined
+          }));
+
+          setItensAnalise({ pecas, servicos, usinagem });
+        }
+
+        // Carregar fotos do orçamento (se não tem ordem de serviço associada) ou de ordem de serviço
+        if (orcamentoParaEdicao.ordem_servico_id) {
+          // Buscar fotos de equipamentos através da ordem de serviço
+          const { data: osData } = await supabase
+            .from('ordens_servico')
+            .select('recebimento_id')
+            .eq('id', orcamentoParaEdicao.ordem_servico_id)
+            .single();
+
+          if (osData?.recebimento_id) {
+            const { data: fotosData } = await supabase
+              .from('fotos_equipamentos')
+              .select('*')
+              .eq('recebimento_id', osData.recebimento_id);
+
+            if (fotosData) {
+              setFotos(fotosData.map(f => ({
+                id: f.id,
+                arquivo_url: f.arquivo_url,
+                nome_arquivo: f.nome_arquivo,
+                apresentar_orcamento: f.apresentar_orcamento || false,
+                recebimento_id: f.recebimento_id
+              })));
+            }
+          }
+        } else {
+          // Buscar fotos do próprio orçamento
+          const { data: fotosData } = await supabase
+            .from('fotos_orcamento')
+            .select('*')
+            .eq('orcamento_id', orcamentoParaEdicao.id);
+
+          if (fotosData) {
+            setFotos(fotosData.map(f => ({
+              id: f.id,
+              arquivo_url: f.arquivo_url,
+              nome_arquivo: f.nome_arquivo,
+              apresentar_orcamento: f.apresentar_orcamento || false,
+              recebimento_id: null
+            })));
+          }
+        }
 
         return; // Skip other loading logic for editing
       }
@@ -656,7 +734,82 @@ export default function NovoOrcamento() {
         return;
       }
 
+      const orcamentoId = data.id;
       console.log('Orçamento salvo no Supabase:', data);
+
+      // Deletar itens existentes se for atualização
+      if (dadosOrcamento.id) {
+        await supabase
+          .from('itens_orcamento')
+          .delete()
+          .eq('orcamento_id', orcamentoId);
+      }
+
+      // Salvar itens do orçamento
+      const todosItens = [
+        ...itensAnalise.pecas.map(item => ({ ...item, tipo: 'peca' })),
+        ...itensAnalise.servicos.map(item => ({ ...item, tipo: 'servico' })),
+        ...itensAnalise.usinagem.map(item => ({ ...item, tipo: 'usinagem' }))
+      ];
+
+      const itensParaInserir = todosItens.map(item => ({
+        orcamento_id: orcamentoId,
+        tipo: item.tipo,
+        descricao: item.descricao,
+        quantidade: item.quantidade,
+        valor_unitario: item.valorUnitario,
+        valor_total: item.valorTotal,
+        detalhes: item.detalhes || null
+      }));
+
+      if (itensParaInserir.length > 0) {
+        const { error: itensError } = await supabase
+          .from('itens_orcamento')
+          .insert(itensParaInserir);
+
+        if (itensError) {
+          console.error('Erro ao salvar itens do orçamento:', itensError);
+          toast({
+            title: "Aviso",
+            description: "Orçamento salvo, mas houve erro ao salvar alguns itens",
+            variant: "destructive"
+          });
+        }
+      }
+
+      // Salvar fotos apenas se for orçamento em branco (sem ordem de serviço)
+      if (!ordemServicoId) {
+        // Deletar fotos existentes se for atualização
+        if (dadosOrcamento.id) {
+          await supabase
+            .from('fotos_orcamento')
+            .delete()
+            .eq('orcamento_id', orcamentoId);
+        }
+
+        // Inserir fotos do orçamento
+        const fotosParaInserir = fotos.map(foto => ({
+          orcamento_id: orcamentoId,
+          arquivo_url: foto.arquivo_url,
+          nome_arquivo: foto.nome_arquivo,
+          apresentar_orcamento: foto.apresentar_orcamento || false
+        }));
+
+        if (fotosParaInserir.length > 0) {
+          const { error: fotosError } = await supabase
+            .from('fotos_orcamento')
+            .insert(fotosParaInserir);
+
+          if (fotosError) {
+            console.error('Erro ao salvar fotos do orçamento:', fotosError);
+            toast({
+              title: "Aviso",
+              description: "Orçamento salvo, mas houve erro ao salvar algumas fotos",
+              variant: "destructive"
+            });
+          }
+        }
+      }
       
       toast({
         title: "Sucesso",

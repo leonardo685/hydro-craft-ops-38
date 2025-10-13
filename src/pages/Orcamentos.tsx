@@ -8,10 +8,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, FileText, Edit, Check, X, Copy, Search } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Plus, FileText, Edit, Check, X, Copy, Search, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
+import jsPDF from "jspdf";
 
 export default function Orcamentos() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -145,6 +147,186 @@ export default function Orcamentos() {
 
   const editarOrcamento = (orcamento: any) => {
     navigate('/orcamentos/novo', { state: { orcamento } });
+  };
+
+  const gerarPDFOrcamento = async (orcamento: any) => {
+    try {
+      // Buscar itens do orçamento
+      const { data: itensData, error: itensError } = await supabase
+        .from('itens_orcamento')
+        .select('*')
+        .eq('orcamento_id', orcamento.id);
+
+      if (itensError) {
+        console.error('Erro ao buscar itens:', itensError);
+        toast.error('Erro ao gerar PDF');
+        return;
+      }
+
+      // Buscar fotos (de ordem de serviço ou do orçamento)
+      let fotosData: any[] = [];
+      if (orcamento.ordem_servico_id) {
+        const { data: osData } = await supabase
+          .from('ordens_servico')
+          .select('recebimento_id')
+          .eq('id', orcamento.ordem_servico_id)
+          .single();
+
+        if (osData?.recebimento_id) {
+          const { data: fotos } = await supabase
+            .from('fotos_equipamentos')
+            .select('*')
+            .eq('recebimento_id', osData.recebimento_id)
+            .eq('apresentar_orcamento', true);
+          
+          fotosData = fotos || [];
+        }
+      } else {
+        const { data: fotos } = await supabase
+          .from('fotos_orcamento')
+          .select('*')
+          .eq('orcamento_id', orcamento.id)
+          .eq('apresentar_orcamento', true);
+        
+        fotosData = fotos || [];
+      }
+
+      // Gerar PDF
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      let yPosition = 20;
+
+      // Cabeçalho
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("ORÇAMENTO", pageWidth / 2, yPosition, { align: "center" });
+      yPosition += 15;
+
+      // Informações básicas
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Número: ${orcamento.numero}`, 20, yPosition);
+      doc.text(`Data: ${new Date().toLocaleDateString("pt-BR")}`, pageWidth - 60, yPosition);
+      yPosition += 10;
+      doc.text(`Cliente: ${orcamento.cliente_nome}`, 20, yPosition);
+      yPosition += 8;
+      doc.text(`Equipamento: ${orcamento.equipamento}`, 20, yPosition);
+      yPosition += 15;
+
+      // Agrupar itens por tipo
+      const pecas = itensData?.filter(i => i.tipo === 'peca') || [];
+      const servicos = itensData?.filter(i => i.tipo === 'servico') || [];
+      const usinagem = itensData?.filter(i => i.tipo === 'usinagem') || [];
+
+      // Função para adicionar tabela de itens
+      const adicionarTabelaItens = (titulo: string, itens: any[]) => {
+        if (itens.length === 0) return;
+
+        if (yPosition > 250) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.text(titulo, 20, yPosition);
+        yPosition += 10;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+
+        // Cabeçalho da tabela
+        const headers = ["Descrição", "Qtd", "Valor Unit.", "Total"];
+        const colWidths = [100, 20, 30, 30];
+        let xPos = 20;
+        doc.setFont("helvetica", "bold");
+        headers.forEach((header, index) => {
+          doc.text(header, xPos, yPosition);
+          xPos += colWidths[index];
+        });
+        yPosition += 8;
+        doc.line(20, yPosition - 2, pageWidth - 20, yPosition - 2);
+        doc.setFont("helvetica", "normal");
+
+        // Itens
+        itens.forEach(item => {
+          if (yPosition > 270) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          xPos = 20;
+          const descricao = item.descricao.length > 35 ? item.descricao.substring(0, 32) + "..." : item.descricao;
+          doc.text(descricao, xPos, yPosition);
+          xPos += colWidths[0];
+          doc.text(Number(item.quantidade).toString(), xPos, yPosition, { align: "right" });
+          xPos += colWidths[1];
+          doc.text(`R$ ${Number(item.valor_unitario).toFixed(2)}`, xPos, yPosition, { align: "right" });
+          xPos += colWidths[2];
+          doc.text(`R$ ${Number(item.valor_total).toFixed(2)}`, xPos, yPosition, { align: "right" });
+          yPosition += 8;
+        });
+        yPosition += 10;
+      };
+
+      adicionarTabelaItens("PEÇAS", pecas);
+      adicionarTabelaItens("SERVIÇOS", servicos);
+      adicionarTabelaItens("USINAGEM", usinagem);
+
+      // Valor total
+      if (yPosition > 220) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      yPosition += 10;
+      doc.text(`Valor Total: R$ ${Number(orcamento.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, pageWidth - 80, yPosition, { align: "right" });
+
+      // Adicionar fotos se houver
+      if (fotosData.length > 0) {
+        doc.addPage();
+        yPosition = 20;
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.text("FOTOS DO EQUIPAMENTO", pageWidth / 2, yPosition, { align: "center" });
+        yPosition += 15;
+
+        for (const foto of fotosData) {
+          if (yPosition > 250) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          
+          try {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = foto.arquivo_url;
+            
+            await new Promise((resolve, reject) => {
+              img.onload = resolve;
+              img.onerror = reject;
+            });
+
+            const imgWidth = 160;
+            const imgHeight = (img.height * imgWidth) / img.width;
+            
+            if (yPosition + imgHeight > 280) {
+              doc.addPage();
+              yPosition = 20;
+            }
+
+            doc.addImage(img, 'JPEG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
+            yPosition += imgHeight + 15;
+          } catch (error) {
+            console.error('Erro ao carregar imagem:', error);
+          }
+        }
+      }
+
+      doc.save(`Orcamento_${orcamento.numero}.pdf`);
+      toast.success('PDF gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF');
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -299,14 +481,19 @@ export default function Orcamentos() {
           </Sheet>
         </div>
 
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">Todos os Orçamentos</h2>
-          
-          {orcamentos.length > 0 ? (
-            orcamentos.map((item) => (
-              <Card key={item.id} className="hover:shadow-md transition-smooth">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
+        <Tabs defaultValue="pendente" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="pendente">Aguardando Aprovação</TabsTrigger>
+            <TabsTrigger value="aprovado">Aprovados</TabsTrigger>
+            <TabsTrigger value="rejeitado">Reprovados</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="pendente" className="space-y-4">
+            {orcamentos.filter(o => o.status === 'pendente').length > 0 ? (
+              orcamentos.filter(o => o.status === 'pendente').map((item) => (
+                <Card key={item.id} className="hover:shadow-md transition-smooth">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-lg font-semibold text-foreground">
@@ -322,47 +509,167 @@ export default function Orcamentos() {
                           <p><span className="font-medium">Valor:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                         </div>
                       </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => editarOrcamento(item)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleReprovarOrcamento(item.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleAprovarOrcamento(item)}
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => editarOrcamento(item)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => gerarPDFOrcamento(item)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleReprovarOrcamento(item.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleAprovarOrcamento(item)}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    Nenhum orçamento aguardando aprovação
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Não há orçamentos pendentes no momento
+                  </p>
                 </CardContent>
               </Card>
-            ))
-          ) : (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  Nenhum orçamento encontrado
-                </h3>
-                <p className="text-muted-foreground">
-                  Não há orçamentos cadastrados no sistema
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="aprovado" className="space-y-4">
+            {orcamentos.filter(o => o.status === 'aprovado').length > 0 ? (
+              orcamentos.filter(o => o.status === 'aprovado').map((item) => (
+                <Card key={item.id} className="hover:shadow-md transition-smooth">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-foreground">
+                            Orçamento #{item.numero}
+                          </h3>
+                          <Badge className={getStatusColor(item.status)}>
+                            {getStatusText(item.status)}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p><span className="font-medium">Cliente:</span> {item.cliente_nome}</p>
+                          <p><span className="font-medium">Equipamento:</span> {item.equipamento}</p>
+                          <p><span className="font-medium">Valor:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => editarOrcamento(item)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => gerarPDFOrcamento(item)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    Nenhum orçamento aprovado
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Não há orçamentos aprovados no momento
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="rejeitado" className="space-y-4">
+            {orcamentos.filter(o => o.status === 'rejeitado').length > 0 ? (
+              orcamentos.filter(o => o.status === 'rejeitado').map((item) => (
+                <Card key={item.id} className="hover:shadow-md transition-smooth">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-foreground">
+                            Orçamento #{item.numero}
+                          </h3>
+                          <Badge className={getStatusColor(item.status)}>
+                            {getStatusText(item.status)}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p><span className="font-medium">Cliente:</span> {item.cliente_nome}</p>
+                          <p><span className="font-medium">Equipamento:</span> {item.equipamento}</p>
+                          <p><span className="font-medium">Valor:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => editarOrcamento(item)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => gerarPDFOrcamento(item)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    Nenhum orçamento reprovado
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Não há orçamentos reprovados no momento
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
       
       <AprovarOrcamentoModal
