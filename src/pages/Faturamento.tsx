@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, DollarSign, Calendar, FileText, Download, ChevronDown, ChevronUp, Eye, Filter } from "lucide-react";
+import { Receipt, DollarSign, Calendar, FileText, Download, Eye, Filter } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getOrcamentosEmFaturamento, getOrcamentosFinalizados, emitirNotaFiscal, type Orcamento } from "@/lib/orcamento-utils";
@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import EmitirNotaModal from "@/components/EmitirNotaModal";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface NotaFaturada {
   id: string;
@@ -30,13 +31,6 @@ export default function Faturamento() {
   const [ordensRetorno, setOrdensRetorno] = useState<any[]>([]);
   const [isEmitirNotaModalOpen, setIsEmitirNotaModalOpen] = useState(false);
   const [selectedOrcamento, setSelectedOrcamento] = useState<any>(null);
-  const [expandedSections, setExpandedSections] = useState({
-    ordensRetorno: true,
-    orcamentosFaturamento: true,
-    notasRetorno: true,
-    notasFaturadas: true,
-    notasPesquisadas: true
-  });
   
   // Estados para filtros
   const [dataInicio, setDataInicio] = useState("");
@@ -168,13 +162,6 @@ export default function Faturamento() {
   const handleConfirmarEmissao = () => {
     loadData(); // Recarregar dados
     setSelectedOrcamento(null);
-  };
-
-  const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
   };
 
   const handleDownloadPdf = async (url: string, filename: string) => {

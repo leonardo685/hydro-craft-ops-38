@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Copy, FileText, Calendar, User, FileImage, X, AlertCircle, DollarSign, CreditCard } from "lucide-react";
+import { Upload, Copy, FileText, Calendar, User, FileImage, X, AlertCircle, DollarSign, CreditCard, Eye } from "lucide-react";
 
 interface EmitirNotaModalProps {
   open: boolean;
@@ -31,6 +31,21 @@ export default function EmitirNotaModal({
   const [anexoNota, setAnexoNota] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Extrair dados da aprovação
+  const extrairDadosAprovacao = (descricao: string) => {
+    const numeroPedidoMatch = descricao?.match(/Número do Pedido:\s*([^\n]+)/);
+    const prazoPagamentoMatch = descricao?.match(/Prazo de Pagamento:\s*([^\n]+)/);
+    const anexoMatch = descricao?.match(/Anexo do Pedido:\s*([^\n]+)/);
+    
+    return {
+      numeroPedido: numeroPedidoMatch?.[1]?.trim() || 'N/A',
+      prazoPagamento: prazoPagamentoMatch?.[1]?.trim() || 'A definir',
+      anexoUrl: anexoMatch?.[1]?.trim() || null
+    };
+  };
+
+  const dadosAprovacao = orcamento ? extrairDadosAprovacao(orcamento.descricao || '') : { numeroPedido: 'N/A', prazoPagamento: 'A definir', anexoUrl: null };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -82,8 +97,9 @@ export default function EmitirNotaModal({
   };
 
   const copiarParaAreaTransferencia = async () => {
-    const texto = `I - Retorno da NF ${numeroNF}.
-II - Pedido N (a configurar)`;
+    const texto = `I - NF referente ao orçamento ${orcamento.numero}.
+II - NF referente ao pedido ${dadosAprovacao.numeroPedido}.
+III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
     try {
       await navigator.clipboard.writeText(texto);
       setCopied(true);
@@ -99,6 +115,12 @@ II - Pedido N (a configurar)`;
         description: "Erro ao copiar para área de transferência",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleVisualizarPedido = () => {
+    if (dadosAprovacao.anexoUrl) {
+      window.open(dadosAprovacao.anexoUrl, '_blank');
     }
   };
 
@@ -171,8 +193,9 @@ II - Pedido N (a configurar)`;
     return new Date(data).toLocaleDateString('pt-BR');
   };
 
-  const textoNota = `I - Retorno da NF ${numeroNF}.
-II - Pedido N (a configurar)`;
+  const textoNota = `I - NF referente ao orçamento ${orcamento.numero}.
+II - NF referente ao pedido ${dadosAprovacao.numeroPedido}.
+III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
 
   return (
     <Dialog open={open} onOpenChange={handleFechar}>
@@ -211,17 +234,28 @@ II - Pedido N (a configurar)`;
 
                 <div className="flex items-center gap-3">
                   <FileImage className="h-5 w-5 text-muted-foreground" />
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Nº do Pedido</p>
-                    <p className="font-semibold">{orcamento.numero}</p>
+                    <p className="font-semibold">{dadosAprovacao.numeroPedido}</p>
                   </div>
+                  {dadosAprovacao.anexoUrl && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleVisualizarPedido}
+                      className="flex items-center gap-2"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Visualizar Pedido
+                    </Button>
+                  )}
                 </div>
               </div>
 
               {/* Texto da nota */}
               <div className="space-y-3">
-                <Label className="text-base font-semibold">Texto da Nota de Retorno:</Label>
-                <Textarea value={textoNota} readOnly className="min-h-[100px] border-2 border-red-200 bg-red-50/30 resize-none" />
+                <Label className="text-base font-semibold">Texto da Nota de Faturamento:</Label>
+                <Textarea value={textoNota} readOnly className="min-h-[120px] border-2 border-red-200 bg-red-50/30 resize-none" />
                 
                 <Button variant="outline" onClick={copiarParaAreaTransferencia} className="w-full flex items-center gap-2">
                   <Copy className="h-4 w-4" />
