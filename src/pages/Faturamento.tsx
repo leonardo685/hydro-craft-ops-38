@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, DollarSign, Calendar, FileText, Download, Eye, Filter } from "lucide-react";
+import { Receipt, DollarSign, Calendar, FileText, Download, Eye, Filter, ChevronUp, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getOrcamentosEmFaturamento, getOrcamentosFinalizados, emitirNotaFiscal, type Orcamento } from "@/lib/orcamento-utils";
@@ -31,6 +31,12 @@ export default function Faturamento() {
   const [ordensRetorno, setOrdensRetorno] = useState<any[]>([]);
   const [isEmitirNotaModalOpen, setIsEmitirNotaModalOpen] = useState(false);
   const [selectedOrcamento, setSelectedOrcamento] = useState<any>(null);
+  
+  // Estados para controle de expansão das seções
+  const [expandedSections, setExpandedSections] = useState({
+    ordensRetorno: true,
+    orcamentosEmFaturamento: true,
+  });
   
   // Estados para filtros
   const [dataInicio, setDataInicio] = useState("");
@@ -162,6 +168,13 @@ export default function Faturamento() {
   const handleConfirmarEmissao = () => {
     loadData(); // Recarregar dados
     setSelectedOrcamento(null);
+  };
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
   };
 
   const handleDownloadPdf = async (url: string, filename: string) => {
@@ -356,13 +369,55 @@ export default function Faturamento() {
 
           <TabsContent value="faturamento" className="space-y-6 mt-6">
             {/* Ordens Aguardando Retorno */}
-            <OrdensAguardandoRetorno />
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Ordens Aguardando Retorno</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleSection('ordensRetorno')}
+                >
+                  {expandedSections.ordensRetorno ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-1" />
+                      Minimizar
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-1" />
+                      Expandir
+                    </>
+                  )}
+                </Button>
+              </div>
+              {expandedSections.ordensRetorno && <OrdensAguardandoRetorno />}
+            </div>
 
             {/* Orçamentos Aguardando Faturamento */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Orçamentos Aguardando Faturamento</h3>
-              <div className="space-y-4">
-              {orcamentosEmFaturamento.map((item) => (
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Orçamentos Aguardando Faturamento</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleSection('orcamentosEmFaturamento')}
+                >
+                  {expandedSections.orcamentosEmFaturamento ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-1" />
+                      Minimizar
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-1" />
+                      Expandir
+                    </>
+                  )}
+                </Button>
+              </div>
+              {expandedSections.orcamentosEmFaturamento && (
+                <div className="space-y-4">
+                  {orcamentosEmFaturamento.map((item) => (
                 <Card key={item.id} className="shadow-soft hover:shadow-medium transition-smooth">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
@@ -413,23 +468,24 @@ export default function Faturamento() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-              
-              {orcamentosEmFaturamento.length === 0 && (
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      Nenhum orçamento aguardando faturamento
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Aprove orçamentos para que apareçam aqui
-                    </p>
-                  </CardContent>
-                </Card>
+                  ))}
+                  
+                  {orcamentosEmFaturamento.length === 0 && (
+                    <Card>
+                      <CardContent className="p-12 text-center">
+                        <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                        <h3 className="text-lg font-medium text-foreground mb-2">
+                          Nenhum orçamento aguardando faturamento
+                        </h3>
+                        <p className="text-muted-foreground">
+                          Aprove orçamentos para que apareçam aqui
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               )}
             </div>
-          </div>
           </TabsContent>
 
           <TabsContent value="faturadas" className="space-y-6 mt-6">
