@@ -36,8 +36,9 @@ export default function DFC() {
   const [dfcDataFim, setDfcDataFim] = useState<Date | null>(null);
   const [contaBancariaFiltro, setContaBancariaFiltro] = useState("todas");
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
+  const [planejamentoExpanded, setPlanejamentoExpanded] = useState(true);
 
-  const [valoresFinanceiros] = useState({
+  const [valoresFinanceiros, setValoresFinanceiros] = useState({
     aReceber: 142500,
     aPagar: 98700,
     titulosAberto: 25,
@@ -316,12 +317,13 @@ export default function DFC() {
   const handleBuscarMovimentacoes = () => {
     if (!periodoSelecionado && !dataInicial && !dataFinal) {
       setMovimentacoesFiltradas([]);
+      calcularValoresFinanceiros([]);
       return;
     }
 
     const movimentacoesExemplo = [
-      { id: 1, data: '2024-01-15', descricao: 'Recebimento Cliente João Silva', tipo: 'receita', categoria: 'Vendas', valor: 2500.00, status: 'pago' },
-      { id: 2, data: '2024-01-16', descricao: 'Pagamento Fornecedor ABC', tipo: 'despesa', categoria: 'Compras', valor: 1800.00, status: 'pago' },
+      { id: 1, data: '2024-01-15', descricao: 'Recebimento Cliente João Silva', tipo: 'receita', categoria: 'Vendas', valor: 2500.00, status: 'pendente' },
+      { id: 2, data: '2024-01-16', descricao: 'Pagamento Fornecedor ABC', tipo: 'despesa', categoria: 'Compras', valor: 1800.00, status: 'pendente' },
       { id: 3, data: '2024-01-20', descricao: 'Recebimento Cliente Maria Santos', tipo: 'receita', categoria: 'Vendas', valor: 3200.00, status: 'pendente' },
       { id: 4, data: '2024-01-25', descricao: 'Pagamento Combustível', tipo: 'despesa', categoria: 'Despesas Operacionais', valor: 450.00, status: 'vencido' },
       { id: 5, data: '2024-02-01', descricao: 'Recebimento PIX Cliente Pedro', tipo: 'receita', categoria: 'Vendas', valor: 1750.00, status: 'pago' },
@@ -329,6 +331,27 @@ export default function DFC() {
     ];
     
     setMovimentacoesFiltradas(movimentacoesExemplo);
+    calcularValoresFinanceiros(movimentacoesExemplo);
+  };
+
+  const calcularValoresFinanceiros = (movimentacoes: any[]) => {
+    const totalReceber = movimentacoes
+      .filter(m => m.tipo === 'receita' && m.status !== 'pago')
+      .reduce((acc, m) => acc + m.valor, 0);
+    
+    const totalPagar = movimentacoes
+      .filter(m => m.tipo === 'despesa' && m.status !== 'pago')
+      .reduce((acc, m) => acc + m.valor, 0);
+    
+    const titulosAberto = movimentacoes.filter(m => m.tipo === 'receita' && m.status !== 'pago').length;
+    const contasVencer = movimentacoes.filter(m => m.tipo === 'despesa' && m.status !== 'pago').length;
+
+    setValoresFinanceiros({
+      aReceber: totalReceber,
+      aPagar: totalPagar,
+      titulosAberto,
+      contasVencer
+    });
   };
 
   const formatCurrency = (value: number) => {
@@ -1148,10 +1171,26 @@ export default function DFC() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Planejamento de Fluxo de Caixa</CardTitle>
-                <p className="text-sm text-muted-foreground">Busque e visualize movimentações financeiras por período</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Planejamento de Fluxo de Caixa</CardTitle>
+                    <p className="text-sm text-muted-foreground">Busque e visualize movimentações financeiras por período</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPlanejamentoExpanded(!planejamentoExpanded)}
+                  >
+                    {planejamentoExpanded ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-6">
+              {planejamentoExpanded && (
+                <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Período Pré-definido</Label>
@@ -1299,6 +1338,7 @@ export default function DFC() {
                   </div>
                 )}
               </CardContent>
+              )}
             </Card>
           </TabsContent>
         </Tabs>

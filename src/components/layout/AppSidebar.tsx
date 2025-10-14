@@ -41,7 +41,8 @@ import {
   FileText,
   TrendingUp,
   CreditCard,
-  ChevronDown
+  ChevronDown,
+  Target
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -79,6 +80,7 @@ const menuItems = [
       { title: "Dashboard", url: "/financeiro/dashboard" },
       { title: "DRE", url: "/financeiro/dre" },
       { title: "DFC", url: "/financeiro/dfc" },
+      { title: "Meta de Gastos", url: "/financeiro/meta-gastos" },
     ]
   },
 ];

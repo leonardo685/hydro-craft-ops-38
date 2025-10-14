@@ -21,6 +21,7 @@ import Financeiro from "./pages/Financeiro";
 import Dashboard from "./pages/Dashboard";
 import DRE from "./pages/DRE";
 import DFC from "./pages/DFC";
+import MetaGastos from "./pages/MetaGastos";
 import OrdemPorQRCode from "./pages/OrdemPorQRCode";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/financeiro/dashboard" element={<Dashboard />} />
           <Route path="/financeiro/dre" element={<DRE />} />
           <Route path="/financeiro/dfc" element={<DFC />} />
+          <Route path="/financeiro/meta-gastos" element={<MetaGastos />} />
           <Route path="/ordem/:numeroOrdem" element={<OrdemPorQRCode />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
