@@ -9,7 +9,15 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,8 +72,13 @@ const menuItems = [
   },
   {
     title: "Financeiro",
-    url: "/financeiro",
+    url: "/financeiro/dashboard",
     icon: CreditCard,
+    submenu: [
+      { title: "Dashboard", url: "/financeiro/dashboard" },
+      { title: "DRE", url: "/financeiro/dre" },
+      { title: "DFC", url: "/financeiro/dfc" },
+    ]
   },
 ];
 
@@ -93,21 +106,53 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname.startsWith(item.url)}
-                    className="transition-smooth hover:bg-sidebar-accent"
-                  >
-                    <button
-                      onClick={() => navigate(item.url)}
-                      className="flex items-center gap-3 w-full text-left"
+                item.submenu ? (
+                  <Collapsible key={item.title} defaultOpen={location.pathname.startsWith("/financeiro")}>
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton isActive={location.pathname.startsWith("/financeiro")}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {item.submenu.map((subItem: any) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={location.pathname === subItem.url}
+                              >
+                                <button
+                                  onClick={() => navigate(subItem.url)}
+                                  className="w-full text-left"
+                                >
+                                  {subItem.title}
+                                </button>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                ) : (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname.startsWith(item.url)}
+                      className="transition-smooth hover:bg-sidebar-accent"
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                      <button
+                        onClick={() => navigate(item.url)}
+                        className="flex items-center gap-3 w-full text-left"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
