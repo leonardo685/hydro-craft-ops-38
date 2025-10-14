@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
+import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
 
 export default function Financeiro() {
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
@@ -70,12 +71,25 @@ export default function Financeiro() {
   ]);
 
   // Estado para controlar quais dados mostrar no gráfico
-  const [visibleData, setVisibleData] = useState({
-    faturamento: true,
-    margemContribuicao: true,
-    lucroLiquido: true,
-    despesasTotais: false
-  });
+  const columnOptions: Option[] = [
+    { value: 'faturamento', label: 'Faturamento' },
+    { value: 'margemContribuicao', label: 'Margem de Contribuição' },
+    { value: 'lucroLiquido', label: 'Lucro Líquido' },
+    { value: 'despesasTotais', label: 'Despesas Totais' },
+  ];
+
+  const [selectedColumns, setSelectedColumns] = useState<Option[]>([
+    { value: 'faturamento', label: 'Faturamento' },
+    { value: 'margemContribuicao', label: 'Margem de Contribuição' },
+    { value: 'lucroLiquido', label: 'Lucro Líquido' },
+  ]);
+
+  const visibleData = {
+    faturamento: selectedColumns.some(col => col.value === 'faturamento'),
+    margemContribuicao: selectedColumns.some(col => col.value === 'margemContribuicao'),
+    lucroLiquido: selectedColumns.some(col => col.value === 'lucroLiquido'),
+    despesasTotais: selectedColumns.some(col => col.value === 'despesasTotais'),
+  };
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingMonth, setEditingMonth] = useState('');
@@ -448,12 +462,6 @@ export default function Financeiro() {
     </Card>
   );
 
-  const handleToggleData = (dataKey: keyof typeof visibleData) => {
-    setVisibleData(prev => ({
-      ...prev,
-      [dataKey]: !prev[dataKey]
-    }));
-  };
 
   const handleEditMonth = (mes: string) => {
     const monthData = monthlyData.find(m => m.mes === mes);
@@ -797,47 +805,17 @@ export default function Financeiro() {
             <Card>
               <CardHeader>
                 <CardTitle>Indicadores Financeiros - Comparativo Mensal</CardTitle>
-                <div className="flex flex-wrap gap-4 mt-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="faturamento"
-                      checked={visibleData.faturamento}
-                      onCheckedChange={() => handleToggleData('faturamento')}
-                    />
-                    <label htmlFor="faturamento" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Faturamento
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="margemContribuicao"
-                      checked={visibleData.margemContribuicao}
-                      onCheckedChange={() => handleToggleData('margemContribuicao')}
-                    />
-                    <label htmlFor="margemContribuicao" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Margem de Contribuição
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="lucroLiquido"
-                      checked={visibleData.lucroLiquido}
-                      onCheckedChange={() => handleToggleData('lucroLiquido')}
-                    />
-                    <label htmlFor="lucroLiquido" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Lucro Líquido
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="despesasTotais"
-                      checked={visibleData.despesasTotais}
-                      onCheckedChange={() => handleToggleData('despesasTotais')}
-                    />
-                    <label htmlFor="despesasTotais" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Despesas Totais
-                    </label>
-                  </div>
+                <div className="mt-4">
+                  <Label className="text-sm font-medium mb-2 block">Colunas Visíveis</Label>
+                  <MultipleSelector
+                    value={selectedColumns}
+                    onChange={setSelectedColumns}
+                    defaultOptions={columnOptions}
+                    placeholder="Selecione as colunas..."
+                    emptyIndicator={
+                      <p className="text-center text-sm text-muted-foreground">Nenhuma coluna encontrada.</p>
+                    }
+                  />
                 </div>
               </CardHeader>
               <CardContent>
