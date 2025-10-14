@@ -942,7 +942,7 @@ export default function DFC() {
                         <SelectValue placeholder="Selecionar período" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Personalizado</SelectItem>
+                        <SelectItem value="personalizado">Personalizado</SelectItem>
                         <SelectItem value="hoje">Hoje</SelectItem>
                         <SelectItem value="semana">Esta Semana</SelectItem>
                         <SelectItem value="mes">Este Mês</SelectItem>
