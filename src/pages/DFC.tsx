@@ -20,10 +20,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
+import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
+import { useMemo, useEffect } from "react";
 
 export default function DFC() {
-  const { getCategoriasForSelect } = useCategoriasFinanceiras();
+  const { getCategoriasForSelect, getNomeCategoriaMae } = useCategoriasFinanceiras();
+  const { lancamentos, loading, adicionarLancamento, atualizarLancamento } = useLancamentosFinanceiros();
 
   const [contaSelecionada, setContaSelecionada] = useState('todas');
   const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
@@ -39,10 +42,10 @@ export default function DFC() {
   const [planejamentoExpanded, setPlanejamentoExpanded] = useState(true);
 
   const [valoresFinanceiros, setValoresFinanceiros] = useState({
-    aReceber: 142500,
-    aPagar: 98700,
-    titulosAberto: 25,
-    contasVencer: 18
+    aReceber: 0,
+    aPagar: 0,
+    titulosAberto: 0,
+    contasVencer: 0
   });
 
   const [lancamentoForm, setLancamentoForm] = useState({
@@ -120,113 +123,81 @@ export default function DFC() {
   ];
 
   const contasBancarias = [
-    { id: 'conta_corrente', nome: 'Conta Corrente - Banco do Brasil', saldo: 25800.00 },
-    { id: 'conta_poupanca', nome: 'Poupança - Banco do Brasil', saldo: 15300.00 },
-    { id: 'conta_itau', nome: 'Conta Corrente - Itaú', saldo: 8950.00 },
-    { id: 'conta_caixa', nome: 'Conta Corrente - Caixa', saldo: 12400.00 }
+    { id: 'conta_corrente', nome: 'Conta Corrente - Banco do Brasil', saldo: 0 },
+    { id: 'conta_poupanca', nome: 'Poupança - Banco do Brasil', saldo: 0 },
+    { id: 'conta_itau', nome: 'Conta Corrente - Itaú', saldo: 0 },
+    { id: 'conta_caixa', nome: 'Conta Corrente - Caixa', saldo: 0 }
   ];
 
-  const [extratoData, setExtratoData] = useState([
-    {
-      id: 1,
-      hora: '08:30',
-      tipo: 'entrada',
-      descricao: 'Recebimento à vista - Cliente João Silva',
-      categoria: 'Vendas',
-      valor: 2500.00,
-      conta: 'conta_corrente',
-      dataEsperada: new Date(2024, 7, 29),
-      dataRealizada: new Date(2024, 7, 29),
-      pago: true,
-      fornecedor: 'cliente_joao'
-    },
-    {
-      id: 2,
-      hora: '09:15',
-      tipo: 'entrada',
-      descricao: 'Transferência PIX - Cliente Maria Santos',
-      categoria: 'Vendas',
-      valor: 1850.00,
-      conta: 'conta_itau',
-      dataEsperada: new Date(2024, 7, 30),
-      dataRealizada: null,
-      pago: false,
-      fornecedor: 'cliente_maria'
-    },
-    {
-      id: 3,
-      hora: '10:45',
-      tipo: 'saida',
-      descricao: 'Pagamento fornecedor - Peças hidráulicas',
-      categoria: 'Compras',
-      valor: 3200.00,
-      conta: 'conta_corrente',
-      dataEsperada: new Date(2024, 7, 25),
-      dataRealizada: null,
-      pago: false,
-      fornecedor: 'fornecedor_hidraulica'
-    },
-    {
-      id: 4,
-      hora: '11:30',
-      tipo: 'entrada',
-      descricao: 'Recebimento cartão - Cliente Pedro Costa',
-      categoria: 'Vendas',
-      valor: 980.00,
-      conta: 'conta_caixa',
-      dataEsperada: new Date(2024, 7, 29),
-      dataRealizada: new Date(2024, 7, 29),
-      pago: true,
-      fornecedor: 'cliente_pedro'
-    },
-    {
-      id: 5,
-      hora: '14:20',
-      tipo: 'saida',
-      descricao: 'Pagamento de combustível',
-      categoria: 'Despesas Operacionais',
-      valor: 150.00,
-      conta: 'conta_poupanca',
-      dataEsperada: new Date(2024, 8, 5),
-      dataRealizada: null,
-      pago: false,
-      fornecedor: 'posto_combustivel'
-    },
-    {
-      id: 6,
-      hora: '15:10',
-      tipo: 'entrada',
-      descricao: 'Depósito em dinheiro',
-      categoria: 'Vendas',
-      valor: 750.00,
-      conta: 'conta_corrente',
-      dataEsperada: new Date(2024, 7, 29),
-      dataRealizada: new Date(2024, 7, 29),
-      pago: true,
-      fornecedor: 'cliente_joao'
-    },
-    {
-      id: 7,
-      hora: '16:45',
-      tipo: 'saida',
-      descricao: 'Pagamento funcionário - Adiantamento',
-      categoria: 'Folha de Pagamento',
-      valor: 500.00,
-      conta: 'conta_itau',
-      dataEsperada: new Date(2024, 7, 27),
-      dataRealizada: null,
-      pago: false,
-      fornecedor: 'funcionario'
-    }
-  ]);
+  // Calcular saldos das contas baseado nos lançamentos reais
+  const saldosContas = useMemo(() => {
+    const saldos: Record<string, number> = {
+      conta_corrente: 0,
+      conta_poupanca: 0,
+      conta_itau: 0,
+      conta_caixa: 0
+    };
 
-  const saldoTotal = contasBancarias.reduce((acc, conta) => acc + conta.saldo, 0);
-  const entradasMesAtual = 84400;
-  const saidasMesAtual = 66930;
-  const saldoInicial = 12500;
-  const variacaoCaixa = 3650;
-  const saldoFinal = saldoInicial + variacaoCaixa;
-  const contaAtual = contasBancarias.find(conta => conta.id === contaSelecionada);
+    lancamentos.forEach(lancamento => {
+      if (lancamento.pago && lancamento.contaBancaria) {
+        const valor = lancamento.tipo === 'entrada' ? lancamento.valor : -lancamento.valor;
+        if (saldos.hasOwnProperty(lancamento.contaBancaria)) {
+          saldos[lancamento.contaBancaria] += valor;
+        }
+      }
+    });
+
+    return saldos;
+  }, [lancamentos]);
+
+  // Atualizar saldos das contas
+  const contasBancariasAtualizadas = contasBancarias.map(conta => ({
+    ...conta,
+    saldo: saldosContas[conta.id] || 0
+  }));
+
+  const extratoData = useMemo(() => {
+    return lancamentos.map(lancamento => ({
+      id: lancamento.id,
+      hora: new Date(lancamento.dataEsperada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      tipo: lancamento.tipo,
+      descricao: lancamento.descricao,
+      categoria: getNomeCategoriaMae(lancamento.categoriaId || '') || 'Sem categoria',
+      valor: lancamento.valor,
+      conta: lancamento.contaBancaria,
+      dataEsperada: new Date(lancamento.dataEsperada),
+      dataRealizada: lancamento.dataRealizada ? new Date(lancamento.dataRealizada) : null,
+      pago: lancamento.pago,
+      fornecedor: lancamento.fornecedorCliente || ''
+    }));
+  }, [lancamentos, getNomeCategoriaMae]);
+
+  const saldoTotal = contasBancariasAtualizadas.reduce((acc, conta) => acc + conta.saldo, 0);
+  
+  // Calcular entradas e saídas do mês atual
+  const hoje = new Date();
+  const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+
+  const entradasMesAtual = useMemo(() => {
+    return lancamentos
+      .filter(l => {
+        const data = new Date(l.dataEsperada);
+        return l.tipo === 'entrada' && data >= primeiroDiaMes && data <= ultimoDiaMes;
+      })
+      .reduce((acc, l) => acc + l.valor, 0);
+  }, [lancamentos]);
+
+  const saidasMesAtual = useMemo(() => {
+    return lancamentos
+      .filter(l => {
+        const data = new Date(l.dataEsperada);
+        return l.tipo === 'saida' && data >= primeiroDiaMes && data <= ultimoDiaMes;
+      })
+      .reduce((acc, l) => acc + l.valor, 0);
+  }, [lancamentos]);
+
+  const contaAtual = contasBancariasAtualizadas.find(conta => conta.id === contaSelecionada);
   const saldoContaSelecionada = contaAtual ? contaAtual.saldo : saldoTotal;
 
   const totalEntradas = extratoData.filter(item => item.tipo === 'entrada').reduce((acc, item) => acc + item.valor, 0);
@@ -276,47 +247,43 @@ export default function DFC() {
     return true;
   });
 
-  const handleLancamento = () => {
-    if (!lancamentoForm.valor || !lancamentoForm.descricao) {
-      toast.error("Preencha o valor e a descrição do lançamento");
+  const handleLancamento = async () => {
+    if (!lancamentoForm.valor || !lancamentoForm.descricao || !lancamentoForm.categoria) {
+      toast.error("Preencha todos os campos obrigatórios");
       return;
     }
 
-    const novoLancamento = {
-      id: extratoData.length + 1,
-      hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      tipo: lancamentoForm.tipo,
+    const sucesso = await adicionarLancamento({
+      tipo: lancamentoForm.tipo as 'entrada' | 'saida',
       descricao: lancamentoForm.descricao,
-      categoria: (() => {
-        const categoriasSelecionadas = getCategoriasForSelect();
-        const categoriaSelecionada = categoriasSelecionadas.find(cat => cat.value === lancamentoForm.categoria);
-        return categoriaSelecionada ? categoriaSelecionada.label : 'Outros';
-      })(),
+      categoriaId: lancamentoForm.categoria,
       valor: parseFloat(lancamentoForm.valor),
-      conta: lancamentoForm.conta,
+      contaBancaria: lancamentoForm.conta,
       dataEsperada: lancamentoForm.dataEsperada,
-      dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : null,
+      dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : undefined,
       pago: lancamentoForm.paga,
-      fornecedor: lancamentoForm.fornecedor
-    };
-
-    setExtratoData(prev => [...prev, novoLancamento]);
-    toast.success("Lançamento adicionado com sucesso!");
-    
-    setLancamentoForm({
-      tipo: 'entrada',
-      valor: '',
-      descricao: '',
-      categoria: '',
-      conta: 'conta_corrente',
-      fornecedor: 'cliente_joao',
-      paga: false,
-      dataEmissao: new Date(2024, 7, 29),
-      dataPagamento: new Date(2024, 7, 29),
-      dataRealizada: new Date(2024, 7, 29),
-      dataEsperada: new Date(2024, 7, 29)
+      fornecedorCliente: lancamentoForm.fornecedor
     });
-    setIsLancamentoDialogOpen(false);
+
+    if (sucesso) {
+      toast.success("Lançamento adicionado com sucesso!");
+      setLancamentoForm({
+        tipo: 'entrada',
+        valor: '',
+        descricao: '',
+        categoria: '',
+        conta: 'conta_corrente',
+        fornecedor: 'cliente_joao',
+        paga: false,
+        dataEmissao: new Date(),
+        dataPagamento: new Date(),
+        dataRealizada: new Date(),
+        dataEsperada: new Date()
+      });
+      setIsLancamentoDialogOpen(false);
+    } else {
+      toast.error("Erro ao adicionar lançamento");
+    }
   };
 
   const handleBuscarMovimentacoes = () => {
@@ -326,17 +293,19 @@ export default function DFC() {
       return;
     }
 
-    const movimentacoesExemplo = [
-      { id: 1, data: '2024-01-15', descricao: 'Recebimento Cliente João Silva', tipo: 'receita', categoria: 'Vendas', valor: 2500.00, status: 'pendente' },
-      { id: 2, data: '2024-01-16', descricao: 'Pagamento Fornecedor ABC', tipo: 'despesa', categoria: 'Compras', valor: 1800.00, status: 'pendente' },
-      { id: 3, data: '2024-01-20', descricao: 'Recebimento Cliente Maria Santos', tipo: 'receita', categoria: 'Vendas', valor: 3200.00, status: 'pendente' },
-      { id: 4, data: '2024-01-25', descricao: 'Pagamento Combustível', tipo: 'despesa', categoria: 'Despesas Operacionais', valor: 450.00, status: 'vencido' },
-      { id: 5, data: '2024-02-01', descricao: 'Recebimento PIX Cliente Pedro', tipo: 'receita', categoria: 'Vendas', valor: 1750.00, status: 'pago' },
-      { id: 6, data: '2024-02-05', descricao: 'Pagamento Energia Elétrica', tipo: 'despesa', categoria: 'Despesas Fixas', valor: 680.00, status: 'pendente' }
-    ];
+    // Filtrar lançamentos por período
+    const movimentacoes = lancamentos.map(l => ({
+      id: l.id,
+      data: new Date(l.dataEsperada).toLocaleDateString('pt-BR'),
+      descricao: l.descricao,
+      tipo: l.tipo === 'entrada' ? 'receita' : 'despesa',
+      categoria: getNomeCategoriaMae(l.categoriaId || '') || 'Sem categoria',
+      valor: l.valor,
+      status: l.pago ? 'pago' : (new Date(l.dataEsperada) < new Date() ? 'vencido' : 'pendente')
+    }));
     
-    setMovimentacoesFiltradas(movimentacoesExemplo);
-    calcularValoresFinanceiros(movimentacoesExemplo);
+    setMovimentacoesFiltradas(movimentacoes);
+    calcularValoresFinanceiros(movimentacoes);
   };
 
   const calcularValoresFinanceiros = (movimentacoes: any[]) => {
@@ -363,17 +332,26 @@ export default function DFC() {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
-  const receitasOperacionais = [
-    { item: "Vendas de Produtos", valor: 65000 },
-    { item: "Prestação de Serviços", valor: 20000 },
-    { item: "Total Receitas Operacionais", valor: 85000, isTotal: true }
-  ];
+  // Calcular receitas e despesas operacionais a partir dos lançamentos
+  const receitasOperacionais = useMemo(() => {
+    const totalReceitas = lancamentos
+      .filter(l => l.tipo === 'entrada')
+      .reduce((acc, l) => acc + l.valor, 0);
+    
+    return [
+      { item: "Total Receitas Operacionais", valor: totalReceitas, isTotal: true }
+    ];
+  }, [lancamentos]);
 
-  const despesasOperacionais = [
-    { item: "Custo dos Materiais Vendidos", valor: -35000 },
-    { item: "Comissões sobre Vendas", valor: -4200 },
-    { item: "Total Despesas Operacionais", valor: -39200, isTotal: true }
-  ];
+  const despesasOperacionais = useMemo(() => {
+    const totalDespesas = lancamentos
+      .filter(l => l.tipo === 'saida')
+      .reduce((acc, l) => acc + l.valor, 0);
+    
+    return [
+      { item: "Total Despesas Operacionais", valor: -totalDespesas, isTotal: true }
+    ];
+  }, [lancamentos]);
 
   return (
     <AppLayout>
@@ -391,12 +369,18 @@ export default function DFC() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold text-primary">
-                {formatCurrency(contaSelecionada === 'todas' ? saldoTotal : saldoContaSelecionada)}
-              </div>
-              <Badge variant="outline" className="text-xs mt-1">
-                {contaSelecionada === 'todas' ? 'Todas as contas' : contaAtual?.nome.split(' - ')[1]}
-              </Badge>
+              {loading ? (
+                <div className="text-sm text-muted-foreground">Carregando...</div>
+              ) : (
+                <>
+                  <div className="text-xl font-bold text-primary">
+                    {formatCurrency(contaSelecionada === 'todas' ? saldoTotal : saldoContaSelecionada)}
+                  </div>
+                  <Badge variant="outline" className="text-xs mt-1">
+                    {contaSelecionada === 'todas' ? 'Todas as contas' : contaAtual?.nome.split(' - ')[1]}
+                  </Badge>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -661,27 +645,23 @@ export default function DFC() {
                   <TableBody>
                     <TableRow>
                       <TableCell>Saldo Inicial de Caixa</TableCell>
-                      <TableCell className="text-right">{formatCurrency(saldoInicial)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(0)}</TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>(+) Fluxo Operacional</TableCell>
-                      <TableCell className="text-right text-green-600">{formatCurrency(4200)}</TableCell>
+                      <TableCell>(+) Receitas Operacionais</TableCell>
+                      <TableCell className="text-right text-green-600">{formatCurrency(entradasMesAtual)}</TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>(-) Fluxo de Investimento</TableCell>
-                      <TableCell className="text-right text-destructive">{formatCurrency(-9200)}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>(+) Fluxo de Financiamento</TableCell>
-                      <TableCell className="text-right text-green-600">{formatCurrency(8650)}</TableCell>
+                      <TableCell>(-) Despesas Operacionais</TableCell>
+                      <TableCell className="text-right text-destructive">{formatCurrency(saidasMesAtual)}</TableCell>
                     </TableRow>
                     <TableRow className="border-t-2 bg-muted/50">
                       <TableCell className="font-bold">Variação Líquida do Caixa</TableCell>
-                      <TableCell className="text-right font-bold text-primary">{formatCurrency(variacaoCaixa)}</TableCell>
+                      <TableCell className="text-right font-bold text-primary">{formatCurrency(entradasMesAtual - saidasMesAtual)}</TableCell>
                     </TableRow>
                     <TableRow className="border-t-2 bg-primary/10">
                       <TableCell className="font-bold">Saldo Final de Caixa</TableCell>
-                      <TableCell className="text-right font-bold text-primary">{formatCurrency(saldoFinal)}</TableCell>
+                      <TableCell className="text-right font-bold text-primary">{formatCurrency(saldoTotal)}</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>

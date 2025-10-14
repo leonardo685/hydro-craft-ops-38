@@ -4,36 +4,54 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { DollarSign, Activity, TrendingUp, TrendingDown, CalendarIcon, Edit } from "lucide-react";
+import { DollarSign, Activity, TrendingUp, TrendingDown, CalendarIcon } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 import { Label } from "@/components/ui/label";
 
 export default function Dashboard() {
+  const { lancamentos, loading } = useLancamentosFinanceiros();
+  
   const [dashboardPeriodType, setDashboardPeriodType] = useState<'mes' | 'trimestre' | 'ano'>('mes');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [selectedQuarter, setSelectedQuarter] = useState<string>('Q1');
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
 
-  const [monthlyData] = useState([
-    { mes: 'Jan', faturamento: 75000, margemContribuicao: 32000, lucroLiquido: 4200, despesasTotais: 28500 },
-    { mes: 'Fev', faturamento: 68000, margemContribuicao: 29800, lucroLiquido: 3800, despesasTotais: 26200 },
-    { mes: 'Mar', faturamento: 82000, margemContribuicao: 35600, lucroLiquido: 4900, despesasTotais: 31100 },
-    { mes: 'Abr', faturamento: 79000, margemContribuicao: 34200, lucroLiquido: 4600, despesasTotais: 29600 },
-    { mes: 'Mai', faturamento: 85000, margemContribuicao: 37250, lucroLiquido: 5200, despesasTotais: 32050 },
-    { mes: 'Jun', faturamento: 92000, margemContribuicao: 40500, lucroLiquido: 5800, despesasTotais: 34700 },
-    { mes: 'Jul', faturamento: 88000, margemContribuicao: 38700, lucroLiquido: 5400, despesasTotais: 33300 },
-    { mes: 'Ago', faturamento: 95000, margemContribuicao: 42000, lucroLiquido: 6200, despesasTotais: 35800 },
-    { mes: 'Set', faturamento: 91000, margemContribuicao: 39800, lucroLiquido: 5700, despesasTotais: 34100 },
-    { mes: 'Out', faturamento: 87000, margemContribuicao: 38100, lucroLiquido: 5300, despesasTotais: 32800 },
-    { mes: 'Nov', faturamento: 93000, margemContribuicao: 41000, lucroLiquido: 5900, despesasTotais: 35100 },
-    { mes: 'Dez', faturamento: 98000, margemContribuicao: 43500, lucroLiquido: 6500, despesasTotais: 37000 }
-  ]);
+  // Calcular dados mensais a partir dos lançamentos reais
+  const monthlyData = useMemo(() => {
+    const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const anoAtual = new Date().getFullYear();
+    
+    return meses.map((mes, index) => {
+      const lancamentosMes = lancamentos.filter(l => {
+        const data = new Date(l.dataEsperada);
+        return data.getMonth() === index && data.getFullYear() === anoAtual;
+      });
+
+      const faturamento = lancamentosMes
+        .filter(l => l.tipo === 'entrada')
+        .reduce((acc, l) => acc + l.valor, 0);
+
+      const despesasTotais = lancamentosMes
+        .filter(l => l.tipo === 'saida')
+        .reduce((acc, l) => acc + l.valor, 0);
+
+      const margemContribuicao = faturamento * 0.45; // 45% do faturamento
+      const lucroLiquido = faturamento - despesasTotais;
+
+      return {
+        mes,
+        faturamento,
+        margemContribuicao,
+        lucroLiquido,
+        despesasTotais
+      };
+    });
+  }, [lancamentos]);
 
   const columnOptions: Option[] = [
     { value: 'faturamento', label: 'Faturamento' },
@@ -55,52 +73,48 @@ export default function Dashboard() {
     despesasTotais: selectedColumns.some(col => col.value === 'despesasTotais'),
   };
 
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingMonth, setEditingMonth] = useState('');
-  const [editValues, setEditValues] = useState({
-    faturamento: 0,
-    margemContribuicao: 0,
-    lucroLiquido: 0,
-    despesasTotais: 0
-  });
+  // Calcular cards do dashboard com base no período selecionado
+  const dashboardCards = useMemo(() => {
+    const mesAtual = new Date().getMonth();
+    const dadosMesAtual = monthlyData[mesAtual];
+    const dadosMesAnterior = monthlyData[mesAtual > 0 ? mesAtual - 1 : 11];
 
-  const dashboardCards = [
-    {
-      title: "Faturamento Total",
-      value: "R$ 85.000,00",
-      change: "+12.3%",
-      changeValue: 12.3,
-      icon: DollarSign
-    },
-    {
-      title: "Margem de Contribuição",
-      value: "43,8%",
-      change: "-2.1%",
-      changeValue: -2.1,
-      icon: Activity
-    },
-    {
-      title: "Lucro Líquido",
-      value: "R$ 5.200,00",
-      change: "+8.5%",
-      changeValue: 8.5,
-      icon: TrendingUp
-    }
-  ];
+    const variacaoFaturamento = dadosMesAnterior.faturamento > 0
+      ? ((dadosMesAtual.faturamento - dadosMesAnterior.faturamento) / dadosMesAnterior.faturamento) * 100
+      : 0;
 
-  const handleEditMonth = (mes: string) => {
-    const monthData = monthlyData.find(m => m.mes === mes);
-    if (monthData) {
-      setEditingMonth(mes);
-      setEditValues({
-        faturamento: monthData.faturamento,
-        margemContribuicao: monthData.margemContribuicao,
-        lucroLiquido: monthData.lucroLiquido,
-        despesasTotais: monthData.despesasTotais
-      });
-      setIsEditDialogOpen(true);
-    }
-  };
+    const margemPercentual = dadosMesAtual.faturamento > 0
+      ? (dadosMesAtual.margemContribuicao / dadosMesAtual.faturamento) * 100
+      : 0;
+
+    const variacaoLucro = dadosMesAnterior.lucroLiquido > 0
+      ? ((dadosMesAtual.lucroLiquido - dadosMesAnterior.lucroLiquido) / dadosMesAnterior.lucroLiquido) * 100
+      : 0;
+
+    return [
+      {
+        title: "Faturamento Total",
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(dadosMesAtual.faturamento),
+        change: `${variacaoFaturamento >= 0 ? '+' : ''}${variacaoFaturamento.toFixed(1)}%`,
+        changeValue: variacaoFaturamento,
+        icon: DollarSign
+      },
+      {
+        title: "Margem de Contribuição",
+        value: `${margemPercentual.toFixed(1)}%`,
+        change: "",
+        changeValue: 0,
+        icon: Activity
+      },
+      {
+        title: "Lucro Líquido",
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(dadosMesAtual.lucroLiquido),
+        change: `${variacaoLucro >= 0 ? '+' : ''}${variacaoLucro.toFixed(1)}%`,
+        changeValue: variacaoLucro,
+        icon: TrendingUp
+      }
+    ];
+  }, [monthlyData]);
 
   const colors = {
     faturamento: 'hsl(var(--primary))',
@@ -215,18 +229,26 @@ export default function Dashboard() {
                 <card.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{card.value}</div>
-                <div className="flex items-center gap-1 text-sm">
-                  {card.changeValue >= 0 ? (
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4 text-destructive" />
-                  )}
-                  <span className={card.changeValue >= 0 ? "text-green-600" : "text-destructive"}>
-                    {card.change}
-                  </span>
-                  <span className="text-muted-foreground">vs período anterior</span>
-                </div>
+                {loading ? (
+                  <div className="text-sm text-muted-foreground">Carregando...</div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{card.value}</div>
+                    {card.change && (
+                      <div className="flex items-center gap-1 text-sm">
+                        {card.changeValue >= 0 ? (
+                          <TrendingUp className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-destructive" />
+                        )}
+                        <span className={card.changeValue >= 0 ? "text-green-600" : "text-destructive"}>
+                          {card.change}
+                        </span>
+                        <span className="text-muted-foreground">vs período anterior</span>
+                      </div>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -251,8 +273,17 @@ export default function Dashboard() {
             </div>
             
             <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData}>
+              {loading ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  Carregando dados...
+                </div>
+              ) : monthlyData.every(m => m.faturamento === 0) ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  Nenhum dado disponível. Comece adicionando lançamentos financeiros.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="mes" />
                   <YAxis />
@@ -277,66 +308,13 @@ export default function Dashboard() {
                   {visibleData.despesasTotais && (
                     <Bar dataKey="despesasTotais" name="Despesas Totais" fill={colors.despesasTotais} />
                   )}
-                </BarChart>
-              </ResponsiveContainer>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Editar Dados - {editingMonth}</DialogTitle>
-              <DialogDescription>Atualize os valores financeiros do mês</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="faturamento">Faturamento</Label>
-                <Input
-                  id="faturamento"
-                  type="number"
-                  value={editValues.faturamento}
-                  onChange={(e) => setEditValues({ ...editValues, faturamento: parseFloat(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="margemContribuicao">Margem de Contribuição</Label>
-                <Input
-                  id="margemContribuicao"
-                  type="number"
-                  value={editValues.margemContribuicao}
-                  onChange={(e) => setEditValues({ ...editValues, margemContribuicao: parseFloat(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lucroLiquido">Lucro Líquido</Label>
-                <Input
-                  id="lucroLiquido"
-                  type="number"
-                  value={editValues.lucroLiquido}
-                  onChange={(e) => setEditValues({ ...editValues, lucroLiquido: parseFloat(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="despesasTotais">Despesas Totais</Label>
-                <Input
-                  id="despesasTotais"
-                  type="number"
-                  value={editValues.despesasTotais}
-                  onChange={(e) => setEditValues({ ...editValues, despesasTotais: parseFloat(e.target.value) })}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={() => setIsEditDialogOpen(false)}>
-                Salvar
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </AppLayout>
   );

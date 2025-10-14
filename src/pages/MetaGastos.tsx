@@ -13,11 +13,14 @@ import { Target, Plus, Pencil, Trash2, TrendingUp, TrendingDown, AlertTriangle }
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
+import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
+import { useMetasGastos } from "@/hooks/use-metas-gastos";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useMemo } from "react";
 
 interface MetaGasto {
   id: string;
@@ -33,9 +36,11 @@ interface MetaGasto {
 
 export default function MetaGastos() {
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
+  const { lancamentos } = useLancamentosFinanceiros();
+  const { metas, loading, adicionarMeta, atualizarMeta, deletarMeta } = useMetasGastos();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editandoMeta, setEditandoMeta] = useState<MetaGasto | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
   const [filtroPeriodo, setFiltroPeriodo] = useState("todos");
   const [filtroStatus, setFiltroStatus] = useState("todos");
@@ -49,42 +54,39 @@ export default function MetaGastos() {
     observacoes: ''
   });
 
-  // Dados de exemplo
-  const [metas, setMetas] = useState<MetaGasto[]>([
-    {
-      id: '1',
-      categoriaId: '1',
-      categoriaNome: 'Materiais',
-      valorMeta: 50000,
-      periodo: 'mensal',
-      dataInicio: new Date(2024, 0, 1),
-      dataFim: new Date(2024, 0, 31),
-      valorGasto: 42500,
-      observacoes: 'Meta para compra de materiais'
-    },
-    {
-      id: '2',
-      categoriaId: '2',
-      categoriaNome: 'Pessoal',
-      valorMeta: 80000,
-      periodo: 'mensal',
-      dataInicio: new Date(2024, 0, 1),
-      dataFim: new Date(2024, 0, 31),
-      valorGasto: 78000,
-      observacoes: 'Folha de pagamento'
-    },
-    {
-      id: '3',
-      categoriaId: '3',
-      categoriaNome: 'Marketing',
-      valorMeta: 15000,
-      periodo: 'mensal',
-      dataInicio: new Date(2024, 0, 1),
-      dataFim: new Date(2024, 0, 31),
-      valorGasto: 16200,
-      observacoes: 'Campanhas publicitárias'
-    }
-  ]);
+  // Calcular valor gasto para cada meta baseado nos lançamentos
+  const metasComGastos = useMemo(() => {
+    return metas.map(meta => {
+      const valorGasto = lancamentos
+        .filter(l => {
+          const dataLancamento = new Date(l.dataEsperada);
+          const dataInicio = new Date(meta.dataInicio);
+          const dataFim = new Date(meta.dataFim);
+          
+          return (
+            l.tipo === 'saida' &&
+            l.categoriaId === meta.categoriaId &&
+            dataLancamento >= dataInicio &&
+            dataLancamento <= dataFim
+          );
+        })
+        .reduce((acc, l) => acc + l.valor, 0);
+
+      const categoriaSelecionada = getCategoriasForSelect().find(c => c.value === meta.categoriaId);
+
+      return {
+        id: meta.id,
+        categoriaId: meta.categoriaId,
+        categoriaNome: categoriaSelecionada?.label || 'Sem nome',
+        valorMeta: meta.valorMeta,
+        periodo: meta.periodo,
+        dataInicio: new Date(meta.dataInicio),
+        dataFim: new Date(meta.dataFim),
+        valorGasto,
+        observacoes: meta.observacoes
+      };
+    });
+  }, [metas, lancamentos, getCategoriasForSelect]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -103,52 +105,40 @@ export default function MetaGastos() {
     return { label: 'Dentro da Meta', variant: 'default' as const, icon: TrendingUp };
   };
 
-  const handleSalvarMeta = () => {
+  const handleSalvarMeta = async () => {
     if (!metaForm.categoriaId || !metaForm.valorMeta) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
 
-    const categoriaSelecionada = getCategoriasForSelect().find(c => c.value === metaForm.categoriaId);
+    const metaData = {
+      categoriaId: metaForm.categoriaId,
+      valorMeta: parseFloat(metaForm.valorMeta),
+      periodo: metaForm.periodo,
+      dataInicio: metaForm.dataInicio,
+      dataFim: metaForm.dataFim,
+      observacoes: metaForm.observacoes
+    };
     
-    if (editandoMeta) {
-      setMetas(metas.map(m => 
-        m.id === editandoMeta.id 
-          ? {
-              ...m,
-              categoriaId: metaForm.categoriaId,
-              categoriaNome: categoriaSelecionada?.label || '',
-              valorMeta: parseFloat(metaForm.valorMeta),
-              periodo: metaForm.periodo,
-              dataInicio: metaForm.dataInicio,
-              dataFim: metaForm.dataFim,
-              observacoes: metaForm.observacoes
-            }
-          : m
-      ));
-      toast.success("Meta atualizada com sucesso!");
+    let sucesso = false;
+    if (editandoId) {
+      sucesso = await atualizarMeta(editandoId, metaData);
+      if (sucesso) toast.success("Meta atualizada com sucesso!");
     } else {
-      const novaMeta: MetaGasto = {
-        id: String(Date.now()),
-        categoriaId: metaForm.categoriaId,
-        categoriaNome: categoriaSelecionada?.label || '',
-        valorMeta: parseFloat(metaForm.valorMeta),
-        periodo: metaForm.periodo,
-        dataInicio: metaForm.dataInicio,
-        dataFim: metaForm.dataFim,
-        valorGasto: 0,
-        observacoes: metaForm.observacoes
-      };
-      setMetas([...metas, novaMeta]);
-      toast.success("Meta criada com sucesso!");
+      sucesso = await adicionarMeta(metaData);
+      if (sucesso) toast.success("Meta criada com sucesso!");
     }
 
-    setIsDialogOpen(false);
-    resetForm();
+    if (sucesso) {
+      setIsDialogOpen(false);
+      resetForm();
+    } else {
+      toast.error("Erro ao salvar meta");
+    }
   };
 
   const handleEditarMeta = (meta: MetaGasto) => {
-    setEditandoMeta(meta);
+    setEditandoId(meta.id);
     setMetaForm({
       categoriaId: meta.categoriaId,
       valorMeta: String(meta.valorMeta),
@@ -160,9 +150,13 @@ export default function MetaGastos() {
     setIsDialogOpen(true);
   };
 
-  const handleExcluirMeta = (id: string) => {
-    setMetas(metas.filter(m => m.id !== id));
-    toast.success("Meta excluída com sucesso!");
+  const handleExcluirMeta = async (id: string) => {
+    const sucesso = await deletarMeta(id);
+    if (sucesso) {
+      toast.success("Meta excluída com sucesso!");
+    } else {
+      toast.error("Erro ao excluir meta");
+    }
   };
 
   const resetForm = () => {
@@ -174,10 +168,10 @@ export default function MetaGastos() {
       dataFim: new Date(),
       observacoes: ''
     });
-    setEditandoMeta(null);
+    setEditandoId(null);
   };
 
-  const metasFiltradas = metas.filter(meta => {
+  const metasFiltradas = metasComGastos.filter(meta => {
     if (filtroCategoria !== 'todas' && meta.categoriaId !== filtroCategoria) return false;
     if (filtroPeriodo !== 'todos' && meta.periodo !== filtroPeriodo) return false;
     if (filtroStatus !== 'todos') {
@@ -189,8 +183,8 @@ export default function MetaGastos() {
     return true;
   });
 
-  const totalMetas = metas.reduce((acc, meta) => acc + meta.valorMeta, 0);
-  const totalGasto = metas.reduce((acc, meta) => acc + meta.valorGasto, 0);
+  const totalMetas = metasComGastos.reduce((acc, meta) => acc + meta.valorMeta, 0);
+  const totalGasto = metasComGastos.reduce((acc, meta) => acc + meta.valorGasto, 0);
   const disponivel = totalMetas - totalGasto;
 
   return (
@@ -213,7 +207,7 @@ export default function MetaGastos() {
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>{editandoMeta ? 'Editar Meta' : 'Nova Meta de Gastos'}</DialogTitle>
+                <DialogTitle>{editandoId ? 'Editar Meta' : 'Nova Meta de Gastos'}</DialogTitle>
                 <DialogDescription>
                   Defina uma meta de gastos para uma categoria específica
                 </DialogDescription>
@@ -333,7 +327,7 @@ export default function MetaGastos() {
               <div className="text-3xl font-bold text-primary">
                 {formatCurrency(totalMetas)}
               </div>
-              <p className="text-sm text-muted-foreground">{metas.length} metas cadastradas</p>
+              <p className="text-sm text-muted-foreground">{metasComGastos.length} metas cadastradas</p>
             </CardContent>
           </Card>
 

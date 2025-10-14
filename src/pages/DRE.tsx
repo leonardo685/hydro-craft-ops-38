@@ -3,30 +3,68 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
+import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 
 export default function DRE() {
+  const { lancamentos, loading } = useLancamentosFinanceiros();
+  const { getNomeCategoriaMae } = useCategoriasFinanceiras();
+  
   const [filtrosDRE, setFiltrosDRE] = useState({
-    ano: '2024',
-    mes: '08'
+    ano: new Date().getFullYear().toString(),
+    mes: (new Date().getMonth() + 1).toString().padStart(2, '0')
   });
 
-  const dreData = [
-    { conta: "Receita Bruta", valor: 85000, tipo: "receita" },
-    { conta: "(-) Impostos sobre Vendas", valor: -12750, tipo: "deducao" },
-    { conta: "Receita Líquida", valor: 72250, tipo: "subtotal" },
-    { conta: "(-) CMV - Custo dos Materiais Vendidos", valor: -35000, tipo: "custo" },
-    { conta: "Lucro Bruto", valor: 37250, tipo: "subtotal" },
-    { conta: "(-) Despesas Operacionais", valor: -18500, tipo: "despesa" },
-    { conta: "(-) Despesas Administrativas", valor: -8200, tipo: "despesa" },
-    { conta: "(-) Despesas Comerciais", valor: -3500, tipo: "despesa" },
-    { conta: "EBITDA", valor: 7050, tipo: "resultado" },
-    { conta: "(-) Depreciação", valor: -1200, tipo: "deducao" },
-    { conta: "EBIT", valor: 5850, tipo: "resultado" },
-    { conta: "(-) Despesas Financeiras", valor: -850, tipo: "despesa" },
-    { conta: "(+) Receitas Financeiras", valor: 200, tipo: "receita" },
-    { conta: "Lucro Líquido", valor: 5200, tipo: "final" },
-  ];
+  // Calcular DRE dinamicamente a partir dos lançamentos
+  const dreData = useMemo(() => {
+    // Filtrar lançamentos pelo ano e mês selecionados
+    const lancamentosFiltrados = lancamentos.filter(l => {
+      const data = new Date(l.dataEsperada);
+      const ano = data.getFullYear().toString();
+      const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+      return ano === filtrosDRE.ano && mes === filtrosDRE.mes;
+    });
+
+    const receitaBruta = lancamentosFiltrados
+      .filter(l => l.tipo === 'entrada')
+      .reduce((acc, l) => acc + l.valor, 0);
+
+    const despesasTotais = lancamentosFiltrados
+      .filter(l => l.tipo === 'saida')
+      .reduce((acc, l) => acc + l.valor, 0);
+
+    // Simplificação: assumir 15% de impostos sobre vendas
+    const impostos = receitaBruta * 0.15;
+    const receitaLiquida = receitaBruta - impostos;
+
+    // Simplificação: assumir 40% como CMV
+    const cmv = receitaBruta * 0.40;
+    const lucroBruto = receitaLiquida - cmv;
+
+    const ebitda = lucroBruto - despesasTotais;
+    const depreciacao = receitaBruta * 0.02; // 2% de depreciação
+    const ebit = ebitda - depreciacao;
+    const lucroLiquido = ebit;
+
+    return [
+      { conta: "Receita Bruta", valor: receitaBruta, tipo: "receita" },
+      { conta: "(-) Impostos sobre Vendas", valor: -impostos, tipo: "deducao" },
+      { conta: "Receita Líquida", valor: receitaLiquida, tipo: "subtotal" },
+      { conta: "(-) CMV - Custo dos Materiais Vendidos", valor: -cmv, tipo: "custo" },
+      { conta: "Lucro Bruto", valor: lucroBruto, tipo: "subtotal" },
+      { conta: "(-) Despesas Operacionais", valor: -despesasTotais, tipo: "despesa" },
+      { conta: "EBITDA", valor: ebitda, tipo: "resultado" },
+      { conta: "(-) Depreciação", valor: -depreciacao, tipo: "deducao" },
+      { conta: "EBIT", valor: ebit, tipo: "resultado" },
+      { conta: "Lucro Líquido", valor: lucroLiquido, tipo: "final" },
+    ];
+  }, [lancamentos, filtrosDRE]);
+
+  const receitaLiquida = dreData.find(d => d.conta === "Receita Líquida")?.valor || 0;
+  const ebitda = dreData.find(d => d.conta === "EBITDA")?.valor || 0;
+  const lucroLiquido = dreData.find(d => d.conta === "Lucro Líquido")?.valor || 0;
+  const receitaBruta = dreData.find(d => d.conta === "Receita Bruta")?.valor || 0;
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', { 
@@ -114,12 +152,18 @@ export default function DRE() {
               <CardTitle className="text-sm font-medium">Receita Líquida</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(72250)}
-              </div>
-              <Badge variant="outline" className="text-xs mt-1">
-                Período Atual
-              </Badge>
+              {loading ? (
+                <div className="text-sm text-muted-foreground">Carregando...</div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-green-600">
+                    {formatCurrency(receitaLiquida)}
+                  </div>
+                  <Badge variant="outline" className="text-xs mt-1">
+                    {filtrosDRE.mes}/{filtrosDRE.ano}
+                  </Badge>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -128,12 +172,18 @@ export default function DRE() {
               <CardTitle className="text-sm font-medium">EBITDA</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(7050)}
-              </div>
-              <Badge variant="outline" className="text-xs mt-1">
-                Margem: 9,8%
-              </Badge>
+              {loading ? (
+                <div className="text-sm text-muted-foreground">Carregando...</div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(ebitda)}
+                  </div>
+                  <Badge variant="outline" className="text-xs mt-1">
+                    Margem: {receitaBruta > 0 ? ((ebitda / receitaBruta) * 100).toFixed(1) : 0}%
+                  </Badge>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -142,12 +192,18 @@ export default function DRE() {
               <CardTitle className="text-sm font-medium">Lucro Líquido</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">
-                {formatCurrency(5200)}
-              </div>
-              <Badge variant="outline" className="text-xs mt-1">
-                Margem: 7,2%
-              </Badge>
+              {loading ? (
+                <div className="text-sm text-muted-foreground">Carregando...</div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-primary">
+                    {formatCurrency(lucroLiquido)}
+                  </div>
+                  <Badge variant="outline" className="text-xs mt-1">
+                    Margem: {receitaBruta > 0 ? ((lucroLiquido / receitaBruta) * 100).toFixed(1) : 0}%
+                  </Badge>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -166,19 +222,33 @@ export default function DRE() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dreData.map((item, index) => (
-                  <TableRow key={index} className={getDreRowStyle(item.tipo)}>
-                    <TableCell>{item.conta}</TableCell>
-                    <TableCell 
-                      className={`text-right ${getDreValueStyle(item.valor, item.tipo)}`}
-                    >
-                      {formatCurrency(item.valor)}
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {((item.valor / 85000) * 100).toFixed(1)}%
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                      Carregando dados...
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : dreData.length === 0 || receitaBruta === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                      Nenhum dado financeiro para o período selecionado. Comece adicionando lançamentos financeiros.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  dreData.map((item, index) => (
+                    <TableRow key={index} className={getDreRowStyle(item.tipo)}>
+                      <TableCell>{item.conta}</TableCell>
+                      <TableCell 
+                        className={`text-right ${getDreValueStyle(item.valor, item.tipo)}`}
+                      >
+                        {formatCurrency(item.valor)}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {receitaBruta > 0 ? ((item.valor / receitaBruta) * 100).toFixed(1) : 0}%
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
