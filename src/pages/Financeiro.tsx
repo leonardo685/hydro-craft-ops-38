@@ -138,17 +138,41 @@ export default function Financeiro() {
   });
 
   // Estado para controlar visibilidade das colunas do extrato
-  const [colunasVisiveis, setColunasVisiveis] = useState({
-    tipo: true,
-    descricao: true,
-    categoria: true,
-    conta: true,
-    valor: true,
-    dataEsperada: true,
-    dataRealizada: true,
-    status: true,
-    fornecedor: true
-  });
+  const extratoColumnOptions: Option[] = [
+    { value: 'tipo', label: 'Tipo' },
+    { value: 'descricao', label: 'Descrição' },
+    { value: 'categoria', label: 'Categoria' },
+    { value: 'conta', label: 'Conta' },
+    { value: 'valor', label: 'Valor' },
+    { value: 'dataEsperada', label: 'Data Esperada' },
+    { value: 'dataRealizada', label: 'Data Realizada' },
+    { value: 'status', label: 'Status' },
+    { value: 'fornecedor', label: 'Fornecedor' },
+  ];
+
+  const [selectedExtratoColumns, setSelectedExtratoColumns] = useState<Option[]>([
+    { value: 'tipo', label: 'Tipo' },
+    { value: 'descricao', label: 'Descrição' },
+    { value: 'categoria', label: 'Categoria' },
+    { value: 'conta', label: 'Conta' },
+    { value: 'valor', label: 'Valor' },
+    { value: 'dataEsperada', label: 'Data Esperada' },
+    { value: 'dataRealizada', label: 'Data Realizada' },
+    { value: 'status', label: 'Status' },
+    { value: 'fornecedor', label: 'Fornecedor' },
+  ]);
+
+  const colunasVisiveis = {
+    tipo: selectedExtratoColumns.some(col => col.value === 'tipo'),
+    descricao: selectedExtratoColumns.some(col => col.value === 'descricao'),
+    categoria: selectedExtratoColumns.some(col => col.value === 'categoria'),
+    conta: selectedExtratoColumns.some(col => col.value === 'conta'),
+    valor: selectedExtratoColumns.some(col => col.value === 'valor'),
+    dataEsperada: selectedExtratoColumns.some(col => col.value === 'dataEsperada'),
+    dataRealizada: selectedExtratoColumns.some(col => col.value === 'dataRealizada'),
+    status: selectedExtratoColumns.some(col => col.value === 'status'),
+    fornecedor: selectedExtratoColumns.some(col => col.value === 'fornecedor'),
+  };
 
   // Lista de fornecedores/clientes
   const fornecedores = [
@@ -1551,99 +1575,16 @@ export default function Financeiro() {
                   {/* Controle de Colunas */}
                   <div className="px-6 pb-4 border-b">
                     <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-muted-foreground">Colunas Visíveis</h3>
-                      <div className="flex gap-4 flex-wrap">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="col-tipo"
-                            checked={colunasVisiveis.tipo}
-                            onCheckedChange={(checked) =>
-                              setColunasVisiveis(prev => ({ ...prev, tipo: !!checked }))
-                            }
-                          />
-                          <Label htmlFor="col-tipo" className="text-sm font-medium">Tipo</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="col-descricao"
-                            checked={colunasVisiveis.descricao}
-                            onCheckedChange={(checked) =>
-                              setColunasVisiveis(prev => ({ ...prev, descricao: !!checked }))
-                            }
-                          />
-                          <Label htmlFor="col-descricao" className="text-sm font-medium">Descrição</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="col-categoria"
-                            checked={colunasVisiveis.categoria}
-                            onCheckedChange={(checked) =>
-                              setColunasVisiveis(prev => ({ ...prev, categoria: !!checked }))
-                            }
-                          />
-                          <Label htmlFor="col-categoria" className="text-sm font-medium">Categoria</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="col-conta"
-                            checked={colunasVisiveis.conta}
-                            onCheckedChange={(checked) =>
-                              setColunasVisiveis(prev => ({ ...prev, conta: !!checked }))
-                            }
-                          />
-                          <Label htmlFor="col-conta" className="text-sm font-medium">Conta</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="col-valor"
-                            checked={colunasVisiveis.valor}
-                            onCheckedChange={(checked) =>
-                              setColunasVisiveis(prev => ({ ...prev, valor: !!checked }))
-                            }
-                          />
-                          <Label htmlFor="col-valor" className="text-sm font-medium">Valor</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="col-data-esperada"
-                            checked={colunasVisiveis.dataEsperada}
-                            onCheckedChange={(checked) =>
-                              setColunasVisiveis(prev => ({ ...prev, dataEsperada: !!checked }))
-                            }
-                          />
-                          <Label htmlFor="col-data-esperada" className="text-sm font-medium">Data Esperada</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="col-data-realizada"
-                            checked={colunasVisiveis.dataRealizada}
-                            onCheckedChange={(checked) =>
-                              setColunasVisiveis(prev => ({ ...prev, dataRealizada: !!checked }))
-                            }
-                          />
-                          <Label htmlFor="col-data-realizada" className="text-sm font-medium">Data Realizada</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="col-status"
-                            checked={colunasVisiveis.status}
-                            onCheckedChange={(checked) =>
-                              setColunasVisiveis(prev => ({ ...prev, status: !!checked }))
-                            }
-                          />
-                          <Label htmlFor="col-status" className="text-sm font-medium">Status</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="col-fornecedor"
-                            checked={colunasVisiveis.fornecedor}
-                            onCheckedChange={(checked) =>
-                              setColunasVisiveis(prev => ({ ...prev, fornecedor: !!checked }))
-                            }
-                          />
-                          <Label htmlFor="col-fornecedor" className="text-sm font-medium">Fornecedor</Label>
-                        </div>
-                      </div>
+                      <Label className="text-sm font-medium">Colunas Visíveis</Label>
+                      <MultipleSelector
+                        value={selectedExtratoColumns}
+                        onChange={setSelectedExtratoColumns}
+                        defaultOptions={extratoColumnOptions}
+                        placeholder="Selecione as colunas..."
+                        emptyIndicator={
+                          <p className="text-center text-sm text-muted-foreground">Nenhuma coluna encontrada.</p>
+                        }
+                      />
                     </div>
                   </div>
 
