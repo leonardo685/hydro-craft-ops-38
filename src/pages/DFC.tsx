@@ -10,6 +10,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign } from "lucide-react";
 import { useState } from "react";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
+import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
@@ -513,20 +516,107 @@ export default function DFC() {
 
                 <div className="flex justify-end gap-2 pt-4 border-t">
                   <Button variant="outline" size="sm" onClick={() => {
-                    // Implementar exportação para PDF
-                    const dataInicio = dfcDataInicio ? format(dfcDataInicio, "dd/MM/yyyy") : "Não definida";
-                    const dataFim = dfcDataFim ? format(dfcDataFim, "dd/MM/yyyy") : "Não definida";
-                    console.log(`Exportando DFC para PDF - Período: ${dataInicio} a ${dataFim}`);
-                    alert(`Funcionalidade de exportação PDF será implementada.\nPeríodo: ${dataInicio} a ${dataFim}`);
+                    try {
+                      const doc = new jsPDF();
+                      const dataInicio = dfcDataInicio ? format(dfcDataInicio, "dd/MM/yyyy") : "Não definida";
+                      const dataFim = dfcDataFim ? format(dfcDataFim, "dd/MM/yyyy") : "Não definida";
+                      
+                      // Título
+                      doc.setFontSize(16);
+                      doc.text("Demonstracao Detalhada do Fluxo de Caixa", 20, 20);
+                      
+                      // Período
+                      doc.setFontSize(10);
+                      doc.text(`Periodo: ${dataInicio} a ${dataFim}`, 20, 30);
+                      
+                      // Receitas Operacionais
+                      doc.setFontSize(12);
+                      doc.text("Receitas Operacionais", 20, 45);
+                      doc.setFontSize(10);
+                      let y = 55;
+                      
+                      receitasOperacionais.forEach(item => {
+                        const valor = formatCurrency(item.valor);
+                        const percentual = ((item.valor / 85000) * 100).toFixed(1) + "%";
+                        doc.text(item.item, 20, y);
+                        doc.text(valor, 120, y);
+                        doc.text(percentual, 170, y);
+                        y += 8;
+                      });
+                      
+                      // Despesas Operacionais
+                      y += 5;
+                      doc.setFontSize(12);
+                      doc.text("Despesas Operacionais", 20, y);
+                      y += 10;
+                      doc.setFontSize(10);
+                      
+                      despesasOperacionais.forEach(item => {
+                        const valor = formatCurrency(item.valor);
+                        const percentual = ((item.valor / 85000) * 100).toFixed(1) + "%";
+                        doc.text(`(-) ${item.item}`, 20, y);
+                        doc.text(valor, 120, y);
+                        doc.text(percentual, 170, y);
+                        y += 8;
+                      });
+                      
+                      doc.save(`DFC_${dataInicio.replace(/\//g, "-")}_${dataFim.replace(/\//g, "-")}.pdf`);
+                      toast.success("PDF exportado com sucesso!");
+                    } catch (error) {
+                      console.error("Erro ao exportar PDF:", error);
+                      toast.error("Erro ao exportar PDF");
+                    }
                   }}>
                     <FileDown className="h-4 w-4 mr-2" />PDF
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => {
-                    // Implementar exportação para Excel
-                    const dataInicio = dfcDataInicio ? format(dfcDataInicio, "dd/MM/yyyy") : "Não definida";
-                    const dataFim = dfcDataFim ? format(dfcDataFim, "dd/MM/yyyy") : "Não definida";
-                    console.log(`Exportando DFC para Excel - Período: ${dataInicio} a ${dataFim}`);
-                    alert(`Funcionalidade de exportação Excel será implementada.\nPeríodo: ${dataInicio} a ${dataFim}`);
+                    try {
+                      const dataInicio = dfcDataInicio ? format(dfcDataInicio, "dd/MM/yyyy") : "Não definida";
+                      const dataFim = dfcDataFim ? format(dfcDataFim, "dd/MM/yyyy") : "Não definida";
+                      
+                      // Preparar dados para Excel
+                      const dados: any[] = [
+                        ["Demonstração Detalhada do Fluxo de Caixa"],
+                        [`Período: ${dataInicio} a ${dataFim}`],
+                        [],
+                        ["Conta", "Valor", "% da Receita"],
+                        []
+                      ];
+                      
+                      // Adicionar receitas
+                      dados.push(["RECEITAS OPERACIONAIS"]);
+                      receitasOperacionais.forEach(item => {
+                        dados.push([
+                          item.item,
+                          item.valor,
+                          ((item.valor / 85000) * 100).toFixed(1) + "%"
+                        ]);
+                      });
+                      
+                      dados.push([]);
+                      
+                      // Adicionar despesas
+                      dados.push(["DESPESAS OPERACIONAIS"]);
+                      despesasOperacionais.forEach(item => {
+                        dados.push([
+                          `(-) ${item.item}`,
+                          item.valor,
+                          ((item.valor / 85000) * 100).toFixed(1) + "%"
+                        ]);
+                      });
+                      
+                      // Criar planilha
+                      const ws = XLSX.utils.aoa_to_sheet(dados);
+                      const wb = XLSX.utils.book_new();
+                      XLSX.utils.book_append_sheet(wb, ws, "DFC");
+                      
+                      // Salvar arquivo
+                      XLSX.writeFile(wb, `DFC_${dataInicio.replace(/\//g, "-")}_${dataFim.replace(/\//g, "-")}.xlsx`);
+                      toast.success("Excel exportado com sucesso!");
+                    } catch (error) {
+                      console.error("Erro ao exportar Excel:", error);
+                      toast.error("Erro ao exportar Excel");
+                    }
                   }}>
                     <FileDown className="h-4 w-4 mr-2" />Excel
                   </Button>
