@@ -164,6 +164,12 @@ export default function Financeiro() {
     { value: 'fornecedor', label: 'Fornecedor' },
   ]);
 
+  // Dashboard period filter state
+  const [dashboardPeriodType, setDashboardPeriodType] = useState<'mes' | 'trimestre' | 'ano'>('mes');
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [selectedQuarter, setSelectedQuarter] = useState<string>('Q1');
+  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
+
   const colunasVisiveis = {
     tipo: selectedExtratoColumns.some(col => col.value === 'tipo'),
     descricao: selectedExtratoColumns.some(col => col.value === 'descricao'),
@@ -986,6 +992,102 @@ export default function Financeiro() {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
+            {/* Period Filter */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Filtro de Período</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* Period Type Selector */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Tipo de Período</label>
+                    <Select value={dashboardPeriodType} onValueChange={(value: 'mes' | 'trimestre' | 'ano') => setDashboardPeriodType(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mes">Mês</SelectItem>
+                        <SelectItem value="trimestre">Trimestre</SelectItem>
+                        <SelectItem value="ano">Ano</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Month Selector */}
+                  {dashboardPeriodType === 'mes' && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Selecionar Mês</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !selectedMonth && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {selectedMonth ? format(selectedMonth, "MMMM yyyy") : <span>Escolha o mês</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={selectedMonth}
+                            onSelect={(date) => date && setSelectedMonth(date)}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  )}
+
+                  {/* Quarter Selector */}
+                  {dashboardPeriodType === 'trimestre' && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Selecionar Trimestre</label>
+                      <Select value={selectedQuarter} onValueChange={setSelectedQuarter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Escolha o trimestre" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Q1">Q1 (Jan - Mar)</SelectItem>
+                          <SelectItem value="Q2">Q2 (Abr - Jun)</SelectItem>
+                          <SelectItem value="Q3">Q3 (Jul - Set)</SelectItem>
+                          <SelectItem value="Q4">Q4 (Out - Dez)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Year Selector */}
+                  {(dashboardPeriodType === 'trimestre' || dashboardPeriodType === 'ano') && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Selecionar Ano</label>
+                      <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Escolha o ano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="2023">2023</SelectItem>
+                          <SelectItem value="2024">2024</SelectItem>
+                          <SelectItem value="2025">2025</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Apply Filter Button */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-transparent">Aplicar</label>
+                    <Button className="w-full">Aplicar Filtro</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {dashboardCards.map((card, index) => (
                 <Card key={index}>
