@@ -526,11 +526,16 @@ export default function DFC() {
                           Novo Lançamento
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                          <DialogTitle>Novo Lançamento</DialogTitle>
-                          <DialogDescription>Adicione um novo lançamento ao extrato bancário</DialogDescription>
-                        </DialogHeader>
+                      <DialogContent className="max-w-2xl overflow-hidden p-0">
+                        <div className={cn(
+                          "h-2 w-full transition-colors duration-300",
+                          lancamentoForm.tipo === 'entrada' ? "bg-green-500" : "bg-red-500"
+                        )} />
+                        <div className="p-6">
+                          <DialogHeader>
+                            <DialogTitle>Novo Lançamento</DialogTitle>
+                            <DialogDescription>Adicione um novo lançamento ao extrato bancário</DialogDescription>
+                          </DialogHeader>
                         <div className="grid gap-4 py-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
@@ -662,9 +667,10 @@ export default function DFC() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" onClick={() => setIsLancamentoDialogOpen(false)}>Cancelar</Button>
-                          <Button onClick={handleLancamento}>Adicionar Lançamento</Button>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setIsLancamentoDialogOpen(false)}>Cancelar</Button>
+                            <Button onClick={handleLancamento}>Adicionar Lançamento</Button>
+                          </div>
                         </div>
                       </DialogContent>
                     </Dialog>
