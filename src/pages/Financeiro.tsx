@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { TrendingUp, TrendingDown, DollarSign, Activity, Edit, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Activity, Edit, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, FileDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
+import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
@@ -425,6 +427,182 @@ export default function Financeiro() {
   ];
 
   const resultadoLiquido = lucroLiquido + 350 + (-200); // 1170
+
+  // Funções de exportação do DFC
+  const exportarDFCParaPDF = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(16);
+    doc.text('Demonstração Detalhada do Fluxo de Caixa', 14, 15);
+    
+    doc.setFontSize(10);
+    let yPos = 30;
+    const lineHeight = 7;
+    
+    // Helper para adicionar linha
+    const addLine = (conta: string, valor: number, percentual: number, isBold = false) => {
+      if (yPos > 280) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      if (isBold) {
+        doc.setFont('helvetica', 'bold');
+      }
+      
+      doc.text(conta, 14, yPos);
+      doc.text(formatCurrency(valor), 120, yPos);
+      doc.text(`${percentual.toFixed(1)}%`, 180, yPos);
+      
+      if (isBold) {
+        doc.setFont('helvetica', 'normal');
+      }
+      
+      yPos += lineHeight;
+    };
+    
+    // Cabeçalhos
+    doc.setFont('helvetica', 'bold');
+    doc.text('Conta', 14, yPos);
+    doc.text('Valor', 120, yPos);
+    doc.text('% da Receita', 180, yPos);
+    doc.setFont('helvetica', 'normal');
+    yPos += lineHeight + 2;
+    
+    // Receitas Operacionais
+    receitasOperacionais.forEach(item => {
+      addLine(item.item, item.valor, (item.valor / 85000) * 100, item.isTotal);
+    });
+    
+    yPos += 3;
+    
+    // Despesas Operacionais
+    despesasOperacionais.forEach(item => {
+      addLine(`(-) ${item.item}`, item.valor, (item.valor / 85000) * 100, item.isTotal);
+    });
+    
+    yPos += 3;
+    addLine('Margem de Contribuição', margemContribuicao, (margemContribuicao / 85000) * 100, true);
+    yPos += 3;
+    
+    // Despesas Fixas
+    despesasFixas.forEach(item => {
+      addLine(`(-) ${item.item}`, item.valor, (item.valor / 85000) * 100, item.isTotal);
+    });
+    
+    yPos += 3;
+    addLine('Lucro Operacional', lucroOperacional, (lucroOperacional / 85000) * 100, true);
+    yPos += 3;
+    
+    // Investimentos
+    investimentos.forEach(item => {
+      addLine(`(-) ${item.item}`, item.valor, (item.valor / 85000) * 100, item.isTotal);
+    });
+    
+    yPos += 3;
+    
+    // Juros e Amortização
+    jurosAmortizacao.forEach(item => {
+      addLine(`(-) ${item.item}`, item.valor, (item.valor / 85000) * 100, item.isTotal);
+    });
+    
+    yPos += 3;
+    addLine('Lucro Líquido', lucroLiquido, (lucroLiquido / 85000) * 100, true);
+    yPos += 3;
+    
+    // Receitas Não Operacionais
+    receitasNaoOperacionais.forEach(item => {
+      addLine(`(+) ${item.item}`, item.valor, (item.valor / 85000) * 100, item.isTotal);
+    });
+    
+    yPos += 3;
+    
+    // Despesas Não Operacionais
+    despesasNaoOperacionais.forEach(item => {
+      addLine(`(-) ${item.item}`, item.valor, (item.valor / 85000) * 100, item.isTotal);
+    });
+    
+    yPos += 3;
+    addLine('Resultado Líquido', resultadoLiquido, (resultadoLiquido / 85000) * 100, true);
+    
+    doc.save('dfc-detalhado.pdf');
+  };
+
+  const exportarDFCParaExcel = () => {
+    const dadosDFC = [];
+    
+    // Cabeçalho
+    dadosDFC.push(['Conta', 'Valor', '% da Receita']);
+    
+    // Receitas Operacionais
+    receitasOperacionais.forEach(item => {
+      dadosDFC.push([item.item, item.valor, `${((item.valor / 85000) * 100).toFixed(1)}%`]);
+    });
+    
+    dadosDFC.push([]);
+    
+    // Despesas Operacionais
+    despesasOperacionais.forEach(item => {
+      dadosDFC.push([`(-) ${item.item}`, item.valor, `${((item.valor / 85000) * 100).toFixed(1)}%`]);
+    });
+    
+    dadosDFC.push([]);
+    dadosDFC.push(['Margem de Contribuição', margemContribuicao, `${((margemContribuicao / 85000) * 100).toFixed(1)}%`]);
+    dadosDFC.push([]);
+    
+    // Despesas Fixas
+    despesasFixas.forEach(item => {
+      dadosDFC.push([`(-) ${item.item}`, item.valor, `${((item.valor / 85000) * 100).toFixed(1)}%`]);
+    });
+    
+    dadosDFC.push([]);
+    dadosDFC.push(['Lucro Operacional', lucroOperacional, `${((lucroOperacional / 85000) * 100).toFixed(1)}%`]);
+    dadosDFC.push([]);
+    
+    // Investimentos
+    investimentos.forEach(item => {
+      dadosDFC.push([`(-) ${item.item}`, item.valor, `${((item.valor / 85000) * 100).toFixed(1)}%`]);
+    });
+    
+    dadosDFC.push([]);
+    
+    // Juros e Amortização
+    jurosAmortizacao.forEach(item => {
+      dadosDFC.push([`(-) ${item.item}`, item.valor, `${((item.valor / 85000) * 100).toFixed(1)}%`]);
+    });
+    
+    dadosDFC.push([]);
+    dadosDFC.push(['Lucro Líquido', lucroLiquido, `${((lucroLiquido / 85000) * 100).toFixed(1)}%`]);
+    dadosDFC.push([]);
+    
+    // Receitas Não Operacionais
+    receitasNaoOperacionais.forEach(item => {
+      dadosDFC.push([`(+) ${item.item}`, item.valor, `${((item.valor / 85000) * 100).toFixed(1)}%`]);
+    });
+    
+    dadosDFC.push([]);
+    
+    // Despesas Não Operacionais
+    despesasNaoOperacionais.forEach(item => {
+      dadosDFC.push([`(-) ${item.item}`, item.valor, `${((item.valor / 85000) * 100).toFixed(1)}%`]);
+    });
+    
+    dadosDFC.push([]);
+    dadosDFC.push(['Resultado Líquido', resultadoLiquido, `${((resultadoLiquido / 85000) * 100).toFixed(1)}%`]);
+    
+    const ws = XLSX.utils.aoa_to_sheet(dadosDFC);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'DFC Detalhado');
+    
+    // Ajustar largura das colunas
+    ws['!cols'] = [
+      { wch: 40 },  // Conta
+      { wch: 15 },  // Valor
+      { wch: 15 }   // % da Receita
+    ];
+    
+    XLSX.writeFile(wb, 'dfc-detalhado.xlsx');
+  };
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', { 
@@ -1086,7 +1264,27 @@ export default function Financeiro() {
               <TabsContent value="operacional" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Demonstração Detalhada do Fluxo de Caixa</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Demonstração Detalhada do Fluxo de Caixa</CardTitle>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={exportarDFCParaPDF}
+                        >
+                          <FileDown className="h-4 w-4 mr-2" />
+                          PDF
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={exportarDFCParaExcel}
+                        >
+                          <FileDown className="h-4 w-4 mr-2" />
+                          Excel
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <Table>
