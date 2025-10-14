@@ -528,7 +528,7 @@ export default function DFC() {
                       </DialogTrigger>
                       <DialogContent className="max-w-2xl overflow-hidden p-0">
                         <div className={cn(
-                          "h-2 w-full transition-colors duration-300",
+                          "h-4 w-full transition-colors duration-300",
                           lancamentoForm.tipo === 'entrada' ? "bg-green-500" : "bg-red-500"
                         )} />
                         <div className="p-6">
