@@ -13,10 +13,11 @@ import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 
 export const CategoriasFinanceiras = () => {
   const { 
+    categorias,
     categoriasMae, 
-    categoriasOrdenadas, 
     gerarProximoCodigo, 
     adicionarCategoria, 
+    deletarCategoria,
     getNomeCategoriaMae 
   } = useCategoriasFinanceiras();
   
@@ -182,7 +183,7 @@ export const CategoriasFinanceiras = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {categoriasOrdenadas.map((categoria) => (
+            {categorias.map((categoria) => (
               <TableRow key={categoria.id}>
                 <TableCell className="font-mono">{categoria.codigo}</TableCell>
                 <TableCell className="font-medium">{categoria.nome}</TableCell>
@@ -199,7 +200,7 @@ export const CategoriasFinanceiras = () => {
                     <Button variant="ghost" size="sm">
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => deletarCategoria(categoria.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

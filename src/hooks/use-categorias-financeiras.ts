@@ -1,4 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface CategoriaFinanceira {
   id: string;
@@ -8,126 +10,180 @@ export interface CategoriaFinanceira {
   categoriaMaeId?: string;
 }
 
-const initialCategorias: CategoriaFinanceira[] = [
-  {
-    id: '1',
-    codigo: '1',
-    nome: 'Receita Operacional',
-    tipo: 'mae'
-  },
-  {
-    id: '2',
-    codigo: '1.1',
-    nome: 'Receita de Reforma de Cilindros',
-    tipo: 'filha',
-    categoriaMaeId: '1'
-  },
-  {
-    id: '3',
-    codigo: '2',
-    nome: 'Despesas Operacionais',
-    tipo: 'mae'
-  },
-  {
-    id: '4',
-    codigo: '2.1',
-    nome: 'Folha de Pagamento',
-    tipo: 'filha',
-    categoriaMaeId: '3'
-  },
-  {
-    id: '5',
-    codigo: '2.2',
-    nome: 'Impostos e Taxas',
-    tipo: 'filha',
-    categoriaMaeId: '3'
-  },
-  {
-    id: '6',
-    codigo: '3',
-    nome: 'Despesas Financeiras',
-    tipo: 'mae'
-  },
-  {
-    id: '7',
-    codigo: '3.1',
-    nome: 'Juros e Multas',
-    tipo: 'filha',
-    categoriaMaeId: '6'
-  }
-];
-
 export const useCategoriasFinanceiras = () => {
-  const [categorias, setCategorias] = useState<CategoriaFinanceira[]>(initialCategorias);
+  const [categorias, setCategorias] = useState<CategoriaFinanceira[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const categoriasMae = categorias.filter(cat => cat.tipo === 'mae');
+  // Buscar categorias do Supabase
+  const fetchCategorias = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categorias_financeiras')
+        .select('*')
+        .order('codigo');
 
-  const gerarProximoCodigo = useCallback((tipo: 'mae' | 'filha', categoriaMaeId?: string) => {
-    if (tipo === 'mae') {
-      const codigosMae = categorias
-        .filter(cat => cat.tipo === 'mae')
-        .map(cat => parseInt(cat.codigo))
-        .filter(num => !isNaN(num));
-      
-      const proximoCodigo = Math.max(0, ...codigosMae) + 1;
-      return proximoCodigo.toString();
-    } else {
-      const categoriaMae = categorias.find(cat => cat.id === categoriaMaeId);
-      if (!categoriaMae) return '';
-      
-      const codigosFilha = categorias
-        .filter(cat => cat.tipo === 'filha' && cat.categoriaMaeId === categoriaMaeId)
-        .map(cat => {
-          const partes = cat.codigo.split('.');
-          return parseInt(partes[1]) || 0;
-        })
-        .filter(num => !isNaN(num));
-      
-      const proximoSubCodigo = Math.max(0, ...codigosFilha) + 1;
-      return `${categoriaMae.codigo}.${proximoSubCodigo}`;
+      if (error) throw error;
+
+      const categoriasFormatadas = (data || []).map(cat => ({
+        id: cat.id,
+        codigo: cat.codigo,
+        nome: cat.nome,
+        tipo: (cat.tipo === 'mae' ? 'mae' : 'filha') as 'mae' | 'filha',
+        categoriaMaeId: cat.categoria_mae_id
+      }));
+
+      setCategorias(categoriasFormatadas);
+    } catch (error) {
+      console.error('Erro ao buscar categorias:', error);
+      toast.error('Erro ao carregar categorias financeiras');
+    } finally {
+      setLoading(false);
     }
-  }, [categorias]);
+  };
 
-  const adicionarCategoria = useCallback((categoria: Omit<CategoriaFinanceira, 'id' | 'codigo'>) => {
-    const codigo = gerarProximoCodigo(categoria.tipo, categoria.categoriaMaeId);
-    
-    const novaCategoria: CategoriaFinanceira = {
-      id: Date.now().toString(),
-      codigo,
-      ...categoria
-    };
+  useEffect(() => {
+    fetchCategorias();
+  }, []);
 
-    setCategorias(prev => [...prev, novaCategoria]);
-    return novaCategoria;
-  }, [gerarProximoCodigo]);
+  const categoriasMae = useMemo(
+    () => categorias.filter(cat => cat.tipo === 'mae'),
+    [categorias]
+  );
 
-  const categoriasOrdenadas = categorias.sort((a, b) => {
-    const codigoA = a.codigo.split('.').map(n => parseInt(n)).join('.');
-    const codigoB = b.codigo.split('.').map(n => parseInt(n)).join('.');
-    return codigoA.localeCompare(codigoB, undefined, { numeric: true });
-  });
+  const gerarProximoCodigo = useMemo(
+    () => (tipo: 'mae' | 'filha', categoriaMaeId?: string): string => {
+      if (tipo === 'mae') {
+        const categoriasMae = categorias.filter(c => c.tipo === 'mae');
+        if (categoriasMae.length === 0) return '1';
+        
+        const ultimoCodigo = Math.max(
+          ...categoriasMae.map(c => parseInt(c.codigo) || 0)
+        );
+        return String(ultimoCodigo + 1);
+      } else {
+        const categoriasFilhas = categorias.filter(
+          c => c.tipo === 'filha' && c.categoriaMaeId === categoriaMaeId
+        );
+        
+        if (!categoriaMaeId || categoriasFilhas.length === 0) {
+          const categoriaMae = categorias.find(c => c.id === categoriaMaeId);
+          return categoriaMae ? `${categoriaMae.codigo}.1` : '1.1';
+        }
+        
+        const ultimoCodigo = Math.max(
+          ...categoriasFilhas.map(c => {
+            const partes = c.codigo.split('.');
+            return parseInt(partes[1] || '0') || 0;
+          })
+        );
+        
+        const categoriaMae = categorias.find(c => c.id === categoriaMaeId);
+        return categoriaMae ? `${categoriaMae.codigo}.${ultimoCodigo + 1}` : '1.1';
+      }
+    },
+    [categorias]
+  );
 
-  const getNomeCategoriaMae = useCallback((categoriaMaeId?: string) => {
-    if (!categoriaMaeId) return '';
-    const categoriaMae = categorias.find(cat => cat.id === categoriaMaeId);
-    return categoriaMae ? categoriaMae.nome : '';
-  }, [categorias]);
+  const adicionarCategoria = async (
+    categoria: Omit<CategoriaFinanceira, 'id' | 'codigo'>
+  ): Promise<CategoriaFinanceira | null> => {
+    try {
+      const novoCodigo = gerarProximoCodigo(categoria.tipo, categoria.categoriaMaeId);
+      
+      const { data, error } = await supabase
+        .from('categorias_financeiras')
+        .insert({
+          codigo: novoCodigo,
+          nome: categoria.nome,
+          tipo: categoria.tipo,
+          categoria_mae_id: categoria.categoriaMaeId || null
+        })
+        .select()
+        .single();
 
-  const getCategoriasForSelect = useCallback(() => {
-    return categoriasOrdenadas.map(categoria => ({
-      value: categoria.id,
-      label: `${categoria.codigo} - ${categoria.nome}`,
-      tipo: categoria.tipo
-    }));
-  }, [categoriasOrdenadas]);
+      if (error) throw error;
+
+      const novaCategoria: CategoriaFinanceira = {
+        id: data.id,
+        codigo: data.codigo,
+        nome: data.nome,
+        tipo: (data.tipo === 'mae' ? 'mae' : 'filha') as 'mae' | 'filha',
+        categoriaMaeId: data.categoria_mae_id
+      };
+
+      setCategorias(prev => [...prev, novaCategoria]);
+      toast.success('Categoria criada com sucesso!');
+      return novaCategoria;
+    } catch (error) {
+      console.error('Erro ao adicionar categoria:', error);
+      toast.error('Erro ao criar categoria');
+      return null;
+    }
+  };
+
+  const deletarCategoria = async (id: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('categorias_financeiras')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setCategorias(prev => prev.filter(cat => cat.id !== id));
+      toast.success('Categoria deletada com sucesso!');
+      return true;
+    } catch (error) {
+      console.error('Erro ao deletar categoria:', error);
+      toast.error('Erro ao deletar categoria');
+      return false;
+    }
+  };
+
+  const categoriasOrdenadas = useMemo(
+    () => [...categorias].sort((a, b) => {
+      const aParts = a.codigo.split('.').map(Number);
+      const bParts = b.codigo.split('.').map(Number);
+      
+      for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+        const aVal = aParts[i] || 0;
+        const bVal = bParts[i] || 0;
+        if (aVal !== bVal) return aVal - bVal;
+      }
+      return 0;
+    }),
+    [categorias]
+  );
+
+  const getNomeCategoriaMae = useMemo(
+    () => (categoriaMaeId?: string): string => {
+      if (!categoriaMaeId) return '-';
+      const categoria = categorias.find(c => c.id === categoriaMaeId);
+      return categoria ? categoria.nome : '-';
+    },
+    [categorias]
+  );
+
+  const getCategoriasForSelect = useMemo(
+    () => (): { value: string, label: string, tipo: 'mae' | 'filha' }[] => {
+      return categoriasOrdenadas.map(cat => ({
+        value: cat.id,
+        label: `${cat.codigo} - ${cat.nome}`,
+        tipo: cat.tipo
+      }));
+    },
+    [categoriasOrdenadas]
+  );
 
   return {
-    categorias,
+    categorias: categoriasOrdenadas,
     categoriasMae,
-    categoriasOrdenadas,
+    loading,
     gerarProximoCodigo,
     adicionarCategoria,
+    deletarCategoria,
     getNomeCategoriaMae,
-    getCategoriasForSelect
+    getCategoriasForSelect,
+    refetch: fetchCategorias
   };
 };

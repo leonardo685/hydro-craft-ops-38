@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      categorias_financeiras: {
+        Row: {
+          categoria_mae_id: string | null
+          codigo: string
+          created_at: string
+          id: string
+          nome: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          categoria_mae_id?: string | null
+          codigo: string
+          created_at?: string
+          id?: string
+          nome: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          categoria_mae_id?: string | null
+          codigo?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categorias_financeiras_categoria_mae_id_fkey"
+            columns: ["categoria_mae_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           cep: string | null
@@ -350,6 +388,103 @@ export type Database = {
             columns: ["orcamento_id"]
             isOneToOne: false
             referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lancamentos_financeiros: {
+        Row: {
+          categoria_id: string | null
+          conta_bancaria: string
+          created_at: string
+          data_esperada: string
+          data_realizada: string | null
+          descricao: string
+          fornecedor_cliente: string | null
+          id: string
+          pago: boolean
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria_id?: string | null
+          conta_bancaria: string
+          created_at?: string
+          data_esperada: string
+          data_realizada?: string | null
+          descricao: string
+          fornecedor_cliente?: string | null
+          id?: string
+          pago?: boolean
+          tipo: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          categoria_id?: string | null
+          conta_bancaria?: string
+          created_at?: string
+          data_esperada?: string
+          data_realizada?: string | null
+          descricao?: string
+          fornecedor_cliente?: string | null
+          id?: string
+          pago?: boolean
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamentos_financeiros_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      metas_gastos: {
+        Row: {
+          categoria_id: string
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          id: string
+          observacoes: string | null
+          periodo: string
+          updated_at: string
+          valor_meta: number
+        }
+        Insert: {
+          categoria_id: string
+          created_at?: string
+          data_fim: string
+          data_inicio: string
+          id?: string
+          observacoes?: string | null
+          periodo: string
+          updated_at?: string
+          valor_meta: number
+        }
+        Update: {
+          categoria_id?: string
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          id?: string
+          observacoes?: string | null
+          periodo?: string
+          updated_at?: string
+          valor_meta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metas_gastos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
             referencedColumns: ["id"]
           },
         ]
