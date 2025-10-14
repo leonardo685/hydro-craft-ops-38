@@ -34,9 +34,9 @@ export default function EmitirNotaModal({
 
   // Extrair dados da aprovação
   const extrairDadosAprovacao = (descricao: string) => {
-    const numeroPedidoMatch = descricao?.match(/Número do Pedido:\s*([^\n]+)/);
-    const prazoPagamentoMatch = descricao?.match(/Prazo de Pagamento:\s*([^\n]+)/);
-    const anexoMatch = descricao?.match(/Anexo do Pedido:\s*([^\n]+)/);
+    const numeroPedidoMatch = descricao?.match(/[-\s]*Número do Pedido:\s*([^\n]+)/);
+    const prazoPagamentoMatch = descricao?.match(/[-\s]*Prazo de Pagamento:\s*([^\n]+)/);
+    const anexoMatch = descricao?.match(/[-\s]*Anexo do Pedido:\s*([^\n]+)/);
     
     return {
       numeroPedido: numeroPedidoMatch?.[1]?.trim() || 'N/A',
