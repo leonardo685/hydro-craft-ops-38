@@ -34,9 +34,12 @@ export default function EmitirNotaModal({
 
   // Extrair dados da aprovação
   const extrairDadosAprovacao = (descricao: string) => {
+    console.log('Descrição completa:', descricao);
     const numeroPedidoMatch = descricao?.match(/[-\s]*Número do Pedido:\s*([^\n]+)/);
     const prazoPagamentoMatch = descricao?.match(/[-\s]*Prazo de Pagamento:\s*([^\n]+)/);
     const anexoMatch = descricao?.match(/[-\s]*Anexo do Pedido:\s*([^\n]+)/);
+    
+    console.log('Anexo extraído:', anexoMatch?.[1]?.trim());
     
     return {
       numeroPedido: numeroPedidoMatch?.[1]?.trim() || 'N/A',
@@ -46,6 +49,8 @@ export default function EmitirNotaModal({
   };
 
   const dadosAprovacao = orcamento ? extrairDadosAprovacao(orcamento.descricao || '') : { numeroPedido: 'N/A', prazoPagamento: 'A definir', anexoUrl: null };
+  
+  console.log('URL do anexo final:', dadosAprovacao.anexoUrl);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
