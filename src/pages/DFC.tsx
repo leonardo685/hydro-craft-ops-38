@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign } from "lucide-react";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -502,11 +503,585 @@ export default function DFC() {
           </TabsContent>
 
           <TabsContent value="extrato" className="space-y-4">
-            <p className="text-muted-foreground">Conteúdo de Extrato será implementado...</p>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between mb-4">
+                  <CardTitle>Extrato do Dia - {new Date(2024, 7, 29).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</CardTitle>
+                  <div className="flex gap-2">
+                    <Select value={contaSelecionada} onValueChange={setContaSelecionada}>
+                      <SelectTrigger className="w-[280px]">
+                        <SelectValue placeholder="Selecionar conta" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todas">Todas as contas</SelectItem>
+                        {contasBancarias.map(conta => (
+                          <SelectItem key={conta.id} value={conta.id}>{conta.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Dialog open={isLancamentoDialogOpen} onOpenChange={setIsLancamentoDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Novo Lançamento
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Novo Lançamento</DialogTitle>
+                          <DialogDescription>Adicione um novo lançamento ao extrato bancário</DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Tipo de Lançamento</Label>
+                              <Select value={lancamentoForm.tipo} onValueChange={(value: 'entrada' | 'saida') => setLancamentoForm(prev => ({ ...prev, tipo: value }))}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="entrada">Entrada</SelectItem>
+                                  <SelectItem value="saida">Saída</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Valor</Label>
+                              <Input
+                                type="number"
+                                placeholder="0,00"
+                                value={lancamentoForm.valor}
+                                onChange={(e) => setLancamentoForm(prev => ({ ...prev, valor: e.target.value }))}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Descrição</Label>
+                            <Textarea
+                              placeholder="Descrição do lançamento"
+                              value={lancamentoForm.descricao}
+                              onChange={(e) => setLancamentoForm(prev => ({ ...prev, descricao: e.target.value }))}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Categoria</Label>
+                              <Select value={lancamentoForm.categoria} onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, categoria: value }))}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecionar categoria" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {getCategoriasForSelect().map(categoria => (
+                                    <SelectItem key={categoria.value} value={categoria.value}>
+                                      {categoria.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Conta Bancária</Label>
+                              <Select value={lancamentoForm.conta} onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, conta: value }))}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {contasBancarias.map(conta => (
+                                    <SelectItem key={conta.id} value={conta.id}>{conta.nome}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Fornecedor/Cliente</Label>
+                            <Select value={lancamentoForm.fornecedor} onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, fornecedor: value }))}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {fornecedores.map(fornecedor => (
+                                  <SelectItem key={fornecedor.id} value={fornecedor.id}>
+                                    {fornecedor.nome} ({fornecedor.tipo})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Data Esperada</Label>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !lancamentoForm.dataEsperada && "text-muted-foreground")}>
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {lancamentoForm.dataEsperada ? format(lancamentoForm.dataEsperada, "dd/MM/yyyy") : "Selecionar data"}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                  <Calendar
+                                    mode="single"
+                                    selected={lancamentoForm.dataEsperada}
+                                    onSelect={(date) => date && setLancamentoForm(prev => ({ ...prev, dataEsperada: date }))}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Checkbox
+                                  id="paga"
+                                  checked={lancamentoForm.paga}
+                                  onCheckedChange={(checked) => setLancamentoForm(prev => ({ ...prev, paga: checked as boolean }))}
+                                />
+                                <Label htmlFor="paga" className="cursor-pointer">Já foi paga/recebida?</Label>
+                              </div>
+                              {lancamentoForm.paga && (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !lancamentoForm.dataRealizada && "text-muted-foreground")}>
+                                      <CalendarIcon className="mr-2 h-4 w-4" />
+                                      {lancamentoForm.dataRealizada ? format(lancamentoForm.dataRealizada, "dd/MM/yyyy") : "Data realizada"}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                      mode="single"
+                                      selected={lancamentoForm.dataRealizada}
+                                      onSelect={(date) => date && setLancamentoForm(prev => ({ ...prev, dataRealizada: date }))}
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => setIsLancamentoDialogOpen(false)}>Cancelar</Button>
+                          <Button onClick={handleLancamento}>Adicionar Lançamento</Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => setColunasVisiveisExpanded(!colunasVisiveisExpanded)}>
+                    <Label className="text-sm font-medium">Colunas Visíveis</Label>
+                    {colunasVisiveisExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </div>
+                  {colunasVisiveisExpanded && (
+                    <MultipleSelector
+                      value={selectedExtratoColumns}
+                      onChange={setSelectedExtratoColumns}
+                      options={extratoColumnOptions}
+                      placeholder="Selecione as colunas para exibir"
+                      emptyIndicator={
+                        <p className="text-center text-sm text-muted-foreground">Nenhuma coluna encontrada.</p>
+                      }
+                    />
+                  )}
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => setFiltrosExpanded(!filtrosExpanded)}>
+                    <Label className="text-sm font-medium">Filtros</Label>
+                    {filtrosExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </div>
+                  {filtrosExpanded && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-muted/30">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Tipo</Label>
+                        <Select value={filtrosExtrato.tipo} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, tipo: value }))}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos">Todos</SelectItem>
+                            <SelectItem value="entrada">Entrada</SelectItem>
+                            <SelectItem value="saida">Saída</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Conta</Label>
+                        <Select value={filtrosExtrato.conta} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, conta: value }))}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todas">Todas</SelectItem>
+                            {contasBancarias.map(conta => (
+                              <SelectItem key={conta.id} value={conta.id}>{conta.nome.split(' - ')[1]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Categoria</Label>
+                        <Select value={filtrosExtrato.categoria} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, categoria: value }))}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todas">Todas</SelectItem>
+                            {getCategoriasForSelect().map(cat => (
+                              <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Fornecedor/Cliente</Label>
+                        <Select value={filtrosExtrato.fornecedor} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, fornecedor: value }))}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos">Todos</SelectItem>
+                            {fornecedores.map(f => (
+                              <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Status</Label>
+                        <Select value={filtrosExtrato.status} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, status: value }))}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos">Todos</SelectItem>
+                            <SelectItem value="pago">Pago</SelectItem>
+                            <SelectItem value="no_prazo">No Prazo</SelectItem>
+                            <SelectItem value="atrasado">Atrasado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Descrição</Label>
+                        <Input
+                          placeholder="Buscar por descrição"
+                          value={filtrosExtrato.descricao}
+                          onChange={(e) => setFiltrosExtrato(prev => ({ ...prev, descricao: e.target.value }))}
+                          className="h-9"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Valor Mínimo</Label>
+                        <Input
+                          type="number"
+                          placeholder="R$ 0,00"
+                          value={filtrosExtrato.valorMinimo}
+                          onChange={(e) => setFiltrosExtrato(prev => ({ ...prev, valorMinimo: e.target.value }))}
+                          className="h-9"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Valor Máximo</Label>
+                        <Input
+                          type="number"
+                          placeholder="R$ 0,00"
+                          value={filtrosExtrato.valorMaximo}
+                          onChange={(e) => setFiltrosExtrato(prev => ({ ...prev, valorMaximo: e.target.value }))}
+                          className="h-9"
+                        />
+                      </div>
+
+                      <div className="col-span-full flex gap-2">
+                        <Button onClick={aplicarFiltros} className="flex-1">Aplicar Filtros</Button>
+                        <Button variant="outline" onClick={limparFiltros}>
+                          <X className="h-4 w-4 mr-2" />
+                          Limpar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <Card className="bg-green-50 dark:bg-green-950/20">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <ArrowDownLeft className="h-4 w-4 text-green-600" />
+                        Total de Entradas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-600">{formatCurrency(totalEntradas)}</div>
+                      <p className="text-xs text-muted-foreground mt-1">Recebimentos do dia</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-red-50 dark:bg-red-950/20">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <ArrowUpRight className="h-4 w-4 text-destructive" />
+                        Total de Saídas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-destructive">{formatCurrency(totalSaidas)}</div>
+                      <p className="text-xs text-muted-foreground mt-1">Pagamentos do dia</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className={saldoDia >= 0 ? "bg-blue-50 dark:bg-blue-950/20" : "bg-amber-50 dark:bg-amber-950/20"}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        Saldo do Dia
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className={`text-2xl font-bold ${saldoDia >= 0 ? 'text-blue-600' : 'text-amber-600'}`}>
+                        {formatCurrency(saldoDia)}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {saldoDia >= 0 ? 'Resultado positivo' : 'Resultado negativo'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {colunasVisiveis.tipo && <TableHead>Tipo</TableHead>}
+                        {colunasVisiveis.descricao && <TableHead>Descrição</TableHead>}
+                        {colunasVisiveis.categoria && <TableHead>Categoria</TableHead>}
+                        {colunasVisiveis.conta && <TableHead>Conta</TableHead>}
+                        {colunasVisiveis.fornecedor && <TableHead>Fornecedor/Cliente</TableHead>}
+                        {colunasVisiveis.valor && <TableHead className="text-right">Valor</TableHead>}
+                        {colunasVisiveis.dataEsperada && <TableHead>Data Esperada</TableHead>}
+                        {colunasVisiveis.dataRealizada && <TableHead>Data Realizada</TableHead>}
+                        {colunasVisiveis.status && <TableHead>Status</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {extratoFiltrado.map((item) => {
+                        const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
+                        const conta = contasBancarias.find(c => c.id === item.conta);
+                        const fornecedor = fornecedores.find(f => f.id === item.fornecedor);
+                        
+                        return (
+                          <TableRow key={item.id}>
+                            {colunasVisiveis.tipo && (
+                              <TableCell>
+                                <Badge variant={item.tipo === 'entrada' ? 'default' : 'destructive'} className="gap-1">
+                                  {item.tipo === 'entrada' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
+                                  {item.tipo === 'entrada' ? 'Entrada' : 'Saída'}
+                                </Badge>
+                              </TableCell>
+                            )}
+                            {colunasVisiveis.descricao && <TableCell>{item.descricao}</TableCell>}
+                            {colunasVisiveis.categoria && <TableCell><Badge variant="outline">{item.categoria}</Badge></TableCell>}
+                            {colunasVisiveis.conta && <TableCell>{conta?.nome.split(' - ')[1] || '-'}</TableCell>}
+                            {colunasVisiveis.fornecedor && <TableCell>{fornecedor?.nome || '-'}</TableCell>}
+                            {colunasVisiveis.valor && (
+                              <TableCell className={`text-right font-medium ${item.tipo === 'entrada' ? 'text-green-600' : 'text-destructive'}`}>
+                                {formatCurrency(item.valor)}
+                              </TableCell>
+                            )}
+                            {colunasVisiveis.dataEsperada && (
+                              <TableCell>{format(item.dataEsperada, "dd/MM/yyyy")}</TableCell>
+                            )}
+                            {colunasVisiveis.dataRealizada && (
+                              <TableCell>{item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-'}</TableCell>
+                            )}
+                            {colunasVisiveis.status && (
+                              <TableCell>
+                                <Badge variant={
+                                  status === 'pago' ? 'default' : 
+                                  status === 'atrasado' ? 'destructive' : 
+                                  'outline'
+                                }>
+                                  {status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo'}
+                                </Badge>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="planejamento" className="space-y-6">
-            <p className="text-muted-foreground">Conteúdo de Planejamento será implementado...</p>
+            <Card>
+              <CardHeader>
+                <CardTitle>Planejamento de Fluxo de Caixa</CardTitle>
+                <p className="text-sm text-muted-foreground">Busque e visualize movimentações financeiras por período</p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Período Pré-definido</Label>
+                    <Select value={periodoSelecionado} onValueChange={setPeriodoSelecionado}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecionar período" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Personalizado</SelectItem>
+                        <SelectItem value="hoje">Hoje</SelectItem>
+                        <SelectItem value="semana">Esta Semana</SelectItem>
+                        <SelectItem value="mes">Este Mês</SelectItem>
+                        <SelectItem value="trimestre">Este Trimestre</SelectItem>
+                        <SelectItem value="ano">Este Ano</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Data Inicial</Label>
+                    <Input
+                      type="date"
+                      value={dataInicial}
+                      onChange={(e) => setDataInicial(e.target.value)}
+                      disabled={periodoSelecionado !== ''}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Data Final</Label>
+                    <Input
+                      type="date"
+                      value={dataFinal}
+                      onChange={(e) => setDataFinal(e.target.value)}
+                      disabled={periodoSelecionado !== ''}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Conta Bancária</Label>
+                  <Select value={contaBancariaFiltro} onValueChange={setContaBancariaFiltro}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas as contas</SelectItem>
+                      {contasBancarias.map(conta => (
+                        <SelectItem key={conta.id} value={conta.id}>{conta.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button onClick={handleBuscarMovimentacoes} className="w-full">
+                  Buscar Movimentações
+                </Button>
+
+                {movimentacoesFiltradas.length > 0 && (
+                  <div className="space-y-4 mt-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Resultados da Busca</h3>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          <FileDown className="h-4 w-4 mr-2" />
+                          Exportar PDF
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <FileDown className="h-4 w-4 mr-2" />
+                          Exportar Excel
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Data</TableHead>
+                            <TableHead>Descrição</TableHead>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead>Categoria</TableHead>
+                            <TableHead className="text-right">Valor</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {movimentacoesFiltradas.map((mov) => (
+                            <TableRow key={mov.id}>
+                              <TableCell>{new Date(mov.data).toLocaleDateString('pt-BR')}</TableCell>
+                              <TableCell>{mov.descricao}</TableCell>
+                              <TableCell>
+                                <Badge variant={mov.tipo === 'receita' ? 'default' : 'destructive'}>
+                                  {mov.tipo === 'receita' ? 'Receita' : 'Despesa'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{mov.categoria}</Badge>
+                              </TableCell>
+                              <TableCell className={`text-right font-medium ${mov.tipo === 'receita' ? 'text-green-600' : 'text-destructive'}`}>
+                                {formatCurrency(mov.valor)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={
+                                  mov.status === 'pago' ? 'default' : 
+                                  mov.status === 'vencido' ? 'destructive' : 
+                                  'outline'
+                                }>
+                                  {mov.status === 'pago' ? 'Pago' : mov.status === 'vencido' ? 'Vencido' : 'Pendente'}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">Total de Receitas</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          {formatCurrency(movimentacoesFiltradas.filter(m => m.tipo === 'receita').reduce((acc, m) => acc + m.valor, 0))}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">Total de Despesas</p>
+                        <p className="text-2xl font-bold text-destructive">
+                          {formatCurrency(movimentacoesFiltradas.filter(m => m.tipo === 'despesa').reduce((acc, m) => acc + m.valor, 0))}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">Saldo Líquido</p>
+                        <p className={`text-2xl font-bold ${
+                          (movimentacoesFiltradas.filter(m => m.tipo === 'receita').reduce((acc, m) => acc + m.valor, 0) -
+                          movimentacoesFiltradas.filter(m => m.tipo === 'despesa').reduce((acc, m) => acc + m.valor, 0)) >= 0
+                          ? 'text-blue-600' : 'text-amber-600'
+                        }`}>
+                          {formatCurrency(
+                            movimentacoesFiltradas.filter(m => m.tipo === 'receita').reduce((acc, m) => acc + m.valor, 0) -
+                            movimentacoesFiltradas.filter(m => m.tipo === 'despesa').reduce((acc, m) => acc + m.valor, 0)
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
