@@ -40,7 +40,8 @@ import {
   ChartBar,
   FileText,
   TrendingUp,
-  CreditCard
+  CreditCard,
+  ChevronDown
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -113,6 +114,7 @@ export function AppSidebar() {
                         <SidebarMenuButton isActive={location.pathname.startsWith("/financeiro")}>
                           <item.icon className="h-4 w-4" />
                           <span>{item.title}</span>
+                          <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
