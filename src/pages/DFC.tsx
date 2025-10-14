@@ -928,6 +928,59 @@ export default function DFC() {
           </TabsContent>
 
           <TabsContent value="planejamento" className="space-y-6">
+            {/* Cards de Consulta */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="border-l-4 border-l-green-500">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 text-green-600">
+                    <ArrowDownLeft className="h-5 w-5" />
+                    <CardTitle className="text-base font-medium">A Receber</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="text-3xl font-bold text-green-600">
+                    {formatCurrency(valoresFinanceiros.aReceber)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Próximos 30 dias</p>
+                  <p className="text-xs text-muted-foreground">{valoresFinanceiros.titulosAberto} títulos em aberto</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-red-500">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 text-destructive">
+                    <ArrowUpRight className="h-5 w-5" />
+                    <CardTitle className="text-base font-medium">A Pagar</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="text-3xl font-bold text-destructive">
+                    {formatCurrency(valoresFinanceiros.aPagar)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Próximos 30 dias</p>
+                  <p className="text-xs text-muted-foreground">{valoresFinanceiros.contasVencer} contas a vencer</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-blue-500">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 text-blue-600">
+                    <DollarSign className="h-5 w-5" />
+                    <CardTitle className="text-base font-medium">Saldo Previsto</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="text-3xl font-bold text-blue-600">
+                    {formatCurrency(valoresFinanceiros.aReceber - valoresFinanceiros.aPagar)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Saldo final projetado</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(((valoresFinanceiros.aReceber - valoresFinanceiros.aPagar) / valoresFinanceiros.aPagar) * 100).toFixed(1)}% de crescimento
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
             <Card>
               <CardHeader>
                 <CardTitle>Planejamento de Fluxo de Caixa</CardTitle>
