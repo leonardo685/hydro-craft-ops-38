@@ -9,7 +9,15 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,6 +74,11 @@ const menuItems = [
     title: "Financeiro",
     url: "/financeiro",
     icon: CreditCard,
+    submenu: [
+      { title: "Dashboard", url: "/financeiro/dashboard", icon: ChartBar },
+      { title: "DRE", url: "/financeiro/dre", icon: TrendingUp },
+      { title: "DFC", url: "/financeiro/dfc", icon: FileText },
+    ],
   },
 ];
 
@@ -94,19 +107,51 @@ export function AppSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname.startsWith(item.url)}
-                    className="transition-smooth hover:bg-sidebar-accent"
-                  >
-                    <button
-                      onClick={() => navigate(item.url)}
-                      className="flex items-center gap-3 w-full text-left"
+                  {item.submenu ? (
+                    <Collapsible defaultOpen={location.pathname.startsWith(item.url)} className="group/collapsible">
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton className="transition-smooth hover:bg-sidebar-accent">
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                          <ChevronUp className="ml-auto h-4 w-4 transition-transform group-data-[state=closed]/collapsible:rotate-180" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {item.submenu.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={location.pathname === subItem.url}
+                              >
+                                <button
+                                  onClick={() => navigate(subItem.url)}
+                                  className="flex items-center gap-3 w-full text-left"
+                                >
+                                  <subItem.icon className="h-4 w-4" />
+                                  <span>{subItem.title}</span>
+                                </button>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ) : (
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname.startsWith(item.url)}
+                      className="transition-smooth hover:bg-sidebar-accent"
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </button>
-                  </SidebarMenuButton>
+                      <button
+                        onClick={() => navigate(item.url)}
+                        className="flex items-center gap-3 w-full text-left"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </button>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
