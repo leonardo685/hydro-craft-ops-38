@@ -29,6 +29,8 @@ export default function DFC() {
   const [dataInicial, setDataInicial] = useState("");
   const [dataFinal, setDataFinal] = useState("");
   const [periodoSelecionado, setPeriodoSelecionado] = useState("");
+  const [dfcDataInicio, setDfcDataInicio] = useState<Date | null>(null);
+  const [dfcDataFim, setDfcDataFim] = useState<Date | null>(null);
   const [contaBancariaFiltro, setContaBancariaFiltro] = useState("todas");
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
 
@@ -415,20 +417,66 @@ export default function DFC() {
 
           <TabsContent value="dfc" className="space-y-6">
             <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Demonstração Detalhada do Fluxo de Caixa</CardTitle>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <FileDown className="h-4 w-4 mr-2" />PDF
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <FileDown className="h-4 w-4 mr-2" />Excel
-                    </Button>
+              <CardHeader className="space-y-4">
+                <CardTitle>Demonstração Detalhada do Fluxo de Caixa</CardTitle>
+                
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label>Data Início:</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-[200px] justify-start text-left font-normal",
+                            !dfcDataInicio && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dfcDataInicio ? format(dfcDataInicio, "dd/MM/yyyy") : "Selecionar data"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dfcDataInicio || undefined}
+                          onSelect={(date) => setDfcDataInicio(date || null)}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Label>Data Fim:</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-[200px] justify-start text-left font-normal",
+                            !dfcDataFim && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dfcDataFim ? format(dfcDataFim, "dd/MM/yyyy") : "Selecionar data"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dfcDataFim || undefined}
+                          onSelect={(date) => setDfcDataFim(date || null)}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -462,6 +510,15 @@ export default function DFC() {
                     ))}
                   </TableBody>
                 </Table>
+
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button variant="outline" size="sm">
+                    <FileDown className="h-4 w-4 mr-2" />PDF
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <FileDown className="h-4 w-4 mr-2" />Excel
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
