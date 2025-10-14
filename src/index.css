@@ -76,6 +76,12 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 0 0% 90%;
     --sidebar-ring: 0 85% 55%;
+
+    /* Table Design System */
+    --ds-gray-900: 0 0% 40%;
+    --ds-gray-alpha-400: 0 0% 0% / 0.08;
+    --ds-background-100: 0 0% 100%;
+    --ds-background-200: 0 0% 98%;
   }
 
   .dark {
@@ -114,6 +120,12 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Table Design System Dark */
+    --ds-gray-900: 0 0% 63%;
+    --ds-gray-alpha-400: 0 0% 100% / 0.14;
+    --ds-background-100: 0 0% 4%;
+    --ds-background-200: 0 0% 0%;
   }
 }
 

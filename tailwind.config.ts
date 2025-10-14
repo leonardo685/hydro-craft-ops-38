@@ -69,7 +69,11 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				'gray-900': 'hsl(var(--ds-gray-900))',
+				'gray-alpha-400': 'hsl(var(--ds-gray-alpha-400))',
+				'background-100': 'hsl(var(--ds-background-100))',
+				'background-200': 'hsl(var(--ds-background-200))'
 			},
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',
