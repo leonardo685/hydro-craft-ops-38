@@ -31,6 +31,11 @@ export default function EmitirNotaModal({
   const [anexoNota, setAnexoNota] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
+  
+  // Estados para contas a receber
+  const [dataVencimento, setDataVencimento] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [formaPagamento, setFormaPagamento] = useState('boleto');
+  const [observacoesReceber, setObservacoesReceber] = useState('');
 
   // Extrair dados da aprovação
   const extrairDadosAprovacao = (descricao: string) => {
@@ -204,13 +209,54 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
     onOpenChange(false);
   };
 
-  const handleFinalizarContasReceber = () => {
-    onConfirm();
-    onOpenChange(false);
-    
-    // Reset
-    setEtapa('dados');
-    setAnexoNota(null);
+  const handleFinalizarContasReceber = async () => {
+    try {
+      // Salvar lançamento em contas a receber
+      const { error } = await supabase
+        .from('contas_receber')
+        .insert({
+          orcamento_id: orcamento.id,
+          numero_nf: numeroNF,
+          cliente_nome: orcamento.cliente_nome,
+          valor: orcamento.valor,
+          data_vencimento: dataVencimento,
+          forma_pagamento: formaPagamento,
+          observacoes: observacoesReceber,
+          status: 'pendente'
+        });
+      
+      if (error) {
+        console.error('Erro ao criar lançamento em contas a receber:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao criar lançamento em contas a receber",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      toast({
+        title: "Lançamento criado!",
+        description: "Lançamento em contas a receber criado com sucesso"
+      });
+      
+      onConfirm();
+      onOpenChange(false);
+      
+      // Reset
+      setEtapa('dados');
+      setAnexoNota(null);
+      setDataVencimento(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+      setFormaPagamento('boleto');
+      setObservacoesReceber('');
+    } catch (error) {
+      console.error('Erro ao finalizar lançamento:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao finalizar lançamento",
+        variant: "destructive"
+      });
+    }
   };
 
   if (!orcamento) return null;
@@ -394,7 +440,8 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                     <Label className="text-sm font-medium">Data de Vencimento</Label>
                     <Input 
                       type="date" 
-                      defaultValue={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                      value={dataVencimento}
+                      onChange={(e) => setDataVencimento(e.target.value)}
                       className="font-medium"
                     />
                   </div>
@@ -402,7 +449,11 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Forma de Pagamento</Label>
-                  <select className="w-full p-3 border border-input rounded-md bg-background font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                  <select 
+                    className="w-full p-3 border border-input rounded-md bg-background font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    value={formaPagamento}
+                    onChange={(e) => setFormaPagamento(e.target.value)}
+                  >
                     <option value="boleto">Boleto Bancário</option>
                     <option value="pix">PIX</option>
                     <option value="cartao">Cartão de Crédito</option>
@@ -416,6 +467,8 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                   <Textarea 
                     placeholder="Observações adicionais sobre o recebimento..."
                     className="min-h-[100px] resize-none"
+                    value={observacoesReceber}
+                    onChange={(e) => setObservacoesReceber(e.target.value)}
                   />
                 </div>
               </div>

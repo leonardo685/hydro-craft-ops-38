@@ -65,6 +65,62 @@ export type Database = {
         }
         Relationships: []
       }
+      contas_receber: {
+        Row: {
+          cliente_nome: string
+          created_at: string
+          data_emissao: string
+          data_pagamento: string | null
+          data_vencimento: string
+          forma_pagamento: string
+          id: string
+          numero_nf: string
+          observacoes: string | null
+          orcamento_id: string | null
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          cliente_nome: string
+          created_at?: string
+          data_emissao?: string
+          data_pagamento?: string | null
+          data_vencimento: string
+          forma_pagamento: string
+          id?: string
+          numero_nf: string
+          observacoes?: string | null
+          orcamento_id?: string | null
+          status?: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          cliente_nome?: string
+          created_at?: string
+          data_emissao?: string
+          data_pagamento?: string | null
+          data_vencimento?: string
+          forma_pagamento?: string
+          id?: string
+          numero_nf?: string
+          observacoes?: string | null
+          orcamento_id?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_receber_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresas_nfe: {
         Row: {
           cnpj: string
