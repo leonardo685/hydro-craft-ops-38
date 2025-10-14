@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { TrendingUp, TrendingDown, DollarSign, Activity, Edit, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, FileDown } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Activity, Edit, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, FileDown, ChevronDown, ChevronUp, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
@@ -169,6 +169,10 @@ export default function Financeiro() {
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [selectedQuarter, setSelectedQuarter] = useState<string>('Q1');
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
+
+  // Estados para collapse das seções
+  const [colunasVisiveisExpanded, setColunasVisiveisExpanded] = useState(true);
+  const [filtrosExpanded, setFiltrosExpanded] = useState(true);
 
   const colunasVisiveis = {
     tipo: selectedExtratoColumns.some(col => col.value === 'tipo'),
@@ -1875,229 +1879,280 @@ export default function Financeiro() {
                   {/* Controle de Colunas */}
                   <div className="px-6 pb-4 border-b">
                     <div className="space-y-4">
-                      <Label className="text-sm font-medium">Colunas Visíveis</Label>
-                      <MultipleSelector
-                        value={selectedExtratoColumns}
-                        onChange={setSelectedExtratoColumns}
-                        defaultOptions={extratoColumnOptions}
-                        placeholder="Selecione as colunas..."
-                        emptyIndicator={
-                          <p className="text-center text-sm text-muted-foreground">Nenhuma coluna encontrada.</p>
-                        }
-                      />
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Colunas Visíveis</Label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setColunasVisiveisExpanded(!colunasVisiveisExpanded)}
+                          className="h-8 px-2"
+                        >
+                          {colunasVisiveisExpanded ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      
+                      {colunasVisiveisExpanded && (
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-2">
+                            {selectedExtratoColumns.map((col) => (
+                              <Badge 
+                                key={col.value} 
+                                variant="destructive" 
+                                className="px-3 py-1 cursor-pointer hover:bg-destructive/80"
+                                onClick={() => {
+                                  setSelectedExtratoColumns(prev => prev.filter(c => c.value !== col.value));
+                                }}
+                              >
+                                {col.label}
+                                <X className="h-3 w-3 ml-1" />
+                              </Badge>
+                            ))}
+                          </div>
+                          <MultipleSelector
+                            value={selectedExtratoColumns}
+                            onChange={setSelectedExtratoColumns}
+                            defaultOptions={extratoColumnOptions}
+                            placeholder="Selecione as colunas..."
+                            emptyIndicator={
+                              <p className="text-center text-sm text-muted-foreground">Nenhuma coluna encontrada.</p>
+                            }
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Filtros do Extrato */}
                   <div className="px-6 pb-4 border-b">
                     <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-muted-foreground">Filtros</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Data Início e Fim */}
-                        <div className="flex gap-2">
-                          <div className="flex-1">
-                            <Label className="text-xs">Data Início</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full justify-start text-left font-normal text-xs h-8",
-                                    !filtrosExtrato.dataInicio && "text-muted-foreground"
-                                  )}
-                                >
-                                  <CalendarIcon className="mr-2 h-3 w-3" />
-                                  {filtrosExtrato.dataInicio ? format(filtrosExtrato.dataInicio, "dd/MM/yyyy") : <span>Início</span>}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={filtrosExtrato.dataInicio}
-                                  onSelect={(date) => setFiltrosExtrato(prev => ({ ...prev, dataInicio: date }))}
-                                  initialFocus
-                                  className={cn("p-3 pointer-events-auto")}
-                                />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                          <div className="flex-1">
-                            <Label className="text-xs">Data Fim</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full justify-start text-left font-normal text-xs h-8",
-                                    !filtrosExtrato.dataFim && "text-muted-foreground"
-                                  )}
-                                >
-                                  <CalendarIcon className="mr-2 h-3 w-3" />
-                                  {filtrosExtrato.dataFim ? format(filtrosExtrato.dataFim, "dd/MM/yyyy") : <span>Fim</span>}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={filtrosExtrato.dataFim}
-                                  onSelect={(date) => setFiltrosExtrato(prev => ({ ...prev, dataFim: date }))}
-                                  initialFocus
-                                  className={cn("p-3 pointer-events-auto")}
-                                />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                        </div>
-
-                        {/* Valor Mínimo e Máximo */}
-                        <div className="flex gap-2">
-                          <div className="flex-1">
-                            <Label className="text-xs">Valor Mín.</Label>
-                            <Input
-                              placeholder="R$ 0,00"
-                              type="number"
-                              step="0.01"
-                              className="h-8 text-xs"
-                              value={filtrosExtrato.valorMinimo}
-                              onChange={(e) => setFiltrosExtrato(prev => ({ ...prev, valorMinimo: e.target.value }))}
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <Label className="text-xs">Valor Máx.</Label>
-                            <Input
-                              placeholder="R$ 0,00"
-                              type="number"
-                              step="0.01"
-                              className="h-8 text-xs"
-                              value={filtrosExtrato.valorMaximo}
-                              onChange={(e) => setFiltrosExtrato(prev => ({ ...prev, valorMaximo: e.target.value }))}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Conta */}
-                        <div>
-                          <Label className="text-xs">Conta</Label>
-                          <Select value={filtrosExtrato.conta} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, conta: value }))}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Todas as contas" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todas">Todas as contas</SelectItem>
-                              {contasBancarias.map((conta) => (
-                                <SelectItem key={conta.id} value={conta.id}>
-                                  {conta.nome}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Categoria */}
-                        <div>
-                          <Label className="text-xs">Categoria</Label>
-                          <Select value={filtrosExtrato.categoria} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, categoria: value }))}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Todas categorias" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todas">Todas categorias</SelectItem>
-                              {getCategoriasForSelect().map(categoria => (
-                                <SelectItem key={categoria.value} value={categoria.value}>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant={categoria.tipo === 'mae' ? 'default' : 'secondary'} className="text-xs">
-                                      {categoria.tipo === 'mae' ? 'Mãe' : 'Filha'}
-                                    </Badge>
-                                    <span className="text-xs">{categoria.label}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Descrição */}
-                        <div>
-                          <Label className="text-xs">Descrição</Label>
-                          <Input
-                            placeholder="Buscar descrição..."
-                            className="h-8 text-xs"
-                            value={filtrosExtrato.descricao}
-                            onChange={(e) => setFiltrosExtrato(prev => ({ ...prev, descricao: e.target.value }))}
-                          />
-                        </div>
-
-                        {/* Tipo */}
-                        <div>
-                          <Label className="text-xs">Tipo</Label>
-                          <Select value={filtrosExtrato.tipo} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, tipo: value }))}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Todos os tipos" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">Todos os tipos</SelectItem>
-                              <SelectItem value="entrada">Entrada</SelectItem>
-                              <SelectItem value="saida">Saída</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Status */}
-                        <div>
-                          <Label className="text-xs">Status</Label>
-                          <Select value={filtrosExtrato.status} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, status: value }))}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Todos os status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">Todos os status</SelectItem>
-                              <SelectItem value="pago">Pago</SelectItem>
-                              <SelectItem value="no_prazo">No Prazo</SelectItem>
-                              <SelectItem value="atrasado">Atrasado</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Fornecedor */}
-                        <div>
-                          <Label className="text-xs">Fornecedor</Label>
-                          <Select value={filtrosExtrato.fornecedor} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, fornecedor: value }))}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Todos fornecedores" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">Todos fornecedores</SelectItem>
-                              {fornecedores.map((fornecedor) => (
-                                <SelectItem key={fornecedor.id} value={fornecedor.id}>
-                                  <div className="flex items-center gap-2">
-                                    <Badge 
-                                      variant={
-                                        fornecedor.tipo === 'cliente' ? 'default' : 
-                                        fornecedor.tipo === 'fornecedor' ? 'secondary' : 'outline'
-                                      } 
-                                      className="text-xs"
-                                    >
-                                      {fornecedor.tipo === 'cliente' ? 'Cliente' : 
-                                       fornecedor.tipo === 'fornecedor' ? 'Fornecedor' : 'Funcionário'}
-                                    </Badge>
-                                    <span className="text-xs">{fornecedor.nome}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Botões de Ação */}
-                        <div className="flex gap-2 items-end">
-                          <Button size="sm" className="h-8 text-xs" onClick={aplicarFiltros}>
-                            Aplicar Filtros
-                          </Button>
-                          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={limparFiltros}>
-                            Limpar
-                          </Button>
-                        </div>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-muted-foreground">Filtros</h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setFiltrosExpanded(!filtrosExpanded)}
+                          className="h-8 px-2"
+                        >
+                          {filtrosExpanded ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
+
+                      {filtrosExpanded && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {/* Data Início e Fim */}
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <Label className="text-xs">Data Início</Label>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full justify-start text-left font-normal text-xs h-8",
+                                      !filtrosExtrato.dataInicio && "text-muted-foreground"
+                                    )}
+                                  >
+                                    <CalendarIcon className="mr-2 h-3 w-3" />
+                                    {filtrosExtrato.dataInicio ? format(filtrosExtrato.dataInicio, "dd/MM/yyyy") : <span>Início</span>}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={filtrosExtrato.dataInicio}
+                                    onSelect={(date) => setFiltrosExtrato(prev => ({ ...prev, dataInicio: date }))}
+                                    initialFocus
+                                    className={cn("p-3 pointer-events-auto")}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                            <div className="flex-1">
+                              <Label className="text-xs">Data Fim</Label>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full justify-start text-left font-normal text-xs h-8",
+                                      !filtrosExtrato.dataFim && "text-muted-foreground"
+                                    )}
+                                  >
+                                    <CalendarIcon className="mr-2 h-3 w-3" />
+                                    {filtrosExtrato.dataFim ? format(filtrosExtrato.dataFim, "dd/MM/yyyy") : <span>Fim</span>}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={filtrosExtrato.dataFim}
+                                    onSelect={(date) => setFiltrosExtrato(prev => ({ ...prev, dataFim: date }))}
+                                    initialFocus
+                                    className={cn("p-3 pointer-events-auto")}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          </div>
+
+                          {/* Valor Mínimo e Máximo */}
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <Label className="text-xs">Valor Mín.</Label>
+                              <Input
+                                placeholder="R$ 0,00"
+                                type="number"
+                                step="0.01"
+                                className="h-8 text-xs"
+                                value={filtrosExtrato.valorMinimo}
+                                onChange={(e) => setFiltrosExtrato(prev => ({ ...prev, valorMinimo: e.target.value }))}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <Label className="text-xs">Valor Máx.</Label>
+                              <Input
+                                placeholder="R$ 0,00"
+                                type="number"
+                                step="0.01"
+                                className="h-8 text-xs"
+                                value={filtrosExtrato.valorMaximo}
+                                onChange={(e) => setFiltrosExtrato(prev => ({ ...prev, valorMaximo: e.target.value }))}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Conta */}
+                          <div>
+                            <Label className="text-xs">Conta</Label>
+                            <Select value={filtrosExtrato.conta} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, conta: value }))}>
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Todas as contas" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="todas">Todas as contas</SelectItem>
+                                {contasBancarias.map((conta) => (
+                                  <SelectItem key={conta.id} value={conta.id}>
+                                    {conta.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Categoria */}
+                          <div>
+                            <Label className="text-xs">Categoria</Label>
+                            <Select value={filtrosExtrato.categoria} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, categoria: value }))}>
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Todas categorias" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="todas">Todas categorias</SelectItem>
+                                {getCategoriasForSelect().map(categoria => (
+                                  <SelectItem key={categoria.value} value={categoria.value}>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant={categoria.tipo === 'mae' ? 'default' : 'secondary'} className="text-xs">
+                                        {categoria.tipo === 'mae' ? 'Mãe' : 'Filha'}
+                                      </Badge>
+                                      <span className="text-xs">{categoria.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Descrição */}
+                          <div>
+                            <Label className="text-xs">Descrição</Label>
+                            <Input
+                              placeholder="Buscar descrição..."
+                              className="h-8 text-xs"
+                              value={filtrosExtrato.descricao}
+                              onChange={(e) => setFiltrosExtrato(prev => ({ ...prev, descricao: e.target.value }))}
+                            />
+                          </div>
+
+                          {/* Tipo */}
+                          <div>
+                            <Label className="text-xs">Tipo</Label>
+                            <Select value={filtrosExtrato.tipo} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, tipo: value }))}>
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Todos os tipos" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="todos">Todos os tipos</SelectItem>
+                                <SelectItem value="entrada">Entrada</SelectItem>
+                                <SelectItem value="saida">Saída</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Status */}
+                          <div>
+                            <Label className="text-xs">Status</Label>
+                            <Select value={filtrosExtrato.status} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, status: value }))}>
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Todos os status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="todos">Todos os status</SelectItem>
+                                <SelectItem value="pago">Pago</SelectItem>
+                                <SelectItem value="no_prazo">No Prazo</SelectItem>
+                                <SelectItem value="atrasado">Atrasado</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Fornecedor */}
+                          <div>
+                            <Label className="text-xs">Fornecedor</Label>
+                            <Select value={filtrosExtrato.fornecedor} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, fornecedor: value }))}>
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Todos fornecedores" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="todos">Todos fornecedores</SelectItem>
+                                {fornecedores.map((fornecedor) => (
+                                  <SelectItem key={fornecedor.id} value={fornecedor.id}>
+                                    <div className="flex items-center gap-2">
+                                      <Badge 
+                                        variant={
+                                          fornecedor.tipo === 'cliente' ? 'default' : 
+                                          fornecedor.tipo === 'fornecedor' ? 'secondary' : 'outline'
+                                        } 
+                                        className="text-xs"
+                                      >
+                                        {fornecedor.tipo === 'cliente' ? 'Cliente' : 
+                                         fornecedor.tipo === 'fornecedor' ? 'Fornecedor' : 'Funcionário'}
+                                      </Badge>
+                                      <span className="text-xs">{fornecedor.nome}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Botões de Ação */}
+                          <div className="flex gap-2 items-end">
+                            <Button size="sm" className="h-8 text-xs" onClick={aplicarFiltros}>
+                              Aplicar Filtros
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={limparFiltros}>
+                              Limpar
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
