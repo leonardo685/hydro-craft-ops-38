@@ -277,7 +277,10 @@ export default function DFC() {
   });
 
   const handleLancamento = () => {
-    if (!lancamentoForm.valor || !lancamentoForm.descricao) return;
+    if (!lancamentoForm.valor || !lancamentoForm.descricao) {
+      toast.error("Preencha o valor e a descrição do lançamento");
+      return;
+    }
 
     const novoLancamento = {
       id: extratoData.length + 1,
@@ -298,6 +301,8 @@ export default function DFC() {
     };
 
     setExtratoData(prev => [...prev, novoLancamento]);
+    toast.success("Lançamento adicionado com sucesso!");
+    
     setLancamentoForm({
       tipo: 'entrada',
       valor: '',
