@@ -512,10 +512,22 @@ export default function DFC() {
                 </Table>
 
                 <div className="flex justify-end gap-2 pt-4 border-t">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => {
+                    // Implementar exportação para PDF
+                    const dataInicio = dfcDataInicio ? format(dfcDataInicio, "dd/MM/yyyy") : "Não definida";
+                    const dataFim = dfcDataFim ? format(dfcDataFim, "dd/MM/yyyy") : "Não definida";
+                    console.log(`Exportando DFC para PDF - Período: ${dataInicio} a ${dataFim}`);
+                    alert(`Funcionalidade de exportação PDF será implementada.\nPeríodo: ${dataInicio} a ${dataFim}`);
+                  }}>
                     <FileDown className="h-4 w-4 mr-2" />PDF
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => {
+                    // Implementar exportação para Excel
+                    const dataInicio = dfcDataInicio ? format(dfcDataInicio, "dd/MM/yyyy") : "Não definida";
+                    const dataFim = dfcDataFim ? format(dfcDataFim, "dd/MM/yyyy") : "Não definida";
+                    console.log(`Exportando DFC para Excel - Período: ${dataInicio} a ${dataFim}`);
+                    alert(`Funcionalidade de exportação Excel será implementada.\nPeríodo: ${dataInicio} a ${dataFim}`);
+                  }}>
                     <FileDown className="h-4 w-4 mr-2" />Excel
                   </Button>
                 </div>
