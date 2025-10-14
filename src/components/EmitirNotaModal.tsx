@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Copy, FileText, Calendar, User, FileImage, X, AlertCircle, DollarSign, CreditCard, Eye } from "lucide-react";
+import { Upload, Copy, FileText, Calendar, User, FileImage, X, AlertCircle, DollarSign, CreditCard, Eye, Download } from "lucide-react";
 
 interface EmitirNotaModalProps {
   open: boolean;
@@ -123,9 +123,30 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
     }
   };
 
-  const handleVisualizarPedido = () => {
+  const handleVisualizarPedido = async () => {
     if (dadosAprovacao.anexoUrl) {
-      window.open(dadosAprovacao.anexoUrl, '_blank');
+      try {
+        // Tentar fazer download direto do arquivo
+        const response = await fetch(dadosAprovacao.anexoUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pedido-${orcamento.numero}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast({
+          title: "Download iniciado",
+          description: "O PDF do pedido está sendo baixado"
+        });
+      } catch (error) {
+        console.error('Erro ao baixar PDF:', error);
+        // Fallback: tentar abrir em nova aba
+        window.open(dadosAprovacao.anexoUrl, '_blank');
+      }
     }
   };
 
@@ -250,8 +271,8 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                       onClick={handleVisualizarPedido}
                       className="flex items-center gap-2"
                     >
-                      <Eye className="h-4 w-4" />
-                      Visualizar Pedido
+                      <Download className="h-4 w-4" />
+                      Baixar Pedido (PDF)
                     </Button>
                   )}
                 </div>
