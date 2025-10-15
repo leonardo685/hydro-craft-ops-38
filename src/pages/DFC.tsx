@@ -458,16 +458,16 @@ export default function DFC() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Resultado do Mês</CardTitle>
+              <CardTitle className="text-sm font-medium text-blue-900 dark:text-blue-100">Resultado do Mês</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-xl font-bold ${(entradasMesAtual - saidasMesAtual) >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+              <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
                 {formatCurrency(entradasMesAtual - saidasMesAtual)}
               </div>
-              <Badge variant="outline" className="text-xs mt-1">
-                {(entradasMesAtual - saidasMesAtual) >= 0 ? 'Positivo' : 'Negativo'}
+              <Badge variant="outline" className="text-xs mt-1 border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300">
+                {(entradasMesAtual - saidasMesAtual) >= 0 ? 'Resultado positivo' : 'Resultado negativo'}
               </Badge>
             </CardContent>
           </Card>
