@@ -191,7 +191,7 @@ export default function DFC() {
   const entradasMesAtual = useMemo(() => {
     return lancamentos
       .filter(l => {
-        const data = new Date(l.dataEsperada);
+        const data = new Date(l.dataEmissao);
         return l.tipo === 'entrada' && l.pago && l.dataRealizada && data >= primeiroDiaMes && data <= ultimoDiaMes;
       })
       .reduce((acc, l) => acc + l.valor, 0);
@@ -200,7 +200,7 @@ export default function DFC() {
   const saidasMesAtual = useMemo(() => {
     return lancamentos
       .filter(l => {
-        const data = new Date(l.dataEsperada);
+        const data = new Date(l.dataEmissao);
         return l.tipo === 'saida' && l.pago && l.dataRealizada && data >= primeiroDiaMes && data <= ultimoDiaMes;
       })
       .reduce((acc, l) => acc + l.valor, 0);
