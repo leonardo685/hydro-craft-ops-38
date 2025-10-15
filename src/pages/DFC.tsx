@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign } from "lucide-react";
+import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign, Check, Minus } from "lucide-react";
 import { useState } from "react";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
@@ -40,6 +41,14 @@ export default function DFC() {
   const [contaBancariaFiltro, setContaBancariaFiltro] = useState("todas");
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
   const [planejamentoExpanded, setPlanejamentoExpanded] = useState(true);
+  
+  // Estados para confirmação de recebimento/pagamento
+  const [confirmarPagamentoDialog, setConfirmarPagamentoDialog] = useState<{
+    open: boolean;
+    lancamentoId: string;
+    tipo: 'confirmar' | 'cancelar';
+  }>({ open: false, lancamentoId: '', tipo: 'confirmar' });
+  const [dataRecebimento, setDataRecebimento] = useState<Date>(new Date());
 
   const [valoresFinanceiros, setValoresFinanceiros] = useState({
     aReceber: 0,
@@ -340,6 +349,35 @@ export default function DFC() {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
+  // Funções para confirmação de recebimento/pagamento
+  const handleConfirmarRecebimento = async (lancamentoId: string, dataRecebimento: Date) => {
+    const sucesso = await atualizarLancamento(lancamentoId, {
+      pago: true,
+      dataRealizada: dataRecebimento
+    });
+    
+    if (sucesso) {
+      toast.success("Recebimento/Pagamento confirmado!");
+      setConfirmarPagamentoDialog({ open: false, lancamentoId: '', tipo: 'confirmar' });
+    } else {
+      toast.error("Erro ao confirmar recebimento/pagamento");
+    }
+  };
+
+  const handleCancelarPagamento = async (lancamentoId: string) => {
+    const sucesso = await atualizarLancamento(lancamentoId, {
+      pago: false,
+      dataRealizada: null
+    });
+    
+    if (sucesso) {
+      toast.success("Pagamento cancelado. Status atualizado.");
+      setConfirmarPagamentoDialog({ open: false, lancamentoId: '', tipo: 'cancelar' });
+    } else {
+      toast.error("Erro ao cancelar pagamento");
+    }
+  };
+
   // Calcular receitas e despesas operacionais a partir dos lançamentos
   const receitasOperacionais = useMemo(() => {
     const totalReceitas = lancamentos
@@ -360,6 +398,9 @@ export default function DFC() {
       { item: "Total Despesas Operacionais", valor: -totalDespesas, isTotal: true }
     ];
   }, [lancamentos]);
+
+  // Obter o lançamento atual para exibir informações no modal
+  const lancamentoAtual = lancamentos.find(l => l.id === confirmarPagamentoDialog.lancamentoId);
 
   return (
     <AppLayout>
@@ -1054,6 +1095,7 @@ export default function DFC() {
                         {colunasVisiveis.dataEsperada && <TableHead>Data Esperada</TableHead>}
                         {colunasVisiveis.dataRealizada && <TableHead>Data Realizada</TableHead>}
                         {colunasVisiveis.status && <TableHead>Status</TableHead>}
+                        <TableHead className="text-center">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1098,6 +1140,40 @@ export default function DFC() {
                                 </Badge>
                               </TableCell>
                             )}
+                            <TableCell className="text-center">
+                              {!item.pago ? (
+                                <Button
+                                  size="icon"
+                                  variant="outline"
+                                  className="h-8 w-8 border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-950"
+                                  onClick={() => {
+                                    setConfirmarPagamentoDialog({
+                                      open: true,
+                                      lancamentoId: item.id,
+                                      tipo: 'confirmar'
+                                    });
+                                    setDataRecebimento(new Date());
+                                  }}
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="icon"
+                                  variant="outline"
+                                  className="h-8 w-8 border-red-500 text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
+                                  onClick={() => {
+                                    setConfirmarPagamentoDialog({
+                                      open: true,
+                                      lancamentoId: item.id,
+                                      tipo: 'cancelar'
+                                    });
+                                  }}
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </TableCell>
                           </TableRow>
                         );
                       })}
@@ -1336,6 +1412,88 @@ export default function DFC() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modal de Confirmação de Recebimento/Pagamento */}
+      <Dialog 
+        open={confirmarPagamentoDialog.open && confirmarPagamentoDialog.tipo === 'confirmar'} 
+        onOpenChange={(open) => !open && setConfirmarPagamentoDialog({ open: false, lancamentoId: '', tipo: 'confirmar' })}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {lancamentoAtual?.tipo === 'entrada' ? 'Confirmar Recebimento' : 'Confirmar Pagamento'}
+            </DialogTitle>
+            <DialogDescription>
+              Confirme a data em que o valor foi {lancamentoAtual?.tipo === 'entrada' ? 'recebido' : 'pago'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <p className="text-sm text-muted-foreground">{lancamentoAtual?.descricao}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Valor</Label>
+              <p className="text-sm font-medium">{lancamentoAtual && formatCurrency(lancamentoAtual.valor)}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Data de {lancamentoAtual?.tipo === 'entrada' ? 'Recebimento' : 'Pagamento'}</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dataRecebimento ? format(dataRecebimento, "dd/MM/yyyy") : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dataRecebimento}
+                    onSelect={(date) => date && setDataRecebimento(date)}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setConfirmarPagamentoDialog({ open: false, lancamentoId: '', tipo: 'confirmar' })}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => handleConfirmarRecebimento(confirmarPagamentoDialog.lancamentoId, dataRecebimento)}
+            >
+              Confirmar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Cancelamento de Pagamento */}
+      <AlertDialog 
+        open={confirmarPagamentoDialog.open && confirmarPagamentoDialog.tipo === 'cancelar'}
+        onOpenChange={(open) => !open && setConfirmarPagamentoDialog({ open: false, lancamentoId: '', tipo: 'cancelar' })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Pagamento Não Efetuado?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação marcará o lançamento "{lancamentoAtual?.descricao}" como não pago e removerá a data de realização.
+              O status será recalculado com base na data esperada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Não</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleCancelarPagamento(confirmarPagamentoDialog.lancamentoId)}>
+              Sim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }
