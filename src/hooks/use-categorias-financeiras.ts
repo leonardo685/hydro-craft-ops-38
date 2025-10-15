@@ -9,6 +9,7 @@ export interface CategoriaFinanceira {
   tipo: 'mae' | 'filha';
   categoriaMaeId?: string;
   cor?: string;
+  classificacao: 'entrada' | 'saida';
 }
 
 // Função para gerar cor aleatória em HSL
@@ -39,7 +40,8 @@ export const useCategoriasFinanceiras = () => {
         nome: cat.nome,
         tipo: (cat.tipo === 'mae' ? 'mae' : 'filha') as 'mae' | 'filha',
         categoriaMaeId: cat.categoria_mae_id,
-        cor: cat.cor
+        cor: cat.cor,
+        classificacao: (cat.classificacao || 'entrada') as 'entrada' | 'saida'
       }));
 
       setCategorias(categoriasFormatadas);
@@ -95,7 +97,7 @@ export const useCategoriasFinanceiras = () => {
   );
 
   const adicionarCategoria = async (
-    categoria: Omit<CategoriaFinanceira, 'id' | 'codigo'>
+    categoria: Omit<CategoriaFinanceira, 'id' | 'codigo' | 'cor'>
   ): Promise<CategoriaFinanceira | null> => {
     try {
       const novoCodigo = gerarProximoCodigo(categoria.tipo, categoria.categoriaMaeId);
@@ -116,7 +118,8 @@ export const useCategoriasFinanceiras = () => {
           nome: categoria.nome,
           tipo: categoria.tipo,
           categoria_mae_id: categoria.categoriaMaeId || null,
-          cor: cor
+          cor: cor,
+          classificacao: categoria.classificacao
         })
         .select()
         .single();
@@ -129,7 +132,8 @@ export const useCategoriasFinanceiras = () => {
         nome: data.nome,
         tipo: (data.tipo === 'mae' ? 'mae' : 'filha') as 'mae' | 'filha',
         categoriaMaeId: data.categoria_mae_id,
-        cor: data.cor
+        cor: data.cor,
+        classificacao: data.classificacao as 'entrada' | 'saida'
       };
 
       setCategorias(prev => [...prev, novaCategoria]);

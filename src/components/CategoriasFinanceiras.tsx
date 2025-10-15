@@ -26,7 +26,8 @@ export const CategoriasFinanceiras = () => {
     codigo: '',
     nome: '',
     tipo: 'mae' as 'mae' | 'filha',
-    categoriaMaeId: ''
+    categoriaMaeId: '',
+    classificacao: 'entrada' as 'entrada' | 'saida'
   });
   
   const { toast } = useToast();
@@ -56,6 +57,7 @@ export const CategoriasFinanceiras = () => {
     adicionarCategoria({
       nome: formData.nome.trim(),
       tipo: formData.tipo,
+      classificacao: formData.classificacao,
       ...(formData.tipo === 'filha' && { categoriaMaeId: formData.categoriaMaeId })
     });
     
@@ -68,7 +70,8 @@ export const CategoriasFinanceiras = () => {
       codigo: '',
       nome: '',
       tipo: 'mae',
-      categoriaMaeId: ''
+      categoriaMaeId: '',
+      classificacao: 'entrada'
     });
     
     setIsDialogOpen(false);
@@ -113,7 +116,7 @@ export const CategoriasFinanceiras = () => {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="tipo">Tipo de Categoria</Label>
+                    <Label htmlFor="tipo">Plano de Contas</Label>
                     <Select value={formData.tipo} onValueChange={handleTipoChange}>
                       <SelectTrigger>
                         <SelectValue />
@@ -121,6 +124,19 @@ export const CategoriasFinanceiras = () => {
                       <SelectContent>
                         <SelectItem value="mae">Conta Mãe</SelectItem>
                         <SelectItem value="filha">Conta Filha</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="classificacao">Tipo</Label>
+                    <Select value={formData.classificacao} onValueChange={(value: 'entrada' | 'saida') => setFormData(prev => ({ ...prev, classificacao: value }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="entrada">Entrada</SelectItem>
+                        <SelectItem value="saida">Saída</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -177,6 +193,7 @@ export const CategoriasFinanceiras = () => {
             <TableRow>
               <TableHead>Código</TableHead>
               <TableHead>Nome</TableHead>
+              <TableHead>Plano de Contas</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Categoria Mãe</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -188,15 +205,23 @@ export const CategoriasFinanceiras = () => {
                 <TableCell className="font-mono">{categoria.codigo}</TableCell>
                 <TableCell className="font-medium">{categoria.nome}</TableCell>
                 <TableCell>
+                  <Badge variant={categoria.tipo === 'mae' ? 'default' : 'secondary'}>
+                    {categoria.tipo === 'mae' ? 'Conta Mãe' : 'Conta Filha'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
                   <Badge 
-                    variant={categoria.tipo === 'mae' ? 'default' : 'secondary'}
                     style={{
-                      backgroundColor: categoria.cor ? `hsl(${categoria.cor})` : undefined,
+                      backgroundColor: categoria.classificacao === 'entrada' 
+                        ? 'hsl(142 76% 36%)' 
+                        : 'hsl(0 84% 60%)',
                       color: 'white',
-                      borderColor: categoria.cor ? `hsl(${categoria.cor})` : undefined
+                      borderColor: categoria.classificacao === 'entrada' 
+                        ? 'hsl(142 76% 36%)' 
+                        : 'hsl(0 84% 60%)'
                     }}
                   >
-                    {categoria.tipo === 'mae' ? 'Conta Mãe' : 'Conta Filha'}
+                    {categoria.classificacao === 'entrada' ? 'Entrada' : 'Saída'}
                   </Badge>
                 </TableCell>
                 <TableCell>

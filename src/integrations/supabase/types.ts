@@ -17,6 +17,7 @@ export type Database = {
       categorias_financeiras: {
         Row: {
           categoria_mae_id: string | null
+          classificacao: string | null
           codigo: string
           cor: string | null
           created_at: string
@@ -27,6 +28,7 @@ export type Database = {
         }
         Insert: {
           categoria_mae_id?: string | null
+          classificacao?: string | null
           codigo: string
           cor?: string | null
           created_at?: string
@@ -37,6 +39,7 @@ export type Database = {
         }
         Update: {
           categoria_mae_id?: string | null
+          classificacao?: string | null
           codigo?: string
           cor?: string | null
           created_at?: string
