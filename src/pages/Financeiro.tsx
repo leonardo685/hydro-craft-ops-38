@@ -21,9 +21,11 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
+import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 
 export default function Financeiro() {
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
+  const { lancamentos, loading: loadingLancamentos } = useLancamentosFinanceiros();
   
   // Estados para filtros de data e período
   const [dataInicial, setDataInicial] = useState("");
@@ -700,12 +702,13 @@ export default function Financeiro() {
   const saldoInicial = 12500;
   const saldoFinal = saldoInicial + variacaoCaixa;
 
-  // Cálculos do extrato - apenas lançamentos realizados (pagos)
-  const totalEntradas = extratoData
+  // Cálculos do extrato - usando dados reais do banco
+  // Apenas lançamentos PAGOS com data realizada são contabilizados
+  const totalEntradas = lancamentos
     .filter(item => item.tipo === 'entrada' && item.pago && item.dataRealizada)
     .reduce((acc, item) => acc + item.valor, 0);
   
-  const totalSaidas = extratoData
+  const totalSaidas = lancamentos
     .filter(item => item.tipo === 'saida' && item.pago && item.dataRealizada)
     .reduce((acc, item) => acc + item.valor, 0);
 
