@@ -200,8 +200,16 @@ export default function DFC() {
   const contaAtual = contasBancariasAtualizadas.find(conta => conta.id === contaSelecionada);
   const saldoContaSelecionada = contaAtual ? contaAtual.saldo : saldoTotal;
 
-  const totalEntradas = extratoData.filter(item => item.tipo === 'entrada').reduce((acc, item) => acc + item.valor, 0);
-  const totalSaidas = extratoData.filter(item => item.tipo === 'saida').reduce((acc, item) => acc + item.valor, 0);
+  // Cálculos dos cards - usando dados reais do banco
+  // Apenas lançamentos PAGOS com data realizada são contabilizados
+  const totalEntradas = lancamentos
+    .filter(item => item.tipo === 'entrada' && item.pago && item.dataRealizada)
+    .reduce((acc, item) => acc + item.valor, 0);
+  
+  const totalSaidas = lancamentos
+    .filter(item => item.tipo === 'saida' && item.pago && item.dataRealizada)
+    .reduce((acc, item) => acc + item.valor, 0);
+  
   const saldoDia = totalEntradas - totalSaidas;
 
   const getStatusPagamento = (dataEsperada: Date, dataRealizada: Date | null, pago: boolean) => {
