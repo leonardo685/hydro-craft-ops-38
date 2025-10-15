@@ -403,6 +403,7 @@ export type Database = {
           categoria_id: string | null
           conta_bancaria: string
           created_at: string
+          data_emissao: string
           data_esperada: string
           data_realizada: string | null
           descricao: string
@@ -417,6 +418,7 @@ export type Database = {
           categoria_id?: string | null
           conta_bancaria: string
           created_at?: string
+          data_emissao?: string
           data_esperada: string
           data_realizada?: string | null
           descricao: string
@@ -431,6 +433,7 @@ export type Database = {
           categoria_id?: string | null
           conta_bancaria?: string
           created_at?: string
+          data_emissao?: string
           data_esperada?: string
           data_realizada?: string | null
           descricao?: string

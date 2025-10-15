@@ -65,7 +65,7 @@ export default function DFC() {
     conta: 'conta_corrente',
     fornecedor: 'cliente_joao',
     paga: false,
-    dataEmissao: new Date(2024, 7, 29),
+    dataEmissao: new Date(),
     dataPagamento: new Date(2024, 7, 29),
     dataRealizada: new Date(2024, 7, 29),
     dataEsperada: new Date(2024, 7, 29)
@@ -278,6 +278,7 @@ export default function DFC() {
       contaBancaria: lancamentoForm.conta,
       dataEsperada: lancamentoForm.dataEsperada,
       dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : undefined,
+      dataEmissao: lancamentoForm.dataEmissao,
       pago: lancamentoForm.paga,
       fornecedorCliente: lancamentoForm.fornecedor
     });
@@ -775,6 +776,27 @@ export default function DFC() {
                                 onChange={(e) => setLancamentoForm(prev => ({ ...prev, valor: e.target.value }))}
                               />
                             </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Data de Emissão</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !lancamentoForm.dataEmissao && "text-muted-foreground")}>
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {lancamentoForm.dataEmissao ? format(lancamentoForm.dataEmissao, "dd/MM/yyyy") : "Selecionar data"}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  mode="single"
+                                  selected={lancamentoForm.dataEmissao}
+                                  onSelect={(date) => date && setLancamentoForm(prev => ({ ...prev, dataEmissao: date }))}
+                                  initialFocus
+                                  className={cn("p-3 pointer-events-auto")}
+                                />
+                              </PopoverContent>
+                            </Popover>
                           </div>
 
                           <div className="space-y-2">

@@ -12,6 +12,7 @@ export interface LancamentoFinanceiro {
   fornecedorCliente?: string;
   dataEsperada: Date;
   dataRealizada?: Date | null;
+  dataEmissao: Date;
   pago: boolean;
   createdAt: Date;
 }
@@ -40,6 +41,7 @@ export const useLancamentosFinanceiros = () => {
         fornecedorCliente: lanc.fornecedor_cliente,
         dataEsperada: new Date(lanc.data_esperada),
         dataRealizada: lanc.data_realizada ? new Date(lanc.data_realizada) : null,
+        dataEmissao: new Date(lanc.data_emissao),
         pago: lanc.pago,
         createdAt: new Date(lanc.created_at)
       }));
@@ -72,6 +74,7 @@ export const useLancamentosFinanceiros = () => {
           fornecedor_cliente: lancamento.fornecedorCliente || null,
           data_esperada: lancamento.dataEsperada.toISOString(),
           data_realizada: lancamento.dataRealizada?.toISOString() || null,
+          data_emissao: lancamento.dataEmissao.toISOString(),
           pago: lancamento.pago
         });
 
@@ -104,6 +107,7 @@ export const useLancamentosFinanceiros = () => {
       if (lancamento.dataRealizada !== undefined) {
         updateData.data_realizada = lancamento.dataRealizada ? lancamento.dataRealizada.toISOString() : null;
       }
+      if (lancamento.dataEmissao) updateData.data_emissao = lancamento.dataEmissao.toISOString();
       if (lancamento.pago !== undefined) updateData.pago = lancamento.pago;
 
       const { error } = await supabase
