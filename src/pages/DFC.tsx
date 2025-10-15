@@ -1375,6 +1375,7 @@ export default function DFC() {
                                       : 'hsl(0 84% 60%)'
                                   }}
                                 >
+                                  {mov.tipo === 'receita' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
                                   {mov.tipo === 'receita' ? 'Receita' : 'Despesa'}
                                 </Badge>
                               </TableCell>
