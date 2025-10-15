@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ export const CategoriasFinanceiras = () => {
     getNomeCategoriaMae 
   } = useCategoriasFinanceiras();
   
+  const [expandedCategorias, setExpandedCategorias] = useState<Set<string>>(new Set());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     codigo: '',
@@ -83,6 +85,22 @@ export const CategoriasFinanceiras = () => {
       tipo,
       categoriaMaeId: tipo === 'mae' ? '' : prev.categoriaMaeId
     }));
+  };
+
+  const toggleCategoria = (categoriaId: string) => {
+    setExpandedCategorias(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoriaId)) {
+        newSet.delete(categoriaId);
+      } else {
+        newSet.add(categoriaId);
+      }
+      return newSet;
+    });
+  };
+
+  const getCategoriasFilhas = (categoriaMaeId: string) => {
+    return categorias.filter(cat => cat.tipo === 'filha' && cat.categoriaMaeId === categoriaMaeId);
   };
 
 
@@ -191,54 +209,103 @@ export const CategoriasFinanceiras = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12"></TableHead>
               <TableHead>Código</TableHead>
               <TableHead>Nome</TableHead>
-              <TableHead>Plano de Contas</TableHead>
               <TableHead>Tipo</TableHead>
-              <TableHead>Categoria Mãe</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {categorias.map((categoria) => (
-              <TableRow key={categoria.id}>
-                <TableCell className="font-mono">{categoria.codigo}</TableCell>
-                <TableCell className="font-medium">{categoria.nome}</TableCell>
-                <TableCell>
-                  <Badge variant={categoria.tipo === 'mae' ? 'default' : 'secondary'}>
-                    {categoria.tipo === 'mae' ? 'Conta Mãe' : 'Conta Filha'}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    style={{
-                      backgroundColor: categoria.classificacao === 'entrada' 
-                        ? 'hsl(142 76% 36%)' 
-                        : 'hsl(0 84% 60%)',
-                      color: 'white',
-                      borderColor: categoria.classificacao === 'entrada' 
-                        ? 'hsl(142 76% 36%)' 
-                        : 'hsl(0 84% 60%)'
-                    }}
-                  >
-                    {categoria.classificacao === 'entrada' ? 'Entrada' : 'Saída'}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {categoria.tipo === 'filha' ? getNomeCategoriaMae(categoria.categoriaMaeId) : '-'}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => deletarCategoria(categoria.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {categoriasMae.map((categoriaMae) => {
+              const categoriasFilhas = getCategoriasFilhas(categoriaMae.id);
+              const isExpanded = expandedCategorias.has(categoriaMae.id);
+              const hasFilhas = categoriasFilhas.length > 0;
+
+              return (
+                <>
+                  {/* Conta Mãe */}
+                  <TableRow key={categoriaMae.id} className="font-medium">
+                    <TableCell>
+                      {hasFilhas && (
+                        <button
+                          onClick={() => toggleCategoria(categoriaMae.id)}
+                          className="p-1 hover:bg-muted rounded transition-colors"
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-mono font-bold">{categoriaMae.codigo}</TableCell>
+                    <TableCell className="font-semibold">{categoriaMae.nome}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        style={{
+                          backgroundColor: categoriaMae.classificacao === 'entrada' 
+                            ? 'hsl(142 76% 36%)' 
+                            : 'hsl(0 84% 60%)',
+                          color: 'white',
+                          borderColor: categoriaMae.classificacao === 'entrada' 
+                            ? 'hsl(142 76% 36%)' 
+                            : 'hsl(0 84% 60%)'
+                        }}
+                      >
+                        {categoriaMae.classificacao === 'entrada' ? 'Entrada' : 'Saída'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => deletarCategoria(categoriaMae.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Contas Filhas */}
+                  {isExpanded && categoriasFilhas.map((categoriaFilha) => (
+                    <TableRow key={categoriaFilha.id} className="bg-muted/30">
+                      <TableCell> </TableCell>
+                      <TableCell className="font-mono pl-8">{categoriaFilha.codigo}</TableCell>
+                      <TableCell className="pl-8">{categoriaFilha.nome}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="secondary"
+                          style={{
+                            backgroundColor: categoriaFilha.classificacao === 'entrada' 
+                              ? 'hsl(142 76% 36% / 0.7)' 
+                              : 'hsl(0 84% 60% / 0.7)',
+                            color: 'white',
+                            borderColor: categoriaFilha.classificacao === 'entrada' 
+                              ? 'hsl(142 76% 36%)' 
+                              : 'hsl(0 84% 60%)'
+                          }}
+                        >
+                          {categoriaFilha.classificacao === 'entrada' ? 'Entrada' : 'Saída'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => deletarCategoria(categoriaFilha.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>
