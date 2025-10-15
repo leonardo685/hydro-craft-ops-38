@@ -113,10 +113,10 @@ export default function Financeiro() {
     conta: 'conta_corrente',
     fornecedor: 'cliente_joao',
     paga: false,
-    dataEmissao: new Date(2024, 7, 29), // 29 de agosto de 2024
-    dataPagamento: new Date(2024, 7, 29), // 29 de agosto de 2024
-    dataRealizada: new Date(2024, 7, 29), // 29 de agosto de 2024
-    dataEsperada: new Date(2024, 7, 29) // 29 de agosto de 2024
+    dataEmissao: new Date(), // Data de hoje por padrão
+    dataPagamento: new Date(),
+    dataRealizada: new Date(),
+    dataEsperada: new Date()
   });
 
   // Estados para os filtros do extrato
@@ -700,13 +700,13 @@ export default function Financeiro() {
   const saldoInicial = 12500;
   const saldoFinal = saldoInicial + variacaoCaixa;
 
-  // Cálculos do extrato
+  // Cálculos do extrato - apenas lançamentos realizados (pagos)
   const totalEntradas = extratoData
-    .filter(item => item.tipo === 'entrada')
+    .filter(item => item.tipo === 'entrada' && item.pago && item.dataRealizada)
     .reduce((acc, item) => acc + item.valor, 0);
   
   const totalSaidas = extratoData
-    .filter(item => item.tipo === 'saida')
+    .filter(item => item.tipo === 'saida' && item.pago && item.dataRealizada)
     .reduce((acc, item) => acc + item.valor, 0);
 
   const saldoDia = totalEntradas - totalSaidas;
@@ -972,10 +972,10 @@ export default function Financeiro() {
       conta: 'conta_corrente',
       fornecedor: 'cliente_joao',
       paga: false,
-      dataEmissao: new Date(2024, 7, 29), // 29 de agosto de 2024
-      dataPagamento: new Date(2024, 7, 29), // 29 de agosto de 2024
-      dataRealizada: new Date(2024, 7, 29), // 29 de agosto de 2024
-      dataEsperada: new Date(2024, 7, 29) // 29 de agosto de 2024
+      dataEmissao: new Date(), // Data de hoje por padrão
+      dataPagamento: new Date(),
+      dataRealizada: new Date(),
+      dataEsperada: new Date()
     });
     setIsLancamentoDialogOpen(false);
   };
@@ -1611,11 +1611,38 @@ export default function Financeiro() {
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>Novo Lançamento</DialogTitle>
-                            <DialogDescription>
+                           <DialogDescription>
                               Adicione uma nova entrada ou saída no extrato do dia.
                             </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="dataEmissao">Data da Emissão</Label>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full justify-start text-left font-normal",
+                                      !lancamentoForm.dataEmissao && "text-muted-foreground"
+                                    )}
+                                  >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {lancamentoForm.dataEmissao ? format(lancamentoForm.dataEmissao, "dd/MM/yyyy") : <span>Selecionar data</span>}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={lancamentoForm.dataEmissao}
+                                    onSelect={(date) => setLancamentoForm(prev => ({ ...prev, dataEmissao: date || new Date() }))}
+                                    initialFocus
+                                    className={cn("p-3 pointer-events-auto")}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                            
                             <div>
                               <Label htmlFor="tipo">Tipo de Lançamento</Label>
                               <Select 
@@ -1740,34 +1767,7 @@ export default function Financeiro() {
                               </Select>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div>
-                                <Label>Data da Emissão</Label>
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !lancamentoForm.dataEmissao && "text-muted-foreground"
-                                      )}
-                                    >
-                                      <CalendarIcon className="mr-2 h-4 w-4" />
-                                      {lancamentoForm.dataEmissao ? format(lancamentoForm.dataEmissao, "dd/MM/yyyy") : <span>Selecionar data</span>}
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                      mode="single"
-                                      selected={lancamentoForm.dataEmissao}
-                                      onSelect={(date) => setLancamentoForm(prev => ({ ...prev, dataEmissao: date || new Date(2024, 7, 29) }))}
-                                      initialFocus
-                                      className={cn("p-3 pointer-events-auto")}
-                                    />
-                                  </PopoverContent>
-                                </Popover>
-                              </div>
-
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
                                 <Label>Data do Pagamento</Label>
                                 <Popover>
