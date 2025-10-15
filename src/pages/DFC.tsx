@@ -440,7 +440,7 @@ export default function DFC() {
             <CardContent>
               <div className="text-xl font-bold text-green-600">{formatCurrency(entradasMesAtual)}</div>
               <Badge variant="outline" className="text-xs mt-1">
-                {new Date(2024, 7, 29).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                {hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
               </Badge>
             </CardContent>
           </Card>
@@ -452,7 +452,7 @@ export default function DFC() {
             <CardContent>
               <div className="text-xl font-bold text-destructive">{formatCurrency(saidasMesAtual)}</div>
               <Badge variant="outline" className="text-xs mt-1">
-                {new Date(2024, 7, 29).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                {hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
               </Badge>
             </CardContent>
           </Card>
