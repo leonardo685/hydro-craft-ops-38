@@ -192,7 +192,7 @@ export default function DFC() {
     return lancamentos
       .filter(l => {
         const data = new Date(l.dataEsperada);
-        return l.tipo === 'entrada' && data >= primeiroDiaMes && data <= ultimoDiaMes;
+        return l.tipo === 'entrada' && l.pago && l.dataRealizada && data >= primeiroDiaMes && data <= ultimoDiaMes;
       })
       .reduce((acc, l) => acc + l.valor, 0);
   }, [lancamentos]);
@@ -201,7 +201,7 @@ export default function DFC() {
     return lancamentos
       .filter(l => {
         const data = new Date(l.dataEsperada);
-        return l.tipo === 'saida' && data >= primeiroDiaMes && data <= ultimoDiaMes;
+        return l.tipo === 'saida' && l.pago && l.dataRealizada && data >= primeiroDiaMes && data <= ultimoDiaMes;
       })
       .reduce((acc, l) => acc + l.valor, 0);
   }, [lancamentos]);
@@ -382,7 +382,7 @@ export default function DFC() {
   // Calcular receitas e despesas operacionais a partir dos lançamentos
   const receitasOperacionais = useMemo(() => {
     const totalReceitas = lancamentos
-      .filter(l => l.tipo === 'entrada')
+      .filter(l => l.tipo === 'entrada' && l.pago && l.dataRealizada)
       .reduce((acc, l) => acc + l.valor, 0);
     
     return [
@@ -392,7 +392,7 @@ export default function DFC() {
 
   const despesasOperacionais = useMemo(() => {
     const totalDespesas = lancamentos
-      .filter(l => l.tipo === 'saida')
+      .filter(l => l.tipo === 'saida' && l.pago && l.dataRealizada)
       .reduce((acc, l) => acc + l.valor, 0);
     
     return [
