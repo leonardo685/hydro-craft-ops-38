@@ -1363,7 +1363,18 @@ export default function DFC() {
                               <TableCell>{new Date(mov.data).toLocaleDateString('pt-BR')}</TableCell>
                               <TableCell>{mov.descricao}</TableCell>
                               <TableCell>
-                                <Badge variant={mov.tipo === 'receita' ? 'default' : 'destructive'}>
+                                <Badge 
+                                  className="gap-1"
+                                  style={{
+                                    backgroundColor: mov.tipo === 'receita' 
+                                      ? 'hsl(142 76% 36%)' 
+                                      : 'hsl(0 84% 60%)',
+                                    color: 'white',
+                                    borderColor: mov.tipo === 'receita' 
+                                      ? 'hsl(142 76% 36%)' 
+                                      : 'hsl(0 84% 60%)'
+                                  }}
+                                >
                                   {mov.tipo === 'receita' ? 'Receita' : 'Despesa'}
                                 </Badge>
                               </TableCell>
