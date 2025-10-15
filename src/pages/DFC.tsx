@@ -1108,7 +1108,18 @@ export default function DFC() {
                           <TableRow key={item.id}>
                             {colunasVisiveis.tipo && (
                               <TableCell>
-                                <Badge variant={item.tipo === 'entrada' ? 'default' : 'destructive'} className="gap-1">
+                                <Badge 
+                                  className="gap-1"
+                                  style={{
+                                    backgroundColor: item.tipo === 'entrada' 
+                                      ? 'hsl(142 76% 36%)' 
+                                      : 'hsl(0 84% 60%)',
+                                    color: 'white',
+                                    borderColor: item.tipo === 'entrada' 
+                                      ? 'hsl(142 76% 36%)' 
+                                      : 'hsl(0 84% 60%)'
+                                  }}
+                                >
                                   {item.tipo === 'entrada' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
                                   {item.tipo === 'entrada' ? 'Entrada' : 'Saída'}
                                 </Badge>
