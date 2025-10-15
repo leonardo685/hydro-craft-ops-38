@@ -423,7 +423,11 @@ export default function DFC() {
                 <div className="text-sm text-muted-foreground">Carregando...</div>
               ) : (
                 <>
-                  <div className="text-xl font-bold text-primary">
+                  <div className={`text-xl font-bold ${
+                    (contaSelecionada === 'todas' ? saldoTotal : saldoContaSelecionada) >= 0 
+                      ? 'text-green-600' 
+                      : 'text-destructive'
+                  }`}>
                     {formatCurrency(contaSelecionada === 'todas' ? saldoTotal : saldoContaSelecionada)}
                   </div>
                   <Badge variant="outline" className="text-xs mt-1">
@@ -458,15 +462,19 @@ export default function DFC() {
             </CardContent>
           </Card>
 
-          <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-blue-900 dark:text-blue-100">Resultado do Mês</CardTitle>
+              <CardTitle className="text-sm font-medium">Resultado do Mês</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
+              <div className={`text-xl font-bold ${
+                (entradasMesAtual - saidasMesAtual) >= 0 
+                  ? 'text-green-600' 
+                  : 'text-destructive'
+              }`}>
                 {formatCurrency(entradasMesAtual - saidasMesAtual)}
               </div>
-              <Badge variant="outline" className="text-xs mt-1 border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300">
+              <Badge variant="outline" className="text-xs mt-1">
                 {(entradasMesAtual - saidasMesAtual) >= 0 ? 'Resultado positivo' : 'Resultado negativo'}
               </Badge>
             </CardContent>
@@ -707,11 +715,23 @@ export default function DFC() {
                     </TableRow>
                     <TableRow className="border-t-2 bg-muted/50">
                       <TableCell className="font-bold">Variação Líquida do Caixa</TableCell>
-                      <TableCell className="text-right font-bold text-primary">{formatCurrency(entradasMesAtual - saidasMesAtual)}</TableCell>
+                      <TableCell className={`text-right font-bold ${
+                        (entradasMesAtual - saidasMesAtual) >= 0 
+                          ? 'text-green-600' 
+                          : 'text-destructive'
+                      }`}>
+                        {formatCurrency(entradasMesAtual - saidasMesAtual)}
+                      </TableCell>
                     </TableRow>
-                    <TableRow className="border-t-2 bg-primary/10">
+                    <TableRow className="border-t-2 bg-muted/50">
                       <TableCell className="font-bold">Saldo Final de Caixa</TableCell>
-                      <TableCell className="text-right font-bold text-primary">{formatCurrency(saldoTotal)}</TableCell>
+                      <TableCell className={`text-right font-bold ${
+                        saldoTotal >= 0 
+                          ? 'text-green-600' 
+                          : 'text-destructive'
+                      }`}>
+                        {formatCurrency(saldoTotal)}
+                      </TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
