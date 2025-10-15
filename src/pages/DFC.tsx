@@ -430,9 +430,19 @@ export default function DFC() {
                   }`}>
                     {formatCurrency(contaSelecionada === 'todas' ? saldoTotal : saldoContaSelecionada)}
                   </div>
-                  <Badge variant="outline" className="text-xs mt-1">
-                    {contaSelecionada === 'todas' ? 'Todas as contas' : contaAtual?.nome.split(' - ')[1]}
-                  </Badge>
+                  <Select value={contaSelecionada} onValueChange={setContaSelecionada}>
+                    <SelectTrigger className="w-full mt-2 h-7 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas as contas</SelectItem>
+                      {contasBancariasAtualizadas.map(conta => (
+                        <SelectItem key={conta.id} value={conta.id}>
+                          {conta.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </>
               )}
             </CardContent>
