@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           categoria_mae_id: string | null
           codigo: string
+          cor: string | null
           created_at: string
           id: string
           nome: string
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           categoria_mae_id?: string | null
           codigo: string
+          cor?: string | null
           created_at?: string
           id?: string
           nome: string
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           categoria_mae_id?: string | null
           codigo?: string
+          cor?: string | null
           created_at?: string
           id?: string
           nome?: string

@@ -188,7 +188,14 @@ export const CategoriasFinanceiras = () => {
                 <TableCell className="font-mono">{categoria.codigo}</TableCell>
                 <TableCell className="font-medium">{categoria.nome}</TableCell>
                 <TableCell>
-                  <Badge variant={categoria.tipo === 'mae' ? 'default' : 'secondary'}>
+                  <Badge 
+                    variant={categoria.tipo === 'mae' ? 'default' : 'secondary'}
+                    style={{
+                      backgroundColor: categoria.cor ? `hsl(${categoria.cor})` : undefined,
+                      color: 'white',
+                      borderColor: categoria.cor ? `hsl(${categoria.cor})` : undefined
+                    }}
+                  >
                     {categoria.tipo === 'mae' ? 'Conta Mãe' : 'Conta Filha'}
                   </Badge>
                 </TableCell>

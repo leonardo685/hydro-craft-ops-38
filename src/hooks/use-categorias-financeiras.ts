@@ -8,7 +8,16 @@ export interface CategoriaFinanceira {
   nome: string;
   tipo: 'mae' | 'filha';
   categoriaMaeId?: string;
+  cor?: string;
 }
+
+// Função para gerar cor aleatória em HSL
+const gerarCorAleatoria = (): string => {
+  const hue = Math.floor(Math.random() * 360);
+  const saturation = Math.floor(Math.random() * 30) + 60; // 60-90%
+  const lightness = Math.floor(Math.random() * 20) + 45; // 45-65%
+  return `${hue} ${saturation}% ${lightness}%`;
+};
 
 export const useCategoriasFinanceiras = () => {
   const [categorias, setCategorias] = useState<CategoriaFinanceira[]>([]);
@@ -29,7 +38,8 @@ export const useCategoriasFinanceiras = () => {
         codigo: cat.codigo,
         nome: cat.nome,
         tipo: (cat.tipo === 'mae' ? 'mae' : 'filha') as 'mae' | 'filha',
-        categoriaMaeId: cat.categoria_mae_id
+        categoriaMaeId: cat.categoria_mae_id,
+        cor: cat.cor
       }));
 
       setCategorias(categoriasFormatadas);
@@ -90,13 +100,23 @@ export const useCategoriasFinanceiras = () => {
     try {
       const novoCodigo = gerarProximoCodigo(categoria.tipo, categoria.categoriaMaeId);
       
+      // Se for filha, pega a cor da mãe, senão gera uma nova cor
+      let cor: string;
+      if (categoria.tipo === 'filha' && categoria.categoriaMaeId) {
+        const categoriaMae = categorias.find(c => c.id === categoria.categoriaMaeId);
+        cor = categoriaMae?.cor || gerarCorAleatoria();
+      } else {
+        cor = gerarCorAleatoria();
+      }
+      
       const { data, error } = await supabase
         .from('categorias_financeiras')
         .insert({
           codigo: novoCodigo,
           nome: categoria.nome,
           tipo: categoria.tipo,
-          categoria_mae_id: categoria.categoriaMaeId || null
+          categoria_mae_id: categoria.categoriaMaeId || null,
+          cor: cor
         })
         .select()
         .single();
@@ -108,7 +128,8 @@ export const useCategoriasFinanceiras = () => {
         codigo: data.codigo,
         nome: data.nome,
         tipo: (data.tipo === 'mae' ? 'mae' : 'filha') as 'mae' | 'filha',
-        categoriaMaeId: data.categoria_mae_id
+        categoriaMaeId: data.categoria_mae_id,
+        cor: data.cor
       };
 
       setCategorias(prev => [...prev, novaCategoria]);
