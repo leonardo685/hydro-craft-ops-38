@@ -189,7 +189,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
     setLancamentoForm({
       tipo: 'entrada',
       valor: orcamento.valor?.toString() || '',
-      descricao: `NF ${numeroNF} - Orçamento ${orcamento.numero}`,
+      descricao: `NF ${numeroNF} - Orçamento ${orcamento.numero} - Pedido ${dadosAprovacao.numeroPedido}`,
       categoria: '',
       conta: 'conta_corrente',
       fornecedor: orcamento.cliente_nome,
