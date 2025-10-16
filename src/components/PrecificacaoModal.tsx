@@ -28,26 +28,55 @@ interface PrecificacaoModalProps {
 
 export function PrecificacaoModal({ open, onClose, orcamento, onSave }: PrecificacaoModalProps) {
   const [precoDesejado, setPrecoDesejado] = useState(0);
+  const [descontoPercentual, setDescontoPercentual] = useState(0);
   const [impostosPercentual, setImpostosPercentual] = useState(16);
   const [comissaoPercentual, setComissaoPercentual] = useState(0);
+  const [percentuaisCustomizados, setPercentuaisCustomizados] = useState<CustoVariavel[]>([]);
   const [custosVariaveis, setCustosVariaveis] = useState<CustoVariavel[]>([]);
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
     if (orcamento) {
       setPrecoDesejado(orcamento.preco_desejado || 0);
+      setDescontoPercentual(orcamento.desconto_percentual || 0);
       setImpostosPercentual(orcamento.impostos_percentual || 16);
       setComissaoPercentual(orcamento.comissao_percentual || 0);
+      setPercentuaisCustomizados(orcamento.percentuais_customizados || []);
       setCustosVariaveis(orcamento.custos_variaveis || []);
     }
   }, [orcamento]);
 
+  const precoBase = precoDesejado / (1 - descontoPercentual / 100);
   const impostosValor = calcularImpostos(precoDesejado, impostosPercentual);
   const comissaoValor = calcularComissao(precoDesejado, comissaoPercentual);
+  const totalPercentuaisCustomizados = calcularTotalCustosVariaveis(percentuaisCustomizados);
+  const valoresPercentuaisCustomizados = (precoDesejado * totalPercentuaisCustomizados) / 100;
   const totalCustosVariaveis = calcularTotalCustosVariaveis(custosVariaveis);
-  const totalCustos = impostosValor + comissaoValor + totalCustosVariaveis;
+  const totalCustos = impostosValor + comissaoValor + valoresPercentuaisCustomizados + totalCustosVariaveis;
   const margemContribuicao = calcularMargemContribuicao(precoDesejado, totalCustos);
   const percentualMargem = calcularPercentualMargem(margemContribuicao, precoDesejado);
+
+  const aplicarDesconto = (incremento: number) => {
+    const novoDesconto = Math.max(0, Math.min(100, descontoPercentual + incremento));
+    setDescontoPercentual(novoDesconto);
+    if (novoDesconto > 0) {
+      setPrecoDesejado(precoBase * (1 - novoDesconto / 100));
+    }
+  };
+
+  const adicionarPercentualCustomizado = () => {
+    setPercentuaisCustomizados([...percentuaisCustomizados, { descricao: "", valor: 0 }]);
+  };
+
+  const removerPercentualCustomizado = (index: number) => {
+    setPercentuaisCustomizados(percentuaisCustomizados.filter((_, i) => i !== index));
+  };
+
+  const atualizarPercentualCustomizado = (index: number, campo: keyof CustoVariavel, valor: any) => {
+    const novos = [...percentuaisCustomizados];
+    novos[index] = { ...novos[index], [campo]: valor };
+    setPercentuaisCustomizados(novos);
+  };
 
   const adicionarCustoVariavel = () => {
     setCustosVariaveis([...custosVariaveis, { descricao: "", valor: 0 }]);
@@ -75,10 +104,12 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
         .from("orcamentos")
         .update({
           preco_desejado: precoDesejado,
+          desconto_percentual: descontoPercentual,
           impostos_percentual: impostosPercentual,
           impostos_valor: impostosValor,
           comissao_percentual: comissaoPercentual,
           comissao_valor: comissaoValor,
+          percentuais_customizados: percentuaisCustomizados,
           custos_variaveis: custosVariaveis,
           total_custos_variaveis: totalCustosVariaveis,
           margem_contribuicao: margemContribuicao,
@@ -103,10 +134,12 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
     const dadosAtualizados = {
       ...orcamento,
       preco_desejado: precoDesejado,
+      desconto_percentual: descontoPercentual,
       impostos_percentual: impostosPercentual,
       impostos_valor: impostosValor,
       comissao_percentual: comissaoPercentual,
       comissao_valor: comissaoValor,
+      percentuais_customizados: percentuaisCustomizados,
       custos_variaveis: custosVariaveis,
       total_custos_variaveis: totalCustosVariaveis,
       margem_contribuicao: margemContribuicao,
@@ -122,8 +155,8 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
   };
 
   const getCorMargem = () => {
-    if (percentualMargem >= 50) return "bg-success/10 text-success border-success";
-    if (percentualMargem >= 30) return "bg-warning/10 text-warning border-warning";
+    if (percentualMargem >= 45) return "bg-success/10 text-success border-success";
+    if (percentualMargem >= 40) return "bg-warning/10 text-warning border-warning";
     return "bg-destructive/10 text-destructive border-destructive";
   };
 
@@ -138,23 +171,78 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Preço Desejado */}
-          <Card className="bg-primary/5 border-primary">
+          {/* Preço Desejado e Margem */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="bg-primary/5 border-primary">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">💰 Preço Desejado</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-bold">R$</span>
+                  <Input
+                    type="number"
+                    value={precoDesejado}
+                    onChange={(e) => setPrecoDesejado(Number(e.target.value))}
+                    className="text-2xl font-bold h-14"
+                    placeholder="0,00"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className={`${getCorMargem()} border-2`}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">✨ Margem de Contribuição</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-center gap-4">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Valor</p>
+                    <p className="text-2xl font-bold">{formatarMoeda(margemContribuicao)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Percentual</p>
+                    <p className="text-2xl font-bold">{formatarPercentual(percentualMargem)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Controle de Desconto */}
+          <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">💰 Preço Desejado</CardTitle>
+              <CardTitle className="text-lg">🏷️ Desconto</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-bold">R$</span>
-                <Input
-                  type="number"
-                  value={precoDesejado}
-                  onChange={(e) => setPrecoDesejado(Number(e.target.value))}
-                  className="text-2xl font-bold h-14"
-                  placeholder="0,00"
-                  step="0.01"
-                  min="0"
-                />
+              <div className="flex items-center gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => aplicarDesconto(-0.5)}
+                >
+                  <Plus className="h-4 w-4 rotate-45" />
+                </Button>
+                <div className="flex-1 text-center">
+                  <p className="text-2xl font-bold">{formatarPercentual(descontoPercentual)}</p>
+                  {descontoPercentual > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Preço original: {formatarMoeda(precoBase)}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => aplicarDesconto(0.5)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -200,6 +288,69 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
                   <Input value={formatarMoeda(comissaoValor)} disabled className="bg-muted" />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Percentuais Customizados */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">📈 Outros Percentuais</CardTitle>
+                <Button size="sm" variant="outline" onClick={adicionarPercentualCustomizado}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Adicionar
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {percentuaisCustomizados.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum percentual adicional
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {percentuaisCustomizados.map((item, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        placeholder="Descrição"
+                        value={item.descricao}
+                        onChange={(e) => atualizarPercentualCustomizado(index, "descricao", e.target.value)}
+                        className="flex-1"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="%"
+                        value={item.valor}
+                        onChange={(e) => atualizarPercentualCustomizado(index, "valor", Number(e.target.value))}
+                        className="w-24"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => removerPercentualCustomizado(index)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {percentuaisCustomizados.length > 0 && (
+                <div className="pt-3 border-t">
+                  <div className="flex justify-between items-center font-semibold">
+                    <span>Total (%):</span>
+                    <span>{formatarPercentual(totalPercentuaisCustomizados)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm text-muted-foreground mt-1">
+                    <span>Valor equivalente:</span>
+                    <span>{formatarMoeda(valoresPercentuaisCustomizados)}</span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -259,34 +410,6 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
             </CardContent>
           </Card>
 
-          {/* Margem de Contribuição */}
-          <Card className={`${getCorMargem()} border-2`}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">✨ Margem de Contribuição</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-center gap-8">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Valor</p>
-                  <p className="text-3xl font-bold">{formatarMoeda(margemContribuicao)}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Percentual</p>
-                  <p className="text-3xl font-bold">{formatarPercentual(percentualMargem)}</p>
-                </div>
-              </div>
-              {percentualMargem < 0 && (
-                <p className="text-center text-sm mt-3 font-semibold">
-                  ⚠️ Atenção: Margem negativa!
-                </p>
-              )}
-              {percentualMargem >= 0 && percentualMargem < 20 && (
-                <p className="text-center text-sm mt-3 font-semibold">
-                  ⚠️ Margem abaixo do recomendado
-                </p>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         <DialogFooter className="gap-2">
