@@ -574,8 +574,8 @@ export default function Orcamentos() {
           </TabsContent>
 
           <TabsContent value="aprovado" className="space-y-4">
-            {orcamentos.filter(o => o.status === 'aprovado').length > 0 ? (
-              orcamentos.filter(o => o.status === 'aprovado').map((item) => (
+            {orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').length > 0 ? (
+              orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').map((item) => (
                 <Card key={item.id} className="hover:shadow-md transition-smooth">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
