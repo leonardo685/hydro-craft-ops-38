@@ -412,7 +412,7 @@ export default function DFC() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <Card>
+          <Card className="border-2 shadow-lg">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">
                 {contaSelecionada === 'todas' ? 'Saldo Total' : 'Saldo da Conta'}
@@ -448,7 +448,7 @@ export default function DFC() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-2 shadow-lg">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Entradas do Mês</CardTitle>
             </CardHeader>
@@ -460,7 +460,7 @@ export default function DFC() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-2 shadow-lg">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Saídas do Mês</CardTitle>
             </CardHeader>
@@ -472,7 +472,7 @@ export default function DFC() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-2 shadow-lg">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Resultado do Mês</CardTitle>
             </CardHeader>
@@ -1090,7 +1090,7 @@ export default function DFC() {
 
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <Card className="bg-green-50 dark:bg-green-950/20">
+                  <Card className="bg-green-50 dark:bg-green-950/20 border-2 shadow-lg">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <ArrowDownLeft className="h-4 w-4 text-green-600" />
@@ -1103,7 +1103,7 @@ export default function DFC() {
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-red-50 dark:bg-red-950/20">
+                  <Card className="bg-red-50 dark:bg-red-950/20 border-2 shadow-lg">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <ArrowUpRight className="h-4 w-4 text-destructive" />
@@ -1116,7 +1116,7 @@ export default function DFC() {
                     </CardContent>
                   </Card>
 
-                  <Card className={saldoDia >= 0 ? "bg-blue-50 dark:bg-blue-950/20" : "bg-amber-50 dark:bg-amber-950/20"}>
+                  <Card className={saldoDia >= 0 ? "bg-blue-50 dark:bg-blue-950/20 border-2 shadow-lg" : "bg-amber-50 dark:bg-amber-950/20 border-2 shadow-lg"}>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />
@@ -1250,7 +1250,7 @@ export default function DFC() {
           <TabsContent value="planejamento" className="space-y-6">
             {/* Cards de Consulta */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="border-l-4 border-l-green-500">
+              <Card className="border-l-4 border-l-green-500 border-2 shadow-lg">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2 text-green-600">
                     <ArrowDownLeft className="h-5 w-5" />
@@ -1266,7 +1266,7 @@ export default function DFC() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-red-500">
+              <Card className="border-l-4 border-l-red-500 border-2 shadow-lg">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2 text-destructive">
                     <ArrowUpRight className="h-5 w-5" />
@@ -1282,7 +1282,7 @@ export default function DFC() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-blue-500">
+              <Card className="border-l-4 border-l-blue-500 border-2 shadow-lg">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2 text-blue-600">
                     <DollarSign className="h-5 w-5" />
