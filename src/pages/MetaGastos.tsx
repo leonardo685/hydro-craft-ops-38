@@ -54,20 +54,22 @@ export default function MetaGastos() {
     observacoes: ''
   });
 
-  // Calcular valor gasto para cada meta baseado nos lançamentos
+  // Calcular valor gasto para cada meta baseado nos lançamentos PAGOS (DFC)
   const metasComGastos = useMemo(() => {
     return metas.map(meta => {
       const valorGasto = lancamentos
         .filter(l => {
-          const dataLancamento = new Date(l.dataEsperada);
+          // Usar data_realizada se existir, senão data_esperada
+          const dataPagamento = l.dataRealizada ? new Date(l.dataRealizada) : new Date(l.dataEsperada);
           const dataInicio = new Date(meta.dataInicio);
           const dataFim = new Date(meta.dataFim);
           
           return (
             l.tipo === 'saida' &&
+            l.pago === true && // Apenas contas que foram pagas (DFC)
             l.categoriaId === meta.categoriaId &&
-            dataLancamento >= dataInicio &&
-            dataLancamento <= dataFim
+            dataPagamento >= dataInicio &&
+            dataPagamento <= dataFim
           );
         })
         .reduce((acc, l) => acc + l.valor, 0);
