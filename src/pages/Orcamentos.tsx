@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, FileText, Edit, Check, X, Copy, Search, Download } from "lucide-react";
+import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
+import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 import jsPDF from "jspdf";
 
 export default function Orcamentos() {
@@ -106,6 +107,8 @@ export default function Orcamentos() {
 
   const [showAprovarModal, setShowAprovarModal] = useState(false);
   const [orcamentoParaAprovar, setOrcamentoParaAprovar] = useState<any>(null);
+  const [showPrecificacaoModal, setShowPrecificacaoModal] = useState(false);
+  const [orcamentoParaPrecificar, setOrcamentoParaPrecificar] = useState<any>(null);
 
   const handleAprovarOrcamento = (orcamento: any) => {
     setOrcamentoParaAprovar(orcamento);
@@ -147,6 +150,11 @@ export default function Orcamentos() {
 
   const editarOrcamento = (orcamento: any) => {
     navigate('/orcamentos/novo', { state: { orcamento } });
+  };
+
+  const abrirPrecificacao = (orcamento: any) => {
+    setOrcamentoParaPrecificar(orcamento);
+    setShowPrecificacaoModal(true);
   };
 
   const gerarPDFOrcamento = async (orcamento: any) => {
@@ -513,6 +521,13 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => abrirPrecificacao(item)}
+                        >
+                          <DollarSign className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => editarOrcamento(item)}
                         >
                           <Edit className="h-4 w-4" />
@@ -583,6 +598,13 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => abrirPrecificacao(item)}
+                        >
+                          <DollarSign className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => editarOrcamento(item)}
                         >
                           <Edit className="h-4 w-4" />
@@ -639,6 +661,13 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => abrirPrecificacao(item)}
+                        >
+                          <DollarSign className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => editarOrcamento(item)}
                         >
                           <Edit className="h-4 w-4" />
@@ -677,6 +706,13 @@ export default function Orcamentos() {
         onOpenChange={setShowAprovarModal}
         orcamento={orcamentoParaAprovar}
         onConfirm={confirmarAprovacao}
+      />
+
+      <PrecificacaoModal
+        open={showPrecificacaoModal}
+        onClose={() => setShowPrecificacaoModal(false)}
+        orcamento={orcamentoParaPrecificar}
+        onSave={carregarOrcamentos}
       />
     </AppLayout>
   );
