@@ -33,6 +33,7 @@ export default function EmitirNotaModal({
   const [copied, setCopied] = useState(false);
   
   // Estados para contas a receber
+  const [prazoPagamento, setPrazoPagamento] = useState(30);
   const [dataVencimento, setDataVencimento] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [formaPagamento, setFormaPagamento] = useState('boleto');
   const [observacoesReceber, setObservacoesReceber] = useState('');
@@ -209,8 +210,21 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
     onOpenChange(false);
   };
 
+  const handlePrazoPagamentoChange = (dias: string) => {
+    const diasNum = parseInt(dias) || 0;
+    setPrazoPagamento(diasNum);
+    
+    // Calcular nova data de vencimento
+    const hoje = new Date();
+    const novaDataVencimento = new Date(hoje);
+    novaDataVencimento.setDate(novaDataVencimento.getDate() + diasNum);
+    setDataVencimento(novaDataVencimento.toISOString().split('T')[0]);
+  };
+
   const handleFinalizarContasReceber = async () => {
     try {
+      const dataEmissaoAtual = new Date(); // Data de emissão é hoje
+      
       // Salvar lançamento em contas a receber
       const { error } = await supabase
         .from('contas_receber')
@@ -219,6 +233,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
           numero_nf: numeroNF,
           cliente_nome: orcamento.cliente_nome,
           valor: orcamento.valor,
+          data_emissao: dataEmissaoAtual.toISOString(),
           data_vencimento: dataVencimento,
           forma_pagamento: formaPagamento,
           observacoes: observacoesReceber,
@@ -427,24 +442,37 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
 
               {/* Dados do lançamento */}
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Valor</Label>
-                    <Input 
-                      value={`R$ ${orcamento.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`} 
-                      readOnly 
-                      className="bg-muted/50 font-medium"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Data de Vencimento</Label>
-                    <Input 
-                      type="date" 
-                      value={dataVencimento}
-                      onChange={(e) => setDataVencimento(e.target.value)}
-                      className="font-medium"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Valor</Label>
+                  <Input 
+                    value={`R$ ${orcamento.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`} 
+                    readOnly 
+                    className="bg-muted/50 font-medium"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Prazo de Pagamento (dias)</Label>
+                  <Input 
+                    type="number"
+                    min="1"
+                    value={prazoPagamento}
+                    onChange={(e) => handlePrazoPagamentoChange(e.target.value)}
+                    className="font-medium"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {prazoPagamento} {prazoPagamento === 1 ? 'dia' : 'dias'} a partir da emissão
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Data de Vencimento</Label>
+                  <Input 
+                    type="date" 
+                    value={dataVencimento}
+                    onChange={(e) => setDataVencimento(e.target.value)}
+                    className="font-medium"
+                  />
                 </div>
 
                 <div className="space-y-2">
