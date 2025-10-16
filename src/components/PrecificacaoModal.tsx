@@ -60,7 +60,8 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
     const novoDesconto = Math.max(0, Math.min(100, descontoPercentual + incremento));
     setDescontoPercentual(novoDesconto);
     if (novoDesconto > 0) {
-      setPrecoDesejado(precoBase * (1 - novoDesconto / 100));
+      const novoPreco = precoBase * (1 - novoDesconto / 100);
+      setPrecoDesejado(Number(novoPreco.toFixed(2)));
     }
   };
 
