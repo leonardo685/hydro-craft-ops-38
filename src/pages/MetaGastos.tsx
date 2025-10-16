@@ -57,22 +57,36 @@ export default function MetaGastos() {
   // Calcular valor gasto para cada meta baseado nos lançamentos PAGOS (DFC)
   const metasComGastos = useMemo(() => {
     return metas.map(meta => {
-      const valorGasto = lancamentos
-        .filter(l => {
-          // Usar data_realizada se existir, senão data_esperada
-          const dataPagamento = l.dataRealizada ? new Date(l.dataRealizada) : new Date(l.dataEsperada);
-          const dataInicio = new Date(meta.dataInicio);
-          const dataFim = new Date(meta.dataFim);
-          
-          return (
-            l.tipo === 'saida' &&
-            l.pago === true && // Apenas contas que foram pagas (DFC)
-            l.categoriaId === meta.categoriaId &&
-            dataPagamento >= dataInicio &&
-            dataPagamento <= dataFim
-          );
-        })
-        .reduce((acc, l) => acc + l.valor, 0);
+      const dataInicio = new Date(meta.dataInicio);
+      const dataFim = new Date(meta.dataFim);
+      
+      console.log('Meta:', meta.categoriaId, 'Período:', dataInicio, 'até', dataFim);
+      
+      const lancamentosFiltrados = lancamentos.filter(l => {
+        // Usar data_realizada se existir, senão data_esperada
+        const dataPagamento = l.dataRealizada ? new Date(l.dataRealizada) : new Date(l.dataEsperada);
+        
+        const dentroDoPeríodo = dataPagamento >= dataInicio && dataPagamento <= dataFim;
+        const mesmaCategoria = l.categoriaId === meta.categoriaId;
+        const foiPago = l.pago === true;
+        const ehSaida = l.tipo === 'saida';
+        
+        if (mesmaCategoria) {
+          console.log('Lançamento:', l.descricao, {
+            valor: l.valor,
+            dataPagamento,
+            dentroDoPeríodo,
+            foiPago,
+            ehSaida
+          });
+        }
+        
+        return ehSaida && foiPago && mesmaCategoria && dentroDoPeríodo;
+      });
+      
+      const valorGasto = lancamentosFiltrados.reduce((acc, l) => acc + l.valor, 0);
+      
+      console.log('Total gasto:', valorGasto);
 
       const categoriaSelecionada = getCategoriasForSelect().find(c => c.value === meta.categoriaId);
 
