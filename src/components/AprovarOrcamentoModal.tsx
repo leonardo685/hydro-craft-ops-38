@@ -25,7 +25,8 @@ export const AprovarOrcamentoModal = ({
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     valor: orcamento?.valor || 0,
-    prazoPagamento: '',
+    prazoPagamento: 30,
+    dataVencimento: '',
     descontoPercentual: 0,
     valorComDesconto: orcamento?.valor || 0,
     numeroPedido: '',
@@ -35,9 +36,13 @@ export const AprovarOrcamentoModal = ({
   // Update form data when orcamento changes
   React.useEffect(() => {
     if (orcamento) {
+      const dataVencimento = new Date();
+      dataVencimento.setDate(dataVencimento.getDate() + 30);
+      
       setFormData({
         valor: orcamento.valor || 0,
-        prazoPagamento: '',
+        prazoPagamento: 30,
+        dataVencimento: dataVencimento.toISOString().split('T')[0],
         descontoPercentual: 0,
         valorComDesconto: orcamento.valor || 0,
         numeroPedido: '',
@@ -45,6 +50,19 @@ export const AprovarOrcamentoModal = ({
       });
     }
   }, [orcamento]);
+
+  // Atualizar data de vencimento quando prazo mudar
+  const handlePrazoPagamentoChange = (dias: string) => {
+    const diasNum = parseInt(dias) || 0;
+    const dataVencimento = new Date();
+    dataVencimento.setDate(dataVencimento.getDate() + diasNum);
+    
+    setFormData(prev => ({
+      ...prev,
+      prazoPagamento: diasNum,
+      dataVencimento: dataVencimento.toISOString().split('T')[0]
+    }));
+  };
   const [anexoPedido, setAnexoPedido] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -124,7 +142,7 @@ export const AprovarOrcamentoModal = ({
   };
 
   const handleConfirmar = async () => {
-    if (!formData.prazoPagamento || !formData.numeroPedido) {
+    if (!formData.prazoPagamento || !formData.numeroPedido || !formData.dataVencimento) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -156,7 +174,9 @@ export const AprovarOrcamentoModal = ({
           status: 'aprovado',
           data_aprovacao: new Date().toISOString(),
           valor: formData.valorComDesconto,
-          descricao: `${orcamento.descricao || ''}\n\nDetalhes da Aprovação:\n- Valor Original: R$ ${formData.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Desconto: ${formData.descontoPercentual}%\n- Valor Final: R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Prazo de Pagamento: ${formData.prazoPagamento}\n- Número do Pedido: ${formData.numeroPedido}${anexoUrl ? `\n- Anexo do Pedido: ${anexoUrl}` : ''}${formData.observacoes ? `\n- Observações: ${formData.observacoes}` : ''}`.trim()
+          prazo_pagamento: formData.prazoPagamento,
+          data_vencimento: formData.dataVencimento,
+          descricao: `${orcamento.descricao || ''}\n\nDetalhes da Aprovação:\n- Valor Original: R$ ${formData.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Desconto: ${formData.descontoPercentual}%\n- Valor Final: R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Prazo de Pagamento: ${formData.prazoPagamento} dias\n- Data de Vencimento: ${new Date(formData.dataVencimento).toLocaleDateString('pt-BR')}\n- Número do Pedido: ${formData.numeroPedido}${anexoUrl ? `\n- Anexo do Pedido: ${anexoUrl}` : ''}${formData.observacoes ? `\n- Observações: ${formData.observacoes}` : ''}`.trim()
         })
         .eq('id', orcamento.id);
 
@@ -244,25 +264,38 @@ export const AprovarOrcamentoModal = ({
             </div>
           </div>
 
+          <div>
+            <Label htmlFor="valorFinal">Valor Final (R$)</Label>
+            <Input
+              id="valorFinal"
+              type="number"
+              step="0.01"
+              value={formData.valorComDesconto}
+              readOnly
+              className="bg-muted"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="valorFinal">Valor Final (R$)</Label>
-              <Input
-                id="valorFinal"
-                type="number"
-                step="0.01"
-                value={formData.valorComDesconto}
-                readOnly
-                className="bg-muted"
-              />
-            </div>
-            <div>
-              <Label htmlFor="prazoPagamento">Prazo de Pagamento *</Label>
+              <Label htmlFor="prazoPagamento">Prazo de Pagamento (dias) *</Label>
               <Input
                 id="prazoPagamento"
+                type="number"
+                min="1"
                 value={formData.prazoPagamento}
-                onChange={(e) => setFormData(prev => ({ ...prev, prazoPagamento: e.target.value }))}
-                placeholder="Ex: 30 dias"
+                onChange={(e) => handlePrazoPagamentoChange(e.target.value)}
+                placeholder="Ex: 30"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Ex: 30 dias</p>
+            </div>
+            <div>
+              <Label htmlFor="dataVencimento">Data de Vencimento *</Label>
+              <Input
+                id="dataVencimento"
+                type="date"
+                value={formData.dataVencimento}
+                onChange={(e) => setFormData(prev => ({ ...prev, dataVencimento: e.target.value }))}
               />
             </div>
           </div>

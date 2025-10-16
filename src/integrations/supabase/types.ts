@@ -575,6 +575,7 @@ export type Database = {
           pdf_nota_fiscal: string | null
           percentuais_customizados: Json | null
           percentual_margem: number | null
+          prazo_pagamento: number | null
           preco_desejado: number | null
           status: string
           status_negociacao: string | null
@@ -610,6 +611,7 @@ export type Database = {
           pdf_nota_fiscal?: string | null
           percentuais_customizados?: Json | null
           percentual_margem?: number | null
+          prazo_pagamento?: number | null
           preco_desejado?: number | null
           status?: string
           status_negociacao?: string | null
@@ -645,6 +647,7 @@ export type Database = {
           pdf_nota_fiscal?: string | null
           percentuais_customizados?: Json | null
           percentual_margem?: number | null
+          prazo_pagamento?: number | null
           preco_desejado?: number | null
           status?: string
           status_negociacao?: string | null
