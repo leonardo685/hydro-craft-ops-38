@@ -193,7 +193,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
               </CardContent>
             </Card>
 
-            <Card className={`${getCorMargem()} border-2`}>
+            <Card className={`border-2 ${getCorMargem()}`}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">✨ Margem de Contribuição</CardTitle>
               </CardHeader>
