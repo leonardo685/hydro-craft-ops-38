@@ -184,6 +184,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
                     type="number"
                     value={precoDesejado}
                     onChange={(e) => setPrecoDesejado(Number(e.target.value))}
+                    onBlur={(e) => setPrecoDesejado(Number(Number(e.target.value).toFixed(2)))}
                     className="text-2xl font-bold h-14"
                     placeholder="0,00"
                     step="0.01"
