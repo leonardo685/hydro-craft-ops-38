@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, Plus, FileDown } from "lucide-react";
+import { X, Plus, Minus, FileDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -225,7 +225,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
                   size="icon"
                   onClick={() => aplicarDesconto(-0.5)}
                 >
-                  <Plus className="h-4 w-4 rotate-45" />
+                  <Minus className="h-4 w-4" />
                 </Button>
                 <div className="flex-1 text-center">
                   <p className="text-2xl font-bold">{formatarPercentual(descontoPercentual)}</p>
@@ -241,7 +241,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
                   size="icon"
                   onClick={() => aplicarDesconto(0.5)}
                 >
-                  <X className="h-4 w-4" />
+                  <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </CardContent>
