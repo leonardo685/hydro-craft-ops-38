@@ -41,6 +41,7 @@ export default function EmitirNotaModal({
   const [copied, setCopied] = useState(false);
   
   // Estados para o formulário de lançamento (igual ao DFC)
+  const [prazoDias, setPrazoDias] = useState(30);
   const [lancamentoForm, setLancamentoForm] = useState({
     tipo: 'entrada' as const,
     valor: '',
@@ -52,6 +53,17 @@ export default function EmitirNotaModal({
     dataEmissao: new Date(),
     dataEsperada: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   });
+
+  const handlePrazoDiasChange = (dias: string) => {
+    const diasNum = parseInt(dias) || 0;
+    setPrazoDias(diasNum);
+    
+    // Calcular nova data esperada
+    const dataBase = lancamentoForm.dataEmissao;
+    const novaDataEsperada = new Date(dataBase);
+    novaDataEsperada.setDate(novaDataEsperada.getDate() + diasNum);
+    setLancamentoForm(prev => ({ ...prev, dataEsperada: novaDataEsperada }));
+  };
 
   // Extrair dados da aprovação
   const extrairDadosAprovacao = (descricao: string) => {
@@ -173,6 +185,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
 
   const handleConfirmarDados = () => {
     // Pré-preencher formulário com dados do orçamento
+    const novaDataEsperada = new Date(Date.now() + prazoDias * 24 * 60 * 60 * 1000);
     setLancamentoForm({
       tipo: 'entrada',
       valor: orcamento.valor?.toString() || '',
@@ -182,7 +195,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
       fornecedor: orcamento.cliente_nome,
       paga: false,
       dataEmissao: new Date(),
-      dataEsperada: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      dataEsperada: novaDataEsperada
     });
     setEtapa('contas_receber');
   };
@@ -190,6 +203,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
   const handleFechar = () => {
     setEtapa('dados');
     setAnexoNota(null);
+    setPrazoDias(30);
     setLancamentoForm({
       tipo: 'entrada',
       valor: '',
@@ -296,6 +310,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
       // Reset
       setEtapa('dados');
       setAnexoNota(null);
+      setPrazoDias(30);
       setLancamentoForm({
         tipo: 'entrada',
         valor: '',
@@ -512,25 +527,40 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Data Esperada</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !lancamentoForm.dataEsperada && "text-muted-foreground")}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {lancamentoForm.dataEsperada ? format(lancamentoForm.dataEsperada, "dd/MM/yyyy") : "Selecionar data"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={lancamentoForm.dataEsperada}
-                        onSelect={(date) => date && setLancamentoForm(prev => ({ ...prev, dataEsperada: date }))}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Prazo de Pagamento (dias)</Label>
+                    <Input 
+                      type="number"
+                      min="1"
+                      value={prazoDias}
+                      onChange={(e) => handlePrazoDiasChange(e.target.value)}
+                      placeholder="Ex: 30"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {prazoDias} {prazoDias === 1 ? 'dia' : 'dias'} a partir da emissão
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Data Esperada</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !lancamentoForm.dataEsperada && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {lancamentoForm.dataEsperada ? format(lancamentoForm.dataEsperada, "dd/MM/yyyy") : "Selecionar data"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={lancamentoForm.dataEsperada}
+                          onSelect={(date) => date && setLancamentoForm(prev => ({ ...prev, dataEsperada: date }))}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
 
                 {/* Anexar PDF */}
