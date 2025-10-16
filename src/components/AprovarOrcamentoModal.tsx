@@ -276,28 +276,29 @@ export const AprovarOrcamentoModal = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="prazoPagamento">Prazo de Pagamento (dias) *</Label>
-              <Input
-                id="prazoPagamento"
-                type="number"
-                min="1"
-                value={formData.prazoPagamento}
-                onChange={(e) => handlePrazoPagamentoChange(e.target.value)}
-                placeholder="Ex: 30"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Ex: 30 dias</p>
-            </div>
-            <div>
-              <Label htmlFor="dataVencimento">Data de Vencimento *</Label>
-              <Input
-                id="dataVencimento"
-                type="date"
-                value={formData.dataVencimento}
-                onChange={(e) => setFormData(prev => ({ ...prev, dataVencimento: e.target.value }))}
-              />
-            </div>
+          <div>
+            <Label htmlFor="prazoPagamento">Prazo de Pagamento (dias) *</Label>
+            <Input
+              id="prazoPagamento"
+              type="number"
+              min="1"
+              value={formData.prazoPagamento}
+              onChange={(e) => handlePrazoPagamentoChange(e.target.value)}
+              placeholder="Ex: 30"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {formData.prazoPagamento} {formData.prazoPagamento === 1 ? 'dia' : 'dias'} a partir da aprovação
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="dataVencimento">Data de Vencimento *</Label>
+            <Input
+              id="dataVencimento"
+              type="date"
+              value={formData.dataVencimento}
+              onChange={(e) => setFormData(prev => ({ ...prev, dataVencimento: e.target.value }))}
+            />
           </div>
 
           <div>
