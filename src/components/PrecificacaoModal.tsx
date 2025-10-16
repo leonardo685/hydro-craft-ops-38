@@ -155,7 +155,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
   };
 
   const getCorMargem = () => {
-    if (percentualMargem >= 45) return "bg-success/10 text-success border-success";
+    if (percentualMargem >= 45) return "bg-accent/10 text-accent border-accent";
     if (percentualMargem >= 40) return "bg-warning/10 text-warning border-warning";
     return "bg-destructive/10 text-destructive border-destructive";
   };
