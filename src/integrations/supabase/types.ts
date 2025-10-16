@@ -548,62 +548,107 @@ export type Database = {
       }
       orcamentos: {
         Row: {
+          aprovado_por_gestor: boolean | null
           cliente_nome: string
+          comissao_percentual: number | null
+          comissao_valor: number | null
           created_at: string
+          custos_variaveis: Json | null
           data_aprovacao: string | null
+          data_aprovacao_gestor: string | null
           data_criacao: string
+          data_negociacao: string | null
           data_vencimento: string | null
+          desconto_percentual: number | null
           descricao: string | null
           equipamento: string
           forma_pagamento: string | null
           id: string
+          impostos_percentual: number | null
+          impostos_valor: number | null
+          margem_contribuicao: number | null
           numero: string
           numero_nf: string | null
           observacoes: string | null
           observacoes_nota: string | null
           ordem_servico_id: string | null
           pdf_nota_fiscal: string | null
+          percentuais_customizados: Json | null
+          percentual_margem: number | null
+          preco_desejado: number | null
           status: string
+          status_negociacao: string | null
+          total_custos_variaveis: number | null
           updated_at: string
           valor: number
         }
         Insert: {
+          aprovado_por_gestor?: boolean | null
           cliente_nome: string
+          comissao_percentual?: number | null
+          comissao_valor?: number | null
           created_at?: string
+          custos_variaveis?: Json | null
           data_aprovacao?: string | null
+          data_aprovacao_gestor?: string | null
           data_criacao?: string
+          data_negociacao?: string | null
           data_vencimento?: string | null
+          desconto_percentual?: number | null
           descricao?: string | null
           equipamento: string
           forma_pagamento?: string | null
           id?: string
+          impostos_percentual?: number | null
+          impostos_valor?: number | null
+          margem_contribuicao?: number | null
           numero: string
           numero_nf?: string | null
           observacoes?: string | null
           observacoes_nota?: string | null
           ordem_servico_id?: string | null
           pdf_nota_fiscal?: string | null
+          percentuais_customizados?: Json | null
+          percentual_margem?: number | null
+          preco_desejado?: number | null
           status?: string
+          status_negociacao?: string | null
+          total_custos_variaveis?: number | null
           updated_at?: string
           valor?: number
         }
         Update: {
+          aprovado_por_gestor?: boolean | null
           cliente_nome?: string
+          comissao_percentual?: number | null
+          comissao_valor?: number | null
           created_at?: string
+          custos_variaveis?: Json | null
           data_aprovacao?: string | null
+          data_aprovacao_gestor?: string | null
           data_criacao?: string
+          data_negociacao?: string | null
           data_vencimento?: string | null
+          desconto_percentual?: number | null
           descricao?: string | null
           equipamento?: string
           forma_pagamento?: string | null
           id?: string
+          impostos_percentual?: number | null
+          impostos_valor?: number | null
+          margem_contribuicao?: number | null
           numero?: string
           numero_nf?: string | null
           observacoes?: string | null
           observacoes_nota?: string | null
           ordem_servico_id?: string | null
           pdf_nota_fiscal?: string | null
+          percentuais_customizados?: Json | null
+          percentual_margem?: number | null
+          preco_desejado?: number | null
           status?: string
+          status_negociacao?: string | null
+          total_custos_variaveis?: number | null
           updated_at?: string
           valor?: number
         }
