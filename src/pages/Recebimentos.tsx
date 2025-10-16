@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ItensNFeModal } from "@/components/ItensNFeModal";
 import { CriarOrdemModal } from "@/components/CriarOrdemModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -27,6 +28,7 @@ export default function Recebimentos() {
   const [modalChaveAcesso, setModalChaveAcesso] = useState(false);
   const [notaFiscalSelecionada, setNotaFiscalSelecionada] = useState<any>(null);
   const [modalCriarOrdem, setModalCriarOrdem] = useState<any>(null);
+  const [avisoNovaNotaFiscal, setAvisoNovaNotaFiscal] = useState(false);
   
   // Estados para filtros
   const [dataInicio, setDataInicio] = useState<Date>();
@@ -89,6 +91,34 @@ export default function Recebimentos() {
     setFiltroNotaFiscal("");
   };
 
+  // Agrupar recebimentos por nota fiscal
+  const notasFiscaisAgrupadas = useMemo(() => {
+    const grupos = new Map<string, any>();
+    
+    recebimentos
+      .filter(r => r.nota_fiscal && r.nota_fiscal.trim() !== '')
+      .forEach(recebimento => {
+        const numeroNota = recebimento.nota_fiscal;
+        
+        if (!grupos.has(numeroNota)) {
+          grupos.set(numeroNota, {
+            numero_nota: numeroNota,
+            cliente_nome: recebimento.clientes?.nome || recebimento.cliente_nome || '',
+            data_entrada: recebimento.data_entrada,
+            recebimentos: [],
+            quantidade_itens: 0,
+            status: 'Processada'
+          });
+        }
+        
+        const grupo = grupos.get(numeroNota);
+        grupo.recebimentos.push(recebimento);
+        grupo.quantidade_itens = grupo.recebimentos.length;
+      });
+    
+    return Array.from(grupos.values());
+  }, [recebimentos]);
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -101,7 +131,7 @@ export default function Recebimentos() {
           </div>
           <div className="flex gap-3">
             <Button 
-              onClick={() => setModalChaveAcesso(true)}
+              onClick={() => setAvisoNovaNotaFiscal(true)}
               variant="outline"
               className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth shadow-medium"
             >
@@ -301,37 +331,29 @@ export default function Recebimentos() {
                   <TableRow>
                     <TableHead className="w-[150px]">Nº Nota Fiscal</TableHead>
                     <TableHead>Cliente</TableHead>
-                    <TableHead className="w-[100px]">Série</TableHead>
-                     <TableHead className="w-[150px]">Data de Emissão</TableHead>
-                     <TableHead className="w-[150px]">Data de Entrada</TableHead>
-                     <TableHead className="w-[100px]">Itens</TableHead>
-                     <TableHead className="w-[140px]">Status</TableHead>
-                     <TableHead className="w-[140px]">Ações</TableHead>
+                    <TableHead className="w-[150px]">Data de Entrada</TableHead>
+                    <TableHead className="w-[100px]">Itens</TableHead>
+                    <TableHead className="w-[140px]">Status</TableHead>
+                    <TableHead className="w-[140px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {notasFiscais.map((nota, index) => (
+                  {notasFiscaisAgrupadas.map((nota, index) => (
                     <TableRow key={index} className="hover:bg-muted/50">
                       <TableCell className="font-medium">
                         <span className="text-primary font-medium">
-                          NF-{nota.numero}
+                          {nota.numero_nota}
                         </span>
                       </TableCell>
                       <TableCell className="text-red-500 font-medium">
                         {nota.cliente_nome}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {nota.serie}
+                        {new Date(nota.data_entrada).toLocaleDateString('pt-BR')}
                       </TableCell>
-                       <TableCell className="text-muted-foreground">
-                         {new Date(nota.data_emissao).toLocaleDateString('pt-BR')}
-                       </TableCell>
-                       <TableCell className="text-muted-foreground">
-                         {new Date(nota.created_at).toLocaleDateString('pt-BR')}
-                       </TableCell>
-                       <TableCell className="text-center">
+                      <TableCell className="text-center">
                         <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
-                          {nota.itens?.length || 0}
+                          {nota.quantidade_itens}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -341,21 +363,21 @@ export default function Recebimentos() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             onClick={() => setModalCriarOrdem(nota)}
-                             className="h-8"
-                             title="Criar nova ordem"
-                           >
-                             <Plus className="h-4 w-4" />
-                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setNotaFiscalSelecionada(nota)}
+                            onClick={() => setModalCriarOrdem({ tipo: 'agrupada', ...nota })}
                             className="h-8"
-                            title="Visualizar NFe"
+                            title="Criar nova ordem"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setNotaFiscalSelecionada({ tipo: 'agrupada', ...nota })}
+                            className="h-8"
+                            title="Visualizar itens"
                           >
                             <FileText className="h-4 w-4" />
                           </Button>
@@ -376,6 +398,22 @@ export default function Recebimentos() {
           />
         )}
 
+        <AlertDialog open={avisoNovaNotaFiscal} onOpenChange={setAvisoNovaNotaFiscal}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Funcionalidade em Desenvolvimento</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta funcionalidade está em desenvolvimento. Por favor, utilize o botão "Novo Recebimento" para cadastrar equipamentos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => setAvisoNovaNotaFiscal(false)}>
+                Entendi
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <ChaveAcessoModal
           open={modalChaveAcesso}
           onClose={() => setModalChaveAcesso(false)}
@@ -395,14 +433,71 @@ export default function Recebimentos() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Detalhes da Nota Fiscal
+                {notaFiscalSelecionada?.tipo === 'agrupada' ? 'Itens do Recebimento' : 'Detalhes da Nota Fiscal'}
               </DialogTitle>
               <DialogDescription>
-                Informações completas da nota fiscal eletrônica
+                {notaFiscalSelecionada?.tipo === 'agrupada' 
+                  ? 'Equipamentos recebidos nesta nota fiscal'
+                  : 'Informações completas da nota fiscal eletrônica'}
               </DialogDescription>
             </DialogHeader>
             
-            {notaFiscalSelecionada && (
+            {notaFiscalSelecionada && notaFiscalSelecionada.tipo === 'agrupada' ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                  <div>
+                    <span className="text-sm text-muted-foreground">Nº Nota Fiscal</span>
+                    <p className="font-medium">{notaFiscalSelecionada.numero_nota}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-muted-foreground">Cliente</span>
+                    <p className="font-medium">{notaFiscalSelecionada.cliente_nome}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-muted-foreground">Data de Entrada</span>
+                    <p className="font-medium">
+                      {new Date(notaFiscalSelecionada.data_entrada).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-muted-foreground">Quantidade de Itens</span>
+                    <p className="font-medium">{notaFiscalSelecionada.quantidade_itens}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-3">Equipamentos Recebidos</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nº Ordem</TableHead>
+                        <TableHead>Tipo de Equipamento</TableHead>
+                        <TableHead>Nº Série</TableHead>
+                        <TableHead>Data de Entrada</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {notaFiscalSelecionada.recebimentos.map((recebimento: any) => (
+                        <TableRow key={recebimento.id}>
+                          <TableCell className="font-medium">{recebimento.numero_ordem}</TableCell>
+                          <TableCell>{recebimento.tipo_equipamento}</TableCell>
+                          <TableCell>{recebimento.numero_serie || '-'}</TableCell>
+                          <TableCell>
+                            {new Date(recebimento.data_entrada).toLocaleDateString('pt-BR')}
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                              {recebimento.status}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ) : notaFiscalSelecionada && (
               <div className="space-y-6">
                 {/* Informações Gerais */}
                 <div className="bg-gradient-secondary p-4 rounded-lg">

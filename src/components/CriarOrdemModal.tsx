@@ -10,7 +10,7 @@ import { useRecebimentos, type NotaFiscal, type ItemNFe } from "@/hooks/use-rece
 interface CriarOrdemModalProps {
   open: boolean;
   onClose: () => void;
-  notaFiscal: NotaFiscal;
+  notaFiscal: NotaFiscal | any;
 }
 
 export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalProps) {
@@ -18,22 +18,26 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
   const [itensSelecionados, setItensSelecionados] = useState<string[]>([]);
   const [criando, setCriando] = useState(false);
 
-  // Filtrar itens que já têm ordens de serviço criadas
-  const ordensExistentes = recebimentos.filter(r => r.chave_acesso_nfe === notaFiscal.chave_acesso);
-  const itensComOrdem = ordensExistentes.map(ordem => {
-    const match = ordem.observacoes?.match(/Item da NFe: ([^-]+)/);
-    return match ? match[1].trim() : '';
-  }).filter(Boolean);
+  // Verificar se é nota agrupada ou NFe importada
+  const isNotaAgrupada = notaFiscal?.tipo === 'agrupada';
+  
+  // Para notas agrupadas, usar recebimentos; para NFe, usar itens
+  const itensDisponiveis = isNotaAgrupada 
+    ? (notaFiscal.recebimentos || []).filter((r: any) => !r.ordem_servico_id)
+    : (() => {
+        const ordensExistentes = recebimentos.filter(r => r.chave_acesso_nfe === notaFiscal.chave_acesso);
+        const itensComOrdem = ordensExistentes.map(ordem => {
+          const match = ordem.observacoes?.match(/Item da NFe: ([^-]+)/);
+          return match ? match[1].trim() : '';
+        }).filter(Boolean);
+        return (notaFiscal.itens || []).filter(item => !itensComOrdem.includes(item.codigo));
+      })();
 
-  const itensDisponiveis = (notaFiscal.itens || []).filter(item => 
-    !itensComOrdem.includes(item.codigo)
-  );
-
-  const handleItemToggle = (codigoItem: string) => {
+  const handleItemToggle = (identificador: string) => {
     setItensSelecionados(prev => 
-      prev.includes(codigoItem)
-        ? prev.filter(id => id !== codigoItem)
-        : [...prev, codigoItem]
+      prev.includes(identificador)
+        ? prev.filter(id => id !== identificador)
+        : [...prev, identificador]
     );
   };
 
@@ -41,39 +45,49 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
     if (itensSelecionados.length === itensDisponiveis.length) {
       setItensSelecionados([]);
     } else {
-      setItensSelecionados(itensDisponiveis.map(item => item.codigo));
+      setItensSelecionados(itensDisponiveis.map((item: any) => 
+        isNotaAgrupada ? item.id.toString() : item.codigo
+      ));
     }
   };
 
   const handleCriarOrdens = async () => {
     setCriando(true);
     try {
-      const itensSelecionadosData = itensDisponiveis.filter(item => 
-        itensSelecionados.includes(item.codigo)
-      );
+      if (isNotaAgrupada) {
+        // Para notas agrupadas, não precisa criar recebimentos, apenas mostrar info
+        // Os recebimentos já existem, precisaríamos criar ordens de serviço
+        console.log('Criar ordens de serviço para:', itensSelecionados);
+        handleFechar();
+      } else {
+        // Para NFe importada, criar recebimentos
+        const itensSelecionadosData = itensDisponiveis.filter((item: any) => 
+          itensSelecionados.includes(item.codigo)
+        );
 
-      for (const item of itensSelecionadosData) {
-        const numeroOrdem = await gerarNumeroOrdem();
-        
-        const recebimentoData = {
-          numero_ordem: numeroOrdem,
-          cliente_nome: notaFiscal.cliente_nome,
-          cliente_cnpj: notaFiscal.cliente_cnpj || notaFiscal.cnpj_emitente,
-          data_entrada: new Date().toISOString(),
-          nota_fiscal: `NF-${notaFiscal.numero}`,
-          chave_acesso_nfe: notaFiscal.chave_acesso,
-          tipo_equipamento: item.descricao,
-          numero_serie: `${item.codigo}-${new Date().getFullYear()}`,
-          observacoes: `Item da NFe: ${item.codigo} - ${item.descricao}`,
-          urgente: false,
-          na_empresa: true,
-          status: 'recebido'
-        };
+        for (const item of itensSelecionadosData) {
+          const numeroOrdem = await gerarNumeroOrdem();
+          
+          const recebimentoData = {
+            numero_ordem: numeroOrdem,
+            cliente_nome: notaFiscal.cliente_nome,
+            cliente_cnpj: notaFiscal.cliente_cnpj || notaFiscal.cnpj_emitente,
+            data_entrada: new Date().toISOString(),
+            nota_fiscal: `NF-${notaFiscal.numero}`,
+            chave_acesso_nfe: notaFiscal.chave_acesso,
+            tipo_equipamento: item.descricao,
+            numero_serie: `${item.codigo}-${new Date().getFullYear()}`,
+            observacoes: `Item da NFe: ${item.codigo} - ${item.descricao}`,
+            urgente: false,
+            na_empresa: true,
+            status: 'recebido'
+          };
 
-        await criarRecebimento(recebimentoData);
+          await criarRecebimento(recebimentoData);
+        }
+
+        handleFechar();
       }
-
-      handleFechar();
     } catch (error) {
       console.error('Erro ao criar ordens:', error);
     } finally {
@@ -92,7 +106,7 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
-            Criar Ordens de Serviço - NF {notaFiscal.numero}
+            Criar Ordens de Serviço - {isNotaAgrupada ? notaFiscal.numero_nota : `NF ${notaFiscal.numero}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -102,9 +116,13 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
             <AlertDescription>
               <div className="space-y-1">
                 <p><strong>Cliente:</strong> {notaFiscal.cliente_nome}</p>
-                <p><strong>Série:</strong> {notaFiscal.serie}</p>
-                <p><strong>Data de Emissão:</strong> {new Date(notaFiscal.data_emissao).toLocaleDateString('pt-BR')}</p>
-                <p><strong>Itens disponíveis:</strong> {itensDisponiveis.length} de {notaFiscal.itens?.length || 0}</p>
+                {!isNotaAgrupada && (
+                  <>
+                    <p><strong>Série:</strong> {notaFiscal.serie}</p>
+                    <p><strong>Data de Emissão:</strong> {new Date(notaFiscal.data_emissao).toLocaleDateString('pt-BR')}</p>
+                  </>
+                )}
+                <p><strong>Itens disponíveis:</strong> {itensDisponiveis.length} {isNotaAgrupada ? '' : `de ${notaFiscal.itens?.length || 0}`}</p>
               </div>
             </AlertDescription>
           </Alert>
@@ -134,33 +152,57 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[50px]">Sel.</TableHead>
-                      <TableHead className="w-[120px]">Código</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead className="w-[100px]">NCM</TableHead>
-                      <TableHead className="w-[80px]">Qtd</TableHead>
-                      <TableHead className="w-[120px]">Valor Unit.</TableHead>
-                      <TableHead className="w-[120px]">Valor Total</TableHead>
+                      {isNotaAgrupada ? (
+                        <>
+                          <TableHead className="w-[120px]">Nº Ordem</TableHead>
+                          <TableHead>Tipo de Equipamento</TableHead>
+                          <TableHead className="w-[120px]">Nº Série</TableHead>
+                          <TableHead className="w-[140px]">Data de Entrada</TableHead>
+                        </>
+                      ) : (
+                        <>
+                          <TableHead className="w-[120px]">Código</TableHead>
+                          <TableHead>Descrição</TableHead>
+                          <TableHead className="w-[100px]">NCM</TableHead>
+                          <TableHead className="w-[80px]">Qtd</TableHead>
+                          <TableHead className="w-[120px]">Valor Unit.</TableHead>
+                          <TableHead className="w-[120px]">Valor Total</TableHead>
+                        </>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {itensDisponiveis.map((item) => (
-                      <TableRow key={item.codigo}>
+                    {itensDisponiveis.map((item: any) => (
+                      <TableRow key={isNotaAgrupada ? item.id : item.codigo}>
                         <TableCell>
                           <Checkbox
-                            checked={itensSelecionados.includes(item.codigo)}
-                            onCheckedChange={() => handleItemToggle(item.codigo)}
+                            checked={itensSelecionados.includes(isNotaAgrupada ? item.id.toString() : item.codigo)}
+                            onCheckedChange={() => handleItemToggle(isNotaAgrupada ? item.id.toString() : item.codigo)}
                           />
                         </TableCell>
-                        <TableCell className="font-mono text-sm">{item.codigo}</TableCell>
-                        <TableCell className="text-sm">{item.descricao}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{item.ncm}</TableCell>
-                        <TableCell className="text-center">{item.quantidade}</TableCell>
-                        <TableCell className="text-right">
-                          R$ {item.valor_unitario.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          R$ {item.valor_total.toFixed(2)}
-                        </TableCell>
+                        {isNotaAgrupada ? (
+                          <>
+                            <TableCell className="font-medium">{item.numero_ordem}</TableCell>
+                            <TableCell className="text-sm">{item.tipo_equipamento}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{item.numero_serie || '-'}</TableCell>
+                            <TableCell className="text-sm">
+                              {new Date(item.data_entrada).toLocaleDateString('pt-BR')}
+                            </TableCell>
+                          </>
+                        ) : (
+                          <>
+                            <TableCell className="font-mono text-sm">{item.codigo}</TableCell>
+                            <TableCell className="text-sm">{item.descricao}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{item.ncm}</TableCell>
+                            <TableCell className="text-center">{item.quantidade}</TableCell>
+                            <TableCell className="text-right">
+                              R$ {item.valor_unitario.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              R$ {item.valor_total.toFixed(2)}
+                            </TableCell>
+                          </>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
