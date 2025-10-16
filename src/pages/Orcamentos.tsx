@@ -13,6 +13,7 @@ import { Plus, FileText, Edit, Check, X, Copy, Search, Download } from "lucide-r
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
+import { NegociacaoModal } from "@/components/NegociacaoModal";
 import jsPDF from "jspdf";
 
 export default function Orcamentos() {
@@ -106,6 +107,9 @@ export default function Orcamentos() {
 
   const [showAprovarModal, setShowAprovarModal] = useState(false);
   const [orcamentoParaAprovar, setOrcamentoParaAprovar] = useState<any>(null);
+  const [showNegociacaoModal, setShowNegociacaoModal] = useState(false);
+  const [orcamentoNegociacao, setOrcamentoNegociacao] = useState<any>(null);
+  const [isGestor, setIsGestor] = useState(false);
 
   const handleAprovarOrcamento = (orcamento: any) => {
     setOrcamentoParaAprovar(orcamento);
@@ -120,6 +124,18 @@ export default function Orcamentos() {
     } catch (error) {
       console.error('Erro ao recarregar orçamentos:', error);
     }
+  };
+
+  const handleNegociacao = (orcamento: any, gestor: boolean = false) => {
+    setOrcamentoNegociacao(orcamento);
+    setIsGestor(gestor);
+    setShowNegociacaoModal(true);
+  };
+
+  const confirmarNegociacao = async () => {
+    await carregarOrcamentos();
+    setShowNegociacaoModal(false);
+    setOrcamentoNegociacao(null);
   };
 
   const handleReprovarOrcamento = async (id: string) => {
@@ -513,16 +529,17 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => editarOrcamento(item)}
+                          onClick={() => handleNegociacao(item, false)}
                         >
-                          <Edit className="h-4 w-4" />
+                          Negociação
                         </Button>
                         <Button
-                          variant="outline"
                           size="sm"
-                          onClick={() => gerarPDFOrcamento(item)}
+                          onClick={() => handleNegociacao(item, true)}
+                          className="bg-green-600 hover:bg-green-700 text-white"
                         >
-                          <Download className="h-4 w-4" />
+                          <Check className="h-4 w-4 mr-1" />
+                          Aprovar
                         </Button>
                         <Button
                           size="sm"
@@ -530,13 +547,6 @@ export default function Orcamentos() {
                           className="bg-red-600 hover:bg-red-700 text-white"
                         >
                           <X className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleAprovarOrcamento(item)}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          <Check className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -677,6 +687,14 @@ export default function Orcamentos() {
         onOpenChange={setShowAprovarModal}
         orcamento={orcamentoParaAprovar}
         onConfirm={confirmarAprovacao}
+      />
+      
+      <NegociacaoModal
+        open={showNegociacaoModal}
+        onOpenChange={setShowNegociacaoModal}
+        orcamento={orcamentoNegociacao}
+        onConfirm={confirmarNegociacao}
+        isGestor={isGestor}
       />
     </AppLayout>
   );
