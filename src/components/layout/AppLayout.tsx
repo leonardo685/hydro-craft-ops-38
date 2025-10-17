@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ReactNode } from "react";
-import fixzysLogo from "@/assets/fixzys-logo.jpg";
+import hydrofixLogo from "@/assets/hydrofix-logo.png";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -19,16 +19,16 @@ export function AppLayout({ children }: AppLayoutProps) {
               <SidebarTrigger className="hover:bg-secondary transition-fast" />
               <div className="flex items-center gap-4 flex-1">
                 <img 
-                  src={fixzysLogo} 
-                  alt="FIXZYS Logo" 
+                  src={hydrofixLogo} 
+                  alt="HydroFix Logo" 
                   className="h-10 w-auto"
                 />
                 <div>
                   <h1 className="text-xl font-semibold text-foreground">
-                    Sistema de Gestão
+                    HydroFix ERP
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Soluções completas para sua empresa
+                    Reforma de Equipamentos
                   </p>
                 </div>
               </div>
