@@ -20,15 +20,15 @@ export function AppLayout({ children }: AppLayoutProps) {
               <div className="flex items-center gap-4 flex-1">
                 <img 
                   src={hydrofixLogo} 
-                  alt="HydroFix Logo" 
+                  alt="FIXZYS Logo" 
                   className="h-10 w-auto"
                 />
                 <div>
                   <h1 className="text-xl font-semibold text-foreground">
-                    HydroFix ERP
+                    FIXZYS
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Reforma de Equipamentos
+                    Sistema de Gestão
                   </p>
                 </div>
               </div>

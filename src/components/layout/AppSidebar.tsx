@@ -107,12 +107,12 @@ export function AppSidebar() {
         <div className="flex items-center gap-3">
           <img 
             src={hydrofixLogo} 
-            alt="HydroFix Logo" 
+            alt="FIXZYS Logo" 
             className="h-10 w-10"
           />
           <div>
-            <h2 className="text-lg font-semibold text-sidebar-foreground">HydroFix ERP</h2>
-            <p className="text-sm text-sidebar-foreground/70">Reforma de Equipamentos</p>
+            <h2 className="text-lg font-semibold text-sidebar-foreground">FIXZYS</h2>
+            <p className="text-sm text-sidebar-foreground/70">Sistema de Gestão</p>
           </div>
         </div>
       </SidebarHeader>
