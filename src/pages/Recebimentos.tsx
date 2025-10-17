@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText } from "lucide-react";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
@@ -273,52 +274,71 @@ export default function Recebimentos() {
                     <TableHead className="w-[150px]">Nº da Ordem</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead className="w-[150px]">Data de Entrada</TableHead>
+                    <TableHead className="w-[120px]">Status</TableHead>
                     <TableHead className="w-[140px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recebimentosFiltrados.map((item, index) => (
-                    <TableRow key={index} className="hover:bg-muted/50">
-                      <TableCell className="font-medium">
-                        <button
-                          onClick={() => navigate(`/recebimentos/${item.id}`)}
-                          className="text-primary hover:text-primary-hover underline font-medium"
-                        >
-                          {item.numero_ordem}
-                        </button>
-                      </TableCell>
-                      <TableCell className="text-red-500 font-medium">
-                        {item.clientes?.nome || item.cliente_nome || 'Cliente não encontrado'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(item.data_entrada).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedEquipment({
-                              numeroOrdem: item.numero_ordem,
-                              cliente: item.clientes?.nome || item.cliente_nome || 'Cliente não encontrado',
-                              dataEntrada: new Date(item.data_entrada).toLocaleDateString('pt-BR')
-                            })}
-                            className="h-8"
+                  {recebimentosFiltrados.map((item, index) => {
+                    const getStatusBadge = (status: string) => {
+                      const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+                        'recebido': { label: 'Recebida', variant: 'secondary' },
+                        'em_analise': { label: 'Em Análise', variant: 'default' },
+                        'aprovado': { label: 'Aprovada', variant: 'outline' },
+                        'aguardando_retorno': { label: 'Aguardando Retorno', variant: 'outline' },
+                        'retornado': { label: 'Retornada', variant: 'destructive' }
+                      };
+                      
+                      const statusInfo = statusMap[status] || { label: status, variant: 'secondary' as const };
+                      return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
+                    };
+
+                    return (
+                      <TableRow key={index} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">
+                          <button
+                            onClick={() => navigate(`/recebimentos/${item.id}`)}
+                            className="text-primary hover:text-primary-hover underline font-medium"
                           >
-                            <QrCode className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => navigate(`/analise/novo/${item.id}`)}
-                            className="h-8"
-                          >
-                            <Play className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            {item.numero_ordem}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-red-500 font-medium">
+                          {item.clientes?.nome || item.cliente_nome || 'Cliente não encontrado'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {new Date(item.data_entrada).toLocaleDateString('pt-BR')}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(item.status || 'recebido')}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedEquipment({
+                                numeroOrdem: item.numero_ordem,
+                                cliente: item.clientes?.nome || item.cliente_nome || 'Cliente não encontrado',
+                                dataEntrada: new Date(item.data_entrada).toLocaleDateString('pt-BR')
+                              })}
+                              className="h-8"
+                            >
+                              <QrCode className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => navigate(`/analise/novo/${item.id}`)}
+                              className="h-8"
+                            >
+                              <Play className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
