@@ -12,15 +12,38 @@ import {
   DollarSign
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
 
+  // Buscar estatísticas reais do banco de dados
+  const { data: statsData } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const [recebimentos, orcamentos, ordens] = await Promise.all([
+        supabase.from('recebimentos').select('status', { count: 'exact' }),
+        supabase.from('orcamentos').select('status', { count: 'exact' }).eq('status', 'pendente'),
+        supabase.from('ordens_servico').select('status', { count: 'exact' }).eq('status', 'em_andamento')
+      ]);
+
+      const emAnalise = recebimentos.data?.filter(r => r.status === 'em_analise').length || 0;
+
+      return {
+        totalRecebimentos: recebimentos.count || 0,
+        emAnalise,
+        orcamentosPendentes: orcamentos.count || 0,
+        projetosAndamento: ordens.count || 0
+      };
+    }
+  });
+
   const stats = [
-    { label: "Equipamentos Recebidos", value: "12", icon: ClipboardList, color: "text-primary" },
-    { label: "Em Análise", value: "5", icon: Search, color: "text-warning" },
-    { label: "Orçamentos Pendentes", value: "8", icon: Calculator, color: "text-accent" },
-    { label: "Projetos em Andamento", value: "3", icon: CheckCircle, color: "text-primary" }
+    { label: "Equipamentos Recebidos", value: statsData?.totalRecebimentos.toString() || "0", icon: ClipboardList, color: "text-primary" },
+    { label: "Em Análise", value: statsData?.emAnalise.toString() || "0", icon: Search, color: "text-warning" },
+    { label: "Orçamentos Pendentes", value: statsData?.orcamentosPendentes.toString() || "0", icon: Calculator, color: "text-accent" },
+    { label: "Projetos em Andamento", value: statsData?.projetosAndamento.toString() || "0", icon: CheckCircle, color: "text-primary" }
   ];
 
   const quickActions = [
