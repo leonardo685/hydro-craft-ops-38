@@ -42,45 +42,53 @@ import {
   TrendingUp,
   CreditCard,
   ChevronDown,
-  Target
+  Target,
+  Shield
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   {
     title: "Recebimentos",
     url: "/recebimentos",
     icon: ClipboardList,
+    permission: "recebimentos",
   },
   {
     title: "Análise",
     url: "/analise",
     icon: Search,
+    permission: "analise",
   },
   {
     title: "Orçamentos",
     url: "/orcamentos",
     icon: Calculator,
+    permission: "orcamentos",
   },
   {
     title: "Aprovados",
     url: "/aprovados",
     icon: CheckCircle,
+    permission: "aprovados",
   },
   {
     title: "Faturamento",
     url: "/faturamento",
     icon: Receipt,
+    permission: "faturamento",
   },
   {
     title: "Financeiro",
     url: "/financeiro/dashboard",
     icon: CreditCard,
+    permission: "financeiro",
     submenu: [
-      { title: "Dashboard", url: "/financeiro/dashboard" },
-      { title: "DRE", url: "/financeiro/dre" },
-      { title: "DFC", url: "/financeiro/dfc" },
-      { title: "Meta de Gastos", url: "/financeiro/meta-gastos" },
+      { title: "Dashboard", url: "/financeiro/dashboard", permission: "financeiro_dashboard" },
+      { title: "DRE", url: "/financeiro/dre", permission: "financeiro_dre" },
+      { title: "DFC", url: "/financeiro/dfc", permission: "financeiro_dfc" },
+      { title: "Meta de Gastos", url: "/financeiro/meta-gastos", permission: "financeiro_metas" },
     ]
   },
 ];
@@ -88,6 +96,9 @@ const menuItems = [
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { hasPermission, signOut, userRole } = useAuth();
+
+  const filteredMenuItems = menuItems.filter(item => hasPermission(item.permission));
 
   return (
     <Sidebar className="border-r border-sidebar-border">
@@ -108,7 +119,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Sistema de Gestão</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {filteredMenuItems.map((item) => (
                 item.submenu ? (
                   <Collapsible key={item.title} defaultOpen={location.pathname.startsWith("/financeiro")}>
                     <SidebarMenuItem>
@@ -121,21 +132,23 @@ export function AppSidebar() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          {item.submenu.map((subItem: any) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={location.pathname === subItem.url}
-                              >
-                                <button
-                                  onClick={() => navigate(subItem.url)}
-                                  className="w-full text-left"
+                          {item.submenu
+                            .filter((subItem: any) => hasPermission(subItem.permission))
+                            .map((subItem: any) => (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={location.pathname === subItem.url}
                                 >
-                                  {subItem.title}
-                                </button>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
+                                  <button
+                                    onClick={() => navigate(subItem.url)}
+                                    className="w-full text-left"
+                                  >
+                                    {subItem.title}
+                                  </button>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
                         </SidebarMenuSub>
                       </CollapsibleContent>
                     </SidebarMenuItem>
@@ -170,7 +183,7 @@ export function AppSidebar() {
               <Building2 className="h-4 w-4 text-sidebar-foreground/70" />
               <div className="text-sm text-sidebar-foreground/70 flex-1 text-left">
                 <p className="font-medium">Sua Empresa</p>
-                <p className="text-xs">Sistema ERP</p>
+                <p className="text-xs capitalize">{userRole || 'Sistema ERP'}</p>
               </div>
               <ChevronUp className="h-4 w-4 text-sidebar-foreground/70" />
             </button>
@@ -180,16 +193,24 @@ export function AppSidebar() {
             align="start" 
             className="w-56 mb-2"
           >
-            <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/cadastros')}>
-              <Users className="mr-2 h-4 w-4" />
-              <span>Cadastros</span>
-            </DropdownMenuItem>
+            {hasPermission('cadastros') && (
+              <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/cadastros')}>
+                <Users className="mr-2 h-4 w-4" />
+                <span>Cadastros</span>
+              </DropdownMenuItem>
+            )}
+            {hasPermission('admin_permissions') && (
+              <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/admin/permissions')}>
+                <Shield className="mr-2 h-4 w-4" />
+                <span>Gerenciar Permissões</span>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem className="cursor-pointer">
               <Settings className="mr-2 h-4 w-4" />
               <span>Configurações</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer text-destructive">
+            <DropdownMenuItem className="cursor-pointer text-destructive" onClick={signOut}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Sair</span>
             </DropdownMenuItem>

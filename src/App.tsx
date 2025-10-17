@@ -4,6 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import Auth from "./pages/Auth";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Recebimentos from "./pages/Recebimentos";
@@ -23,6 +26,7 @@ import DRE from "./pages/DRE";
 import DFC from "./pages/DFC";
 import MetaGastos from "./pages/MetaGastos";
 import OrdemPorQRCode from "./pages/OrdemPorQRCode";
+import AdminPermissions from "./pages/AdminPermissions";
 
 const queryClient = new QueryClient();
 
@@ -32,28 +36,32 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/recebimentos" element={<Recebimentos />} />
-          <Route path="/recebimentos/novo" element={<NovoRecebimento />} />
-          <Route path="/recebimentos/:id" element={<DetalhesRecebimento />} />
-          <Route path="/analise" element={<Analise />} />
-          <Route path="/analise/novo/:id" element={<NovaAnalise />} />
-          <Route path="/orcamentos" element={<Orcamentos />} />
-          <Route path="/orcamentos/novo" element={<NovoOrcamento />} />
-          <Route path="/aprovados" element={<Aprovados />} />
-          <Route path="/ordem-servico/:id" element={<VisualizarOrdemServico />} />
-          <Route path="/faturamento" element={<Faturamento />} />
-          <Route path="/cadastros" element={<Cadastros />} />
-          <Route path="/financeiro" element={<Financeiro />} />
-          <Route path="/financeiro/dashboard" element={<Dashboard />} />
-          <Route path="/financeiro/dre" element={<DRE />} />
-          <Route path="/financeiro/dfc" element={<DFC />} />
-          <Route path="/financeiro/meta-gastos" element={<MetaGastos />} />
-          <Route path="/ordem/:numeroOrdem" element={<OrdemPorQRCode />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/recebimentos" element={<ProtectedRoute requiredPermission="recebimentos"><Recebimentos /></ProtectedRoute>} />
+            <Route path="/recebimentos/novo" element={<ProtectedRoute requiredPermission="recebimentos"><NovoRecebimento /></ProtectedRoute>} />
+            <Route path="/recebimentos/:id" element={<ProtectedRoute requiredPermission="recebimentos"><DetalhesRecebimento /></ProtectedRoute>} />
+            <Route path="/analise" element={<ProtectedRoute requiredPermission="analise"><Analise /></ProtectedRoute>} />
+            <Route path="/analise/novo/:id" element={<ProtectedRoute requiredPermission="analise"><NovaAnalise /></ProtectedRoute>} />
+            <Route path="/orcamentos" element={<ProtectedRoute requiredPermission="orcamentos"><Orcamentos /></ProtectedRoute>} />
+            <Route path="/orcamentos/novo" element={<ProtectedRoute requiredPermission="orcamentos"><NovoOrcamento /></ProtectedRoute>} />
+            <Route path="/aprovados" element={<ProtectedRoute requiredPermission="aprovados"><Aprovados /></ProtectedRoute>} />
+            <Route path="/ordem-servico/:id" element={<ProtectedRoute><VisualizarOrdemServico /></ProtectedRoute>} />
+            <Route path="/faturamento" element={<ProtectedRoute requiredPermission="faturamento"><Faturamento /></ProtectedRoute>} />
+            <Route path="/cadastros" element={<ProtectedRoute requiredPermission="cadastros"><Cadastros /></ProtectedRoute>} />
+            <Route path="/financeiro" element={<ProtectedRoute requiredPermission="financeiro"><Financeiro /></ProtectedRoute>} />
+            <Route path="/financeiro/dashboard" element={<ProtectedRoute requiredPermission="financeiro_dashboard"><Dashboard /></ProtectedRoute>} />
+            <Route path="/financeiro/dre" element={<ProtectedRoute requiredPermission="financeiro_dre"><DRE /></ProtectedRoute>} />
+            <Route path="/financeiro/dfc" element={<ProtectedRoute requiredPermission="financeiro_dfc"><DFC /></ProtectedRoute>} />
+            <Route path="/financeiro/meta-gastos" element={<ProtectedRoute requiredPermission="financeiro_metas"><MetaGastos /></ProtectedRoute>} />
+            <Route path="/admin/permissions" element={<ProtectedRoute requiredPermission="admin_permissions"><AdminPermissions /></ProtectedRoute>} />
+            <Route path="/ordem/:numeroOrdem" element={<OrdemPorQRCode />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
