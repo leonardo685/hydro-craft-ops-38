@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ReactNode } from "react";
-import mecHidroLogo from "@/assets/mec-hidro-logo.png";
+import fixzysLogo from "@/assets/fixzys-logo.jpg";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -19,16 +19,16 @@ export function AppLayout({ children }: AppLayoutProps) {
               <SidebarTrigger className="hover:bg-secondary transition-fast" />
               <div className="flex items-center gap-4 flex-1">
                 <img 
-                  src={mecHidroLogo} 
-                  alt="MEC-HIDRO Logo" 
-                  className="h-12 w-auto"
+                  src={fixzysLogo} 
+                  alt="FIXZYS Logo" 
+                  className="h-10 w-auto"
                 />
                 <div>
                   <h1 className="text-xl font-semibold text-foreground">
-                    Sistema de Gestão ERP
+                    Sistema de Gestão
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Controle completo dos seus equipamentos hidráulicos
+                    Soluções completas para sua empresa
                   </p>
                 </div>
               </div>
