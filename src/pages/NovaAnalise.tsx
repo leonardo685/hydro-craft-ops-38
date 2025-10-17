@@ -653,6 +653,8 @@ const NovaOrdemServico = () => {
         });
       }
 
+      let ordemId = ordemExistente?.id;
+
       if (isEdicao && ordemExistente) {
         // Atualizar ordem existente
         const { error } = await supabase
@@ -673,16 +675,11 @@ const NovaOrdemServico = () => {
           .eq('id', ordemExistente.id);
 
         if (error) throw error;
-
-        toast({
-          title: "Ordem de serviço atualizada!",
-          description: "A ordem de serviço foi atualizada com sucesso.",
-        });
       } else {
         // Criar nova ordem
         const numeroOrdem = `OS-${Date.now()}`;
         
-        const { error } = await supabase
+        const { data: novaOrdem, error } = await supabase
           .from('ordens_servico')
           .insert({
             recebimento_id: recebimento?.id || null,
@@ -702,15 +699,90 @@ const NovaOrdemServico = () => {
             usinagem_necessaria: usinagemSelecionada,
             tempo_estimado: formData.prazoEstimado,
             observacoes_tecnicas: formData.observacoes
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
-
-        toast({
-          title: "Ordem de serviço criada!",
-          description: "A ordem de serviço foi criada com sucesso.",
-        });
+        ordemId = novaOrdem.id;
       }
+
+      // Upload de fotos de chegada (com flag apresentar_orcamento)
+      for (let i = 0; i < fotosChegada.length; i++) {
+        const foto = fotosChegada[i];
+        if (foto && recebimento?.id) {
+          try {
+            const fileExt = foto.name.split('.').pop();
+            const fileName = `${recebimento.id}_chegada_${i}_${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+              .from('equipamentos')
+              .upload(filePath, foto);
+
+            if (uploadError) {
+              console.error('Erro no upload da foto de chegada:', uploadError);
+              continue;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+              .from('equipamentos')
+              .getPublicUrl(filePath);
+
+            await supabase
+              .from('fotos_equipamentos')
+              .insert({
+                recebimento_id: recebimento.id,
+                arquivo_url: publicUrl,
+                nome_arquivo: fileName,
+                apresentar_orcamento: apresentarOrcamento[i]
+              });
+          } catch (error) {
+            console.error('Erro ao processar foto de chegada:', error);
+          }
+        }
+      }
+
+      // Upload de fotos de análise
+      for (let i = 0; i < fotosAnalise.length; i++) {
+        const foto = fotosAnalise[i];
+        if (foto && recebimento?.id) {
+          try {
+            const fileExt = foto.name.split('.').pop();
+            const fileName = `${recebimento.id}_analise_${i}_${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+              .from('equipamentos')
+              .upload(filePath, foto);
+
+            if (uploadError) {
+              console.error('Erro no upload da foto de análise:', uploadError);
+              continue;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+              .from('equipamentos')
+              .getPublicUrl(filePath);
+
+            await supabase
+              .from('fotos_equipamentos')
+              .insert({
+                recebimento_id: recebimento.id,
+                arquivo_url: publicUrl,
+                nome_arquivo: fileName,
+                apresentar_orcamento: false
+              });
+          } catch (error) {
+            console.error('Erro ao processar foto de análise:', error);
+          }
+        }
+      }
+
+      toast({
+        title: isEdicao ? "Ordem de serviço atualizada!" : "Ordem de serviço criada!",
+        description: isEdicao ? "A ordem de serviço foi atualizada com sucesso." : "A ordem de serviço foi criada com sucesso.",
+      });
 
       navigate('/analise');
     } catch (error) {
