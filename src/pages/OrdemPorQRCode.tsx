@@ -1,13 +1,24 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 export default function OrdemPorQRCode() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
+    if (loading) return;
+    
+    if (!user) {
+      navigate("/auth", { 
+        state: { from: `/ordem/${numeroOrdem}` } 
+      });
+      return;
+    }
+
     const buscarOrdem = async () => {
       if (!numeroOrdem) {
         toast.error("Número da ordem não encontrado");
@@ -55,7 +66,7 @@ export default function OrdemPorQRCode() {
     };
 
     buscarOrdem();
-  }, [numeroOrdem, navigate]);
+  }, [numeroOrdem, navigate, user, loading]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">

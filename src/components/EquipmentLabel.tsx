@@ -55,12 +55,12 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
                 background: white;
               }
               .label {
-                width: 300px;
-                height: 120px;
+                width: 302px;
+                height: 113px;
                 border: 2px solid #000;
                 display: flex;
                 align-items: center;
-                padding: 10px;
+                padding: 8px;
                 box-sizing: border-box;
                 background: white;
               }
@@ -117,8 +117,8 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = 300;
-    canvas.height = 120;
+    canvas.width = 302;
+    canvas.height = 113;
 
     // Fundo branco
     ctx.fillStyle = '#ffffff';

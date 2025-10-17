@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -30,7 +30,10 @@ const registerSchema = z.object({
 export default function Auth() {
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  
+  const redirectTo = (location.state as { from?: string })?.from || '/';
 
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
@@ -52,9 +55,9 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate(redirectTo);
     }
-  }, [user, navigate]);
+  }, [user, navigate, redirectTo]);
 
   const onLogin = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
@@ -64,11 +67,11 @@ export default function Auth() {
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Email ou senha incorretos');
       } else {
-        toast.error('Erro ao fazer login: ' + error.message);
+      toast.error('Erro ao fazer login: ' + error.message);
       }
     } else {
       toast.success('Login realizado com sucesso!');
-      navigate('/');
+      navigate(redirectTo);
     }
     setIsLoading(false);
   };
