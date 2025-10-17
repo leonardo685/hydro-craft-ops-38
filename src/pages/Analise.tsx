@@ -78,16 +78,19 @@ export default function OrdensServico() {
 
   const handleReject = async (ordemId: string) => {
     try {
+      // Quando reprovada, a ordem vai direto para faturamento para nota de retorno
       const { error } = await supabase
         .from('ordens_servico')
-        .update({ status: 'reprovada' })
+        .update({ 
+          status: 'reprovada'
+        })
         .eq('id', ordemId);
 
       if (error) throw error;
       
       toast({
-        title: "Sucesso",
-        description: "Ordem de serviço reprovada com sucesso!",
+        title: "Ordem reprovada",
+        description: "A ordem foi movida para faturamento para emissão de nota de retorno.",
       });
       
       loadOrdensServico();

@@ -49,11 +49,11 @@ export default function Faturamento() {
   }, []);
 
   const loadData = async () => {
-    // Carregar ordens aguardando retorno
+    // Carregar ordens aguardando retorno OU reprovadas (ambas precisam de nota de retorno)
     const { data: ordensData, error: ordensError } = await supabase
       .from('ordens_servico')
       .select('*')
-      .eq('status', 'aguardando_retorno')
+      .in('status', ['aguardando_retorno', 'reprovada'])
       .order('updated_at', { ascending: false });
 
     if (ordensError) {
