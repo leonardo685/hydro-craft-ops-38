@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import fixzysLogo from '@/assets/hydrofix-logo.png';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -93,7 +94,10 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-md shadow-elegant">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
