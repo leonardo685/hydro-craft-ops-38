@@ -1,20 +1,71 @@
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+interface ThemeToggleProps {
+  className?: string;
+}
+
+export function ThemeToggle({ className }: ThemeToggleProps) {
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="h-9 w-9"
+    <div
+      className={cn(
+        "flex w-16 h-8 p-1 rounded-full cursor-pointer transition-all duration-300",
+        isDark 
+          ? "bg-card border border-border" 
+          : "bg-background border border-border",
+        className
+      )}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      role="button"
+      tabIndex={0}
+      aria-label="Toggle theme"
     >
-      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-      <span className="sr-only">Toggle theme</span>
-    </Button>
+      <div className="flex justify-between items-center w-full">
+        <div
+          className={cn(
+            "flex justify-center items-center w-6 h-6 rounded-full transition-transform duration-300",
+            isDark 
+              ? "transform translate-x-0 bg-secondary" 
+              : "transform translate-x-8 bg-muted"
+          )}
+        >
+          {isDark ? (
+            <Moon 
+              className="w-4 h-4 text-primary-foreground" 
+              strokeWidth={1.5}
+            />
+          ) : (
+            <Sun 
+              className="w-4 h-4 text-muted-foreground" 
+              strokeWidth={1.5}
+            />
+          )}
+        </div>
+        <div
+          className={cn(
+            "flex justify-center items-center w-6 h-6 rounded-full transition-transform duration-300",
+            isDark 
+              ? "bg-transparent" 
+              : "transform -translate-x-8"
+          )}
+        >
+          {isDark ? (
+            <Sun 
+              className="w-4 h-4 text-muted-foreground" 
+              strokeWidth={1.5}
+            />
+          ) : (
+            <Moon 
+              className="w-4 h-4 text-foreground" 
+              strokeWidth={1.5}
+            />
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
