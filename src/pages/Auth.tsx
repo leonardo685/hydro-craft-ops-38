@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import mecHidroLogo from '@/assets/mec-hidro-logo.png';
+import fixzysLogo from '@/assets/hydrofix-logo.png';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -97,11 +97,11 @@ export default function Auth() {
       <Card className="w-full max-w-md shadow-elegant">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
-            <img src={mecHidroLogo} alt="MEC-HIDRO Logo" className="h-16 w-auto" />
+            <img src={fixzysLogo} alt="FixZys Logo" className="h-16 w-auto" />
           </div>
           <div>
-            <CardTitle className="text-2xl">Sistema ERP</CardTitle>
-            <CardDescription>Gestão de Equipamentos Hidráulicos</CardDescription>
+            <CardTitle className="text-2xl">FixZys</CardTitle>
+            <CardDescription>Sistema de Gestão</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
