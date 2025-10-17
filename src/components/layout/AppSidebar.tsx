@@ -13,6 +13,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import hydrofixLogo from "@/assets/hydrofix-logo.png";
 import {
   Collapsible,
   CollapsibleContent,
@@ -104,9 +105,11 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border">
       <SidebarHeader className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-primary p-2 rounded-lg">
-            <Wrench className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <img 
+            src={hydrofixLogo} 
+            alt="HydroFix Logo" 
+            className="h-10 w-10"
+          />
           <div>
             <h2 className="text-lg font-semibold text-sidebar-foreground">HydroFix ERP</h2>
             <p className="text-sm text-sidebar-foreground/70">Reforma de Equipamentos</p>
