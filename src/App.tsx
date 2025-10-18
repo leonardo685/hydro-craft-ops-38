@@ -27,7 +27,6 @@ import DFC from "./pages/DFC";
 import MetaGastos from "./pages/MetaGastos";
 import OrdemPorQRCode from "./pages/OrdemPorQRCode";
 import AdminPermissions from "./pages/AdminPermissions";
-import Configuracoes from "./pages/Configuracoes";
 
 const queryClient = new QueryClient();
 
@@ -58,7 +57,6 @@ const App = () => (
             <Route path="/financeiro/dfc" element={<ProtectedRoute requiredPermission="financeiro_dfc"><DFC /></ProtectedRoute>} />
             <Route path="/financeiro/meta-gastos" element={<ProtectedRoute requiredPermission="financeiro_metas"><MetaGastos /></ProtectedRoute>} />
             <Route path="/admin/permissions" element={<ProtectedRoute requiredPermission="admin_permissions"><AdminPermissions /></ProtectedRoute>} />
-            <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
             <Route path="/ordem/:numeroOrdem" element={<OrdemPorQRCode />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

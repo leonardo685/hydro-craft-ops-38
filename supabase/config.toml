@@ -22,6 +22,3 @@ enable_confirmations = false
 
 [functions.consultar-nfe]
 verify_jwt = false
-
-[functions.notificar-aprovacao]
-verify_jwt = true

@@ -190,24 +190,6 @@ export const AprovarOrcamentoModal = ({
         return;
       }
 
-      // Enviar notificação de aprovação em background
-      supabase.functions.invoke('notificar-aprovacao', {
-        body: {
-          orcamento: {
-            id: orcamento.id,
-            numero: orcamento.numero,
-            cliente_nome: orcamento.cliente_nome,
-            equipamento: orcamento.equipamento,
-            valor: formData.valorComDesconto,
-            data_aprovacao: new Date().toISOString(),
-          }
-        }
-      }).then(({ error: webhookError }) => {
-        if (webhookError) {
-          console.error('Erro ao enviar notificação:', webhookError);
-        }
-      });
-
       toast({
         title: "Sucesso",
         description: "Orçamento aprovado com sucesso!"

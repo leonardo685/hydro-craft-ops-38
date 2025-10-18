@@ -208,7 +208,7 @@ export function AppSidebar() {
                 <span>Gerenciar Permissões</span>
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/configuracoes')}>
+            <DropdownMenuItem className="cursor-pointer">
               <Settings className="mr-2 h-4 w-4" />
               <span>Configurações</span>
             </DropdownMenuItem>
