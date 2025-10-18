@@ -54,7 +54,7 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
   };
 
   const handleAdicionarNovoItem = () => {
-    navigate('/novo-recebimento', {
+    navigate('/recebimentos/novo', {
       state: {
         notaFiscal: {
           id: notaFiscal.id,
