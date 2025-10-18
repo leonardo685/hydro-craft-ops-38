@@ -837,6 +837,7 @@ export type Database = {
           local_instalacao: string | null
           na_empresa: boolean | null
           nota_fiscal: string | null
+          nota_fiscal_id: string | null
           numero_ordem: string
           numero_serie: string | null
           observacoes: string | null
@@ -862,6 +863,7 @@ export type Database = {
           local_instalacao?: string | null
           na_empresa?: boolean | null
           nota_fiscal?: string | null
+          nota_fiscal_id?: string | null
           numero_ordem: string
           numero_serie?: string | null
           observacoes?: string | null
@@ -887,6 +889,7 @@ export type Database = {
           local_instalacao?: string | null
           na_empresa?: boolean | null
           nota_fiscal?: string | null
+          nota_fiscal_id?: string | null
           numero_ordem?: string
           numero_serie?: string | null
           observacoes?: string | null
@@ -905,6 +908,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimentos_nota_fiscal_id_fkey"
+            columns: ["nota_fiscal_id"]
+            isOneToOne: false
+            referencedRelation: "notas_fiscais"
             referencedColumns: ["id"]
           },
         ]
@@ -985,6 +995,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      atualizar_status_nota_fiscal: {
+        Args: { nota_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
