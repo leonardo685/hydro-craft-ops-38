@@ -379,9 +379,32 @@ export default function Recebimentos() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                          {nota.status}
-                        </span>
+                        {(() => {
+                          // Calcular status baseado no campo na_empresa dos recebimentos
+                          const recebimentosDaNota = recebimentos.filter(r => r.nota_fiscal === nota.numero_nota);
+                          const totalRecebimentos = recebimentosDaNota.length;
+                          const naEmpresa = recebimentosDaNota.filter(r => r.na_empresa).length;
+                          
+                          let statusText = 'Processada';
+                          let statusColor = 'bg-blue-50 text-blue-700 ring-blue-600/20';
+                          
+                          if (naEmpresa === totalRecebimentos) {
+                            statusText = 'Processada';
+                            statusColor = 'bg-blue-50 text-blue-700 ring-blue-600/20';
+                          } else if (naEmpresa === 0) {
+                            statusText = 'Retornada';
+                            statusColor = 'bg-gray-50 text-gray-700 ring-gray-600/20';
+                          } else {
+                            statusText = 'Parcialmente Retornada';
+                            statusColor = 'bg-amber-50 text-amber-700 ring-amber-600/20';
+                          }
+                          
+                          return (
+                            <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${statusColor}`}>
+                              {statusText}
+                            </span>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">

@@ -52,6 +52,7 @@ export interface NotaFiscal {
   status: string;
   created_at: string;
   itens?: ItemNFe[];
+  recebimentos?: Recebimento[];
 }
 
 export interface ItemNFe {
@@ -123,7 +124,8 @@ export const useRecebimentos = () => {
         .from('notas_fiscais')
         .select(`
           *,
-          itens_nfe (*)
+          itens_nfe (*),
+          recebimentos!nota_fiscal_id (*)
         `)
         .order('data_emissao', { ascending: false });
 
@@ -131,7 +133,8 @@ export const useRecebimentos = () => {
 
       const notasFormatadas = data?.map(nota => ({
         ...nota,
-        itens: nota.itens_nfe || []
+        itens: nota.itens_nfe || [],
+        recebimentos: nota.recebimentos || []
       })) || [];
 
       setNotasFiscais(notasFormatadas);

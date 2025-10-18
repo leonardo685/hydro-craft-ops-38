@@ -54,40 +54,34 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
   const handleCriarOrdens = async () => {
     setCriando(true);
     try {
-      if (isNotaAgrupada) {
-        // Para notas agrupadas, não precisa criar recebimentos, apenas mostrar info
-        // Os recebimentos já existem, precisaríamos criar ordens de serviço
-        console.log('Criar ordens de serviço para:', itensSelecionados);
-        handleFechar();
-      } else {
-        // Para NFe importada, criar recebimentos
-        const itensSelecionadosData = itensDisponiveis.filter((item: any) => 
-          itensSelecionados.includes(item.codigo)
-        );
+      // Para NFe importada, criar recebimentos vinculados à nota fiscal
+      const itensSelecionadosData = itensDisponiveis.filter((item: any) => 
+        itensSelecionados.includes(item.codigo)
+      );
 
-        for (const item of itensSelecionadosData) {
-          const numeroOrdem = await gerarNumeroOrdem();
-          
-          const recebimentoData = {
-            numero_ordem: numeroOrdem,
-            cliente_nome: notaFiscal.cliente_nome,
-            cliente_cnpj: notaFiscal.cliente_cnpj || notaFiscal.cnpj_emitente,
-            data_entrada: new Date().toISOString(),
-            nota_fiscal: `NF-${notaFiscal.numero}`,
-            chave_acesso_nfe: notaFiscal.chave_acesso,
-            tipo_equipamento: item.descricao,
-            numero_serie: `${item.codigo}-${new Date().getFullYear()}`,
-            observacoes: `Item da NFe: ${item.codigo} - ${item.descricao}`,
-            urgente: false,
-            na_empresa: true,
-            status: 'recebido'
-          };
+      for (const item of itensSelecionadosData) {
+        const numeroOrdem = await gerarNumeroOrdem();
+        
+        const recebimentoData = {
+          numero_ordem: numeroOrdem,
+          cliente_nome: notaFiscal.cliente_nome,
+          cliente_cnpj: notaFiscal.cliente_cnpj || notaFiscal.cnpj_emitente,
+          data_entrada: new Date().toISOString(),
+          nota_fiscal: `NF-${notaFiscal.numero}`,
+          chave_acesso_nfe: notaFiscal.chave_acesso,
+          nota_fiscal_id: notaFiscal.id, // Vincular à nota fiscal
+          tipo_equipamento: item.descricao,
+          numero_serie: `${item.codigo}-${new Date().getFullYear()}`,
+          observacoes: `Item da NFe: ${item.codigo} - ${item.descricao}`,
+          urgente: false,
+          na_empresa: true,
+          status: 'recebido'
+        };
 
-          await criarRecebimento(recebimentoData);
-        }
-
-        handleFechar();
+        await criarRecebimento(recebimentoData);
       }
+
+      handleFechar();
     } catch (error) {
       console.error('Erro ao criar ordens:', error);
     } finally {
