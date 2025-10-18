@@ -190,6 +190,34 @@ export const AprovarOrcamentoModal = ({
         return;
       }
 
+      // Enviar notificação para o n8n/Telegram
+      try {
+        const { data: webhookConfig } = await supabase
+          .from('configuracoes_sistema')
+          .select('valor')
+          .eq('chave', 'webhook_n8n_url')
+          .single();
+
+        if (webhookConfig?.valor) {
+          await fetch(webhookConfig.valor, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              numero_ordem: orcamento.numero,
+              equipamento: orcamento.equipamento,
+              cliente: orcamento.cliente_nome,
+              valor: formData.valorComDesconto,
+              data_aprovacao: new Date().toISOString()
+            })
+          });
+        }
+      } catch (webhookError) {
+        console.error('Erro ao enviar webhook:', webhookError);
+        // Não bloquear a aprovação se o webhook falhar
+      }
+
       toast({
         title: "Sucesso",
         description: "Orçamento aprovado com sucesso!"
