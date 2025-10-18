@@ -314,6 +314,16 @@ export default function Recebimentos() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
+                            {!item.temOrdemServico && (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => navigate(`/analise/novo/${item.id}`)}
+                                className="h-8"
+                              >
+                                <Play className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
@@ -325,14 +335,6 @@ export default function Recebimentos() {
                               className="h-8"
                             >
                               <QrCode className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => navigate(`/analise/novo/${item.id}`)}
-                              className="h-8"
-                            >
-                              <Play className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>

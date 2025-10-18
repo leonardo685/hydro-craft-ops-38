@@ -28,6 +28,7 @@ export interface Recebimento {
     id: string;
     nome: string;
   };
+  temOrdemServico?: boolean;
 }
 
 export interface FotoEquipamento {
@@ -90,9 +91,19 @@ export const useRecebimentos = () => {
 
       if (error) throw error;
 
+      // Buscar ordens de serviço para verificar quais recebimentos já têm análise
+      const { data: ordensData } = await supabase
+        .from('ordens_servico')
+        .select('recebimento_id');
+
+      const recebimentosComOrdem = new Set(
+        ordensData?.map(ordem => ordem.recebimento_id).filter(Boolean) || []
+      );
+
       const recebimentosFormatados = data?.map(rec => ({
         ...rec,
-        fotos: rec.fotos_equipamentos || []
+        fotos: rec.fotos_equipamentos || [],
+        temOrdemServico: recebimentosComOrdem.has(rec.id)
       })) || [];
 
       setRecebimentos(recebimentosFormatados);
