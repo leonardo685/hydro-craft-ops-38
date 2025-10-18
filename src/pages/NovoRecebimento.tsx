@@ -51,19 +51,21 @@ export default function NovoRecebimento() {
     fotos: [null, null, null, null] as (File | null)[]
   });
 
-  // Preencher formulário com dados da NFe se fornecidos
+  // Preencher formulário com dados da nota fiscal se fornecidos
   useEffect(() => {
-    const dadosNFe = location.state?.dadosNFe;
-    if (dadosNFe) {
+    const notaFiscal = location.state?.notaFiscal;
+    if (notaFiscal) {
+      // Encontrar o cliente pelo CNPJ
+      const clientePorCnpj = clientes.find(c => c.cnpj_cpf === notaFiscal.cliente_cnpj);
+      
       setFormData(prev => ({
         ...prev,
-        cliente: dadosNFe.cliente || prev.cliente,
-        numeroNota: dadosNFe.numero || prev.numeroNota,
-        dataAbertura: dadosNFe.dataEmissao || prev.dataAbertura,
-        observacoesEntrada: `Chave de acesso NFe: ${dadosNFe.chaveAcesso}\nCNPJ Emitente: ${dadosNFe.cnpjEmitente}` || prev.observacoesEntrada
+        cliente: clientePorCnpj?.id || prev.cliente,
+        numeroNota: notaFiscal.numero || prev.numeroNota,
+        observacoesEntrada: `Chave de acesso NFe: ${notaFiscal.chave_acesso}${notaFiscal.cliente_cnpj ? `\nCNPJ: ${notaFiscal.cliente_cnpj}` : ''}` || prev.observacoesEntrada
       }));
     }
-  }, [location.state]);
+  }, [location.state, clientes]);
 
   // Função para lidar com o upload de fotos
   const handlePhotoUpload = (index: number, file: File | null) => {
@@ -90,6 +92,9 @@ export default function NovoRecebimento() {
     e.preventDefault();
     
     try {
+      // Verificar se há nota fiscal vinculada
+      const notaFiscal = location.state?.notaFiscal;
+      
       // Buscar nome do cliente
       const clienteSelecionado = clientes.find(c => c.id === formData.cliente);
       
@@ -98,8 +103,11 @@ export default function NovoRecebimento() {
         numero_ordem: numeroOrdem,
         cliente_id: formData.cliente,
         cliente_nome: clienteSelecionado?.nome || '',
+        cliente_cnpj: clienteSelecionado?.cnpj_cpf || notaFiscal?.cliente_cnpj,
         data_entrada: formData.dataAbertura,
         nota_fiscal: formData.numeroNota,
+        nota_fiscal_id: notaFiscal?.id || null,
+        chave_acesso_nfe: notaFiscal?.chave_acesso || null,
         tipo_equipamento: formData.tipoEquipamento,
         numero_serie: formData.numeroSerie,
         urgente: formData.urgencia,
