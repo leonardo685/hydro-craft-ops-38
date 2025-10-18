@@ -54,13 +54,24 @@ export default function NovoRecebimento() {
   // Preencher formulário com dados da nota fiscal se fornecidos
   useEffect(() => {
     const notaFiscal = location.state?.notaFiscal;
-    if (notaFiscal) {
-      // Encontrar o cliente pelo CNPJ
-      const clientePorCnpj = clientes.find(c => c.cnpj_cpf === notaFiscal.cliente_cnpj);
+    if (notaFiscal && clientes.length > 0) {
+      // Tentar encontrar o cliente pelo CNPJ (removendo caracteres especiais para comparação)
+      const cnpjNota = (notaFiscal.cliente_cnpj || '').replace(/\D/g, '');
+      const clientePorCnpj = clientes.find(c => {
+        const cnpjCliente = (c.cnpj_cpf || '').replace(/\D/g, '');
+        return cnpjCliente && cnpjNota && cnpjCliente === cnpjNota;
+      });
+      
+      // Se não encontrar por CNPJ, tentar pelo nome
+      const clientePorNome = !clientePorCnpj ? clientes.find(c => 
+        c.nome.toLowerCase().includes(notaFiscal.cliente_nome?.toLowerCase() || '')
+      ) : null;
+      
+      const clienteEncontrado = clientePorCnpj || clientePorNome;
       
       setFormData(prev => ({
         ...prev,
-        cliente: clientePorCnpj?.id || prev.cliente,
+        cliente: clienteEncontrado?.id || prev.cliente,
         numeroNota: notaFiscal.numero || prev.numeroNota,
         observacoesEntrada: `Chave de acesso NFe: ${notaFiscal.chave_acesso}${notaFiscal.cliente_cnpj ? `\nCNPJ: ${notaFiscal.cliente_cnpj}` : ''}` || prev.observacoesEntrada
       }));
