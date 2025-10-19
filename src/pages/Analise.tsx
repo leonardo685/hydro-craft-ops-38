@@ -77,6 +77,7 @@ export default function OrdensServico() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+              tipo: "ordem_servico",
               numero_ordem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem,
               equipamento: ordem.recebimentos?.tipo_equipamento || ordem.equipamento,
               cliente: ordem.recebimentos?.cliente_nome || ordem.cliente_nome,

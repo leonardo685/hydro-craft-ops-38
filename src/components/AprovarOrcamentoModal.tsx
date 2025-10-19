@@ -205,6 +205,7 @@ export const AprovarOrcamentoModal = ({
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+              tipo: "orcamento",
               numero_ordem: orcamento.numero,
               equipamento: orcamento.equipamento,
               cliente: orcamento.cliente_nome,
