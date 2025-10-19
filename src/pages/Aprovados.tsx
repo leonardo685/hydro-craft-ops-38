@@ -10,17 +10,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { ItemSelectionModal } from "@/components/ItemSelectionModal";
 import { TesteModal } from "@/components/TesteModal";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export default function Aprovados() {
   const [ordensServico, setOrdensServico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [ordensEmProducao, setOrdensEmProducao] = useState<Set<string>>(new Set());
-  const [finalizarDialogOpen, setFinalizarDialogOpen] = useState(false);
-  const [ordemSelecionada, setOrdemSelecionada] = useState<any>(null);
-  const [notaFiscalEntrada, setNotaFiscalEntrada] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -37,7 +31,9 @@ export default function Aprovados() {
           recebimentos (
             numero_ordem,
             cliente_nome,
-            tipo_equipamento
+            tipo_equipamento,
+            nota_fiscal,
+            chave_acesso_nfe
           )
         `)
         .in('status', ['aprovada', 'em_producao', 'em_teste'])
@@ -287,10 +283,61 @@ export default function Aprovados() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => {
-                              setOrdemSelecionada(ordem);
-                              setNotaFiscalEntrada("");
-                              setFinalizarDialogOpen(true);
+                            onClick={async () => {
+                              try {
+                                const { error } = await supabase
+                                  .from('ordens_servico')
+                                  .update({ status: 'aguardando_retorno' })
+                                  .eq('id', ordem.id);
+
+                                if (error) throw error;
+
+                                // Enviar notificação para o n8n/Telegram
+                                try {
+                                  const { data: webhookConfig } = await supabase
+                                    .from('configuracoes_sistema')
+                                    .select('valor')
+                                    .eq('chave', 'webhook_n8n_url')
+                                    .single();
+
+                                  if (webhookConfig?.valor) {
+                                    const notaFiscalEntrada = ordem.recebimentos?.nota_fiscal || 
+                                                            ordem.recebimentos?.chave_acesso_nfe || 
+                                                            'n/a';
+                                    
+                                    await fetch(webhookConfig.valor, {
+                                      method: 'POST',
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                      },
+                                      body: JSON.stringify({
+                                        tipo: "ordem_finalizada",
+                                        numero_ordem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem,
+                                        equipamento: ordem.recebimentos?.tipo_equipamento || ordem.equipamento,
+                                        cliente: ordem.recebimentos?.cliente_nome || ordem.cliente_nome,
+                                        nota_fiscal_entrada: notaFiscalEntrada,
+                                        data_finalizacao: new Date().toISOString()
+                                      })
+                                    });
+                                  }
+                                } catch (webhookError) {
+                                  console.error('Erro ao enviar webhook:', webhookError);
+                                }
+
+                                toast({
+                                  title: "Ordem finalizada",
+                                  description: "A ordem foi finalizada e enviada para faturamento",
+                                });
+
+                                loadOrdensAprovadas();
+                              } catch (error) {
+                                console.error('Erro ao finalizar ordem:', error);
+                                toast({
+                                  title: "Erro",
+                                  description: "Erro ao finalizar ordem",
+                                  variant: "destructive",
+                                });
+                              }
                             }}
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
@@ -354,105 +401,6 @@ export default function Aprovados() {
           </div>
         )}
       </div>
-
-      <Dialog open={finalizarDialogOpen} onOpenChange={setFinalizarDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Finalizar Ordem de Serviço</DialogTitle>
-            <DialogDescription>
-              Informe o número da nota fiscal de entrada para finalizar a ordem
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="nota-fiscal">Nota Fiscal de Entrada</Label>
-              <Input
-                id="nota-fiscal"
-                placeholder="Digite o número da nota fiscal"
-                value={notaFiscalEntrada}
-                onChange={(e) => setNotaFiscalEntrada(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setFinalizarDialogOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={async () => {
-                if (!notaFiscalEntrada.trim()) {
-                  toast({
-                    title: "Atenção",
-                    description: "Por favor, informe o número da nota fiscal",
-                    variant: "destructive",
-                  });
-                  return;
-                }
-
-                try {
-                  const { error } = await supabase
-                    .from('ordens_servico')
-                    .update({ 
-                      status: 'aguardando_retorno',
-                      pdf_nota_fiscal: notaFiscalEntrada
-                    })
-                    .eq('id', ordemSelecionada.id);
-
-                  if (error) throw error;
-
-                  // Enviar notificação para o n8n/Telegram
-                  try {
-                    const { data: webhookConfig } = await supabase
-                      .from('configuracoes_sistema')
-                      .select('valor')
-                      .eq('chave', 'webhook_n8n_url')
-                      .single();
-
-                    if (webhookConfig?.valor) {
-                      await fetch(webhookConfig.valor, {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          tipo: "ordem_finalizada",
-                          numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
-                          equipamento: ordemSelecionada.recebimentos?.tipo_equipamento || ordemSelecionada.equipamento,
-                          cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
-                          nota_fiscal_entrada: notaFiscalEntrada,
-                          data_finalizacao: new Date().toISOString()
-                        })
-                      });
-                    }
-                  } catch (webhookError) {
-                    console.error('Erro ao enviar webhook:', webhookError);
-                  }
-
-                  toast({
-                    title: "Ordem finalizada",
-                    description: "A ordem foi finalizada e enviada para faturamento",
-                  });
-
-                  setFinalizarDialogOpen(false);
-                  loadOrdensAprovadas();
-                } catch (error) {
-                  console.error('Erro ao finalizar ordem:', error);
-                  toast({
-                    title: "Erro",
-                    description: "Erro ao finalizar ordem",
-                    variant: "destructive",
-                  });
-                }
-              }}
-            >
-              Finalizar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </AppLayout>
   );
 }
