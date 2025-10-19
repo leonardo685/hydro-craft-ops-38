@@ -706,7 +706,7 @@ const NovaOrdemServico = () => {
       if (isEdicao && ordemExistente) {
         console.log('Atualizando ordem existente:', ordemExistente.id);
         // Atualizar ordem existente
-        const { error } = await supabase
+        const { data: ordemAtualizada, error } = await supabase
           .from('ordens_servico')
           .update({
             tecnico: formData.tecnico,
@@ -719,15 +719,18 @@ const NovaOrdemServico = () => {
             tempo_estimado: formData.prazoEstimado,
             observacoes_tecnicas: formData.observacoes,
             prioridade: formData.prioridade.toLowerCase(),
-            data_analise: new Date().toISOString()
+            data_analise: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           })
-          .eq('id', ordemExistente.id);
+          .eq('id', ordemExistente.id)
+          .select()
+          .single();
 
         if (error) {
           console.error('Erro ao atualizar ordem:', error);
           throw error;
         }
-        console.log('Ordem atualizada com sucesso!');
+        console.log('Ordem atualizada:', ordemAtualizada);
       } else {
         console.log('Criando nova ordem...');
         // Criar nova ordem
@@ -770,37 +773,42 @@ const NovaOrdemServico = () => {
       for (let i = 0; i < fotosChegada.length; i++) {
         const foto = fotosChegada[i];
         if (foto && recebimento?.id) {
-          console.log(`Fazendo upload da foto de chegada ${i + 1}...`);
-          try {
-            const fileExt = foto.name.split('.').pop();
-            const fileName = `${recebimento.id}_chegada_${i}_${Date.now()}.${fileExt}`;
-            const filePath = `${fileName}`;
+          // Verificar se é um arquivo novo (File) ou URL existente (string)
+          if (typeof foto !== 'string' && foto instanceof File) {
+            console.log(`Fazendo upload da foto de chegada ${i + 1}...`);
+            try {
+              const fileExt = foto.name.split('.').pop();
+              const fileName = `${recebimento.id}_chegada_${i}_${Date.now()}.${fileExt}`;
+              const filePath = `${fileName}`;
 
-            const { error: uploadError } = await supabase.storage
-              .from('equipamentos')
-              .upload(filePath, foto);
+              const { error: uploadError } = await supabase.storage
+                .from('equipamentos')
+                .upload(filePath, foto);
 
-            if (uploadError) {
-              console.error('Erro no upload da foto de chegada:', uploadError);
-              continue;
+              if (uploadError) {
+                console.error('Erro no upload da foto de chegada:', uploadError);
+                continue;
+              }
+
+              const { data: { publicUrl } } = supabase.storage
+                .from('equipamentos')
+                .getPublicUrl(filePath);
+
+              await supabase
+                .from('fotos_equipamentos')
+                .insert({
+                  recebimento_id: recebimento.id,
+                  arquivo_url: publicUrl,
+                  nome_arquivo: fileName,
+                  apresentar_orcamento: apresentarOrcamento[i]
+                });
+              
+              console.log(`Foto de chegada ${i + 1} salva com sucesso!`);
+            } catch (error) {
+              console.error('Erro ao processar foto de chegada:', error);
             }
-
-            const { data: { publicUrl } } = supabase.storage
-              .from('equipamentos')
-              .getPublicUrl(filePath);
-
-            await supabase
-              .from('fotos_equipamentos')
-              .insert({
-                recebimento_id: recebimento.id,
-                arquivo_url: publicUrl,
-                nome_arquivo: fileName,
-                apresentar_orcamento: apresentarOrcamento[i]
-              });
-            
-            console.log(`Foto de chegada ${i + 1} salva com sucesso!`);
-          } catch (error) {
-            console.error('Erro ao processar foto de chegada:', error);
+          } else {
+            console.log(`Foto de chegada ${i + 1} já existe (URL):`, foto);
           }
         }
       }
@@ -810,37 +818,42 @@ const NovaOrdemServico = () => {
       for (let i = 0; i < fotosAnalise.length; i++) {
         const foto = fotosAnalise[i];
         if (foto && recebimento?.id) {
-          console.log(`Fazendo upload da foto de análise ${i + 1}...`);
-          try {
-            const fileExt = foto.name.split('.').pop();
-            const fileName = `${recebimento.id}_analise_${i}_${Date.now()}.${fileExt}`;
-            const filePath = `${fileName}`;
+          // Verificar se é um arquivo novo (File) ou URL existente (string)
+          if (typeof foto !== 'string' && foto instanceof File) {
+            console.log(`Fazendo upload da foto de análise ${i + 1}...`);
+            try {
+              const fileExt = foto.name.split('.').pop();
+              const fileName = `${recebimento.id}_analise_${i}_${Date.now()}.${fileExt}`;
+              const filePath = `${fileName}`;
 
-            const { error: uploadError } = await supabase.storage
-              .from('equipamentos')
-              .upload(filePath, foto);
+              const { error: uploadError } = await supabase.storage
+                .from('equipamentos')
+                .upload(filePath, foto);
 
-            if (uploadError) {
-              console.error('Erro no upload da foto de análise:', uploadError);
-              continue;
+              if (uploadError) {
+                console.error('Erro no upload da foto de análise:', uploadError);
+                continue;
+              }
+
+              const { data: { publicUrl } } = supabase.storage
+                .from('equipamentos')
+                .getPublicUrl(filePath);
+
+              await supabase
+                .from('fotos_equipamentos')
+                .insert({
+                  recebimento_id: recebimento.id,
+                  arquivo_url: publicUrl,
+                  nome_arquivo: fileName,
+                  apresentar_orcamento: false
+                });
+              
+              console.log(`Foto de análise ${i + 1} salva com sucesso!`);
+            } catch (error) {
+              console.error('Erro ao processar foto de análise:', error);
             }
-
-            const { data: { publicUrl } } = supabase.storage
-              .from('equipamentos')
-              .getPublicUrl(filePath);
-
-            await supabase
-              .from('fotos_equipamentos')
-              .insert({
-                recebimento_id: recebimento.id,
-                arquivo_url: publicUrl,
-                nome_arquivo: fileName,
-                apresentar_orcamento: false
-              });
-            
-            console.log(`Foto de análise ${i + 1} salva com sucesso!`);
-          } catch (error) {
-            console.error('Erro ao processar foto de análise:', error);
+          } else {
+            console.log(`Foto de análise ${i + 1} já existe (URL):`, foto);
           }
         }
       }
