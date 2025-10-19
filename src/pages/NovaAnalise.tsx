@@ -583,7 +583,62 @@ const NovaOrdemServico = () => {
 
             // Carregar peças se existirem
             if (ordem.pecas_necessarias && Array.isArray(ordem.pecas_necessarias)) {
+              console.log('Carregando peças:', ordem.pecas_necessarias);
               setPecasUtilizadas(ordem.pecas_necessarias as any);
+            }
+
+            // Carregar serviços se existirem
+            if (ordem.servicos_necessarios && Array.isArray(ordem.servicos_necessarios)) {
+              console.log('Carregando serviços:', ordem.servicos_necessarios);
+              const servicosObj: any = {};
+              const quantidades: any = {};
+              const nomes: any = {};
+              let personalizado = "";
+              
+              ordem.servicos_necessarios.forEach((servico: any) => {
+                if (servico.tipo === 'personalizado') {
+                  personalizado = servico.descricao || servico.servico;
+                  quantidades.personalizado = servico.quantidade || 1;
+                } else if (servico.tipo) {
+                  servicosObj[servico.tipo] = true;
+                  quantidades[servico.tipo] = servico.quantidade || 1;
+                  if (servico.descricao) {
+                    nomes[servico.tipo] = servico.descricao;
+                  }
+                }
+              });
+              
+              setServicosPreDeterminados(prev => ({ ...prev, ...servicosObj }));
+              setServicosQuantidades(prev => ({ ...prev, ...quantidades }));
+              setServicosNomes(prev => ({ ...prev, ...nomes }));
+              setServicosPersonalizados(personalizado);
+            }
+
+            // Carregar usinagem se existir
+            if (ordem.usinagem_necessaria && Array.isArray(ordem.usinagem_necessaria)) {
+              console.log('Carregando usinagem:', ordem.usinagem_necessaria);
+              const usinagemObj: any = {};
+              const quantidades: any = {};
+              const nomes: any = {};
+              let personalizada = "";
+              
+              ordem.usinagem_necessaria.forEach((usinag: any) => {
+                if (usinag.tipo === 'personalizada') {
+                  personalizada = usinag.descricao || usinag.trabalho;
+                  quantidades.personalizada = usinag.quantidade || 1;
+                } else if (usinag.tipo) {
+                  usinagemObj[usinag.tipo] = true;
+                  quantidades[usinag.tipo] = usinag.quantidade || 1;
+                  if (usinag.descricao) {
+                    nomes[usinag.tipo] = usinag.descricao;
+                  }
+                }
+              });
+              
+              setUsinagem(prev => ({ ...prev, ...usinagemObj }));
+              setUsinagemQuantidades(prev => ({ ...prev, ...quantidades }));
+              setUsinagemNomes(prev => ({ ...prev, ...nomes }));
+              setUsinagemPersonalizada(personalizada);
             }
 
             // Dados técnicos
@@ -647,13 +702,19 @@ const NovaOrdemServico = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     
+    console.log('=== HANDLESUBMIT CHAMADO ===');
+    console.log('isEdicao:', isEdicao);
+    console.log('ordemExistente:', ordemExistente);
     console.log('Iniciando salvamento da análise...');
     console.log('Serviços pré-determinados:', servicosPreDeterminados);
+    console.log('Serviços personalizados:', servicosPersonalizados);
     console.log('Usinagem:', usinagem);
+    console.log('Usinagem personalizada:', usinagemPersonalizada);
     console.log('Peças utilizadas:', pecasUtilizadas);
-    console.log('Fotos chegada (files):', fotosChegada.filter(f => f !== null).length);
-    console.log('Fotos análise (files):', fotosAnalise.length);
+    console.log('Fotos chegada:', fotosChegada);
+    console.log('Fotos análise:', fotosAnalise);
     
     try {
       // Preparar dados dos serviços selecionados
