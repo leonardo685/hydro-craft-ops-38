@@ -1159,10 +1159,13 @@ export default function NovoOrcamento() {
                       className="bg-muted"
                     />
                   ) : (
-                    <Select value={dadosOrcamento.cliente} onValueChange={value => setDadosOrcamento(prev => ({
-                      ...prev,
-                      cliente: value
-                    }))}>
+                    <Select value={dadosOrcamento.cliente} onValueChange={value => {
+                      const clienteSelecionado = clientes.find(c => c.id === value);
+                      setDadosOrcamento(prev => ({
+                        ...prev,
+                        cliente: clienteSelecionado?.nome || value
+                      }));
+                    }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
