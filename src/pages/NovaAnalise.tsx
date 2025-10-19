@@ -648,6 +648,13 @@ const NovaOrdemServico = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Iniciando salvamento da análise...');
+    console.log('Serviços pré-determinados:', servicosPreDeterminados);
+    console.log('Usinagem:', usinagem);
+    console.log('Peças utilizadas:', pecasUtilizadas);
+    console.log('Fotos chegada (files):', fotosChegada.filter(f => f !== null).length);
+    console.log('Fotos análise (files):', fotosAnalise.length);
+    
     try {
       // Preparar dados dos serviços selecionados
       const servicosSelecionados = Object.entries(servicosPreDeterminados)
@@ -669,6 +676,8 @@ const NovaOrdemServico = () => {
         });
       }
 
+      console.log('Serviços selecionados preparados:', servicosSelecionados);
+
       // Preparar dados das usinagens selecionadas
       const usinagemSelecionada = Object.entries(usinagem)
         .filter(([_, selecionado]) => selecionado)
@@ -689,9 +698,13 @@ const NovaOrdemServico = () => {
         });
       }
 
+      console.log('Usinagem selecionada preparada:', usinagemSelecionada);
+      console.log('Peças utilizadas:', pecasUtilizadas);
+
       let ordemId = ordemExistente?.id;
 
       if (isEdicao && ordemExistente) {
+        console.log('Atualizando ordem existente:', ordemExistente.id);
         // Atualizar ordem existente
         const { error } = await supabase
           .from('ordens_servico')
@@ -710,8 +723,13 @@ const NovaOrdemServico = () => {
           })
           .eq('id', ordemExistente.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao atualizar ordem:', error);
+          throw error;
+        }
+        console.log('Ordem atualizada com sucesso!');
       } else {
+        console.log('Criando nova ordem...');
         // Criar nova ordem
         const numeroOrdem = `OS-${Date.now()}`;
         
@@ -739,14 +757,20 @@ const NovaOrdemServico = () => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao criar ordem:', error);
+          throw error;
+        }
         ordemId = novaOrdem.id;
+        console.log('Nova ordem criada com ID:', ordemId);
       }
 
       // Upload de fotos de chegada (com flag apresentar_orcamento)
+      console.log('Iniciando upload de fotos de chegada...');
       for (let i = 0; i < fotosChegada.length; i++) {
         const foto = fotosChegada[i];
         if (foto && recebimento?.id) {
+          console.log(`Fazendo upload da foto de chegada ${i + 1}...`);
           try {
             const fileExt = foto.name.split('.').pop();
             const fileName = `${recebimento.id}_chegada_${i}_${Date.now()}.${fileExt}`;
@@ -773,6 +797,8 @@ const NovaOrdemServico = () => {
                 nome_arquivo: fileName,
                 apresentar_orcamento: apresentarOrcamento[i]
               });
+            
+            console.log(`Foto de chegada ${i + 1} salva com sucesso!`);
           } catch (error) {
             console.error('Erro ao processar foto de chegada:', error);
           }
@@ -780,9 +806,11 @@ const NovaOrdemServico = () => {
       }
 
       // Upload de fotos de análise
+      console.log('Iniciando upload de fotos de análise...');
       for (let i = 0; i < fotosAnalise.length; i++) {
         const foto = fotosAnalise[i];
         if (foto && recebimento?.id) {
+          console.log(`Fazendo upload da foto de análise ${i + 1}...`);
           try {
             const fileExt = foto.name.split('.').pop();
             const fileName = `${recebimento.id}_analise_${i}_${Date.now()}.${fileExt}`;
@@ -809,12 +837,15 @@ const NovaOrdemServico = () => {
                 nome_arquivo: fileName,
                 apresentar_orcamento: false
               });
+            
+            console.log(`Foto de análise ${i + 1} salva com sucesso!`);
           } catch (error) {
             console.error('Erro ao processar foto de análise:', error);
           }
         }
       }
 
+      console.log('Salvamento completo!');
       toast({
         title: isEdicao ? "Ordem de serviço atualizada!" : "Ordem de serviço criada!",
         description: isEdicao ? "A ordem de serviço foi atualizada com sucesso." : "A ordem de serviço foi criada com sucesso.",
