@@ -290,6 +290,33 @@ export default function Aprovados() {
 
                                 if (error) throw error;
 
+                                // Enviar notificação para o n8n/Telegram
+                                try {
+                                  const { data: webhookConfig } = await supabase
+                                    .from('configuracoes_sistema')
+                                    .select('valor')
+                                    .eq('chave', 'webhook_n8n_url')
+                                    .single();
+
+                                  if (webhookConfig?.valor) {
+                                    await fetch(webhookConfig.valor, {
+                                      method: 'POST',
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                      },
+                                      body: JSON.stringify({
+                                        tipo: "ordem_finalizada",
+                                        numero_ordem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem,
+                                        equipamento: ordem.recebimentos?.tipo_equipamento || ordem.equipamento,
+                                        cliente: ordem.recebimentos?.cliente_nome || ordem.cliente_nome,
+                                        data_finalizacao: new Date().toISOString()
+                                      })
+                                    });
+                                  }
+                                } catch (webhookError) {
+                                  console.error('Erro ao enviar webhook:', webhookError);
+                                }
+
                                 toast({
                                   title: "Ordem finalizada",
                                   description: "A ordem foi finalizada e enviada para faturamento",
