@@ -159,172 +159,137 @@ export default function Orcamentos() {
 
   const gerarPDFOrcamento = async (orcamento: any) => {
     try {
-      // Buscar itens do orçamento
-      const { data: itensData, error: itensError } = await supabase
-        .from('itens_orcamento')
-        .select('*')
-        .eq('orcamento_id', orcamento.id);
+      const EMPRESA_INFO = {
+        nome: "MEC-HIDRO MECANICA E HIDRAULICA LTDA",
+        cnpj: "03.328.334/0001-87",
+        telefone: "(19) 3026-6227",
+        email: "contato@mechidro.com.br"
+      };
 
-      if (itensError) {
-        console.error('Erro ao buscar itens:', itensError);
-        toast.error('Erro ao gerar PDF');
-        return;
-      }
-
-      // Buscar fotos (de ordem de serviço ou do orçamento)
+      const { data: itensData } = await supabase.from('itens_orcamento').select('*').eq('orcamento_id', orcamento.id);
       let fotosData: any[] = [];
+      
       if (orcamento.ordem_servico_id) {
-        const { data: osData } = await supabase
-          .from('ordens_servico')
-          .select('recebimento_id')
-          .eq('id', orcamento.ordem_servico_id)
-          .single();
-
+        const { data: osData } = await supabase.from('ordens_servico').select('recebimento_id').eq('id', orcamento.ordem_servico_id).maybeSingle();
         if (osData?.recebimento_id) {
-          const { data: fotos } = await supabase
-            .from('fotos_equipamentos')
-            .select('*')
-            .eq('recebimento_id', osData.recebimento_id)
-            .eq('apresentar_orcamento', true);
-          
+          const { data: fotos } = await supabase.from('fotos_equipamentos').select('*').eq('recebimento_id', osData.recebimento_id).eq('apresentar_orcamento', true);
           fotosData = fotos || [];
         }
       } else {
-        const { data: fotos } = await supabase
-          .from('fotos_orcamento')
-          .select('*')
-          .eq('orcamento_id', orcamento.id)
-          .eq('apresentar_orcamento', true);
-        
+        const { data: fotos } = await supabase.from('fotos_orcamento').select('*').eq('orcamento_id', orcamento.id).eq('apresentar_orcamento', true);
         fotosData = fotos || [];
       }
 
-      // Gerar PDF
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.width;
-      let yPosition = 20;
+      const pageHeight = doc.internal.pageSize.height;
+      let yPosition = 10;
 
       // Cabeçalho
-      doc.setFontSize(20);
+      doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text("ORÇAMENTO", pageWidth / 2, yPosition, { align: "center" });
-      yPosition += 15;
-
-      // Informações básicas
-      doc.setFontSize(12);
+      doc.text(EMPRESA_INFO.nome, 20, yPosition + 5);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.text(`Número: ${orcamento.numero}`, 20, yPosition);
-      doc.text(`Data: ${new Date().toLocaleDateString("pt-BR")}`, pageWidth - 60, yPosition);
-      yPosition += 10;
+      doc.text(`CNPJ: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
+      doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
+      doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
+      doc.setDrawColor(30, 64, 175);
+      doc.setLineWidth(1);
+      doc.line(20, yPosition + 28, pageWidth - 20, yPosition + 28);
+      
+      yPosition = 48;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 64, 175);
+      doc.text("Proposta Comercial", pageWidth / 2, yPosition, { align: "center" });
+      doc.setTextColor(0, 0, 0);
+      
+      yPosition = 65;
+      doc.setFontSize(11);
       doc.text(`Cliente: ${orcamento.cliente_nome}`, 20, yPosition);
+      doc.text(`OS: ${orcamento.numero}`, pageWidth - 40, yPosition, { align: "right" });
       yPosition += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
       doc.text(`Equipamento: ${orcamento.equipamento}`, 20, yPosition);
-      yPosition += 15;
-
-      // Agrupar itens por tipo
+      
+      yPosition = 90;
+      doc.setFillColor(243, 244, 246);
+      doc.rect(20, yPosition, pageWidth - 40, 40, 'FD');
+      yPosition += 10;
+      doc.setFont("helvetica", "bold");
+      doc.text("Condições Comerciais", 25, yPosition);
+      yPosition += 10;
+      doc.setFont("helvetica", "normal");
+      doc.text("Dt. Geração:", 25, yPosition);
+      doc.text(new Date().toLocaleDateString('pt-BR'), 55, yPosition);
+      doc.text("Valor Total:", 115, yPosition);
+      doc.text(`R$ ${Number(orcamento.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 145, yPosition);
+      
+      yPosition = 145;
       const pecas = itensData?.filter(i => i.tipo === 'peca') || [];
       const servicos = itensData?.filter(i => i.tipo === 'servico') || [];
       const usinagem = itensData?.filter(i => i.tipo === 'usinagem') || [];
-
-      // Função para adicionar tabela de itens
-      const adicionarTabelaItens = (titulo: string, itens: any[]) => {
-        if (itens.length === 0) return;
-
-        if (yPosition > 250) {
-          doc.addPage();
-          yPosition = 20;
-        }
-
+      
+      if ([...servicos, ...usinagem].length > 0) {
+        doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
-        doc.text(titulo, 20, yPosition);
+        doc.text("🔧 Serviços a Executar", 20, yPosition);
         yPosition += 10;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-
-        // Cabeçalho da tabela
-        const headers = ["Descrição", "Qtd", "Valor Unit.", "Total"];
-        const colWidths = [100, 20, 30, 30];
-        let xPos = 20;
-        doc.setFont("helvetica", "bold");
-        headers.forEach((header, index) => {
-          doc.text(header, xPos, yPosition);
-          xPos += colWidths[index];
-        });
-        yPosition += 8;
-        doc.line(20, yPosition - 2, pageWidth - 20, yPosition - 2);
-        doc.setFont("helvetica", "normal");
-
-        // Itens
-        itens.forEach(item => {
-          if (yPosition > 270) {
-            doc.addPage();
-            yPosition = 20;
-          }
-          xPos = 20;
-          const descricao = item.descricao.length > 35 ? item.descricao.substring(0, 32) + "..." : item.descricao;
-          doc.text(descricao, xPos, yPosition);
-          xPos += colWidths[0];
-          doc.text(Number(item.quantidade).toString(), xPos, yPosition, { align: "right" });
-          xPos += colWidths[1];
-          doc.text(`R$ ${Number(item.valor_unitario).toFixed(2)}`, xPos, yPosition, { align: "right" });
-          xPos += colWidths[2];
-          doc.text(`R$ ${Number(item.valor_total).toFixed(2)}`, xPos, yPosition, { align: "right" });
-          yPosition += 8;
+        [...servicos, ...usinagem].forEach(item => {
+          if (yPosition > 270) { doc.addPage(); yPosition = 20; }
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text(item.descricao, 22, yPosition);
+          doc.text(`R$ ${Number(item.valor_total).toFixed(2)}`, pageWidth - 40, yPosition, { align: "right" });
+          yPosition += 5;
         });
         yPosition += 10;
-      };
-
-      adicionarTabelaItens("PEÇAS", pecas);
-      adicionarTabelaItens("SERVIÇOS", servicos);
-      adicionarTabelaItens("USINAGEM", usinagem);
-
-      // Valor total
-      if (yPosition > 220) {
-        doc.addPage();
-        yPosition = 20;
       }
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      yPosition += 10;
-      doc.text(`Valor Total: R$ ${Number(orcamento.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, pageWidth - 80, yPosition, { align: "right" });
-
-      // Adicionar fotos se houver
+      
+      if (pecas.length > 0) {
+        if (yPosition > 200) { doc.addPage(); yPosition = 20; }
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("📦 Materiais a Utilizar", 20, yPosition);
+        yPosition += 10;
+        pecas.forEach(item => {
+          if (yPosition > 270) { doc.addPage(); yPosition = 20; }
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text(`${Number(item.quantidade).toFixed(2)} un.`, 22, yPosition);
+          doc.text(item.descricao, 40, yPosition);
+          doc.text(`R$ ${Number(item.valor_total).toFixed(2)}`, pageWidth - 40, yPosition, { align: "right" });
+          yPosition += 5;
+        });
+      }
+      
       if (fotosData.length > 0) {
         doc.addPage();
         yPosition = 20;
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
-        doc.text("FOTOS DO EQUIPAMENTO", pageWidth / 2, yPosition, { align: "center" });
-        yPosition += 15;
-
-        for (const foto of fotosData) {
-          if (yPosition > 250) {
-            doc.addPage();
-            yPosition = 20;
-          }
-          
-          try {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.src = foto.arquivo_url;
-            
-            await new Promise((resolve, reject) => {
-              img.onload = resolve;
-              img.onerror = reject;
-            });
-
-            const imgWidth = 160;
-            const imgHeight = (img.height * imgWidth) / img.width;
-            
-            if (yPosition + imgHeight > 280) {
-              doc.addPage();
-              yPosition = 20;
-            }
-
-            doc.addImage(img, 'JPEG', (pageWidth - imgWidth) / 2, yPosition, imgWidth, imgHeight);
-            yPosition += imgHeight + 15;
-          } catch (error) {
-            console.error('Erro ao carregar imagem:', error);
+        doc.setTextColor(30, 64, 175);
+        doc.text("PERITAGEM", pageWidth / 2, yPosition, { align: "center" });
+        doc.setTextColor(0, 0, 0);
+        yPosition = 40;
+        
+        for (let i = 0; i < fotosData.length; i += 4) {
+          if (i > 0) { doc.addPage(); yPosition = 40; }
+          const fotosPagina = fotosData.slice(i, i + 4);
+          for (let j = 0; j < fotosPagina.length; j++) {
+            const col = j % 2;
+            const row = Math.floor(j / 2);
+            const xPos = 20 + col * 95;
+            const yPos = yPosition + row * 75;
+            try {
+              const img = new Image();
+              img.crossOrigin = "anonymous";
+              img.src = fotosPagina[j].arquivo_url;
+              await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+              doc.addImage(img, 'JPEG', xPos, yPos, 85, 60);
+            } catch (error) { console.error('Erro ao carregar imagem:', error); }
           }
         }
       }

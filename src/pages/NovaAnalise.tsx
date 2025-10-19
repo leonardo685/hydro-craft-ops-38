@@ -123,170 +123,208 @@ const NovaOrdemServico = () => {
   const exportToPDF = async () => {
     const jsPDF = (await import('jspdf')).default;
     
+    const EMPRESA_INFO = {
+      nome: "MEC-HIDRO MECANICA E HIDRAULICA LTDA",
+      cnpj: "03.328.334/0001-87",
+      telefone: "(19) 3026-6227",
+      email: "contato@mechidro.com.br"
+    };
+    
     const doc = new jsPDF();
-    let yPosition = 70;
-    const lineHeight = 8;
-    const pageHeight = 280; // Altura útil da página
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    let yPosition = 10;
+    const lineHeight = 6;
     
-    // Função para adicionar nova página se necessário
-    const checkAndAddPage = (requiredSpace: number) => {
-      if (yPosition + requiredSpace > pageHeight) {
-        doc.addPage();
-        yPosition = 20;
+    // Função para adicionar rodapé
+    const adicionarRodape = () => {
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Página ${i} de ${totalPages}`, 15, pageHeight - 10);
+        doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth - 60, pageHeight - 10);
       }
     };
     
-    // Função para redimensionar e adicionar imagem
-    const addImageToPDF = async (imageUrl: string, title: string, maxWidth = 80, maxHeight = 60) => {
-      try {
-        return new Promise<void>((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            // Calcular dimensões mantendo proporção
-            let width = img.width;
-            let height = img.height;
-            
-            const ratio = Math.min(maxWidth / width, maxHeight / height);
-            width = width * ratio;
-            height = height * ratio;
-            
-            checkAndAddPage(height + 15);
-            
-            // Adicionar título da imagem
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9);
-            doc.text(title, 15, yPosition);
-            yPosition += 5;
-            
-            // Adicionar imagem
-            doc.addImage(img, 'JPEG', 15, yPosition, width, height);
-            yPosition += height + 10;
-            
-            resolve();
-          };
-          img.onerror = () => resolve(); // Continue mesmo se a imagem falhar
-          img.src = imageUrl;
-        });
-      } catch (error) {
-        console.error('Erro ao adicionar imagem ao PDF:', error);
-      }
-    };
-    
-    // Cabeçalho da empresa
-    doc.setFillColor(220, 53, 69); // Vermelho da empresa
-    doc.rect(0, 0, 210, 40, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('MEC-HIDRO MECÂNICA E HIDRÁULICA LTDA', 15, 20);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text('CNPJ: 93.338.138/0001-97', 15, 28);
-    doc.text('Fone/Fax: (19) 3945-4527', 15, 34);
-    
-    // Título do relatório
-    doc.setTextColor(0, 0, 0);
+    // Cabeçalho Profissional
     doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Ordem de Serviço', 15, 55);
+    doc.setFont("helvetica", "bold");
+    doc.text(EMPRESA_INFO.nome, 20, yPosition + 5);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`CNPJ: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
+    doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
+    doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
     
-    // Data do relatório
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 150, 55);
+    // Linha separadora azul
+    doc.setDrawColor(30, 64, 175);
+    doc.setLineWidth(1);
+    doc.line(20, yPosition + 28, pageWidth - 20, yPosition + 28);
     
-    // Informações básicas
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Informações Básicas', 15, yPosition);
+    yPosition = 48;
+    
+    // Título "Análise Técnica"
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 64, 175);
+    doc.text("ANÁLISE TÉCNICA", pageWidth / 2, yPosition, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+    
+    yPosition = 65;
+    
+    // Informações Básicas
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Informações Básicas", 20, yPosition);
     yPosition += 10;
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Cliente: ${recebimento?.cliente || ''}`, 15, yPosition);
+    doc.text(`Cliente: ${recebimento?.cliente_nome || ''}`, 20, yPosition);
     yPosition += lineHeight;
-    doc.text(`Equipamento: ${recebimento?.equipamento || ''}`, 15, yPosition);
+    doc.text(`Equipamento: ${recebimento?.tipo_equipamento || ''}`, 20, yPosition);
     yPosition += lineHeight;
-    doc.text(`Data de Entrada: ${recebimento?.dataEntrada || ''}`, 15, yPosition);
+    doc.text(`Data de Entrada: ${recebimento?.data_entrada ? new Date(recebimento.data_entrada).toLocaleDateString('pt-BR') : ''}`, 20, yPosition);
     yPosition += lineHeight;
-    doc.text(`Técnico: ${formData.tecnico}`, 15, yPosition);
+    doc.text(`Técnico: ${formData.tecnico}`, 20, yPosition);
     yPosition += lineHeight;
-    doc.text(`Prioridade: ${formData.prioridade}`, 15, yPosition);
+    doc.text(`Prioridade: ${formData.prioridade}`, 20, yPosition);
     yPosition += 15;
     
-    // Dados técnicos
-    if (dadosTecnicos.tipoEquipamento || dadosTecnicos.pressaoTrabalho) {
-      checkAndAddPage(50);
+    // Dados Técnicos (Peritagem)
+    if (dadosTecnicos.tipoEquipamento || dadosTecnicos.pressaoTrabalho || dadosTecnicos.curso || 
+        dadosTecnicos.camisa || dadosTecnicos.hasteComprimento || dadosTecnicos.conexaoA || 
+        dadosTecnicos.conexaoB) {
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('Dados Técnicos', 15, yPosition);
+      doc.setFontSize(11);
+      doc.text('Dados Técnicos (Peritagem)', 20, yPosition);
       yPosition += 10;
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
+      
       if (dadosTecnicos.tipoEquipamento) {
-        doc.text(`Tipo de Equipamento: ${dadosTecnicos.tipoEquipamento}`, 15, yPosition);
+        doc.text(`• Tipo de Equipamento: ${dadosTecnicos.tipoEquipamento}`, 20, yPosition);
         yPosition += lineHeight;
       }
       if (dadosTecnicos.pressaoTrabalho) {
-        doc.text(`Pressão de Trabalho: ${dadosTecnicos.pressaoTrabalho}`, 15, yPosition);
+        doc.text(`• Pressão de Trabalho: ${dadosTecnicos.pressaoTrabalho}`, 20, yPosition);
         yPosition += lineHeight;
       }
       if (dadosTecnicos.curso) {
-        doc.text(`Curso: ${dadosTecnicos.curso}`, 15, yPosition);
+        doc.text(`• Curso: ${dadosTecnicos.curso}`, 20, yPosition);
         yPosition += lineHeight;
       }
       if (dadosTecnicos.camisa) {
-        doc.text(`Camisa: ${dadosTecnicos.camisa}`, 15, yPosition);
+        doc.text(`• Camisa: ${dadosTecnicos.camisa}`, 20, yPosition);
         yPosition += lineHeight;
       }
       if (dadosTecnicos.hasteComprimento) {
-        doc.text(`Haste x Comprimento: ${dadosTecnicos.hasteComprimento}`, 15, yPosition);
+        doc.text(`• Haste x Comprimento: ${dadosTecnicos.hasteComprimento}`, 20, yPosition);
         yPosition += lineHeight;
       }
       if (dadosTecnicos.conexaoA) {
-        doc.text(`Conexão A: ${dadosTecnicos.conexaoA}`, 15, yPosition);
+        doc.text(`• Conexão A: ${dadosTecnicos.conexaoA}`, 20, yPosition);
         yPosition += lineHeight;
       }
       if (dadosTecnicos.conexaoB) {
-        doc.text(`Conexão B: ${dadosTecnicos.conexaoB}`, 15, yPosition);
+        doc.text(`• Conexão B: ${dadosTecnicos.conexaoB}`, 20, yPosition);
         yPosition += lineHeight;
       }
       yPosition += 10;
     }
     
-    // Fotos de chegada
-    if (previewsChegada.some(preview => preview)) {
-      checkAndAddPage(20);
+    // Função para adicionar fotos em grade 2x2
+    const adicionarFotosGrade = async (fotos: string[], titulo: string) => {
+      if (fotos.length === 0) return;
+      
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
-      doc.text('Fotos de Chegada do Equipamento', 15, yPosition);
+      doc.setTextColor(30, 64, 175);
+      doc.text(titulo, 20, yPosition);
+      doc.setTextColor(0, 0, 0);
       yPosition += 10;
       
-      for (let i = 0; i < previewsChegada.length; i++) {
-        if (previewsChegada[i]) {
-          await addImageToPDF(previewsChegada[i], `Foto de Chegada ${i + 1}`);
+      const fotosPorPagina = 4;
+      const fotoWidth = 85;
+      const fotoHeight = 60;
+      const espacoHorizontal = 10;
+      const espacoVertical = 15;
+      
+      for (let i = 0; i < fotos.length; i += fotosPorPagina) {
+        if (i > 0) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        const fotosPagina = fotos.slice(i, i + fotosPorPagina);
+        
+        for (let j = 0; j < fotosPagina.length; j++) {
+          const col = j % 2;
+          const row = Math.floor(j / 2);
+          const xPos = 20 + col * (fotoWidth + espacoHorizontal);
+          const yPos = yPosition + row * (fotoHeight + espacoVertical);
+          
+          try {
+            await new Promise<void>((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                doc.addImage(img, 'JPEG', xPos, yPos, fotoWidth, fotoHeight);
+                resolve();
+              };
+              img.onerror = () => resolve();
+              img.src = fotosPagina[j];
+            });
+          } catch (error) {
+            console.error('Erro ao adicionar foto:', error);
+          }
+        }
+        
+        if (i + fotosPorPagina < fotos.length) {
+          yPosition = 280; // Força nova página
+        } else {
+          yPosition += Math.ceil(fotosPagina.length / 2) * (fotoHeight + espacoVertical) + 10;
         }
       }
+    };
+    
+    // Fotos de Chegada
+    if (previewsChegada.some(preview => preview)) {
+      await adicionarFotosGrade(previewsChegada.filter(p => p), 'Fotos de Chegada do Equipamento');
     }
     
-    // Problemas identificados
+    // Problemas Identificados
     if (formData.problemas) {
-      checkAndAddPage(30);
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('Problemas Identificados', 15, yPosition);
+      doc.setFontSize(11);
+      doc.text('Problemas Identificados', 20, yPosition);
       yPosition += 10;
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
-      const splitProblemas = doc.splitTextToSize(formData.problemas, 180);
-      doc.text(splitProblemas, 15, yPosition);
+      const splitProblemas = doc.splitTextToSize(formData.problemas, 170);
+      doc.text(splitProblemas, 20, yPosition);
       yPosition += splitProblemas.length * lineHeight + 10;
     }
     
-    // Serviços
+    // Serviços Realizados (SEM VALORES)
     const servicosSelecionados = Object.entries(servicosPreDeterminados)
       .filter(([_, selecionado]) => selecionado)
       .map(([servico, _]) => {
@@ -296,29 +334,33 @@ const NovaOrdemServico = () => {
       });
     
     if (servicosSelecionados.length > 0 || servicosPersonalizados) {
-      checkAndAddPage(20 + servicosSelecionados.length * lineHeight);
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('Serviços', 15, yPosition);
+      doc.setFontSize(11);
+      doc.text('Serviços Realizados', 20, yPosition);
       yPosition += 10;
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       servicosSelecionados.forEach(servico => {
-        doc.text(`• ${servico}`, 15, yPosition);
+        doc.text(`• ${servico}`, 20, yPosition);
         yPosition += lineHeight;
       });
       
       if (servicosPersonalizados) {
         const quantidade = servicosQuantidades.personalizado;
-        const splitServicos = doc.splitTextToSize(`• ${quantidade}x ${servicosPersonalizados}`, 180);
-        doc.text(splitServicos, 15, yPosition);
+        const splitServicos = doc.splitTextToSize(`• ${quantidade}x ${servicosPersonalizados}`, 170);
+        doc.text(splitServicos, 20, yPosition);
         yPosition += splitServicos.length * lineHeight;
       }
       yPosition += 10;
     }
     
-    // Usinagem
+    // Usinagem (SEM VALORES)
     const usinagemSelecionada = Object.entries(usinagem)
       .filter(([_, selecionado]) => selecionado)
       .map(([tipo, _]) => {
@@ -328,88 +370,82 @@ const NovaOrdemServico = () => {
       });
     
     if (usinagemSelecionada.length > 0 || usinagemPersonalizada) {
-      checkAndAddPage(20 + usinagemSelecionada.length * lineHeight);
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('Usinagem', 15, yPosition);
+      doc.setFontSize(11);
+      doc.text('Usinagem', 20, yPosition);
       yPosition += 10;
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       usinagemSelecionada.forEach(tipo => {
-        doc.text(`• ${tipo}`, 15, yPosition);
+        doc.text(`• ${tipo}`, 20, yPosition);
         yPosition += lineHeight;
       });
       
       if (usinagemPersonalizada) {
         const quantidade = usinagemQuantidades.personalizada;
-        const splitUsinagem = doc.splitTextToSize(`• ${quantidade}x ${usinagemPersonalizada}`, 180);
-        doc.text(splitUsinagem, 15, yPosition);
+        const splitUsinagem = doc.splitTextToSize(`• ${quantidade}x ${usinagemPersonalizada}`, 170);
+        doc.text(splitUsinagem, 20, yPosition);
         yPosition += splitUsinagem.length * lineHeight;
       }
       yPosition += 10;
     }
     
-    // Peças utilizadas
+    // Peças Utilizadas (SEM VALORES)
     if (pecasUtilizadas.length > 0) {
-      checkAndAddPage(30);
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('Peças Utilizadas', 15, yPosition);
+      doc.setFontSize(11);
+      doc.text('Peças Utilizadas', 20, yPosition);
       yPosition += 10;
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       pecasUtilizadas.forEach(peca => {
-        const pecaText = `${peca.quantidade}x ${peca.peca} (${peca.material}) - ${peca.medida1} x ${peca.medida2} x ${peca.medida3}`;
-        const splitPecaText = doc.splitTextToSize(pecaText, 180);
-        doc.text(splitPecaText, 15, yPosition);
+        const pecaText = `• ${peca.quantidade}x ${peca.peca} (${peca.material}) - ${peca.medida1} x ${peca.medida2} x ${peca.medida3}`;
+        const splitPecaText = doc.splitTextToSize(pecaText, 170);
+        doc.text(splitPecaText, 20, yPosition);
         yPosition += splitPecaText.length * lineHeight;
       });
       yPosition += 10;
     }
     
-    // Fotos da análise
+    // Fotos da Análise
     if (previewsAnalise.some(preview => preview)) {
-      checkAndAddPage(20);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('Fotos da Análise', 15, yPosition);
-      yPosition += 10;
-      
-      for (let i = 0; i < previewsAnalise.length; i++) {
-        if (previewsAnalise[i]) {
-          await addImageToPDF(previewsAnalise[i], `Foto da Análise ${i + 1}`);
-        }
-      }
+      await adicionarFotosGrade(previewsAnalise.filter(p => p), 'Fotos da Análise');
     }
     
     // Observações
     if (formData.observacoes) {
-      checkAndAddPage(30);
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('Observações', 15, yPosition);
+      doc.setFontSize(11);
+      doc.text('Observações', 20, yPosition);
       yPosition += 10;
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
-      const splitObservacoes = doc.splitTextToSize(formData.observacoes, 180);
-      doc.text(splitObservacoes, 15, yPosition);
+      const splitObservacoes = doc.splitTextToSize(formData.observacoes, 170);
+      doc.text(splitObservacoes, 20, yPosition);
     }
     
-    // Rodapé
-    const totalPages = doc.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setFillColor(220, 53, 69);
-      doc.triangle(180, 280, 210, 280, 210, 297, 'F');
-      doc.setTextColor(128, 128, 128);
-      doc.setFontSize(8);
-      doc.text(`Página ${i} de ${totalPages}`, 15, 290);
-    }
+    // Adicionar rodapés
+    adicionarRodape();
     
-    doc.save(`ordem-servico-${recebimento?.cliente || 'cliente'}.pdf`);
+    doc.save(`analise-tecnica-${recebimento?.cliente_nome || 'cliente'}.pdf`);
   };
 
   // Função para lidar com o upload de fotos de chegada
