@@ -37,7 +37,12 @@ const NovaOrdemServico = () => {
     hasteComprimento: "",
     curso: "",
     conexaoA: "",
-    conexaoB: ""
+    conexaoB: "",
+    temperaturaTrabalho: "",
+    fluidoTrabalho: "",
+    localInstalacao: "",
+    potencia: "",
+    numeroSerie: ""
   });
 
   const [fotosChegada, setFotosChegada] = useState<(File | null)[]>([null, null, null, null]);
@@ -641,20 +646,48 @@ const NovaOrdemServico = () => {
               setUsinagemPersonalizada(personalizada);
             }
 
-            // Dados técnicos
+            // Dados técnicos - Carregar TODOS os dados do recebimento
+            console.log('Carregando dados técnicos do recebimento:', recebimentoData);
             setDadosTecnicos({
               tipoEquipamento: recebimentoData.tipo_equipamento || "",
-              pressaoTrabalho: "",
+              pressaoTrabalho: (recebimentoData as any).pressao_trabalho || "",
               camisa: "",
               hasteComprimento: "",
               curso: "",
               conexaoA: "",
-              conexaoB: ""
+              conexaoB: "",
+              temperaturaTrabalho: (recebimentoData as any).temperatura_trabalho || "",
+              fluidoTrabalho: (recebimentoData as any).fluido_trabalho || "",
+              localInstalacao: (recebimentoData as any).local_instalacao || "",
+              potencia: (recebimentoData as any).potencia || "",
+              numeroSerie: (recebimentoData as any).numero_serie || ""
             });
 
-            // Carregar fotos se existirem
+            // Carregar fotos separando por tipo (chegada vs análise)
             if (recebimentoData.fotos_equipamentos && recebimentoData.fotos_equipamentos.length > 0) {
-              setPreviewsChegada(recebimentoData.fotos_equipamentos.map((foto: any) => foto.arquivo_url).filter(Boolean));
+              console.log('Carregando fotos:', recebimentoData.fotos_equipamentos);
+              
+              // Fotos de chegada (apresentar_orcamento = true)
+              const fotosChegadaUrls = recebimentoData.fotos_equipamentos
+                .filter((foto: any) => foto.apresentar_orcamento === true)
+                .map((foto: any) => foto.arquivo_url);
+              
+              if (fotosChegadaUrls.length > 0) {
+                console.log('Fotos de chegada carregadas:', fotosChegadaUrls.length);
+                setFotosChegada(fotosChegadaUrls);
+                setPreviewsChegada(fotosChegadaUrls);
+              }
+              
+              // Fotos de análise (apresentar_orcamento = false)
+              const fotosAnaliseUrls = recebimentoData.fotos_equipamentos
+                .filter((foto: any) => foto.apresentar_orcamento === false)
+                .map((foto: any) => foto.arquivo_url);
+              
+              if (fotosAnaliseUrls.length > 0) {
+                console.log('Fotos de análise carregadas:', fotosAnaliseUrls.length);
+                setFotosAnalise(fotosAnaliseUrls);
+                setPreviewsAnalise(fotosAnaliseUrls);
+              }
             }
           }
         } catch (error) {
@@ -683,12 +716,17 @@ const NovaOrdemServico = () => {
       // Dados técnicos começam vazios para nova análise
       setDadosTecnicos({
         tipoEquipamento: recebimentoEncontrado.tipo_equipamento || "",
-        pressaoTrabalho: recebimentoEncontrado.pressao_trabalho || "",
+        pressaoTrabalho: (recebimentoEncontrado as any).pressao_trabalho || "",
         camisa: "",
         hasteComprimento: "",
         curso: "",
         conexaoA: "",
-        conexaoB: ""
+        conexaoB: "",
+        temperaturaTrabalho: (recebimentoEncontrado as any).temperatura_trabalho || "",
+        fluidoTrabalho: (recebimentoEncontrado as any).fluido_trabalho || "",
+        localInstalacao: (recebimentoEncontrado as any).local_instalacao || "",
+        potencia: (recebimentoEncontrado as any).potencia || "",
+        numeroSerie: (recebimentoEncontrado as any).numero_serie || ""
       });
       
       // Carregar fotos do recebimento se existirem
@@ -792,6 +830,31 @@ const NovaOrdemServico = () => {
           throw error;
         }
         console.log('Ordem atualizada:', ordemAtualizada);
+
+        // Atualizar dados técnicos (peritagem) no recebimento
+        if (recebimento?.id) {
+          console.log('Atualizando dados técnicos do recebimento ID:', recebimento.id);
+          console.log('Dados técnicos a salvar:', dadosTecnicos);
+          const { error: recebimentoError } = await supabase
+            .from('recebimentos')
+            .update({
+              tipo_equipamento: dadosTecnicos.tipoEquipamento,
+              pressao_trabalho: dadosTecnicos.pressaoTrabalho,
+              temperatura_trabalho: dadosTecnicos.temperaturaTrabalho || null,
+              fluido_trabalho: dadosTecnicos.fluidoTrabalho || null,
+              local_instalacao: dadosTecnicos.localInstalacao || null,
+              potencia: dadosTecnicos.potencia || null,
+              numero_serie: dadosTecnicos.numeroSerie || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', recebimento.id);
+          
+          if (recebimentoError) {
+            console.error('Erro ao atualizar recebimento:', recebimentoError);
+          } else {
+            console.log('✅ Dados técnicos do recebimento atualizados com sucesso!');
+          }
+        }
       } else {
         console.log('Criando nova ordem...');
         // Criar nova ordem
