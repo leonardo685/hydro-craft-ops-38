@@ -45,6 +45,7 @@ export default function NovoOrcamento() {
     numeroOrdem: '', // Will be generated automatically
     urgencia: false,
     cliente: '',
+    clienteId: '', // Store client ID separately
     tag: '',
     solicitante: '',
     dataAbertura: new Date().toISOString().split('T')[0],
@@ -131,6 +132,7 @@ export default function NovoOrcamento() {
           numeroOrdem: orcamentoParaEdicao.numero,
           urgencia: false,
           cliente: orcamentoParaEdicao.cliente_nome,
+          clienteId: '',
           tag: orcamentoParaEdicao.equipamento,
           solicitante: orcamentoParaEdicao.observacoes?.split('|')[1]?.replace('Solicitante:', '')?.trim() || '',
           dataAbertura: new Date(orcamentoParaEdicao.data_criacao).toISOString().split('T')[0],
@@ -274,6 +276,7 @@ export default function NovoOrcamento() {
               ...prev,
               tipoOrdem: 'reforma', // Pode ajustar baseado no tipo_problema se necessário
               cliente: ordemServico.recebimentos?.cliente_nome || ordemServico.cliente_nome || '',
+              clienteId: ordemServico.recebimentos?.cliente_id || '',
               solicitante: '',
               numeroNota: ordemServico.recebimentos?.nota_fiscal || '',
               numeroSerie: ordemServico.recebimentos?.numero_serie || '',
@@ -1159,11 +1162,12 @@ export default function NovoOrcamento() {
                       className="bg-muted"
                     />
                   ) : (
-                    <Select value={dadosOrcamento.cliente} onValueChange={value => {
+                    <Select value={dadosOrcamento.clienteId} onValueChange={value => {
                       const clienteSelecionado = clientes.find(c => c.id === value);
                       setDadosOrcamento(prev => ({
                         ...prev,
-                        cliente: clienteSelecionado?.nome || value
+                        clienteId: value,
+                        cliente: clienteSelecionado?.nome || ''
                       }));
                     }}>
                       <SelectTrigger>
