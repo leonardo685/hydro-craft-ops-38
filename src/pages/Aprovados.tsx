@@ -68,13 +68,13 @@ export default function Aprovados() {
         .eq('id', ordemId);
 
       if (error) throw error;
-
-      setOrdensEmProducao(prev => new Set([...prev, ordemId]));
       
       toast({
         title: "Produção iniciada",
         description: "Ordem de serviço está agora em produção",
       });
+
+      loadOrdensAprovadas();
     } catch (error) {
       console.error('Erro ao iniciar produção:', error);
       toast({
