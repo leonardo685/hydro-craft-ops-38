@@ -902,19 +902,27 @@ const NovaOrdemServico = () => {
         console.log('Ordem atualizada:', ordemAtualizada);
 
         // Atualizar dados técnicos (peritagem) no recebimento
-        let recebimentoId = recebimento?.id;
-        if (!recebimentoId && ordemExistente?.recebimento_id) {
+        let recebimentoId = null;
+        
+        // Tentar obter recebimentoId de várias fontes
+        if (recebimento?.id) {
+          recebimentoId = recebimento.id;
+        } else if (ordemExistente?.recebimento_id) {
           recebimentoId = ordemExistente.recebimento_id;
+        } else if (ordemExistente?.recebimentos?.id) {
+          recebimentoId = ordemExistente.recebimentos.id;
         }
         
+        console.log('=== SALVAMENTO DE DADOS TÉCNICOS ===');
+        console.log('recebimentoId encontrado:', recebimentoId);
+        console.log('Dados técnicos a salvar:', dadosTecnicos);
+        
         if (recebimentoId) {
-          console.log('Atualizando dados técnicos do recebimento ID:', recebimentoId);
-          console.log('Dados técnicos a salvar:', dadosTecnicos);
-          const { error: recebimentoError } = await supabase
+          const { data: updatedRecebimento, error: recebimentoError } = await supabase
             .from('recebimentos')
             .update({
               tipo_equipamento: dadosTecnicos.tipoEquipamento,
-              pressao_trabalho: dadosTecnicos.pressaoTrabalho,
+              pressao_trabalho: dadosTecnicos.pressaoTrabalho || null,
               temperatura_trabalho: dadosTecnicos.temperaturaTrabalho || null,
               fluido_trabalho: dadosTecnicos.fluidoTrabalho || null,
               local_instalacao: dadosTecnicos.localInstalacao || null,
@@ -927,15 +935,21 @@ const NovaOrdemServico = () => {
               conexao_b: dadosTecnicos.conexaoB || null,
               updated_at: new Date().toISOString()
             })
-            .eq('id', recebimentoId);
+            .eq('id', recebimentoId)
+            .select();
           
           if (recebimentoError) {
-            console.error('Erro ao atualizar recebimento:', recebimentoError);
+            console.error('❌ Erro ao atualizar recebimento:', recebimentoError);
           } else {
-            console.log('✅ Dados técnicos do recebimento atualizados com sucesso!');
+            console.log('✅ Dados técnicos do recebimento atualizados com sucesso!', updatedRecebimento);
           }
         } else {
           console.warn('⚠️ ID do recebimento não encontrado, dados técnicos não foram salvos');
+          console.log('Detalhes:', { 
+            recebimento_id: recebimento?.id, 
+            ordem_recebimento_id: ordemExistente?.recebimento_id,
+            ordem_recebimentos_id: ordemExistente?.recebimentos?.id
+          });
         }
       } else {
         console.log('Criando nova ordem...');
@@ -977,6 +991,35 @@ const NovaOrdemServico = () => {
             }
             ordemId = ordemAtualizada.id;
             console.log('Ordem existente atualizada com ID:', ordemId);
+            
+            // Atualizar dados técnicos do recebimento
+            console.log('=== SALVAMENTO DE DADOS TÉCNICOS (criação/atualização de ordem) ===');
+            console.log('Dados técnicos a salvar:', dadosTecnicos);
+            const { data: updatedRecebimento, error: recebimentoError } = await supabase
+              .from('recebimentos')
+              .update({
+                tipo_equipamento: dadosTecnicos.tipoEquipamento,
+                pressao_trabalho: dadosTecnicos.pressaoTrabalho || null,
+                temperatura_trabalho: dadosTecnicos.temperaturaTrabalho || null,
+                fluido_trabalho: dadosTecnicos.fluidoTrabalho || null,
+                local_instalacao: dadosTecnicos.localInstalacao || null,
+                potencia: dadosTecnicos.potencia || null,
+                numero_serie: dadosTecnicos.numeroSerie || null,
+                camisa: dadosTecnicos.camisa || null,
+                haste_comprimento: dadosTecnicos.hasteComprimento || null,
+                curso: dadosTecnicos.curso || null,
+                conexao_a: dadosTecnicos.conexaoA || null,
+                conexao_b: dadosTecnicos.conexaoB || null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', recebimento.id)
+              .select();
+            
+            if (recebimentoError) {
+              console.error('❌ Erro ao atualizar recebimento:', recebimentoError);
+            } else {
+              console.log('✅ Dados técnicos do recebimento atualizados com sucesso!', updatedRecebimento);
+            }
           } else {
             // Criar nova ordem
             const numeroOrdem = `OS-${Date.now()}`;
@@ -1011,6 +1054,35 @@ const NovaOrdemServico = () => {
             }
             ordemId = novaOrdem.id;
             console.log('Nova ordem criada com ID:', ordemId);
+            
+            // Atualizar dados técnicos do recebimento
+            console.log('=== SALVAMENTO DE DADOS TÉCNICOS (nova ordem) ===');
+            console.log('Dados técnicos a salvar:', dadosTecnicos);
+            const { data: updatedRecebimento, error: recebimentoError } = await supabase
+              .from('recebimentos')
+              .update({
+                tipo_equipamento: dadosTecnicos.tipoEquipamento,
+                pressao_trabalho: dadosTecnicos.pressaoTrabalho || null,
+                temperatura_trabalho: dadosTecnicos.temperaturaTrabalho || null,
+                fluido_trabalho: dadosTecnicos.fluidoTrabalho || null,
+                local_instalacao: dadosTecnicos.localInstalacao || null,
+                potencia: dadosTecnicos.potencia || null,
+                numero_serie: dadosTecnicos.numeroSerie || null,
+                camisa: dadosTecnicos.camisa || null,
+                haste_comprimento: dadosTecnicos.hasteComprimento || null,
+                curso: dadosTecnicos.curso || null,
+                conexao_a: dadosTecnicos.conexaoA || null,
+                conexao_b: dadosTecnicos.conexaoB || null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', recebimento.id)
+              .select();
+            
+            if (recebimentoError) {
+              console.error('❌ Erro ao atualizar recebimento:', recebimentoError);
+            } else {
+              console.log('✅ Dados técnicos do recebimento atualizados com sucesso!', updatedRecebimento);
+            }
           }
         }
       }
@@ -1023,6 +1095,7 @@ const NovaOrdemServico = () => {
           // Verificar se é um arquivo novo (File) ou URL existente (string)
           if (typeof foto !== 'string' && foto instanceof File) {
             console.log(`Fazendo upload da foto de chegada ${i + 1}...`);
+            console.log(`Apresentar orçamento: ${apresentarOrcamento[i]}`);
             try {
               const fileExt = foto.name.split('.').pop();
               const fileName = `${recebimento.id}_chegada_${i}_${Date.now()}.${fileExt}`;
@@ -1041,16 +1114,17 @@ const NovaOrdemServico = () => {
                 .from('equipamentos')
                 .getPublicUrl(filePath);
 
+              // Salvar foto com flag apresentar_orcamento do checkbox correspondente
               await supabase
                 .from('fotos_equipamentos')
                 .insert({
                   recebimento_id: recebimento.id,
                   arquivo_url: publicUrl,
                   nome_arquivo: fileName,
-                  apresentar_orcamento: apresentarOrcamento[i]
+                  apresentar_orcamento: apresentarOrcamento[i] === true
                 });
               
-              console.log(`Foto de chegada ${i + 1} salva com sucesso!`);
+              console.log(`Foto de chegada ${i + 1} salva com apresentar_orcamento = ${apresentarOrcamento[i]}`);
             } catch (error) {
               console.error('Erro ao processar foto de chegada:', error);
             }

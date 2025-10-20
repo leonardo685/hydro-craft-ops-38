@@ -107,15 +107,24 @@ export default function OrdensServico() {
 
   const handleReject = async (ordemId: string) => {
     try {
+      console.log('Reprovando ordem:', ordemId);
+      
       // Quando reprovada, a ordem vai direto para faturamento para nota de retorno
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('ordens_servico')
         .update({ 
-          status: 'reprovada'
+          status: 'reprovada',
+          updated_at: new Date().toISOString()
         })
-        .eq('id', ordemId);
+        .eq('id', ordemId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro na atualização:', error);
+        throw error;
+      }
+      
+      console.log('Ordem reprovada com sucesso:', data);
       
       toast({
         title: "Ordem reprovada",
@@ -123,11 +132,11 @@ export default function OrdensServico() {
       });
       
       loadOrdensServico();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao reprovar ordem:', error);
       toast({
         title: "Erro",
-        description: "Erro ao reprovar ordem de serviço",
+        description: error?.message || "Erro ao reprovar ordem de serviço",
         variant: "destructive",
       });
     }
