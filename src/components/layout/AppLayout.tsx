@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ReactNode } from "react";
-import fixzysLogo from "@/assets/fixzys-logo.jpg";
+import fixzysLogo from "@/assets/fixzys-logo.png";
 import { MorphPanel } from "@/components/ui/ai-input";
 
 interface AppLayoutProps {

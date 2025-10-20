@@ -13,7 +13,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import fixzysLogo from "@/assets/fixzys-logo.jpg";
+import fixzysLogo from "@/assets/fixzys-logo.png";
 import {
   Collapsible,
   CollapsibleContent,
