@@ -151,7 +151,6 @@ const NovaOrdemServico = () => {
     
     // Função para adicionar detalhes decorativos
     const adicionarDetalheDecorativo = () => {
-      // Triângulo vermelho no canto inferior direito
       doc.setFillColor(220, 38, 38);
       doc.triangle(
         pageWidth - 30, pageHeight - 30,
@@ -160,7 +159,6 @@ const NovaOrdemServico = () => {
         'F'
       );
       
-      // Detalhe preto adicional
       doc.setFillColor(0, 0, 0);
       doc.triangle(
         pageWidth - 15, pageHeight - 30,
@@ -175,10 +173,7 @@ const NovaOrdemServico = () => {
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
-        
-        // Adicionar detalhe decorativo em cada página
         adicionarDetalheDecorativo();
-        
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
         doc.text(`Página ${i} de ${totalPages}`, 15, pageHeight - 10);
@@ -237,55 +232,9 @@ const NovaOrdemServico = () => {
     
     yPosition = 65;
     
-    // Informações Básicas
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("Informações Básicas", 20, yPosition);
-    yPosition += 10;
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(`Cliente: ${dadosRecebimento?.cliente_nome || ''}`, 20, yPosition);
-    yPosition += lineHeight;
-    doc.text(`Equipamento: ${dadosRecebimento?.tipo_equipamento || ''}`, 20, yPosition);
-    yPosition += lineHeight;
-    doc.text(`Data de Entrada: ${dadosOrdem?.data_entrada ? new Date(dadosOrdem.data_entrada).toLocaleDateString('pt-BR') : ''}`, 20, yPosition);
-    yPosition += lineHeight;
-    doc.text(`Técnico: ${dadosOrdem?.tecnico || ''}`, 20, yPosition);
-    yPosition += lineHeight;
-    doc.text(`Prioridade: ${dadosOrdem?.prioridade || ''}`, 20, yPosition);
-    yPosition += 15;
-    
-    // Função para criar tabela de dados técnicos
-    const criarTabelaDadosTecnicos = () => {
-      const dadosParaTabela: Array<{label: string, value: string}> = [];
-      
-      if (dadosTecnicos.camisa) {
-        dadosParaTabela.push({ label: 'Ø Camisa:', value: dadosTecnicos.camisa });
-      }
-      if (dadosTecnicos.hasteComprimento) {
-        dadosParaTabela.push({ label: 'Ø Haste x Comprimento:', value: dadosTecnicos.hasteComprimento });
-      }
-      if (dadosTecnicos.curso) {
-        dadosParaTabela.push({ label: 'Curso:', value: dadosTecnicos.curso });
-      }
-      if (dadosTecnicos.conexaoA) {
-        dadosParaTabela.push({ label: 'Conexão A:', value: dadosTecnicos.conexaoA });
-      }
-      if (dadosTecnicos.conexaoB) {
-        dadosParaTabela.push({ label: 'Conexão B:', value: dadosTecnicos.conexaoB });
-      }
-      if (dadosTecnicos.pressaoTrabalho) {
-        dadosParaTabela.push({ label: 'Pressão de Trabalho:', value: dadosTecnicos.pressaoTrabalho });
-      }
-      if (dadosTecnicos.temperaturaTrabalho) {
-        dadosParaTabela.push({ label: 'Temperatura de Trabalho:', value: dadosTecnicos.temperaturaTrabalho });
-      }
-      if (dadosTecnicos.fluidoTrabalho) {
-        dadosParaTabela.push({ label: 'Fluido de Trabalho:', value: dadosTecnicos.fluidoTrabalho });
-      }
-      
-      if (dadosParaTabela.length === 0) return;
+    // Função genérica para criar tabela
+    const criarTabela = (titulo: string, dados: Array<{label: string, value: string}>, corTitulo: number[] = [128, 128, 128]) => {
+      if (dados.length === 0) return;
       
       if (yPosition > 210) {
         doc.addPage();
@@ -296,18 +245,19 @@ const NovaOrdemServico = () => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(255, 255, 255);
-      doc.setFillColor(128, 128, 128);
+      doc.setFillColor(corTitulo[0], corTitulo[1], corTitulo[2]);
       doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
-      doc.text('PERITAGEM', pageWidth / 2, yPosition + 7, { align: 'center' });
+      doc.text(titulo.toUpperCase(), pageWidth / 2, yPosition + 7, { align: 'center' });
       yPosition += 10;
       
       // Linhas da tabela
       doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
+      doc.setLineWidth(0.1); // Linha bem fina
       
       const rowHeight = 10;
-      dadosParaTabela.forEach((item, index) => {
+      dados.forEach((item, index) => {
         // Alternar cor de fundo
         if (index % 2 === 0) {
           doc.setFillColor(245, 245, 245);
@@ -324,18 +274,71 @@ const NovaOrdemServico = () => {
         doc.setFont('helvetica', 'bold');
         doc.text(item.label, 25, yPosition + 7);
         
-        // Texto normal para o valor
+        // Texto normal para o valor (com quebra de linha se necessário)
         doc.setFont('helvetica', 'normal');
-        doc.text(item.value, 95, yPosition + 7);
+        const valorLines = doc.splitTextToSize(item.value, pageWidth - 110);
         
-        yPosition += rowHeight;
+        // Se o texto tiver múltiplas linhas, ajustar altura da célula
+        if (valorLines.length > 1) {
+          const extraHeight = (valorLines.length - 1) * 5;
+          doc.setFillColor(index % 2 === 0 ? 245 : 255, index % 2 === 0 ? 245 : 255, index % 2 === 0 ? 245 : 255);
+          doc.rect(20, yPosition, pageWidth - 40, rowHeight + extraHeight, 'F');
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(20, yPosition, pageWidth - 40, rowHeight + extraHeight);
+          
+          doc.setFont('helvetica', 'bold');
+          doc.text(item.label, 25, yPosition + 7);
+          doc.setFont('helvetica', 'normal');
+          doc.text(valorLines, 95, yPosition + 7);
+          yPosition += rowHeight + extraHeight;
+        } else {
+          doc.text(item.value, 95, yPosition + 7);
+          yPosition += rowHeight;
+        }
       });
       
       yPosition += 10;
     };
     
-    // Chamar função de tabela
-    criarTabelaDadosTecnicos();
+    // Informações Básicas - TABELA
+    const dadosBasicos: Array<{label: string, value: string}> = [
+      { label: 'Cliente:', value: dadosRecebimento?.cliente_nome || '' },
+      { label: 'Equipamento:', value: dadosRecebimento?.tipo_equipamento || '' },
+      { label: 'Data de Entrada:', value: dadosOrdem?.data_entrada ? new Date(dadosOrdem.data_entrada).toLocaleDateString('pt-BR') : '' },
+      { label: 'Técnico:', value: dadosOrdem?.tecnico || '' },
+      { label: 'Prioridade:', value: dadosOrdem?.prioridade || '' }
+    ];
+    criarTabela('Informações Básicas', dadosBasicos, [128, 128, 128]);
+    
+    // Dados Técnicos (Peritagem) - TABELA
+    const dadosParaTabela: Array<{label: string, value: string}> = [];
+    
+    if (dadosTecnicos.camisa) {
+      dadosParaTabela.push({ label: 'Ø Camisa:', value: dadosTecnicos.camisa });
+    }
+    if (dadosTecnicos.hasteComprimento) {
+      dadosParaTabela.push({ label: 'Ø Haste x Comprimento:', value: dadosTecnicos.hasteComprimento });
+    }
+    if (dadosTecnicos.curso) {
+      dadosParaTabela.push({ label: 'Curso:', value: dadosTecnicos.curso });
+    }
+    if (dadosTecnicos.conexaoA) {
+      dadosParaTabela.push({ label: 'Conexão A:', value: dadosTecnicos.conexaoA });
+    }
+    if (dadosTecnicos.conexaoB) {
+      dadosParaTabela.push({ label: 'Conexão B:', value: dadosTecnicos.conexaoB });
+    }
+    if (dadosTecnicos.pressaoTrabalho) {
+      dadosParaTabela.push({ label: 'Pressão de Trabalho:', value: dadosTecnicos.pressaoTrabalho });
+    }
+    if (dadosTecnicos.temperaturaTrabalho) {
+      dadosParaTabela.push({ label: 'Temperatura de Trabalho:', value: dadosTecnicos.temperaturaTrabalho });
+    }
+    if (dadosTecnicos.fluidoTrabalho) {
+      dadosParaTabela.push({ label: 'Fluido de Trabalho:', value: dadosTecnicos.fluidoTrabalho });
+    }
+    
+    criarTabela('Peritagem', dadosParaTabela, [128, 128, 128]);
     
     // Função para adicionar fotos em grade 2x2 com proporção mantida
     const adicionarFotosGrade = async (fotos: string[], titulo: string) => {
@@ -384,7 +387,6 @@ const NovaOrdemServico = () => {
               const img = new Image();
               img.crossOrigin = 'anonymous';
               img.onload = () => {
-                // Calcular proporções para manter a imagem dentro dos limites sem cortar
                 const imgAspectRatio = img.width / img.height;
                 const maxAspectRatio = maxFotoWidth / maxFotoHeight;
                 
@@ -392,14 +394,11 @@ const NovaOrdemServico = () => {
                 let finalHeight = maxFotoHeight;
                 
                 if (imgAspectRatio > maxAspectRatio) {
-                  // Imagem mais larga - ajustar pela largura
                   finalHeight = maxFotoWidth / imgAspectRatio;
                 } else {
-                  // Imagem mais alta - ajustar pela altura
                   finalWidth = maxFotoHeight * imgAspectRatio;
                 }
                 
-                // Centralizar a imagem dentro do espaço disponível
                 const xOffset = (maxFotoWidth - finalWidth) / 2;
                 const yOffset = (maxFotoHeight - finalHeight) / 2;
                 
@@ -415,7 +414,7 @@ const NovaOrdemServico = () => {
         }
         
         if (i + fotosPorPagina < fotos.length) {
-          yPosition = 280; // Força nova página
+          yPosition = 280;
         } else {
           yPosition += Math.ceil(fotosPagina.length / 2) * (maxFotoHeight + espacoVertical) + 10;
         }
@@ -427,118 +426,57 @@ const NovaOrdemServico = () => {
       await adicionarFotosGrade(previewsChegada.filter(p => p), 'Fotos de Chegada do Equipamento');
     }
     
-    // Problemas Identificados
+    // Problemas Identificados - TABELA
     if (formData.problemas) {
-      if (yPosition > 240) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('Problemas Identificados', 20, yPosition);
-      yPosition += 10;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      const splitProblemas = doc.splitTextToSize(formData.problemas, 170);
-      doc.text(splitProblemas, 20, yPosition);
-      yPosition += splitProblemas.length * lineHeight + 10;
+      const dadosProblemas: Array<{label: string, value: string}> = [
+        { label: 'Descrição:', value: formData.problemas }
+      ];
+      criarTabela('Problemas Identificados', dadosProblemas, [128, 128, 128]);
     }
     
-    // Serviços Realizados (SEM VALORES)
+    // Serviços Realizados - TABELA
     const servicosSelecionados = Object.entries(servicosPreDeterminados)
       .filter(([_, selecionado]) => selecionado)
       .map(([servico, _]) => {
         const quantidade = servicosQuantidades[servico as keyof typeof servicosQuantidades];
         const nome = servicosNomes[servico as keyof typeof servicosNomes];
-        return `${quantidade}x ${nome}`;
+        return { label: 'Serviço:', value: `${quantidade}x ${nome}` };
       });
     
-    if (servicosSelecionados.length > 0 || servicosPersonalizados) {
-      if (yPosition > 240) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('Serviços Realizados', 20, yPosition);
-      yPosition += 10;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      servicosSelecionados.forEach(servico => {
-        doc.text(`• ${servico}`, 20, yPosition);
-        yPosition += lineHeight;
-      });
-      
-      if (servicosPersonalizados) {
-        const quantidade = servicosQuantidades.personalizado;
-        const splitServicos = doc.splitTextToSize(`• ${quantidade}x ${servicosPersonalizados}`, 170);
-        doc.text(splitServicos, 20, yPosition);
-        yPosition += splitServicos.length * lineHeight;
-      }
-      yPosition += 10;
+    if (servicosPersonalizados) {
+      const quantidade = servicosQuantidades.personalizado;
+      servicosSelecionados.push({ label: 'Serviço:', value: `${quantidade}x ${servicosPersonalizados}` });
     }
     
-    // Usinagem (SEM VALORES)
+    if (servicosSelecionados.length > 0) {
+      criarTabela('Serviços Realizados', servicosSelecionados, [128, 128, 128]);
+    }
+    
+    // Usinagem - TABELA
     const usinagemSelecionada = Object.entries(usinagem)
       .filter(([_, selecionado]) => selecionado)
       .map(([tipo, _]) => {
         const quantidade = usinagemQuantidades[tipo as keyof typeof usinagemQuantidades];
         const nome = usinagemNomes[tipo as keyof typeof usinagemNomes];
-        return `${quantidade}x ${nome}`;
+        return { label: 'Usinagem:', value: `${quantidade}x ${nome}` };
       });
     
-    if (usinagemSelecionada.length > 0 || usinagemPersonalizada) {
-      if (yPosition > 240) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('Usinagem', 20, yPosition);
-      yPosition += 10;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      usinagemSelecionada.forEach(tipo => {
-        doc.text(`• ${tipo}`, 20, yPosition);
-        yPosition += lineHeight;
-      });
-      
-      if (usinagemPersonalizada) {
-        const quantidade = usinagemQuantidades.personalizada;
-        const splitUsinagem = doc.splitTextToSize(`• ${quantidade}x ${usinagemPersonalizada}`, 170);
-        doc.text(splitUsinagem, 20, yPosition);
-        yPosition += splitUsinagem.length * lineHeight;
-      }
-      yPosition += 10;
+    if (usinagemPersonalizada) {
+      const quantidade = usinagemQuantidades.personalizada;
+      usinagemSelecionada.push({ label: 'Usinagem:', value: `${quantidade}x ${usinagemPersonalizada}` });
     }
     
-    // Peças Utilizadas (SEM VALORES)
+    if (usinagemSelecionada.length > 0) {
+      criarTabela('Usinagem', usinagemSelecionada, [128, 128, 128]);
+    }
+    
+    // Peças Utilizadas - TABELA
     if (pecasUtilizadas.length > 0) {
-      if (yPosition > 240) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('Peças Utilizadas', 20, yPosition);
-      yPosition += 10;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      pecasUtilizadas.forEach(peca => {
-        const pecaText = `• ${peca.quantidade}x ${peca.peca} (${peca.material}) - ${peca.medida1} x ${peca.medida2} x ${peca.medida3}`;
-        const splitPecaText = doc.splitTextToSize(pecaText, 170);
-        doc.text(splitPecaText, 20, yPosition);
-        yPosition += splitPecaText.length * lineHeight;
-      });
-      yPosition += 10;
+      const dadosPecas = pecasUtilizadas.map(peca => ({
+        label: `${peca.quantidade}x ${peca.peca}:`,
+        value: `Material: ${peca.material} | Medidas: ${peca.medida1} x ${peca.medida2} x ${peca.medida3}`
+      }));
+      criarTabela('Peças Utilizadas', dadosPecas, [128, 128, 128]);
     }
     
     // Fotos da Análise
@@ -546,22 +484,12 @@ const NovaOrdemServico = () => {
       await adicionarFotosGrade(previewsAnalise.filter(p => p), 'Fotos da Análise');
     }
     
-    // Observações
+    // Observações - TABELA
     if (formData.observacoes) {
-      if (yPosition > 240) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('Observações', 20, yPosition);
-      yPosition += 10;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      const splitObservacoes = doc.splitTextToSize(formData.observacoes, 170);
-      doc.text(splitObservacoes, 20, yPosition);
+      const dadosObservacoes: Array<{label: string, value: string}> = [
+        { label: 'Observações:', value: formData.observacoes }
+      ];
+      criarTabela('Observações Técnicas', dadosObservacoes, [128, 128, 128]);
     }
     
     // Adicionar rodapés
