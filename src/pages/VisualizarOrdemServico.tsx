@@ -31,23 +31,23 @@ const VisualizarOrdemServico = () => {
 
   const carregarOrdemServico = async () => {
     try {
-      // Buscar ordem de serviço
-      const { data: ordemData } = await supabase
+      // Primeiro, tentar buscar pelo ID direto (quando vem de /visualizar-ordem-servico/:id)
+      const { data: ordemPorId } = await supabase
         .from('ordens_servico')
         .select('*')
-        .eq('numero_ordem', id)
+        .eq('id', id)
         .maybeSingle();
 
-      if (ordemData) {
-        setOrdem(ordemData);
-        setPrazoEntrega(ordemData.tempo_estimado || "");
+      if (ordemPorId) {
+        setOrdem(ordemPorId);
+        setPrazoEntrega(ordemPorId.tempo_estimado || "");
 
         // Buscar dados do recebimento
-        if (ordemData.recebimento_id) {
+        if (ordemPorId.recebimento_id) {
           const { data: recebimentoData } = await supabase
             .from('recebimentos')
             .select('*')
-            .eq('id', ordemData.recebimento_id)
+            .eq('id', ordemPorId.recebimento_id)
             .maybeSingle();
 
           if (recebimentoData) {
@@ -58,7 +58,7 @@ const VisualizarOrdemServico = () => {
           const { data: fotosData } = await supabase
             .from('fotos_equipamentos')
             .select('*')
-            .eq('recebimento_id', ordemData.recebimento_id);
+            .eq('recebimento_id', ordemPorId.recebimento_id);
 
           if (fotosData) {
             setFotos(fotosData);
