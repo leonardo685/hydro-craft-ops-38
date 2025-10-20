@@ -364,7 +364,18 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
   const { toast } = useToast()
   const { isRecording, audioBlob, startRecording, stopRecording, resetRecording } = useAudioRecorder()
   const [isTranscribing, setIsTranscribing] = React.useState(false)
+  const [messages, setMessages] = React.useState<Array<{ text: string; timestamp: string; type: 'user' | 'ai' }>>([])
+  const [isLoading, setIsLoading] = React.useState(false)
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
+  const messagesEndRef = React.useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  React.useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -374,8 +385,23 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
     
     if (!message?.trim()) return
     
+    // Adiciona mensagem do usuário ao chat
+    const userMessage = {
+      text: message,
+      timestamp: new Date().toISOString(),
+      type: 'user' as const
+    }
+    setMessages(prev => [...prev, userMessage])
+    
+    // Limpa o textarea
+    if (textareaRef.current) {
+      textareaRef.current.value = ''
+    }
+    
+    setIsLoading(true)
+    
     try {
-      await fetch('https://primary-production-dc42.up.railway.app/webhook-test/d6d48088-8d7b-48c2-ac01-7b8e88813d53', {
+      const response = await fetch('https://primary-production-dc42.up.railway.app/webhook-test/d6d48088-8d7b-48c2-ac01-7b8e88813d53', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -386,24 +412,28 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
         }),
       })
       
-      toast({
-        title: "Mensagem enviada",
-        description: "Sua mensagem foi enviada para processamento.",
-      })
-      
-      if (textareaRef.current) {
-        textareaRef.current.value = ''
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
+      
+      // Simula resposta da IA (você pode substituir por resposta real do webhook)
+      const aiMessage = {
+        text: "Mensagem recebida! Processando...",
+        timestamp: new Date().toISOString(),
+        type: 'ai' as const
+      }
+      setMessages(prev => [...prev, aiMessage])
+      
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error)
       toast({
         title: "Erro",
-        description: "Não foi possível enviar a mensagem",
+        description: "Não foi possível enviar a mensagem. Verifique a URL do webhook.",
         variant: "destructive",
       })
+    } finally {
+      setIsLoading(false)
     }
-    
-    onSuccess()
   }
 
   function handleKeys(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -483,7 +513,7 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
             transition={{ type: "spring", stiffness: 550 / SPEED_FACTOR, damping: 45, mass: 0.7 }}
             className="flex h-full flex-col p-1"
           >
-            <div className="flex justify-between items-center py-2 px-2">
+            <div className="flex justify-between items-center py-2 px-2 border-b border-border">
               <div className="flex items-center gap-2">
                 <img src={fixzysIcon} alt="FixZys AI" className="h-8 w-8" />
                 <p className="text-foreground flex items-center gap-[6px] select-none font-semibold text-base">
@@ -507,30 +537,73 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
                 <button
                   type="submit"
                   ref={btnRef}
-                  className="text-muted-foreground hover:text-foreground flex cursor-pointer items-center justify-center gap-1 rounded-[12px] bg-transparent text-center select-none transition-colors"
+                  disabled={isLoading}
+                  className="text-muted-foreground hover:text-foreground flex cursor-pointer items-center justify-center gap-1 rounded-[12px] bg-transparent text-center select-none transition-colors disabled:opacity-50"
                 >
                   <KeyHint>⌘</KeyHint>
                   <KeyHint className="w-fit">Enter</KeyHint>
                 </button>
               </div>
             </div>
-            <textarea
-              ref={(node) => {
-                if (typeof ref === 'function') {
-                  ref(node)
-                } else if (ref && 'current' in ref) {
-                  (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = node
-                }
-                textareaRef.current = node
-              }}
-              placeholder={isTranscribing ? "Transcrevendo áudio..." : "Pergunte-me qualquer coisa..."}
-              name="message"
-              className="bg-background text-foreground placeholder:text-muted-foreground h-full w-full resize-none scroll-py-2 rounded-md p-4 outline-0 border border-input focus:border-primary transition-colors text-base"
-              required
-              onKeyDown={handleKeys}
-              spellCheck={false}
-              disabled={isTranscribing}
-            />
+
+            {/* Área de mensagens */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p>Comece uma conversa...</p>
+                </div>
+              ) : (
+                messages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={cn(
+                      "flex",
+                      msg.type === 'user' ? "justify-end" : "justify-start"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "max-w-[80%] rounded-lg px-4 py-2",
+                        msg.type === 'user'
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground"
+                      )}
+                    >
+                      <p className="text-sm">{msg.text}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-muted text-foreground max-w-[80%] rounded-lg px-4 py-2">
+                    <p className="text-sm">...</p>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Área de input */}
+            <div className="border-t border-border p-2">
+              <textarea
+                ref={(node) => {
+                  if (typeof ref === 'function') {
+                    ref(node)
+                  } else if (ref && 'current' in ref) {
+                    (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = node
+                  }
+                  textareaRef.current = node
+                }}
+                placeholder={isTranscribing ? "Transcrevendo áudio..." : "Pergunte-me qualquer coisa..."}
+                name="message"
+                className="bg-background text-foreground placeholder:text-muted-foreground w-full resize-none rounded-md p-3 outline-0 border border-input focus:border-primary transition-colors text-base min-h-[60px] max-h-[120px]"
+                required
+                onKeyDown={handleKeys}
+                spellCheck={false}
+                disabled={isTranscribing || isLoading}
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
