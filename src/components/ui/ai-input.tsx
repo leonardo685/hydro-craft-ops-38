@@ -412,25 +412,34 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
         }),
       })
       
+      // Lê a resposta como texto primeiro (evita double-read)
+      const responseText = await response.text()
+      console.log('Webhook status:', response.status)
+      console.log('Webhook response:', responseText)
+      
       let aiResponseText = "Mensagem enviada!"
       
       if (response.ok) {
+        // Tenta fazer parse do JSON
         try {
-          const data = await response.json()
+          const data = JSON.parse(responseText)
           aiResponseText = data.message || data.response || data.text || "Mensagem recebida!"
         } catch (jsonError) {
-          console.error('Erro ao fazer parse do JSON:', jsonError)
-          // Se não conseguir fazer parse, usa a resposta como texto
-          const textResponse = await response.text()
-          aiResponseText = textResponse || "Mensagem enviada com sucesso!"
+          console.error('Resposta não é JSON válido:', jsonError)
+          aiResponseText = responseText || "Mensagem enviada com sucesso!"
         }
       } else {
-        // Tenta extrair mensagem de erro
-        try {
-          const errorData = await response.json()
-          aiResponseText = `Erro: ${errorData.message || errorData.error || 'Erro ao processar mensagem'}`
-        } catch {
-          aiResponseText = `Erro ao enviar mensagem (status: ${response.status})`
+        // Verifica se é o erro específico do n8n
+        if (responseText.includes('Unused Respond to Webhook node')) {
+          aiResponseText = "Erro no n8n: Configure o nó 'Respond to Webhook' no final do workflow e conecte-o ao fluxo principal."
+        } else {
+          // Tenta fazer parse do erro
+          try {
+            const errorData = JSON.parse(responseText)
+            aiResponseText = `Erro: ${errorData.message || errorData.error || 'Erro ao processar mensagem'}`
+          } catch {
+            aiResponseText = `Erro: ${responseText || `Status ${response.status}`}`
+          }
         }
       }
       
