@@ -531,7 +531,8 @@ export default function Orcamentos() {
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 35, boxHeight);
-        doc.text(totalPecas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), valorBoxX + 33, yPosition + 5.5, { align: 'right' });
+        const totalPecasTexto = totalPecas > 0 ? totalPecas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
+        doc.text(totalPecasTexto, valorBoxX + 33, yPosition + 5.5, { align: 'right' });
         
         yPosition += 10;
       }
@@ -586,7 +587,8 @@ export default function Orcamentos() {
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 35, boxHeight);
-        doc.text(totalServicos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), valorBoxX + 33, yPosition + 5.5, { align: 'right' });
+        const totalServicosTexto = totalServicos > 0 ? totalServicos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
+        doc.text(totalServicosTexto, valorBoxX + 33, yPosition + 5.5, { align: 'right' });
         
         yPosition += 10;
       }
@@ -641,7 +643,8 @@ export default function Orcamentos() {
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 35, boxHeight);
-        doc.text(totalUsinagem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), valorBoxX + 33, yPosition + 5.5, { align: 'right' });
+        const totalUsinagemTexto = totalUsinagem > 0 ? totalUsinagem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
+        doc.text(totalUsinagemTexto, valorBoxX + 33, yPosition + 5.5, { align: 'right' });
         
         yPosition += 10;
       }
