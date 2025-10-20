@@ -37,14 +37,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('user_id', userId)
         .maybeSingle();
 
+      console.log('[AuthContext] Raw roleData:', roleData);
+      console.log('[AuthContext] roleError:', roleError);
+
       if (roleError) {
-        console.error('Erro ao buscar role:', roleError);
+        console.error('[AuthContext] Erro ao buscar role:', roleError);
         setLoading(false);
         return;
       }
 
-      const role = roleData?.role as AppRole | null;
-      console.log('[AuthContext] User role:', role);
+      if (!roleData) {
+        console.warn('[AuthContext] Nenhum role encontrado para o usuário:', userId);
+        setUserRole(null);
+        setMenuPermissions({});
+        setLoading(false);
+        return;
+      }
+
+      // Validar e converter o role
+      const rawRole = roleData.role;
+      console.log('[AuthContext] rawRole value:', rawRole, 'type:', typeof rawRole);
+      
+      const validRoles: AppRole[] = ['admin', 'gestor', 'operador'];
+      const role = validRoles.includes(rawRole as AppRole) ? (rawRole as AppRole) : null;
+      
+      console.log('[AuthContext] Validated user role:', role);
       setUserRole(role);
 
       if (role) {
