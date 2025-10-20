@@ -378,27 +378,71 @@ export default function Orcamentos() {
 
       // === CONDIÇÕES COMERCIAIS ===
       yPosition += 10;
+      
+      // Verificar se precisa de nova página
+      if (yPosition + 40 > pageHeight - 30) {
+        adicionarRodape(currentPage);
+        doc.addPage();
+        currentPage++;
+        yPosition = 20;
+      }
+      
+      // Título centralizado "Condições Comerciais"
+      doc.setFillColor(220, 220, 220);
+      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, pageWidth - 40, 10);
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(220, 38, 38);
-      doc.text("CONDIÇÕES COMERCIAIS", 20, yPosition);
       doc.setTextColor(0, 0, 0);
-      yPosition += 5;
-
-      const valorTotal = Number(orcamento.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-      const prazo = orcamento.prazo_pagamento ? `${orcamento.prazo_pagamento} dias` : 'A combinar';
+      doc.text("Condições Comerciais", pageWidth / 2, yPosition + 7, { align: "center" });
+      yPosition += 10;
       
-      const condicoesComerciais = [
-        ['Valor Total:', valorTotal, 'Prazo Pgto:', prazo],
-        ['Forma Pgto:', orcamento.forma_pagamento || 'A combinar', 'Validade:', orcamento.data_vencimento ? new Date(orcamento.data_vencimento).toLocaleDateString('pt-BR') : '30 dias']
-      ];
-
-      yPosition = criarTabela(
-        ['Campo', 'Valor', 'Campo', 'Valor'],
-        condicoesComerciais,
-        yPosition,
-        [40, 65, 30, 35]
-      );
+      const valorTotal = Number(orcamento.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const prazo = orcamento.prazo_pagamento ? `${orcamento.prazo_pagamento} DDL` : 'A combinar';
+      const dataGeracao = new Date().toLocaleDateString('pt-BR');
+      const validade = orcamento.data_vencimento 
+        ? new Date(orcamento.data_vencimento).toLocaleDateString('pt-BR') 
+        : '30 Dias';
+      
+      const assunto = orcamento.equipamento || 'REFORMA/MANUTENÇÃO';
+      const prazoEntrega = '5 dias úteis'; // Pode ser adicionado ao banco se necessário
+      const garantia = '6 Meses'; // Pode ser adicionado ao banco se necessário
+      const frete = 'CIF'; // Pode ser adicionado ao banco se necessário
+      
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      
+      // Primeira linha: Assunto (2 colunas) + Data Geração
+      const col1Width = (pageWidth - 40) * 2/3;
+      const col2Width = (pageWidth - 40) * 1/3;
+      
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, col1Width, 8);
+      doc.rect(20 + col1Width, yPosition, col2Width, 8);
+      doc.text(`Assunto: ${assunto}`, 22, yPosition + 5.5);
+      doc.text(`Dt. Geração Orçamento: ${dataGeracao}`, 22 + col1Width, yPosition + 5.5);
+      yPosition += 8;
+      
+      // Segunda linha: Valor Total + Condição Pagamento + Prazo Entrega
+      const col3Width = (pageWidth - 40) / 3;
+      
+      doc.rect(20, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+      doc.text(`Valor Total: ${valorTotal}`, 22, yPosition + 5.5);
+      doc.text(`Condição Pagamento: ${prazo}`, 22 + col3Width, yPosition + 5.5);
+      doc.text(`Prazo Entrega: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
+      yPosition += 8;
+      
+      // Terceira linha: Garantia + Frete + Validade Proposta
+      doc.rect(20, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+      doc.text(`Garantia: ${garantia}`, 22, yPosition + 5.5);
+      doc.text(`Frete: ${frete}`, 22 + col3Width, yPosition + 5.5);
+      doc.text(`Validade Proposta: ${validade}`, 22 + col3Width * 2, yPosition + 5.5);
+      yPosition += 8;
 
       // === PEÇAS NECESSÁRIAS ===
       if (pecas.length > 0) {

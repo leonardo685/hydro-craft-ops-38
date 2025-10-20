@@ -1000,22 +1000,73 @@ export default function NovoOrcamento() {
     }
     criarTabela('Informações do Cliente', dadosCliente, [128, 128, 128]);
 
-    // Tabela: Condições Comerciais
+    // === CONDIÇÕES COMERCIAIS ===
     const valorComDesconto = calcularValorComDesconto();
     const valorTotal = calcularTotalGeral();
     const dataValidade = new Date();
     dataValidade.setDate(dataValidade.getDate() + 30);
-
-    const dadosComerciais: Array<{label: string, value: string}> = [
-      { label: 'Assunto:', value: informacoesComerciais.assuntoProposta || 'REFORMA/MANUTENÇÃO' },
-      { label: 'Condição Pagamento:', value: informacoesComerciais.condicaoPagamento || '-' },
-      { label: 'Prazo Entrega:', value: `${informacoesComerciais.prazoEntrega || '30'} dias úteis` },
-      { label: 'Garantia:', value: `${informacoesComerciais.prazoMeses || '6'} meses` },
-      { label: 'Valor Total:', value: `R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
-      { label: 'Frete:', value: informacoesComerciais.freteIncluso ? 'CIF (Incluso)' : 'FOB (Por conta do cliente)' },
-      { label: 'Validade:', value: dataValidade.toLocaleDateString('pt-BR') },
-    ];
-    criarTabela('Condições Comerciais', dadosComerciais, [128, 128, 128]);
+    
+    // Verificar se precisa de nova página
+    if (yPosition + 40 > pageHeight - 30) {
+      adicionarRodape();
+      doc.addPage();
+      yPosition = 20;
+    }
+    
+    // Título centralizado "Condições Comerciais"
+    doc.setFillColor(220, 220, 220);
+    doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(20, yPosition, pageWidth - 40, 10);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text("Condições Comerciais", pageWidth / 2, yPosition + 7, { align: "center" });
+    yPosition += 10;
+    
+    const valorTotalFormatado = `R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+    const condicaoPagamento = informacoesComerciais.condicaoPagamento || '21 DDL';
+    const dataGeracao = new Date().toLocaleDateString('pt-BR');
+    const validadeProposta = dataValidade.toLocaleDateString('pt-BR').replace(/\d{4}/, '') + '30 Dias';
+    
+    const assunto = informacoesComerciais.assuntoProposta || dadosOrcamento.tag || 'REFORMA/MANUTENÇÃO';
+    const prazoEntrega = `${informacoesComerciais.prazoEntrega || '5'} dias úteis`;
+    const garantia = `${informacoesComerciais.prazoMeses || '6'} Meses`;
+    const frete = informacoesComerciais.freteIncluso ? 'CIF' : 'FOB';
+    
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    
+    // Primeira linha: Assunto (2 colunas) + Data Geração
+    const col1Width = (pageWidth - 40) * 2/3;
+    const col2Width = (pageWidth - 40) * 1/3;
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(20, yPosition, col1Width, 8);
+    doc.rect(20 + col1Width, yPosition, col2Width, 8);
+    doc.text(`Assunto: ${assunto}`, 22, yPosition + 5.5);
+    doc.text(`Dt. Geração Orçamento: ${dataGeracao}`, 22 + col1Width, yPosition + 5.5);
+    yPosition += 8;
+    
+    // Segunda linha: Valor Total + Condição Pagamento + Prazo Entrega
+    const col3Width = (pageWidth - 40) / 3;
+    
+    doc.rect(20, yPosition, col3Width, 8);
+    doc.rect(20 + col3Width, yPosition, col3Width, 8);
+    doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+    doc.text(`Valor Total: ${valorTotalFormatado}`, 22, yPosition + 5.5);
+    doc.text(`Condição Pagamento: ${condicaoPagamento}`, 22 + col3Width, yPosition + 5.5);
+    doc.text(`Prazo Entrega: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
+    yPosition += 8;
+    
+    // Terceira linha: Garantia + Frete + Validade Proposta
+    doc.rect(20, yPosition, col3Width, 8);
+    doc.rect(20 + col3Width, yPosition, col3Width, 8);
+    doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+    doc.text(`Garantia: ${garantia}`, 22, yPosition + 5.5);
+    doc.text(`Frete: ${frete}`, 22 + col3Width, yPosition + 5.5);
+    doc.text(`Validade Proposta: ${validadeProposta}`, 22 + col3Width * 2, yPosition + 5.5);
+    yPosition += 8;
 
     // Tabela: Peças Necessárias (com código)
     if (itensAnalise.pecas.length > 0 && informacoesComerciais.mostrarPecas !== false) {
