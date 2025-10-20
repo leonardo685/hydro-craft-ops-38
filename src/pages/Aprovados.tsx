@@ -199,7 +199,7 @@ export default function Aprovados() {
                                 onClick={() => {
                                   const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
                                   if (numeroOrdem) {
-                                    navigate(`/ordem-servico/${numeroOrdem}`);
+                                    navigate(`/ordem/${numeroOrdem}`);
                                   } else {
                                     navigate(`/visualizar-ordem/${ordem.id}`);
                                   }
