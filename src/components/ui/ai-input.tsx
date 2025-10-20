@@ -193,8 +193,8 @@ interface ContextShape {
 const FormContext = React.createContext({} as ContextShape)
 const useFormContext = () => React.useContext(FormContext)
 
-const FORM_WIDTH = 360
-const FORM_HEIGHT = 200
+const FORM_WIDTH = 720
+const FORM_HEIGHT = 400
 
 export function MorphPanel() {
   const wrapperRef = React.useRef<HTMLDivElement>(null)
@@ -294,7 +294,7 @@ export function MorphPanel() {
         initial={false}
         animate={{
           width: showForm ? FORM_WIDTH : "auto",
-          height: showForm ? FORM_HEIGHT : 44,
+          height: showForm ? FORM_HEIGHT : 88,
           borderRadius: showForm ? 14 : 20,
         }}
         transition={{
@@ -318,9 +318,9 @@ export function MorphPanel() {
 function DockBar() {
   const { showForm, triggerOpen } = useFormContext()
   return (
-    <footer className="mt-auto flex h-[44px] items-center justify-center whitespace-nowrap select-none">
-      <div className="flex items-center justify-center gap-2 px-3 max-sm:h-10 max-sm:px-2">
-        <div className="flex w-fit items-center gap-2">
+    <footer className="mt-auto flex h-[88px] items-center justify-center whitespace-nowrap select-none">
+      <div className="flex items-center justify-center gap-3 px-4 py-3">
+        <div className="flex w-fit items-center gap-3">
           <AnimatePresence mode="wait">
             {showForm ? (
               <motion.div
@@ -328,7 +328,7 @@ function DockBar() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0 }}
                 exit={{ opacity: 0 }}
-                className="h-5 w-5"
+                className="h-8 w-8"
               />
             ) : (
               <motion.div
@@ -339,7 +339,7 @@ function DockBar() {
                 transition={{ duration: 0.2 }}
                 className="flex items-center justify-center"
               >
-                <img src={fixzysIcon} alt="FixZys AI" className="h-6 w-6" />
+                <img src={fixzysIcon} alt="FixZys AI" className="h-8 w-8" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -347,11 +347,11 @@ function DockBar() {
 
         <Button
           type="button"
-          className="flex h-fit flex-1 justify-end rounded-full px-2 !py-0.5"
+          className="flex h-fit flex-1 justify-end rounded-full px-4 !py-2 text-base font-semibold"
           variant="ghost"
           onClick={triggerOpen}
         >
-          <span className="truncate font-semibold">Ask AI</span>
+          <span className="truncate">Ask AI</span>
         </Button>
       </div>
     </footer>
@@ -449,7 +449,13 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
             transition={{ type: "spring", stiffness: 550 / SPEED_FACTOR, damping: 45, mass: 0.7 }}
             className="flex h-full flex-col p-1"
           >
-            <div className="flex justify-between py-1">
+            <div className="flex justify-between items-center py-2 px-2">
+              <div className="flex items-center gap-2">
+                <img src={fixzysIcon} alt="FixZys AI" className="h-8 w-8" />
+                <p className="text-foreground flex items-center gap-[6px] select-none font-semibold text-base">
+                  {isRecording ? "Gravando..." : isTranscribing ? "Transcrevendo..." : "FixZys AI"}
+                </p>
+              </div>
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
@@ -458,24 +464,21 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
                   onClick={handleMicClick}
                   disabled={isTranscribing}
                   className={cn(
-                    "h-8 w-8 ml-1",
+                    "h-9 w-9",
                     isRecording && "text-destructive animate-pulse"
                   )}
                 >
-                  {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  {isRecording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
                 </Button>
-                <p className="text-foreground z-2 flex items-center gap-[6px] select-none font-semibold">
-                  {isRecording ? "Gravando..." : isTranscribing ? "Transcrevendo..." : "FixZys AI"}
-                </p>
+                <button
+                  type="submit"
+                  ref={btnRef}
+                  className="text-muted-foreground hover:text-foreground flex cursor-pointer items-center justify-center gap-1 rounded-[12px] bg-transparent text-center select-none transition-colors"
+                >
+                  <KeyHint>⌘</KeyHint>
+                  <KeyHint className="w-fit">Enter</KeyHint>
+                </button>
               </div>
-              <button
-                type="submit"
-                ref={btnRef}
-                className="text-muted-foreground hover:text-foreground right-4 mt-1 flex -translate-y-[3px] cursor-pointer items-center justify-center gap-1 rounded-[12px] bg-transparent pr-1 text-center select-none transition-colors"
-              >
-                <KeyHint>⌘</KeyHint>
-                <KeyHint className="w-fit">Enter</KeyHint>
-              </button>
             </div>
             <textarea
               ref={(node) => {
@@ -488,7 +491,7 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
               }}
               placeholder={isTranscribing ? "Transcrevendo áudio..." : "Pergunte-me qualquer coisa..."}
               name="message"
-              className="bg-background text-foreground placeholder:text-muted-foreground h-full w-full resize-none scroll-py-2 rounded-md p-4 outline-0 border border-input focus:border-primary transition-colors"
+              className="bg-background text-foreground placeholder:text-muted-foreground h-full w-full resize-none scroll-py-2 rounded-md p-4 outline-0 border border-input focus:border-primary transition-colors text-base"
               required
               onKeyDown={handleKeys}
               spellCheck={false}
@@ -505,9 +508,8 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-2 left-3"
+            className="absolute top-3 left-3"
           >
-            <img src={fixzysIcon} alt="FixZys AI" className="h-6 w-6" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -519,7 +521,7 @@ function KeyHint({ children, className }: { children: string; className?: string
   return (
     <kbd
       className={cx(
-        "text-muted-foreground flex h-6 w-fit items-center justify-center rounded-sm border border-border px-[6px] font-sans text-xs",
+        "text-muted-foreground flex h-7 w-fit items-center justify-center rounded-sm border border-border px-2 font-sans text-sm",
         className
       )}
     >
