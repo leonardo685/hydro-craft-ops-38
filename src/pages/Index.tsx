@@ -30,6 +30,39 @@ const Index = () => {
       };
     }
   });
+
+  // Buscar atividades recentes do banco de dados
+  const { data: atividadesRecentes } = useQuery({
+    queryKey: ['atividades-recentes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('atividades_sistema')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Função para formatar tempo relativo
+  const formatarTempoRelativo = (dataStr: string) => {
+    const data = new Date(dataStr);
+    const agora = new Date();
+    const diffMs = agora.getTime() - data.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHoras = Math.floor(diffMs / 3600000);
+    const diffDias = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) {
+      return diffMins <= 1 ? 'agora mesmo' : `${diffMins} minutos atrás`;
+    } else if (diffHoras < 24) {
+      return diffHoras === 1 ? '1 hora atrás' : `${diffHoras} horas atrás`;
+    } else {
+      return diffDias === 1 ? '1 dia atrás' : `${diffDias} dias atrás`;
+    }
+  };
   const stats = [{
     label: "Equipamentos Recebidos",
     value: statsData?.totalRecebimentos.toString() || "0",
@@ -137,29 +170,24 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {[{
-              action: "Motor Hidráulico 10HP recebido",
-              time: "2 horas atrás",
-              type: "recebimento"
-            }, {
-              action: "Orçamento ORC-2024-003 aprovado",
-              time: "5 horas atrás",
-              type: "aprovacao"
-            }, {
-              action: "Análise de Bomba Centrífuga finalizada",
-              time: "1 dia atrás",
-              type: "analise"
-            }, {
-              action: "Nota Fiscal NF-2024-002 emitida",
-              time: "2 dias atrás",
-              type: "faturamento"
-            }].map((item, index) => <div key={index} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                  <div className="w-2 h-2 bg-primary rounded-full" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{item.action}</p>
-                    <p className="text-xs text-muted-foreground">{item.time}</p>
+              {atividadesRecentes && atividadesRecentes.length > 0 ? (
+                atividadesRecentes.map((atividade) => (
+                  <div key={atividade.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                    <div className="w-2 h-2 bg-primary rounded-full" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{atividade.descricao}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatarTempoRelativo(atividade.created_at)}
+                      </p>
+                    </div>
                   </div>
-                </div>)}
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">Nenhuma atividade registrada ainda</p>
+                  <p className="text-xs mt-1">As atividades aparecerão aqui conforme você usar o sistema</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

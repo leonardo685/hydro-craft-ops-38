@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      atividades_sistema: {
+        Row: {
+          created_at: string
+          descricao: string
+          entidade_id: string | null
+          entidade_tipo: string | null
+          id: string
+          metadados: Json | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          entidade_id?: string | null
+          entidade_tipo?: string | null
+          id?: string
+          metadados?: Json | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          entidade_id?: string | null
+          entidade_tipo?: string | null
+          id?: string
+          metadados?: Json | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       categorias_financeiras: {
         Row: {
           categoria_mae_id: string | null
@@ -1056,6 +1086,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      registrar_atividade: {
+        Args: {
+          p_descricao: string
+          p_entidade_id?: string
+          p_entidade_tipo?: string
+          p_metadados?: Json
+          p_tipo: string
+        }
+        Returns: string
       }
     }
     Enums: {
