@@ -1022,21 +1022,24 @@ export default function NovoOrcamento() {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     
-    // Primeira linha: Nº Orçamento + Nome do Cliente
+    // Primeira linha: Nº Orçamento + Data
     const colWidth = (pageWidth - 40) / 2;
     
     doc.setDrawColor(200, 200, 200);
     doc.rect(20, yPosition, colWidth, 8);
     doc.rect(20 + colWidth, yPosition, colWidth, 8);
     doc.text(`Nº Orçamento: ${dadosOrcamento.numeroOrdem || 'N/A'}`, 22, yPosition + 5.5);
-    doc.text(`Nome Cliente: ${dadosOrcamento.cliente || 'N/A'}`, 22 + colWidth, yPosition + 5.5);
+    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 22 + colWidth, yPosition + 5.5);
     yPosition += 8;
     
-    // Segunda linha: CNPJ + Data
-    doc.rect(20, yPosition, colWidth, 8);
-    doc.rect(20 + colWidth, yPosition, colWidth, 8);
+    // Segunda linha: Nome do Cliente (linha inteira)
+    doc.rect(20, yPosition, pageWidth - 40, 8);
+    doc.text(`Nome do Cliente: ${dadosOrcamento.cliente || 'N/A'}`, 22, yPosition + 5.5);
+    yPosition += 8;
+    
+    // Terceira linha: CNPJ (linha inteira)
+    doc.rect(20, yPosition, pageWidth - 40, 8);
     doc.text(`CNPJ: ${cnpjCliente || 'N/A'}`, 22, yPosition + 5.5);
-    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 22 + colWidth, yPosition + 5.5);
     yPosition += 8;
     
     yPosition += 10;
