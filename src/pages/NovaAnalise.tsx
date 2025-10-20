@@ -605,6 +605,16 @@ const NovaOrdemServico = () => {
                 nota_fiscal,
                 numero_serie,
                 observacoes,
+                pressao_trabalho,
+                temperatura_trabalho,
+                fluido_trabalho,
+                local_instalacao,
+                potencia,
+                camisa,
+                haste_comprimento,
+                curso,
+                conexao_a,
+                conexao_b,
                 fotos_equipamentos (*)
               )
             `)
@@ -624,8 +634,9 @@ const NovaOrdemServico = () => {
             const recebimentoData = ordem.recebimentos;
             setRecebimento({
               id: recebimentoData.id,
-              cliente: recebimentoData.cliente_nome,
-              equipamento: recebimentoData.tipo_equipamento,
+              cliente_nome: recebimentoData.cliente_nome,
+              tipo_equipamento: recebimentoData.tipo_equipamento,
+              data_entrada: recebimentoData.data_entrada,
               dataEntrada: new Date(recebimentoData.data_entrada).toLocaleDateString('pt-BR'),
               numeroOrdem: recebimentoData.numero_ordem,
               nota_fiscal: recebimentoData.nota_fiscal,
@@ -762,8 +773,9 @@ const NovaOrdemServico = () => {
     if (recebimentoEncontrado) {
       setRecebimento({
         id: recebimentoEncontrado.id,
-        cliente: recebimentoEncontrado.cliente_nome,
-        equipamento: recebimentoEncontrado.tipo_equipamento,
+        cliente_nome: recebimentoEncontrado.cliente_nome,
+        tipo_equipamento: recebimentoEncontrado.tipo_equipamento,
+        data_entrada: recebimentoEncontrado.data_entrada,
         dataEntrada: new Date(recebimentoEncontrado.data_entrada).toLocaleDateString('pt-BR'),
         numeroOrdem: recebimentoEncontrado.numero_ordem,
         nota_fiscal: recebimentoEncontrado.nota_fiscal,
@@ -927,39 +939,80 @@ const NovaOrdemServico = () => {
         }
       } else {
         console.log('Criando nova ordem...');
-        // Criar nova ordem
-        const numeroOrdem = `OS-${Date.now()}`;
         
-        const { data: novaOrdem, error } = await supabase
-          .from('ordens_servico')
-          .insert({
-            recebimento_id: recebimento?.id || null,
-            numero_ordem: numeroOrdem,
-            cliente_nome: recebimento?.cliente || '',
-            equipamento: recebimento?.equipamento || '',
-            tecnico: formData.tecnico,
-            data_entrada: recebimento?.data_entrada || new Date().toISOString(),
-            data_analise: new Date().toISOString(),
-            status: 'em_andamento',
-            prioridade: formData.prioridade.toLowerCase(),
-            tipo_problema: formData.problemas,
-            descricao_problema: formData.problemas,
-            solucao_proposta: servicosPersonalizados,
-            pecas_necessarias: pecasUtilizadas,
-            servicos_necessarios: servicosSelecionados,
-            usinagem_necessaria: usinagemSelecionada,
-            tempo_estimado: formData.prazoEstimado,
-            observacoes_tecnicas: formData.observacoes
-          })
-          .select()
-          .single();
+        // Verificar se já existe uma ordem para este recebimento
+        if (recebimento?.id) {
+          const { data: ordemExistenteParaRecebimento } = await supabase
+            .from('ordens_servico')
+            .select('*')
+            .eq('recebimento_id', recebimento.id)
+            .maybeSingle();
+          
+          if (ordemExistenteParaRecebimento) {
+            console.log('Já existe uma ordem para este recebimento, atualizando...', ordemExistenteParaRecebimento.id);
+            // Atualizar a ordem existente ao invés de criar uma nova
+            const { data: ordemAtualizada, error } = await supabase
+              .from('ordens_servico')
+              .update({
+                tecnico: formData.tecnico,
+                tipo_problema: formData.problemas,
+                descricao_problema: formData.problemas,
+                solucao_proposta: servicosPersonalizados,
+                pecas_necessarias: pecasUtilizadas,
+                servicos_necessarios: servicosSelecionados,
+                usinagem_necessaria: usinagemSelecionada,
+                tempo_estimado: formData.prazoEstimado,
+                observacoes_tecnicas: formData.observacoes,
+                prioridade: formData.prioridade.toLowerCase(),
+                data_analise: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', ordemExistenteParaRecebimento.id)
+              .select()
+              .single();
 
-        if (error) {
-          console.error('Erro ao criar ordem:', error);
-          throw error;
+            if (error) {
+              console.error('Erro ao atualizar ordem existente:', error);
+              throw error;
+            }
+            ordemId = ordemAtualizada.id;
+            console.log('Ordem existente atualizada com ID:', ordemId);
+          } else {
+            // Criar nova ordem
+            const numeroOrdem = `OS-${Date.now()}`;
+            
+            const { data: novaOrdem, error } = await supabase
+              .from('ordens_servico')
+              .insert({
+                recebimento_id: recebimento.id,
+                numero_ordem: numeroOrdem,
+                cliente_nome: recebimento.cliente_nome || '',
+                equipamento: recebimento.tipo_equipamento || '',
+                tecnico: formData.tecnico,
+                data_entrada: recebimento.data_entrada || new Date().toISOString(),
+                data_analise: new Date().toISOString(),
+                status: 'em_andamento',
+                prioridade: formData.prioridade.toLowerCase(),
+                tipo_problema: formData.problemas,
+                descricao_problema: formData.problemas,
+                solucao_proposta: servicosPersonalizados,
+                pecas_necessarias: pecasUtilizadas,
+                servicos_necessarios: servicosSelecionados,
+                usinagem_necessaria: usinagemSelecionada,
+                tempo_estimado: formData.prazoEstimado,
+                observacoes_tecnicas: formData.observacoes
+              })
+              .select()
+              .single();
+
+            if (error) {
+              console.error('Erro ao criar ordem:', error);
+              throw error;
+            }
+            ordemId = novaOrdem.id;
+            console.log('Nova ordem criada com ID:', ordemId);
+          }
         }
-        ordemId = novaOrdem.id;
-        console.log('Nova ordem criada com ID:', ordemId);
       }
 
       // Upload de fotos de chegada (com flag apresentar_orcamento)
