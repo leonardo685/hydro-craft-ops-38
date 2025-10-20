@@ -492,24 +492,46 @@ export default function Orcamentos() {
         yPosition += 5;
 
         const pecasRows = pecas.map(item => {
-          const detalhes = (item.detalhes as any) || {};
           return [
-            detalhes.codigo || '-',
             item.descricao || '-',
-            detalhes.material || '-',
-            detalhes.medidas || '-',
-            Number(item.quantidade || 0).toFixed(2),
+            Number(item.quantidade || 0).toFixed(0),
             Number(item.valor_unitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
             Number(item.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
           ];
         });
 
         yPosition = criarTabela(
-          ['Código', 'Descrição', 'Material', 'Medidas', 'Qtd', 'Valor Unit.', 'Total'],
+          ['Descrição', 'Qtd', 'Valor Unit.', 'Total'],
           pecasRows,
           yPosition,
-          [20, 45, 25, 25, 15, 25, 25]
+          [90, 20, 35, 35]
         );
+
+        // Total de Peças em box
+        const totalPecas = pecas.reduce((acc, item) => acc + Number(item.valor_total || 0), 0);
+        if (yPosition + 10 > pageHeight - 30) {
+          adicionarRodape(currentPage);
+          doc.addPage();
+          currentPage++;
+          yPosition = 20;
+        }
+        
+        yPosition += 5;
+        const boxWidth = 50;
+        const boxHeight = 8;
+        const boxX = pageWidth - 25 - boxWidth - 35;
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(boxX, yPosition, boxWidth, boxHeight);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text('Total de Peças', boxX + 2, yPosition + 5.5);
+        
+        const valorBoxX = boxX + boxWidth;
+        doc.rect(valorBoxX, yPosition, 35, boxHeight);
+        doc.text(totalPecas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), valorBoxX + 33, yPosition + 5.5, { align: 'right' });
+        
+        yPosition += 10;
       }
 
       // === SERVIÇOS A EXECUTAR ===
@@ -523,22 +545,46 @@ export default function Orcamentos() {
         yPosition += 5;
 
         const servicosRows = servicos.map(item => {
-          const detalhes = (item.detalhes as any) || {};
           return [
-            detalhes.codigo || '-',
             item.descricao || '-',
-            Number(item.quantidade || 0).toFixed(2),
+            Number(item.quantidade || 0).toFixed(0),
             Number(item.valor_unitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
             Number(item.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
           ];
         });
 
         yPosition = criarTabela(
-          ['Código', 'Descrição', 'Qtd', 'Valor Unit.', 'Total'],
+          ['Descrição', 'Qtd', 'Valor Unit.', 'Total'],
           servicosRows,
           yPosition,
-          [25, 75, 20, 30, 30]
+          [90, 20, 35, 35]
         );
+
+        // Total de Serviços em box
+        const totalServicos = servicos.reduce((acc, item) => acc + Number(item.valor_total || 0), 0);
+        if (yPosition + 10 > pageHeight - 30) {
+          adicionarRodape(currentPage);
+          doc.addPage();
+          currentPage++;
+          yPosition = 20;
+        }
+        
+        yPosition += 5;
+        const boxWidth = 50;
+        const boxHeight = 8;
+        const boxX = pageWidth - 25 - boxWidth - 35;
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(boxX, yPosition, boxWidth, boxHeight);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text('Total de Serviços', boxX + 2, yPosition + 5.5);
+        
+        const valorBoxX = boxX + boxWidth;
+        doc.rect(valorBoxX, yPosition, 35, boxHeight);
+        doc.text(totalServicos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), valorBoxX + 33, yPosition + 5.5, { align: 'right' });
+        
+        yPosition += 10;
       }
 
       // === USINAGEM NECESSÁRIA ===
@@ -552,22 +598,46 @@ export default function Orcamentos() {
         yPosition += 5;
 
         const usinagemRows = usinagem.map(item => {
-          const detalhes = (item.detalhes as any) || {};
           return [
-            detalhes.codigo || '-',
             item.descricao || '-',
-            Number(item.quantidade || 0).toFixed(2),
+            Number(item.quantidade || 0).toFixed(0),
             Number(item.valor_unitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
             Number(item.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
           ];
         });
 
         yPosition = criarTabela(
-          ['Código', 'Descrição', 'Qtd', 'Valor Unit.', 'Total'],
+          ['Descrição', 'Qtd', 'Valor Unit.', 'Total'],
           usinagemRows,
           yPosition,
-          [25, 75, 20, 30, 30]
+          [90, 20, 35, 35]
         );
+
+        // Total de Usinagem em box
+        const totalUsinagem = usinagem.reduce((acc, item) => acc + Number(item.valor_total || 0), 0);
+        if (yPosition + 10 > pageHeight - 30) {
+          adicionarRodape(currentPage);
+          doc.addPage();
+          currentPage++;
+          yPosition = 20;
+        }
+        
+        yPosition += 5;
+        const boxWidth = 50;
+        const boxHeight = 8;
+        const boxX = pageWidth - 25 - boxWidth - 35;
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(boxX, yPosition, boxWidth, boxHeight);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text('Total de Usinagem', boxX + 2, yPosition + 5.5);
+        
+        const valorBoxX = boxX + boxWidth;
+        doc.rect(valorBoxX, yPosition, 35, boxHeight);
+        doc.text(totalUsinagem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), valorBoxX + 33, yPosition + 5.5, { align: 'right' });
+        
+        yPosition += 10;
       }
 
       // === FOTOS (se houver) ===

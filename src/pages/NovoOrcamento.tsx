@@ -1116,14 +1116,12 @@ export default function NovoOrcamento() {
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
-      doc.setTextColor(255, 255, 255);
-      doc.setFillColor(128, 128, 128);
-      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
-      doc.text('PEÇAS NECESSÁRIAS', pageWidth / 2, yPosition + 7, { align: 'center' });
+      doc.setTextColor(220, 38, 38);
+      doc.text('PEÇAS NECESSÁRIAS', 20, yPosition);
+      doc.setTextColor(0, 0, 0);
       yPosition += 10;
 
       // Cabeçalho da tabela
-      doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
       doc.setFillColor(220, 220, 220);
@@ -1133,18 +1131,14 @@ export default function NovoOrcamento() {
 
       let xPos = 22;
       doc.text('Código', xPos, yPosition + 5.5);
-      xPos += 20;
+      xPos += 25;
       doc.text('Descrição', xPos, yPosition + 5.5);
-      xPos += 50;
-      doc.text('Material', xPos, yPosition + 5.5);
-      xPos += 35;
-      doc.text('Medidas', xPos, yPosition + 5.5);
-      xPos += 30;
+      xPos += 70;
       doc.text('Qtd', xPos, yPosition + 5.5);
       if (informacoesComerciais.mostrarValores !== false) {
         xPos += 15;
-        doc.text('Valor Un.', xPos, yPosition + 5.5);
-        xPos += 22;
+        doc.text('Valor Unit.', xPos, yPosition + 5.5);
+        xPos += 25;
         doc.text('Total', xPos, yPosition + 5.5);
       }
       yPosition += 8;
@@ -1172,20 +1166,16 @@ export default function NovoOrcamento() {
 
         let xPos = 22;
         doc.text(item.codigo || '-', xPos, yPosition + 5.5);
-        xPos += 20;
-        const desc = item.descricao.length > 25 ? item.descricao.substring(0, 22) + '...' : item.descricao;
+        xPos += 25;
+        const desc = item.descricao.length > 35 ? item.descricao.substring(0, 32) + '...' : item.descricao;
         doc.text(desc, xPos, yPosition + 5.5);
-        xPos += 50;
-        doc.text(item.detalhes?.material || '-', xPos, yPosition + 5.5);
-        xPos += 35;
-        doc.text(item.detalhes?.medidas || '-', xPos, yPosition + 5.5);
-        xPos += 30;
+        xPos += 70;
         doc.text(item.quantidade.toString(), xPos, yPosition + 5.5);
         
         if (informacoesComerciais.mostrarValores !== false) {
           xPos += 15;
           doc.text(`R$ ${item.valorUnitario.toFixed(2)}`, xPos, yPosition + 5.5);
-          xPos += 22;
+          xPos += 25;
           doc.text(`R$ ${item.valorTotal.toFixed(2)}`, xPos, yPosition + 5.5);
           totalPecas += item.valorTotal;
         }
@@ -1193,15 +1183,25 @@ export default function NovoOrcamento() {
         yPosition += rowHeight;
       });
 
-      // Total das peças
+      // Total das peças em box
       if (informacoesComerciais.mostrarValores !== false) {
-        yPosition += 2;
+        yPosition += 5;
+        const boxWidth = 50;
+        const boxHeight = 8;
+        const boxX = pageWidth - 25 - boxWidth;
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.text(`Total Peças: R$ ${totalPecas.toFixed(2)}`, pageWidth - 25, yPosition, { align: 'right' });
+        doc.setFontSize(9);
+        doc.text('Total de Peças', boxX + 2, yPosition + 5.5);
+        
+        const valorBoxX = boxX + boxWidth;
+        doc.rect(valorBoxX, yPosition, 25, boxHeight);
+        doc.text(`R$ ${totalPecas.toFixed(2)}`, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
       }
       
-      yPosition += 10;
+      yPosition += 15;
     }
 
     // Tabela: Serviços a Executar (com código)
@@ -1213,14 +1213,12 @@ export default function NovoOrcamento() {
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
-      doc.setTextColor(255, 255, 255);
-      doc.setFillColor(128, 128, 128);
-      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
-      doc.text('SERVIÇOS A EXECUTAR', pageWidth / 2, yPosition + 7, { align: 'center' });
+      doc.setTextColor(220, 38, 38);
+      doc.text('SERVIÇOS A EXECUTAR', 20, yPosition);
+      doc.setTextColor(0, 0, 0);
       yPosition += 10;
 
       // Cabeçalho da tabela
-      doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
       doc.setFillColor(220, 220, 220);
@@ -1232,12 +1230,12 @@ export default function NovoOrcamento() {
       doc.text('Código', xPos, yPosition + 5.5);
       xPos += 25;
       doc.text('Descrição', xPos, yPosition + 5.5);
-      xPos += 90;
+      xPos += 70;
       doc.text('Qtd', xPos, yPosition + 5.5);
       if (informacoesComerciais.mostrarValores !== false) {
         xPos += 15;
-        doc.text('Valor Un.', xPos, yPosition + 5.5);
-        xPos += 22;
+        doc.text('Valor Unit.', xPos, yPosition + 5.5);
+        xPos += 25;
         doc.text('Total', xPos, yPosition + 5.5);
       }
       yPosition += 8;
@@ -1266,15 +1264,15 @@ export default function NovoOrcamento() {
         let xPos = 22;
         doc.text(item.codigo || '-', xPos, yPosition + 5.5);
         xPos += 25;
-        const desc = item.descricao.length > 45 ? item.descricao.substring(0, 42) + '...' : item.descricao;
+        const desc = item.descricao.length > 35 ? item.descricao.substring(0, 32) + '...' : item.descricao;
         doc.text(desc, xPos, yPosition + 5.5);
-        xPos += 90;
+        xPos += 70;
         doc.text(item.quantidade.toString(), xPos, yPosition + 5.5);
         
         if (informacoesComerciais.mostrarValores !== false) {
           xPos += 15;
           doc.text(`R$ ${item.valorUnitario.toFixed(2)}`, xPos, yPosition + 5.5);
-          xPos += 22;
+          xPos += 25;
           doc.text(`R$ ${item.valorTotal.toFixed(2)}`, xPos, yPosition + 5.5);
           totalServicos += item.valorTotal;
         }
@@ -1282,15 +1280,25 @@ export default function NovoOrcamento() {
         yPosition += rowHeight;
       });
 
-      // Total dos serviços
+      // Total dos serviços em box
       if (informacoesComerciais.mostrarValores !== false) {
-        yPosition += 2;
+        yPosition += 5;
+        const boxWidth = 50;
+        const boxHeight = 8;
+        const boxX = pageWidth - 25 - boxWidth;
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.text(`Total Serviços: R$ ${totalServicos.toFixed(2)}`, pageWidth - 25, yPosition, { align: 'right' });
+        doc.setFontSize(9);
+        doc.text('Total de Serviços', boxX + 2, yPosition + 5.5);
+        
+        const valorBoxX = boxX + boxWidth;
+        doc.rect(valorBoxX, yPosition, 25, boxHeight);
+        doc.text(`R$ ${totalServicos.toFixed(2)}`, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
       }
       
-      yPosition += 10;
+      yPosition += 15;
     }
 
     // Tabela: Usinagem Necessária (com código)
@@ -1302,14 +1310,12 @@ export default function NovoOrcamento() {
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
-      doc.setTextColor(255, 255, 255);
-      doc.setFillColor(128, 128, 128);
-      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
-      doc.text('USINAGEM NECESSÁRIA', pageWidth / 2, yPosition + 7, { align: 'center' });
+      doc.setTextColor(220, 38, 38);
+      doc.text('USINAGEM NECESSÁRIA', 20, yPosition);
+      doc.setTextColor(0, 0, 0);
       yPosition += 10;
 
       // Cabeçalho da tabela
-      doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
       doc.setFillColor(220, 220, 220);
@@ -1321,12 +1327,12 @@ export default function NovoOrcamento() {
       doc.text('Código', xPos, yPosition + 5.5);
       xPos += 25;
       doc.text('Descrição', xPos, yPosition + 5.5);
-      xPos += 90;
+      xPos += 70;
       doc.text('Qtd', xPos, yPosition + 5.5);
       if (informacoesComerciais.mostrarValores !== false) {
         xPos += 15;
-        doc.text('Valor Un.', xPos, yPosition + 5.5);
-        xPos += 22;
+        doc.text('Valor Unit.', xPos, yPosition + 5.5);
+        xPos += 25;
         doc.text('Total', xPos, yPosition + 5.5);
       }
       yPosition += 8;
@@ -1355,15 +1361,15 @@ export default function NovoOrcamento() {
         let xPos = 22;
         doc.text(item.codigo || '-', xPos, yPosition + 5.5);
         xPos += 25;
-        const desc = item.descricao.length > 45 ? item.descricao.substring(0, 42) + '...' : item.descricao;
+        const desc = item.descricao.length > 35 ? item.descricao.substring(0, 32) + '...' : item.descricao;
         doc.text(desc, xPos, yPosition + 5.5);
-        xPos += 90;
+        xPos += 70;
         doc.text(item.quantidade.toString(), xPos, yPosition + 5.5);
         
         if (informacoesComerciais.mostrarValores !== false) {
           xPos += 15;
           doc.text(`R$ ${item.valorUnitario.toFixed(2)}`, xPos, yPosition + 5.5);
-          xPos += 22;
+          xPos += 25;
           doc.text(`R$ ${item.valorTotal.toFixed(2)}`, xPos, yPosition + 5.5);
           totalUsinagem += item.valorTotal;
         }
@@ -1371,15 +1377,25 @@ export default function NovoOrcamento() {
         yPosition += rowHeight;
       });
 
-      // Total da usinagem
+      // Total da usinagem em box
       if (informacoesComerciais.mostrarValores !== false) {
-        yPosition += 2;
+        yPosition += 5;
+        const boxWidth = 50;
+        const boxHeight = 8;
+        const boxX = pageWidth - 25 - boxWidth;
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.text(`Total Usinagem: R$ ${totalUsinagem.toFixed(2)}`, pageWidth - 25, yPosition, { align: 'right' });
+        doc.setFontSize(9);
+        doc.text('Total de Usinagem', boxX + 2, yPosition + 5.5);
+        
+        const valorBoxX = boxX + boxWidth;
+        doc.rect(valorBoxX, yPosition, 25, boxHeight);
+        doc.text(`R$ ${totalUsinagem.toFixed(2)}`, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
       }
       
-      yPosition += 10;
+      yPosition += 15;
     }
 
     // Tabela: Resumo Financeiro
@@ -1873,6 +1889,13 @@ export default function NovoOrcamento() {
                       </TableRow>)}
                   </TableBody>
                 </Table>
+                {itensAnalise.pecas.length > 0 && (
+                  <div className="mt-4 pt-4 border-t flex justify-end">
+                    <div className="text-lg font-bold">
+                      Total de Peças: R$ {itensAnalise.pecas.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                )}
                 <div className="mt-4 pt-4 border-t">
                   <Button variant="outline" onClick={() => adicionarItemAdicional('pecas')} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
@@ -1946,6 +1969,13 @@ export default function NovoOrcamento() {
                       </TableRow>)}
                   </TableBody>
                 </Table>
+                {itensAnalise.servicos.length > 0 && (
+                  <div className="mt-4 pt-4 border-t flex justify-end">
+                    <div className="text-lg font-bold">
+                      Total de Serviços: R$ {itensAnalise.servicos.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                )}
                 <div className="mt-4 pt-4 border-t">
                   <Button variant="outline" onClick={() => adicionarItemAdicional('servicos')} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
@@ -2019,6 +2049,13 @@ export default function NovoOrcamento() {
                       </TableRow>)}
                   </TableBody>
                 </Table>
+                {itensAnalise.usinagem.length > 0 && (
+                  <div className="mt-4 pt-4 border-t flex justify-end">
+                    <div className="text-lg font-bold">
+                      Total de Usinagem: R$ {itensAnalise.usinagem.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                )}
                 <div className="mt-4 pt-4 border-t">
                   <Button variant="outline" onClick={() => adicionarItemAdicional('usinagem')} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
