@@ -197,7 +197,7 @@ export default function Aprovados() {
                               <button 
                                 className="text-primary hover:underline cursor-pointer"
                                 onClick={() => {
-                                  const numeroOrdem = ordem.numero_ordem || ordem.recebimentos?.numero_ordem;
+                                  const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
                                   if (numeroOrdem) {
                                     navigate(`/ordem-servico/${numeroOrdem}`);
                                   } else {
@@ -205,7 +205,7 @@ export default function Aprovados() {
                                   }
                                 }}
                               >
-                                {ordem.numero_ordem || ordem.recebimentos?.numero_ordem || 'Sem número'}
+                                {ordem.recebimentos?.numero_ordem || ordem.numero_ordem || 'Sem número'}
                               </button> - {ordem.equipamento || ordem.recebimentos?.tipo_equipamento}
                             </CardTitle>
                             <CardDescription className="mt-1 flex items-center gap-4">
