@@ -301,32 +301,23 @@ export default function Aprovados() {
 
                                 // Enviar notificação para o n8n/Telegram
                                 try {
-                                  const { data: webhookConfig } = await supabase
-                                    .from('configuracoes_sistema')
-                                    .select('valor')
-                                    .eq('chave', 'webhook_n8n_url')
-                                    .single();
-
-                                  if (webhookConfig?.valor) {
-                                    const notaFiscalEntrada = ordem.recebimentos?.nota_fiscal || 
-                                                            ordem.recebimentos?.chave_acesso_nfe || 
-                                                            'n/a';
-                                    
-                                    await fetch(webhookConfig.valor, {
-                                      method: 'POST',
-                                      headers: {
-                                        'Content-Type': 'application/json',
-                                      },
-                                      body: JSON.stringify({
-                                        tipo: "ordem_finalizada",
-                                        numero_ordem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem,
-                                        equipamento: ordem.recebimentos?.tipo_equipamento || ordem.equipamento,
-                                        cliente: ordem.recebimentos?.cliente_nome || ordem.cliente_nome,
-                                        nota_fiscal_entrada: notaFiscalEntrada,
-                                        data_finalizacao: new Date().toISOString()
-                                      })
-                                    });
-                                  }
+                                  const notaFiscalEntrada = ordem.recebimentos?.nota_fiscal || 
+                                                          ordem.recebimentos?.chave_acesso_nfe || 
+                                                          'n/a';
+                                  
+                                  await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
+                                    method: 'POST',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                      tipo: 'ordem_retorno',
+                                      numero_ordem: ordem.numero_ordem,
+                                      cliente: ordem.cliente_nome,
+                                      equipamento: ordem.equipamento,
+                                      nota_fiscal_entrada: notaFiscalEntrada
+                                    })
+                                  });
                                 } catch (webhookError) {
                                   console.error('Erro ao enviar webhook:', webhookError);
                                 }

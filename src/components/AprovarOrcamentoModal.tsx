@@ -192,28 +192,19 @@ export const AprovarOrcamentoModal = ({
 
       // Enviar notificação para o n8n/Telegram
       try {
-        const { data: webhookConfig } = await supabase
-          .from('configuracoes_sistema')
-          .select('valor')
-          .eq('chave', 'webhook_n8n_url')
-          .single();
-
-        if (webhookConfig?.valor) {
-          await fetch(webhookConfig.valor, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              tipo: "orcamento",
-              numero_ordem: orcamento.numero,
-              equipamento: orcamento.equipamento,
-              cliente: orcamento.cliente_nome,
-              valor: formData.valorComDesconto,
-              data_aprovacao: new Date().toISOString()
-            })
-          });
-        }
+        await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            tipo: 'orcamento_aprovado',
+            numero: orcamento.numero,
+            cliente: orcamento.cliente_nome,
+            valor: formData.valorComDesconto,
+            numeroPedido: formData.numeroPedido
+          })
+        });
       } catch (webhookError) {
         console.error('Erro ao enviar webhook:', webhookError);
         // Não bloquear a aprovação se o webhook falhar
