@@ -1175,12 +1175,10 @@ export default function NovoOrcamento() {
         if (informacoesComerciais.mostrarValores !== false) {
           xPos += 15;
           const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2)}` : '';
-          const valorUnitEnd = xPos + 40;
-          doc.text(valorUnit, valorUnitEnd, yPosition + 5.5, { align: 'right' });
-          xPos += 40;
+          doc.text(valorUnit, xPos + 35, yPosition + 5.5, { align: 'right' });
+          xPos += 35;
           const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2)}` : '';
-          const valorTotEnd = xPos + 35;
-          doc.text(valorTot, valorTotEnd, yPosition + 5.5, { align: 'right' });
+          doc.text(valorTot, xPos + 35, yPosition + 5.5, { align: 'right' });
           totalPecas += item.valorTotal;
         }
 
@@ -1277,12 +1275,10 @@ export default function NovoOrcamento() {
         if (informacoesComerciais.mostrarValores !== false) {
           xPos += 15;
           const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2)}` : '';
-          const valorUnitEnd = xPos + 40;
-          doc.text(valorUnit, valorUnitEnd, yPosition + 5.5, { align: 'right' });
-          xPos += 40;
+          doc.text(valorUnit, xPos + 35, yPosition + 5.5, { align: 'right' });
+          xPos += 35;
           const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2)}` : '';
-          const valorTotEnd = xPos + 35;
-          doc.text(valorTot, valorTotEnd, yPosition + 5.5, { align: 'right' });
+          doc.text(valorTot, xPos + 35, yPosition + 5.5, { align: 'right' });
           totalServicos += item.valorTotal;
         }
 
@@ -1379,12 +1375,10 @@ export default function NovoOrcamento() {
         if (informacoesComerciais.mostrarValores !== false) {
           xPos += 15;
           const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2)}` : '';
-          const valorUnitEnd = xPos + 40;
-          doc.text(valorUnit, valorUnitEnd, yPosition + 5.5, { align: 'right' });
-          xPos += 40;
+          doc.text(valorUnit, xPos + 35, yPosition + 5.5, { align: 'right' });
+          xPos += 35;
           const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2)}` : '';
-          const valorTotEnd = xPos + 35;
-          doc.text(valorTot, valorTotEnd, yPosition + 5.5, { align: 'right' });
+          doc.text(valorTot, xPos + 35, yPosition + 5.5, { align: 'right' });
           totalUsinagem += item.valorTotal;
         }
 
