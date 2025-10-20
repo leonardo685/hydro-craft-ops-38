@@ -986,37 +986,60 @@ export default function NovoOrcamento() {
     
     yPosition = 65;
 
-    // Buscar endereço do cliente
-    let enderecoCliente = '';
+    // Buscar dados do cliente
+    let cnpjCliente = '';
     if (dadosOrcamento.clienteId) {
       const { data: clienteData } = await supabase
         .from('clientes')
-        .select('endereco, cidade, estado, cep')
+        .select('cnpj_cpf')
         .eq('id', dadosOrcamento.clienteId)
         .maybeSingle();
       
       if (clienteData) {
-        enderecoCliente = `${clienteData.endereco || ''}, ${clienteData.cidade || ''}/${clienteData.estado || ''} - ${clienteData.cep || ''}`;
+        cnpjCliente = clienteData.cnpj_cpf || '';
       }
     }
 
-    // Tabela: Informações do Cliente
-    const dadosCliente: Array<{label: string, value: string}> = [
-      { label: 'Nº Orçamento:', value: dadosOrcamento.numeroOrdem || '' },
-      { label: 'Cliente:', value: dadosOrcamento.cliente || '' },
-      { label: 'Equipamento:', value: dadosOrcamento.tag || 'Equipamento não especificado' },
-      { label: 'Data:', value: new Date().toLocaleDateString('pt-BR') },
-    ];
-    if (enderecoCliente) {
-      dadosCliente.push({ label: 'Endereço:', value: enderecoCliente });
+    // === INFORMAÇÕES DO CLIENTE ===
+    // Verificar se precisa de nova página
+    if (yPosition + 30 > pageHeight - 30) {
+      adicionarRodape();
+      doc.addPage();
+      yPosition = 20;
     }
-    if (dadosOrcamento.numeroNota) {
-      dadosCliente.push({ label: 'Nota Fiscal:', value: dadosOrcamento.numeroNota });
-    }
-    if (dadosOrcamento.numeroSerie) {
-      dadosCliente.push({ label: 'Nº Série:', value: dadosOrcamento.numeroSerie });
-    }
-    criarTabela('Informações do Cliente', dadosCliente, [128, 128, 128]);
+    
+    // Título centralizado "Informações do Cliente"
+    doc.setFillColor(220, 220, 220);
+    doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(20, yPosition, pageWidth - 40, 10);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text("Informações do Cliente", pageWidth / 2, yPosition + 7, { align: "center" });
+    yPosition += 10;
+    
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    
+    // Primeira linha: Nº Orçamento + Nome do Cliente
+    const colWidth = (pageWidth - 40) / 2;
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(20, yPosition, colWidth, 8);
+    doc.rect(20 + colWidth, yPosition, colWidth, 8);
+    doc.text(`Nº Orçamento: ${dadosOrcamento.numeroOrdem || 'N/A'}`, 22, yPosition + 5.5);
+    doc.text(`Nome Cliente: ${dadosOrcamento.cliente || 'N/A'}`, 22 + colWidth, yPosition + 5.5);
+    yPosition += 8;
+    
+    // Segunda linha: CNPJ + Data
+    doc.rect(20, yPosition, colWidth, 8);
+    doc.rect(20 + colWidth, yPosition, colWidth, 8);
+    doc.text(`CNPJ: ${cnpjCliente || 'N/A'}`, 22, yPosition + 5.5);
+    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 22 + colWidth, yPosition + 5.5);
+    yPosition += 8;
+    
+    yPosition += 10;
 
     // === CONDIÇÕES COMERCIAIS ===
     const valorComDesconto = calcularValorComDesconto();
@@ -1055,15 +1078,10 @@ export default function NovoOrcamento() {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     
-    // Primeira linha: Assunto (2 colunas) + Data Geração
-    const col1Width = (pageWidth - 40) * 2/3;
-    const col2Width = (pageWidth - 40) * 1/3;
-    
+    // Primeira linha: Assunto (span full width)
     doc.setDrawColor(200, 200, 200);
-    doc.rect(20, yPosition, col1Width, 8);
-    doc.rect(20 + col1Width, yPosition, col2Width, 8);
+    doc.rect(20, yPosition, pageWidth - 40, 8);
     doc.text(`Assunto: ${assunto}`, 22, yPosition + 5.5);
-    doc.text(`Dt. Geração Orçamento: ${dataGeracao}`, 22 + col1Width, yPosition + 5.5);
     yPosition += 8;
     
     // Segunda linha: Valor Total + Condição Pagamento + Prazo Entrega

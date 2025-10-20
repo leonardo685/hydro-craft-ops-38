@@ -364,17 +364,56 @@ export default function Orcamentos() {
 
       // === INFORMAÇÕES DO CLIENTE ===
       yPosition = 55;
-      const infoCliente = [
-        ['Nº Orçamento:', orcamento.numero || 'N/A', 'Data:', new Date().toLocaleDateString('pt-BR')],
-        ['Cliente:', orcamento.cliente_nome || 'N/A', 'Equipamento:', orcamento.equipamento || 'N/A']
-      ];
-
-      yPosition = criarTabela(
-        ['Campo', 'Valor', 'Campo', 'Valor'],
-        infoCliente,
-        yPosition,
-        [40, 65, 30, 35]
-      );
+      
+      // Buscar CNPJ do cliente
+      let cnpjCliente = '';
+      if (orcamento.ordem_servico_id) {
+        const { data: osData } = await supabase
+          .from('ordens_servico')
+          .select('recebimento_id')
+          .eq('id', orcamento.ordem_servico_id)
+          .maybeSingle();
+        
+        if (osData?.recebimento_id) {
+          const { data: recData } = await supabase
+            .from('recebimentos')
+            .select('cliente_cnpj')
+            .eq('id', osData.recebimento_id)
+            .maybeSingle();
+          cnpjCliente = recData?.cliente_cnpj || '';
+        }
+      }
+      
+      // Título centralizado "Informações do Cliente"
+      doc.setFillColor(220, 220, 220);
+      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, pageWidth - 40, 10);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text("Informações do Cliente", pageWidth / 2, yPosition + 7, { align: "center" });
+      yPosition += 10;
+      
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      
+      // Primeira linha: Nº Orçamento + Nome do Cliente
+      const colWidth = (pageWidth - 40) / 2;
+      
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, colWidth, 8);
+      doc.rect(20 + colWidth, yPosition, colWidth, 8);
+      doc.text(`Nº Orçamento: ${orcamento.numero || 'N/A'}`, 22, yPosition + 5.5);
+      doc.text(`Nome Cliente: ${orcamento.cliente_nome || 'N/A'}`, 22 + colWidth, yPosition + 5.5);
+      yPosition += 8;
+      
+      // Segunda linha: CNPJ + Data
+      doc.rect(20, yPosition, colWidth, 8);
+      doc.rect(20 + colWidth, yPosition, colWidth, 8);
+      doc.text(`CNPJ: ${cnpjCliente || 'N/A'}`, 22, yPosition + 5.5);
+      doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 22 + colWidth, yPosition + 5.5);
+      yPosition += 8;
 
       // === CONDIÇÕES COMERCIAIS ===
       yPosition += 10;
@@ -413,15 +452,10 @@ export default function Orcamentos() {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       
-      // Primeira linha: Assunto (2 colunas) + Data Geração
-      const col1Width = (pageWidth - 40) * 2/3;
-      const col2Width = (pageWidth - 40) * 1/3;
-      
+      // Primeira linha: Assunto (span full width)
       doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, col1Width, 8);
-      doc.rect(20 + col1Width, yPosition, col2Width, 8);
+      doc.rect(20, yPosition, pageWidth - 40, 8);
       doc.text(`Assunto: ${assunto}`, 22, yPosition + 5.5);
-      doc.text(`Dt. Geração Orçamento: ${dataGeracao}`, 22 + col1Width, yPosition + 5.5);
       yPosition += 8;
       
       // Segunda linha: Valor Total + Condição Pagamento + Prazo Entrega
