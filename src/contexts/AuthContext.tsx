@@ -30,12 +30,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[AuthContext] Fetching role and permissions for user:', userId);
       
-      // Buscar role do usuário
+      // Buscar role do usuário - forçar conversão para texto
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .maybeSingle();
+        .single();
 
       console.log('[AuthContext] Raw roleData:', roleData);
       console.log('[AuthContext] roleError:', roleError);
@@ -54,14 +54,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Validar e converter o role
-      const rawRole = roleData.role;
-      console.log('[AuthContext] rawRole value:', rawRole, 'type:', typeof rawRole);
+      // Converter o role - o Supabase pode retornar o enum de formas diferentes
+      const rawRole = String(roleData.role).toLowerCase().trim();
+      console.log('[AuthContext] rawRole recebido:', rawRole, 'tipo:', typeof rawRole);
       
       const validRoles: AppRole[] = ['admin', 'gestor', 'operador'];
       const role = validRoles.includes(rawRole as AppRole) ? (rawRole as AppRole) : null;
       
-      console.log('[AuthContext] Validated user role:', role);
+      console.log('[AuthContext] Role validado e setado:', role);
       setUserRole(role);
 
       if (role) {
