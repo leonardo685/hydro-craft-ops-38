@@ -48,7 +48,7 @@ const App = () => (
             <Route path="/orcamentos" element={<ProtectedRoute requiredPermission="orcamentos"><Orcamentos /></ProtectedRoute>} />
             <Route path="/orcamentos/novo" element={<ProtectedRoute requiredPermission="orcamentos"><NovoOrcamento /></ProtectedRoute>} />
             <Route path="/aprovados" element={<ProtectedRoute requiredPermission="aprovados"><Aprovados /></ProtectedRoute>} />
-            <Route path="/ordem-servico/:id" element={<ProtectedRoute><VisualizarOrdemServico /></ProtectedRoute>} />
+            <Route path="/visualizar-ordem-servico/:id" element={<ProtectedRoute><VisualizarOrdemServico /></ProtectedRoute>} />
             <Route path="/faturamento" element={<ProtectedRoute requiredPermission="faturamento"><Faturamento /></ProtectedRoute>} />
             <Route path="/cadastros" element={<ProtectedRoute requiredPermission="cadastros"><Cadastros /></ProtectedRoute>} />
             <Route path="/financeiro" element={<ProtectedRoute requiredPermission="financeiro"><Financeiro /></ProtectedRoute>} />
