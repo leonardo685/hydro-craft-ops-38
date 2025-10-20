@@ -11,7 +11,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import mecHidroLogo from "@/assets/mec-hidro-logo.png";
+import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
 
 const VisualizarOrdemServico = () => {
   const navigate = useNavigate();
@@ -144,7 +144,7 @@ const VisualizarOrdemServico = () => {
       logoImg.src = mecHidroLogo;
       await new Promise<void>((resolve) => {
         logoImg.onload = () => {
-          doc.addImage(logoImg, 'PNG', pageWidth - 50, 8, 35, 20);
+          doc.addImage(logoImg, 'JPEG', pageWidth - 50, 8, 35, 20);
           resolve();
         };
         logoImg.onerror = () => resolve();

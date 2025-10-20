@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import mecHidroLogo from "@/assets/mec-hidro-logo.png";
+import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
 
 const NovaOrdemServico = () => {
   const navigate = useNavigate();
@@ -188,7 +188,7 @@ const NovaOrdemServico = () => {
       
       await new Promise<void>((resolve) => {
         logoImg.onload = () => {
-          doc.addImage(logoImg, 'PNG', pageWidth - 50, 8, 35, 20);
+          doc.addImage(logoImg, 'JPEG', pageWidth - 50, 8, 35, 20);
           resolve();
         };
         logoImg.onerror = () => resolve();
