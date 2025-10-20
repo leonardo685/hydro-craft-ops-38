@@ -1,10 +1,11 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Search, Calculator, CheckCircle, Receipt, TrendingUp, Clock, DollarSign } from "lucide-react";
+import { ClipboardList, Search, Calculator, CheckCircle, Receipt, TrendingUp, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { RecentActivity } from "@/components/RecentActivity";
 const Index = () => {
   const navigate = useNavigate();
 
