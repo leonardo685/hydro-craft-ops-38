@@ -256,59 +256,92 @@ const NovaOrdemServico = () => {
     doc.text(`Prioridade: ${dadosOrdem?.prioridade || ''}`, 20, yPosition);
     yPosition += 15;
     
-    // Dados Técnicos (Peritagem)
-    if (dadosTecnicos.tipoEquipamento || dadosTecnicos.pressaoTrabalho || dadosTecnicos.curso || 
-        dadosTecnicos.camisa || dadosTecnicos.hasteComprimento || dadosTecnicos.conexaoA || 
-        dadosTecnicos.conexaoB) {
-      if (yPosition > 240) {
+    // Função para criar tabela de dados técnicos
+    const criarTabelaDadosTecnicos = () => {
+      const dadosParaTabela: Array<{label: string, value: string}> = [];
+      
+      if (dadosTecnicos.camisa) {
+        dadosParaTabela.push({ label: 'Ø Camisa:', value: dadosTecnicos.camisa });
+      }
+      if (dadosTecnicos.hasteComprimento) {
+        dadosParaTabela.push({ label: 'Ø Haste x Comprimento:', value: dadosTecnicos.hasteComprimento });
+      }
+      if (dadosTecnicos.curso) {
+        dadosParaTabela.push({ label: 'Curso:', value: dadosTecnicos.curso });
+      }
+      if (dadosTecnicos.conexaoA) {
+        dadosParaTabela.push({ label: 'Conexão A:', value: dadosTecnicos.conexaoA });
+      }
+      if (dadosTecnicos.conexaoB) {
+        dadosParaTabela.push({ label: 'Conexão B:', value: dadosTecnicos.conexaoB });
+      }
+      if (dadosTecnicos.pressaoTrabalho) {
+        dadosParaTabela.push({ label: 'Pressão de Trabalho:', value: dadosTecnicos.pressaoTrabalho });
+      }
+      if (dadosTecnicos.temperaturaTrabalho) {
+        dadosParaTabela.push({ label: 'Temperatura de Trabalho:', value: dadosTecnicos.temperaturaTrabalho });
+      }
+      if (dadosTecnicos.fluidoTrabalho) {
+        dadosParaTabela.push({ label: 'Fluido de Trabalho:', value: dadosTecnicos.fluidoTrabalho });
+      }
+      
+      if (dadosParaTabela.length === 0) return;
+      
+      if (yPosition > 210) {
         doc.addPage();
         yPosition = 20;
       }
       
+      // Título da tabela
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('Dados Técnicos (Peritagem)', 20, yPosition);
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      doc.setFillColor(128, 128, 128);
+      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+      doc.text('PERITAGEM', pageWidth / 2, yPosition + 7, { align: 'center' });
       yPosition += 10;
       
+      // Linhas da tabela
+      doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       
-      if (dadosTecnicos.tipoEquipamento) {
-        doc.text(`• Tipo de Equipamento: ${dadosTecnicos.tipoEquipamento}`, 20, yPosition);
-        yPosition += lineHeight;
-      }
-      if (dadosTecnicos.pressaoTrabalho) {
-        doc.text(`• Pressão de Trabalho: ${dadosTecnicos.pressaoTrabalho}`, 20, yPosition);
-        yPosition += lineHeight;
-      }
-      if (dadosTecnicos.curso) {
-        doc.text(`• Curso: ${dadosTecnicos.curso}`, 20, yPosition);
-        yPosition += lineHeight;
-      }
-      if (dadosTecnicos.camisa) {
-        doc.text(`• Camisa: ${dadosTecnicos.camisa}`, 20, yPosition);
-        yPosition += lineHeight;
-      }
-      if (dadosTecnicos.hasteComprimento) {
-        doc.text(`• Haste x Comprimento: ${dadosTecnicos.hasteComprimento}`, 20, yPosition);
-        yPosition += lineHeight;
-      }
-      if (dadosTecnicos.conexaoA) {
-        doc.text(`• Conexão A: ${dadosTecnicos.conexaoA}`, 20, yPosition);
-        yPosition += lineHeight;
-      }
-      if (dadosTecnicos.conexaoB) {
-        doc.text(`• Conexão B: ${dadosTecnicos.conexaoB}`, 20, yPosition);
-        yPosition += lineHeight;
-      }
+      const rowHeight = 10;
+      dadosParaTabela.forEach((item, index) => {
+        // Alternar cor de fundo
+        if (index % 2 === 0) {
+          doc.setFillColor(245, 245, 245);
+        } else {
+          doc.setFillColor(255, 255, 255);
+        }
+        doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
+        
+        // Borda da célula
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(20, yPosition, pageWidth - 40, rowHeight);
+        
+        // Texto em negrito para o label
+        doc.setFont('helvetica', 'bold');
+        doc.text(item.label, 25, yPosition + 7);
+        
+        // Texto normal para o valor
+        doc.setFont('helvetica', 'normal');
+        doc.text(item.value, 95, yPosition + 7);
+        
+        yPosition += rowHeight;
+      });
+      
       yPosition += 10;
-    }
+    };
     
-    // Função para adicionar fotos em grade 2x2
+    // Chamar função de tabela
+    criarTabelaDadosTecnicos();
+    
+    // Função para adicionar fotos em grade 2x2 com proporção mantida
     const adicionarFotosGrade = async (fotos: string[], titulo: string) => {
       if (fotos.length === 0) return;
       
-      if (yPosition > 240) {
+      if (yPosition > 210) {
         doc.addPage();
         yPosition = 20;
       }
@@ -321,15 +354,21 @@ const NovaOrdemServico = () => {
       yPosition += 10;
       
       const fotosPorPagina = 4;
-      const fotoWidth = 85;
-      const fotoHeight = 60;
-      const espacoHorizontal = 10;
-      const espacoVertical = 15;
+      const maxFotoWidth = 80;
+      const maxFotoHeight = 55;
+      const espacoHorizontal = 12;
+      const espacoVertical = 12;
       
       for (let i = 0; i < fotos.length; i += fotosPorPagina) {
         if (i > 0) {
           doc.addPage();
           yPosition = 20;
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(12);
+          doc.setTextColor(220, 38, 38);
+          doc.text(titulo + ' (continuação)', 20, yPosition);
+          doc.setTextColor(0, 0, 0);
+          yPosition += 10;
         }
         
         const fotosPagina = fotos.slice(i, i + fotosPorPagina);
@@ -337,14 +376,34 @@ const NovaOrdemServico = () => {
         for (let j = 0; j < fotosPagina.length; j++) {
           const col = j % 2;
           const row = Math.floor(j / 2);
-          const xPos = 20 + col * (fotoWidth + espacoHorizontal);
-          const yPos = yPosition + row * (fotoHeight + espacoVertical);
+          const xPos = 20 + col * (maxFotoWidth + espacoHorizontal);
+          const yPos = yPosition + row * (maxFotoHeight + espacoVertical);
           
           try {
             await new Promise<void>((resolve) => {
               const img = new Image();
+              img.crossOrigin = 'anonymous';
               img.onload = () => {
-                doc.addImage(img, 'JPEG', xPos, yPos, fotoWidth, fotoHeight);
+                // Calcular proporções para manter a imagem dentro dos limites sem cortar
+                const imgAspectRatio = img.width / img.height;
+                const maxAspectRatio = maxFotoWidth / maxFotoHeight;
+                
+                let finalWidth = maxFotoWidth;
+                let finalHeight = maxFotoHeight;
+                
+                if (imgAspectRatio > maxAspectRatio) {
+                  // Imagem mais larga - ajustar pela largura
+                  finalHeight = maxFotoWidth / imgAspectRatio;
+                } else {
+                  // Imagem mais alta - ajustar pela altura
+                  finalWidth = maxFotoHeight * imgAspectRatio;
+                }
+                
+                // Centralizar a imagem dentro do espaço disponível
+                const xOffset = (maxFotoWidth - finalWidth) / 2;
+                const yOffset = (maxFotoHeight - finalHeight) / 2;
+                
+                doc.addImage(img, 'JPEG', xPos + xOffset, yPos + yOffset, finalWidth, finalHeight);
                 resolve();
               };
               img.onerror = () => resolve();
@@ -358,7 +417,7 @@ const NovaOrdemServico = () => {
         if (i + fotosPorPagina < fotos.length) {
           yPosition = 280; // Força nova página
         } else {
-          yPosition += Math.ceil(fotosPagina.length / 2) * (fotoHeight + espacoVertical) + 10;
+          yPosition += Math.ceil(fotosPagina.length / 2) * (maxFotoHeight + espacoVertical) + 10;
         }
       }
     };
