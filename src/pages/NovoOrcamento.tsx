@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X } from "lucide-react";
+import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X, Minus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useClientes } from "@/hooks/use-clientes";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
@@ -2083,11 +2083,53 @@ export default function NovoOrcamento() {
               }))} placeholder="Ex: 21 DDL" />
               </div>
               <div>
-                <Label htmlFor="prazoEntrega">Prazo de Entrega</Label>
-                <Input id="prazoEntrega" value={informacoesComerciais.prazoEntrega} onChange={e => setInformacoesComerciais(prev => ({
-                ...prev,
-                prazoEntrega: e.target.value
-              }))} placeholder="Ex: 5 dias úteis" />
+                <Label htmlFor="prazoEntrega">Prazo de Entrega (dias)</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      const atual = parseInt(informacoesComerciais.prazoEntrega) || 0;
+                      if (atual > 1) {
+                        setInformacoesComerciais(prev => ({
+                          ...prev,
+                          prazoEntrega: String(atual - 1)
+                        }));
+                      }
+                    }}
+                    className="h-10 w-10 shrink-0"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <Input 
+                    id="prazoEntrega" 
+                    type="number"
+                    min="1"
+                    value={informacoesComerciais.prazoEntrega} 
+                    onChange={e => setInformacoesComerciais(prev => ({
+                      ...prev,
+                      prazoEntrega: e.target.value
+                    }))} 
+                    placeholder="5"
+                    className="text-center"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      const atual = parseInt(informacoesComerciais.prazoEntrega) || 0;
+                      setInformacoesComerciais(prev => ({
+                        ...prev,
+                        prazoEntrega: String(atual + 1)
+                      }));
+                    }}
+                    className="h-10 w-10 shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               <div>
                 <Label htmlFor="prazoMeses">Prazo (Meses)</Label>
