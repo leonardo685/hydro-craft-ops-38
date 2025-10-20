@@ -401,7 +401,7 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
     setIsLoading(true)
     
     try {
-      const response = await fetch('https://primary-production-dc42.up.railway.app/webhook-test/d6d48088-8d7b-48c2-ac01-7b8e88813d53', {
+      const response = await fetch('https://primary-production-dc42.up.railway.app/webhook/d6d48088-8d7b-48c2-ac01-7b8e88813d53', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
