@@ -401,15 +401,12 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
     setIsLoading(true)
     
     try {
-      const response = await fetch('https://primary-production-dc42.up.railway.app/webhook-test/d6d48088-8d7b-48c2-ac01-7b8e88813d53', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message,
-          timestamp: new Date().toISOString(),
-        }),
+      const webhookUrl = new URL('https://primary-production-dc42.up.railway.app/webhook-test/d6d48088-8d7b-48c2-ac01-7b8e88813d53')
+      webhookUrl.searchParams.append('message', message)
+      webhookUrl.searchParams.append('timestamp', new Date().toISOString())
+      
+      const response = await fetch(webhookUrl.toString(), {
+        method: 'GET',
       })
       
       if (!response.ok) {
