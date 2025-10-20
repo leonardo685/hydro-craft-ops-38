@@ -2084,52 +2084,17 @@ export default function NovoOrcamento() {
               </div>
               <div>
                 <Label htmlFor="prazoEntrega">Prazo de Entrega (dias)</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      const atual = parseInt(informacoesComerciais.prazoEntrega) || 0;
-                      if (atual > 1) {
-                        setInformacoesComerciais(prev => ({
-                          ...prev,
-                          prazoEntrega: String(atual - 1)
-                        }));
-                      }
-                    }}
-                    className="h-10 w-10 shrink-0"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <Input 
-                    id="prazoEntrega" 
-                    type="number"
-                    min="1"
-                    value={informacoesComerciais.prazoEntrega} 
-                    onChange={e => setInformacoesComerciais(prev => ({
-                      ...prev,
-                      prazoEntrega: e.target.value
-                    }))} 
-                    placeholder="5"
-                    className="text-center"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      const atual = parseInt(informacoesComerciais.prazoEntrega) || 0;
-                      setInformacoesComerciais(prev => ({
-                        ...prev,
-                        prazoEntrega: String(atual + 1)
-                      }));
-                    }}
-                    className="h-10 w-10 shrink-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Input 
+                  id="prazoEntrega" 
+                  type="number"
+                  min="1"
+                  value={informacoesComerciais.prazoEntrega} 
+                  onChange={e => setInformacoesComerciais(prev => ({
+                    ...prev,
+                    prazoEntrega: e.target.value
+                  }))} 
+                  placeholder="5"
+                />
               </div>
               <div>
                 <Label htmlFor="prazoMeses">Prazo (Meses)</Label>
