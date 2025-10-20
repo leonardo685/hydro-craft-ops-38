@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 import jsPDF from "jspdf";
+import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
 
 export default function Orcamentos() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -166,134 +167,378 @@ export default function Orcamentos() {
         email: "contato@mechidro.com.br"
       };
 
-      const { data: itensData } = await supabase.from('itens_orcamento').select('*').eq('orcamento_id', orcamento.id);
+      // Buscar dados do orçamento
+      const { data: itensData } = await supabase
+        .from('itens_orcamento')
+        .select('*')
+        .eq('orcamento_id', orcamento.id);
+
+      // Buscar fotos
       let fotosData: any[] = [];
-      
       if (orcamento.ordem_servico_id) {
-        const { data: osData } = await supabase.from('ordens_servico').select('recebimento_id').eq('id', orcamento.ordem_servico_id).maybeSingle();
+        const { data: osData } = await supabase
+          .from('ordens_servico')
+          .select('recebimento_id')
+          .eq('id', orcamento.ordem_servico_id)
+          .maybeSingle();
+        
         if (osData?.recebimento_id) {
-          const { data: fotos } = await supabase.from('fotos_equipamentos').select('*').eq('recebimento_id', osData.recebimento_id).eq('apresentar_orcamento', true);
+          const { data: fotos } = await supabase
+            .from('fotos_equipamentos')
+            .select('*')
+            .eq('recebimento_id', osData.recebimento_id)
+            .eq('apresentar_orcamento', true);
           fotosData = fotos || [];
         }
       } else {
-        const { data: fotos } = await supabase.from('fotos_orcamento').select('*').eq('orcamento_id', orcamento.id).eq('apresentar_orcamento', true);
+        const { data: fotos } = await supabase
+          .from('fotos_orcamento')
+          .select('*')
+          .eq('orcamento_id', orcamento.id)
+          .eq('apresentar_orcamento', true);
         fotosData = fotos || [];
       }
+
+      // Separar itens por tipo
+      const pecas = itensData?.filter(i => i.tipo === 'peca') || [];
+      const servicos = itensData?.filter(i => i.tipo === 'servico') || [];
+      const usinagem = itensData?.filter(i => i.tipo === 'usinagem') || [];
 
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
       let yPosition = 10;
+      let currentPage = 1;
 
-      // Cabeçalho
-      doc.setFontSize(14);
+      // Função para adicionar detalhes decorativos (triângulo vermelho)
+      const adicionarDetalheDecorativo = () => {
+        doc.setFillColor(220, 38, 38);
+        doc.triangle(pageWidth - 20, 8, pageWidth - 5, 8, pageWidth - 5, 23, 'F');
+      };
+
+      // Função para adicionar rodapé
+      const adicionarRodape = (numeroPagina: number) => {
+        const rodapeY = pageHeight - 15;
+        
+        // Triângulos decorativos no canto inferior direito
+        doc.setFillColor(220, 38, 38);
+        doc.triangle(pageWidth - 30, pageHeight - 5, pageWidth - 15, pageHeight - 5, pageWidth - 15, pageHeight - 20, 'F');
+        doc.setFillColor(0, 0, 0);
+        doc.triangle(pageWidth - 15, pageHeight - 5, pageWidth - 5, pageHeight - 5, pageWidth - 5, pageHeight - 15, 'F');
+        
+        // Número da página
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Página ${numeroPagina}`, pageWidth / 2, rodapeY, { align: "center" });
+        doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 20, rodapeY);
+        doc.setTextColor(0, 0, 0);
+      };
+
+      // Função para criar tabelas formatadas
+      const criarTabela = (
+        headers: string[],
+        rows: any[][],
+        startY: number,
+        columnWidths: number[]
+      ): number => {
+        let y = startY;
+        const rowHeight = 8;
+        const headerHeight = 10;
+        const cellPadding = 2;
+
+        // Verificar se precisa de nova página para o cabeçalho
+        if (y + headerHeight > pageHeight - 30) {
+          doc.addPage();
+          currentPage++;
+          adicionarRodape(currentPage - 1);
+          y = 20;
+        }
+
+        // Desenhar cabeçalho
+        doc.setFillColor(128, 128, 128);
+        doc.rect(20, y, pageWidth - 40, headerHeight, 'F');
+        
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(255, 255, 255);
+        
+        let xPos = 20;
+        headers.forEach((header, index) => {
+          doc.text(header, xPos + cellPadding, y + 7);
+          xPos += columnWidths[index];
+        });
+        
+        y += headerHeight;
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+
+        // Desenhar linhas
+        rows.forEach((row, rowIndex) => {
+          // Verificar se precisa de nova página
+          if (y + rowHeight > pageHeight - 30) {
+            adicionarRodape(currentPage);
+            doc.addPage();
+            currentPage++;
+            y = 20;
+            
+            // Redesenhar cabeçalho na nova página
+            doc.setFillColor(128, 128, 128);
+            doc.rect(20, y, pageWidth - 40, headerHeight, 'F');
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(255, 255, 255);
+            xPos = 20;
+            headers.forEach((header, index) => {
+              doc.text(header, xPos + cellPadding, y + 7);
+              xPos += columnWidths[index];
+            });
+            y += headerHeight;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont("helvetica", "normal");
+          }
+
+          // Alternar cor de fundo (zebrado)
+          if (rowIndex % 2 === 0) {
+            doc.setFillColor(245, 245, 245);
+            doc.rect(20, y, pageWidth - 40, rowHeight, 'F');
+          }
+
+          // Desenhar células
+          xPos = 20;
+          row.forEach((cell, cellIndex) => {
+            const align = cellIndex >= row.length - 2 ? 'right' : 'left';
+            const text = String(cell);
+            const maxWidth = columnWidths[cellIndex] - cellPadding * 2;
+            
+            if (align === 'right') {
+              doc.text(text, xPos + columnWidths[cellIndex] - cellPadding, y + 6, { align: 'right' });
+            } else {
+              doc.text(text, xPos + cellPadding, y + 6, { maxWidth });
+            }
+            xPos += columnWidths[cellIndex];
+          });
+
+          // Bordas
+          doc.setDrawColor(200, 200, 200);
+          doc.setLineWidth(0.1);
+          doc.rect(20, y, pageWidth - 40, rowHeight);
+          
+          y += rowHeight;
+        });
+
+        return y;
+      };
+
+      // === CABEÇALHO ===
+      // Logo
+      try {
+        doc.addImage(mecHidroLogo, 'JPEG', pageWidth - 50, 8, 35, 20);
+      } catch (error) {
+        console.error('Erro ao carregar logo:', error);
+      }
+
+      // Informações da empresa (lado esquerdo)
+      doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text(EMPRESA_INFO.nome, 20, yPosition + 5);
-      doc.setFontSize(9);
+      doc.text(EMPRESA_INFO.nome, 20, 15);
+      doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      doc.text(`CNPJ: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
-      doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
-      doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
-      doc.setDrawColor(30, 64, 175);
+      doc.text(`CNPJ: ${EMPRESA_INFO.cnpj}`, 20, 20);
+      doc.text(`Tel: ${EMPRESA_INFO.telefone} | Email: ${EMPRESA_INFO.email}`, 20, 24);
+
+      // Linha vermelha decorativa
+      doc.setDrawColor(220, 38, 38);
       doc.setLineWidth(1);
-      doc.line(20, yPosition + 28, pageWidth - 20, yPosition + 28);
-      
-      yPosition = 48;
+      doc.line(20, 28, pageWidth - 20, 28);
+
+      // Triângulo decorativo
+      adicionarDetalheDecorativo();
+
+      // === TÍTULO ===
+      yPosition = 40;
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(30, 64, 175);
-      doc.text("Proposta Comercial", pageWidth / 2, yPosition, { align: "center" });
+      doc.setTextColor(220, 38, 38);
+      doc.text("PROPOSTA COMERCIAL", pageWidth / 2, yPosition, { align: "center" });
       doc.setTextColor(0, 0, 0);
-      
-      yPosition = 65;
-      doc.setFontSize(11);
-      doc.text(`Cliente: ${orcamento.cliente_nome}`, 20, yPosition);
-      doc.text(`OS: ${orcamento.numero}`, pageWidth - 40, yPosition, { align: "right" });
-      yPosition += 8;
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Equipamento: ${orcamento.equipamento}`, 20, yPosition);
-      
-      yPosition = 90;
-      doc.setFillColor(243, 244, 246);
-      doc.rect(20, yPosition, pageWidth - 40, 40, 'FD');
+
+      // === INFORMAÇÕES DO CLIENTE ===
+      yPosition = 55;
+      const infoCliente = [
+        ['Nº Orçamento:', orcamento.numero || 'N/A', 'Data:', new Date().toLocaleDateString('pt-BR')],
+        ['Cliente:', orcamento.cliente_nome || 'N/A', 'Equipamento:', orcamento.equipamento || 'N/A']
+      ];
+
+      yPosition = criarTabela(
+        ['Campo', 'Valor', 'Campo', 'Valor'],
+        infoCliente,
+        yPosition,
+        [40, 65, 30, 35]
+      );
+
+      // === CONDIÇÕES COMERCIAIS ===
       yPosition += 10;
+      doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text("Condições Comerciais", 25, yPosition);
-      yPosition += 10;
-      doc.setFont("helvetica", "normal");
-      doc.text("Dt. Geração:", 25, yPosition);
-      doc.text(new Date().toLocaleDateString('pt-BR'), 55, yPosition);
-      doc.text("Valor Total:", 115, yPosition);
-      doc.text(`R$ ${Number(orcamento.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 145, yPosition);
+      doc.setTextColor(220, 38, 38);
+      doc.text("CONDIÇÕES COMERCIAIS", 20, yPosition);
+      doc.setTextColor(0, 0, 0);
+      yPosition += 5;
+
+      const valorTotal = Number(orcamento.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const prazo = orcamento.prazo_pagamento ? `${orcamento.prazo_pagamento} dias` : 'A combinar';
       
-      yPosition = 145;
-      const pecas = itensData?.filter(i => i.tipo === 'peca') || [];
-      const servicos = itensData?.filter(i => i.tipo === 'servico') || [];
-      const usinagem = itensData?.filter(i => i.tipo === 'usinagem') || [];
-      
-      if ([...servicos, ...usinagem].length > 0) {
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("🔧 Serviços a Executar", 20, yPosition);
-        yPosition += 10;
-        [...servicos, ...usinagem].forEach(item => {
-          if (yPosition > 270) { doc.addPage(); yPosition = 20; }
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(9);
-          doc.text(item.descricao, 22, yPosition);
-          doc.text(`R$ ${Number(item.valor_total).toFixed(2)}`, pageWidth - 40, yPosition, { align: "right" });
-          yPosition += 5;
-        });
-        yPosition += 10;
-      }
-      
+      const condicoesComerciais = [
+        ['Valor Total:', valorTotal, 'Prazo Pgto:', prazo],
+        ['Forma Pgto:', orcamento.forma_pagamento || 'A combinar', 'Validade:', orcamento.data_vencimento ? new Date(orcamento.data_vencimento).toLocaleDateString('pt-BR') : '30 dias']
+      ];
+
+      yPosition = criarTabela(
+        ['Campo', 'Valor', 'Campo', 'Valor'],
+        condicoesComerciais,
+        yPosition,
+        [40, 65, 30, 35]
+      );
+
+      // === PEÇAS NECESSÁRIAS ===
       if (pecas.length > 0) {
-        if (yPosition > 200) { doc.addPage(); yPosition = 20; }
+        yPosition += 10;
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
-        doc.text("📦 Materiais a Utilizar", 20, yPosition);
-        yPosition += 10;
-        pecas.forEach(item => {
-          if (yPosition > 270) { doc.addPage(); yPosition = 20; }
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(9);
-          doc.text(`${Number(item.quantidade).toFixed(2)} un.`, 22, yPosition);
-          doc.text(item.descricao, 40, yPosition);
-          doc.text(`R$ ${Number(item.valor_total).toFixed(2)}`, pageWidth - 40, yPosition, { align: "right" });
-          yPosition += 5;
+        doc.setTextColor(220, 38, 38);
+        doc.text("PEÇAS NECESSÁRIAS", 20, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += 5;
+
+        const pecasRows = pecas.map(item => {
+          const detalhes = (item.detalhes as any) || {};
+          return [
+            detalhes.codigo || '-',
+            item.descricao || '-',
+            detalhes.material || '-',
+            detalhes.medidas || '-',
+            Number(item.quantidade || 0).toFixed(2),
+            Number(item.valor_unitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            Number(item.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+          ];
         });
+
+        yPosition = criarTabela(
+          ['Código', 'Descrição', 'Material', 'Medidas', 'Qtd', 'Valor Unit.', 'Total'],
+          pecasRows,
+          yPosition,
+          [20, 45, 25, 25, 15, 25, 25]
+        );
       }
-      
+
+      // === SERVIÇOS A EXECUTAR ===
+      if (servicos.length > 0) {
+        yPosition += 10;
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(220, 38, 38);
+        doc.text("SERVIÇOS A EXECUTAR", 20, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += 5;
+
+        const servicosRows = servicos.map(item => {
+          const detalhes = (item.detalhes as any) || {};
+          return [
+            detalhes.codigo || '-',
+            item.descricao || '-',
+            Number(item.quantidade || 0).toFixed(2),
+            Number(item.valor_unitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            Number(item.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+          ];
+        });
+
+        yPosition = criarTabela(
+          ['Código', 'Descrição', 'Qtd', 'Valor Unit.', 'Total'],
+          servicosRows,
+          yPosition,
+          [25, 75, 20, 30, 30]
+        );
+      }
+
+      // === USINAGEM NECESSÁRIA ===
+      if (usinagem.length > 0) {
+        yPosition += 10;
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(220, 38, 38);
+        doc.text("USINAGEM NECESSÁRIA", 20, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += 5;
+
+        const usinagemRows = usinagem.map(item => {
+          const detalhes = (item.detalhes as any) || {};
+          return [
+            detalhes.codigo || '-',
+            item.descricao || '-',
+            Number(item.quantidade || 0).toFixed(2),
+            Number(item.valor_unitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            Number(item.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+          ];
+        });
+
+        yPosition = criarTabela(
+          ['Código', 'Descrição', 'Qtd', 'Valor Unit.', 'Total'],
+          usinagemRows,
+          yPosition,
+          [25, 75, 20, 30, 30]
+        );
+      }
+
+      // === FOTOS (se houver) ===
       if (fotosData.length > 0) {
+        adicionarRodape(currentPage);
         doc.addPage();
+        currentPage++;
         yPosition = 20;
+
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(30, 64, 175);
-        doc.text("PERITAGEM", pageWidth / 2, yPosition, { align: "center" });
+        doc.setTextColor(220, 38, 38);
+        doc.text("EQUIPAMENTO - FOTOS", pageWidth / 2, yPosition, { align: "center" });
         doc.setTextColor(0, 0, 0);
-        yPosition = 40;
-        
+        yPosition += 15;
+
+        // Grade 2x2
         for (let i = 0; i < fotosData.length; i += 4) {
-          if (i > 0) { doc.addPage(); yPosition = 40; }
+          if (i > 0) {
+            adicionarRodape(currentPage);
+            doc.addPage();
+            currentPage++;
+            yPosition = 30;
+          }
+
           const fotosPagina = fotosData.slice(i, i + 4);
           for (let j = 0; j < fotosPagina.length; j++) {
             const col = j % 2;
             const row = Math.floor(j / 2);
-            const xPos = 20 + col * 95;
-            const yPos = yPosition + row * 75;
+            const xPos = 20 + col * 90;
+            const yPos = yPosition + row * 70;
+
             try {
               const img = new Image();
               img.crossOrigin = "anonymous";
               img.src = fotosPagina[j].arquivo_url;
-              await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
-              doc.addImage(img, 'JPEG', xPos, yPos, 85, 60);
-            } catch (error) { console.error('Erro ao carregar imagem:', error); }
+              await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+              });
+              doc.addImage(img, 'JPEG', xPos, yPos, 80, 60);
+            } catch (error) {
+              console.error('Erro ao carregar imagem:', error);
+            }
           }
         }
       }
 
+      // Rodapé da última página
+      adicionarRodape(currentPage);
+
+      // Salvar PDF
       doc.save(`Orcamento_${orcamento.numero}.pdf`);
       toast.success('PDF gerado com sucesso!');
     } catch (error) {
