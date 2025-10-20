@@ -368,6 +368,41 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    
+    const formData = new FormData(e.currentTarget)
+    const message = formData.get('message') as string
+    
+    if (!message?.trim()) return
+    
+    try {
+      await fetch('https://primary-production-dc42.up.railway.app/webhook-test/d6d48088-8d7b-48c2-ac01-7b8e88813d53', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message,
+          timestamp: new Date().toISOString(),
+        }),
+      })
+      
+      toast({
+        title: "Mensagem enviada",
+        description: "Sua mensagem foi enviada para processamento.",
+      })
+      
+      if (textareaRef.current) {
+        textareaRef.current.value = ''
+      }
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error)
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar a mensagem",
+        variant: "destructive",
+      })
+    }
+    
     onSuccess()
   }
 
@@ -379,12 +414,11 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
     }
   }
 
-  const handleMicClick = async () => {
-    if (isRecording) {
-      stopRecording()
-    } else {
-      await startRecording()
-    }
+  const handleMicClick = () => {
+    toast({
+      title: "Em desenvolvimento",
+      description: "A funcionalidade de áudio está em desenvolvimento.",
+    })
   }
 
   React.useEffect(() => {
