@@ -3,6 +3,7 @@ import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ReactNode } from "react";
 import hydrofixLogo from "@/assets/hydrofix-logo.png";
+import { MorphPanel } from "@/components/ui/ai-input";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -39,6 +40,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             {children}
           </div>
         </main>
+        <MorphPanel />
       </div>
     </SidebarProvider>
   );
