@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FotoEquipamento } from "@/hooks/use-recebimentos";
 import jsPDF from "jspdf";
+import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
 interface ItemOrcamento {
   id: string;
   tipo: 'peca' | 'servico' | 'usinagem';
@@ -837,26 +838,135 @@ export default function NovoOrcamento() {
       email: "contato@mechidro.com.br"
     };
 
-    // Logo em base64
-    const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="; // Placeholder - será substituído
-
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     let yPosition = 10;
-    let pageNumber = 1;
+
+    // Função para adicionar detalhes decorativos (triângulos vermelhos e pretos)
+    const adicionarDetalheDecorativo = () => {
+      doc.setFillColor(220, 38, 38);
+      doc.triangle(pageWidth - 30, pageHeight - 30, pageWidth, pageHeight - 30, pageWidth, pageHeight, 'F');
+      doc.setFillColor(0, 0, 0);
+      doc.triangle(pageWidth - 15, pageHeight - 30, pageWidth, pageHeight - 30, pageWidth, pageHeight, 'F');
+    };
 
     // Função para adicionar rodapé
     const adicionarRodape = () => {
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
+        adicionarDetalheDecorativo();
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
         doc.text(`Página ${i} de ${totalPages}`, 15, pageHeight - 10);
         doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth - 60, pageHeight - 10);
       }
     };
+
+    // Função para criar tabelas formatadas
+    const criarTabela = (titulo: string, dados: Array<{label: string, value: string}>, corTitulo: number[] = [128, 128, 128]) => {
+      if (dados.length === 0) return;
+      
+      if (yPosition > 210) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      doc.setFillColor(corTitulo[0], corTitulo[1], corTitulo[2]);
+      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+      doc.text(titulo.toUpperCase(), pageWidth / 2, yPosition + 7, { align: 'center' });
+      yPosition += 10;
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setLineWidth(0.1);
+      
+      const rowHeight = 10;
+      dados.forEach((item, index) => {
+        if (index % 2 === 0) {
+          doc.setFillColor(245, 245, 245);
+        } else {
+          doc.setFillColor(255, 255, 255);
+        }
+        doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(20, yPosition, pageWidth - 40, rowHeight);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.text(item.label, 25, yPosition + 7);
+        doc.setFont('helvetica', 'normal');
+        const valorLines = doc.splitTextToSize(item.value, pageWidth - 110);
+        
+        if (valorLines.length > 1) {
+          const extraHeight = (valorLines.length - 1) * 5;
+          doc.setFillColor(index % 2 === 0 ? 245 : 255, index % 2 === 0 ? 245 : 255, index % 2 === 0 ? 245 : 255);
+          doc.rect(20, yPosition, pageWidth - 40, rowHeight + extraHeight, 'F');
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(20, yPosition, pageWidth - 40, rowHeight + extraHeight);
+          
+          doc.setFont('helvetica', 'bold');
+          doc.text(item.label, 25, yPosition + 7);
+          doc.setFont('helvetica', 'normal');
+          doc.text(valorLines, 95, yPosition + 7);
+          yPosition += rowHeight + extraHeight;
+        } else {
+          doc.text(item.value, 95, yPosition + 7);
+          yPosition += rowHeight;
+        }
+      });
+      
+      yPosition += 10;
+    };
+
+    // Adicionar logo MEC-HIDRO
+    try {
+      const logoImg = new Image();
+      logoImg.src = mecHidroLogo;
+      await new Promise<void>((resolve) => {
+        logoImg.onload = () => {
+          doc.addImage(logoImg, 'JPEG', pageWidth - 50, 8, 35, 20);
+          resolve();
+        };
+        logoImg.onerror = () => resolve();
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar logo:', error);
+    }
+
+    // Cabeçalho com informações da empresa
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(EMPRESA_INFO.nome, 20, yPosition + 5);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`CNPJ: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
+    doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
+    doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
+    
+    // Linha separadora vermelha
+    doc.setDrawColor(220, 38, 38);
+    doc.setLineWidth(1);
+    doc.line(20, yPosition + 28, pageWidth - 20, yPosition + 28);
+    
+    // Triângulo decorativo vermelho no canto superior direito
+    doc.setFillColor(220, 38, 38);
+    doc.triangle(pageWidth - 20, 10, pageWidth, 10, pageWidth, 40, 'F');
+    
+    yPosition = 48;
+    
+    // Título "PROPOSTA COMERCIAL" em vermelho
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(220, 38, 38);
+    doc.text("PROPOSTA COMERCIAL", pageWidth / 2, yPosition, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+    
+    yPosition = 65;
 
     // Buscar endereço do cliente
     let enderecoCliente = '';
@@ -872,297 +982,376 @@ export default function NovoOrcamento() {
       }
     }
 
-    // ============ PÁGINA 1 - PROPOSTA COMERCIAL ============
-    
-    // Cabeçalho Profissional
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text(EMPRESA_INFO.nome, 20, yPosition + 5);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text(`CNPJ: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
-    doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
-    doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
-    
-    // Linha separadora azul
-    doc.setDrawColor(30, 64, 175);
-    doc.setLineWidth(1);
-    doc.line(20, yPosition + 28, pageWidth - 20, yPosition + 28);
-    
-    yPosition = 48;
-    
-    // Título "Proposta Comercial"
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(30, 64, 175);
-    doc.text("Proposta Comercial", pageWidth / 2, yPosition, { align: "center" });
-    doc.setTextColor(0, 0, 0);
-    
-    yPosition = 65;
-    
-    // Informações do Cliente
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Cliente: ${dadosOrcamento.cliente}`, 20, yPosition);
-    doc.setFontSize(11);
-    doc.text(`OS: ${dadosOrcamento.numeroOrdem}`, pageWidth - 40, yPosition, { align: "right" });
-    
-    yPosition += 8;
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
+    // Tabela: Informações do Cliente
+    const dadosCliente: Array<{label: string, value: string}> = [
+      { label: 'Nº Orçamento:', value: dadosOrcamento.numeroOrdem || '' },
+      { label: 'Cliente:', value: dadosOrcamento.cliente || '' },
+      { label: 'Equipamento:', value: dadosOrcamento.tag || 'Equipamento não especificado' },
+      { label: 'Data:', value: new Date().toLocaleDateString('pt-BR') },
+    ];
     if (enderecoCliente) {
-      doc.text(`Endereço: ${enderecoCliente}`, 20, yPosition);
+      dadosCliente.push({ label: 'Endereço:', value: enderecoCliente });
     }
     if (dadosOrcamento.numeroNota) {
-      doc.text(`NF: ${dadosOrcamento.numeroNota}`, pageWidth - 40, yPosition, { align: "right" });
+      dadosCliente.push({ label: 'Nota Fiscal:', value: dadosOrcamento.numeroNota });
     }
-    
-    yPosition = 90;
-    
-    // Box Condições Comerciais
-    doc.setFillColor(243, 244, 246);
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(20, yPosition, pageWidth - 40, 55, 'FD');
-    
-    yPosition += 10;
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Condições Comerciais", 25, yPosition);
-    
-    yPosition += 10;
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    
-    // Coluna 1
-    doc.setFont("helvetica", "bold");
-    doc.text("Assunto:", 25, yPosition);
-    doc.setFont("helvetica", "normal");
-    doc.text(informacoesComerciais.assuntoProposta || "REFORMA/MANUTENÇÃO", 50, yPosition);
-    
-    yPosition += 7;
-    doc.setFont("helvetica", "bold");
-    doc.text("Condição Pagamento:", 25, yPosition);
-    doc.setFont("helvetica", "normal");
-    doc.text(informacoesComerciais.condicaoPagamento || "-", 70, yPosition);
-    
-    yPosition += 7;
-    doc.setFont("helvetica", "bold");
-    doc.text("Prazo Entrega:", 25, yPosition);
-    doc.setFont("helvetica", "normal");
-    doc.text(`${informacoesComerciais.prazoEntrega || "30"} dias úteis`, 60, yPosition);
-    
-    yPosition += 7;
-    doc.setFont("helvetica", "bold");
-    doc.text("Garantia:", 25, yPosition);
-    doc.setFont("helvetica", "normal");
-    doc.text(`${informacoesComerciais.prazoMeses || "6"} meses`, 50, yPosition);
-    
-    // Coluna 2
-    yPosition = 110;
-    doc.setFont("helvetica", "bold");
-    doc.text("Dt. Geração:", 115, yPosition);
-    doc.setFont("helvetica", "normal");
-    doc.text(new Date().toLocaleDateString('pt-BR'), 145, yPosition);
-    
-    yPosition += 7;
+    if (dadosOrcamento.numeroSerie) {
+      dadosCliente.push({ label: 'Nº Série:', value: dadosOrcamento.numeroSerie });
+    }
+    criarTabela('Informações do Cliente', dadosCliente, [128, 128, 128]);
+
+    // Tabela: Condições Comerciais
     const valorComDesconto = calcularValorComDesconto();
-    doc.setFont("helvetica", "bold");
-    doc.text("Valor Total:", 115, yPosition);
-    doc.setFont("helvetica", "normal");
-    doc.text(`R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 145, yPosition);
-    
-    yPosition += 7;
-    doc.setFont("helvetica", "bold");
-    doc.text("Frete:", 115, yPosition);
-    doc.setFont("helvetica", "normal");
-    doc.text(informacoesComerciais.freteIncluso ? "CIF" : "FOB", 145, yPosition);
-    
-    yPosition += 7;
+    const valorTotal = calcularTotalGeral();
     const dataValidade = new Date();
     dataValidade.setDate(dataValidade.getDate() + 30);
-    doc.setFont("helvetica", "bold");
-    doc.text("Validade:", 115, yPosition);
-    doc.setFont("helvetica", "normal");
-    doc.text(dataValidade.toLocaleDateString('pt-BR'), 145, yPosition);
-    
-    yPosition = 155;
-    
-    // Seção Serviços a Executar
-    if (itensAnalise.servicos.length > 0 || itensAnalise.usinagem.length > 0) {
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("🔧 Serviços a Executar", 20, yPosition);
-      yPosition += 8;
-      
-      doc.setFontSize(9);
-      doc.setDrawColor(200, 200, 200);
-      doc.line(20, yPosition, pageWidth - 20, yPosition);
-      yPosition += 5;
-      
-      doc.setFont("helvetica", "bold");
-      doc.text("Serviços Usados no Orçamento", 22, yPosition);
-      doc.text("Complemento", 120, yPosition);
-      doc.text("Valor", pageWidth - 40, yPosition, { align: "right" });
-      yPosition += 5;
-      doc.line(20, yPosition, pageWidth - 20, yPosition);
-      yPosition += 5;
-      
-      doc.setFont("helvetica", "normal");
-      let totalServicos = 0;
-      
-      [...itensAnalise.servicos, ...itensAnalise.usinagem].forEach(item => {
-        if (yPosition > 270) {
-          doc.addPage();
-          yPosition = 20;
-        }
-        const descricao = item.descricao.length > 50 ? item.descricao.substring(0, 47) + "..." : item.descricao;
-        doc.text(descricao, 22, yPosition);
-        doc.text(`${item.quantidade}x`, 120, yPosition);
-        if (informacoesComerciais.mostrarValores !== false) {
-          doc.text(`R$ ${item.valorTotal.toFixed(2)}`, pageWidth - 40, yPosition, { align: "right" });
-          totalServicos += item.valorTotal;
-        }
-        yPosition += 5;
-      });
-      
-      yPosition += 3;
-      doc.setFont("helvetica", "bold");
-      doc.line(20, yPosition, pageWidth - 20, yPosition);
-      yPosition += 5;
-      if (informacoesComerciais.mostrarValores !== false) {
-        doc.text(`Valor Total Serviços: R$ ${totalServicos.toFixed(2)}`, pageWidth - 40, yPosition, { align: "right" });
-      }
-      yPosition += 10;
-    }
-    
-    // Seção Materiais a Utilizar
+
+    const dadosComerciais: Array<{label: string, value: string}> = [
+      { label: 'Assunto:', value: informacoesComerciais.assuntoProposta || 'REFORMA/MANUTENÇÃO' },
+      { label: 'Condição Pagamento:', value: informacoesComerciais.condicaoPagamento || '-' },
+      { label: 'Prazo Entrega:', value: `${informacoesComerciais.prazoEntrega || '30'} dias úteis` },
+      { label: 'Garantia:', value: `${informacoesComerciais.prazoMeses || '6'} meses` },
+      { label: 'Valor Total:', value: `R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
+      { label: 'Frete:', value: informacoesComerciais.freteIncluso ? 'CIF (Incluso)' : 'FOB (Por conta do cliente)' },
+      { label: 'Validade:', value: dataValidade.toLocaleDateString('pt-BR') },
+    ];
+    criarTabela('Condições Comerciais', dadosComerciais, [128, 128, 128]);
+
+    // Tabela: Peças Necessárias (com código)
     if (itensAnalise.pecas.length > 0 && informacoesComerciais.mostrarPecas !== false) {
-      if (yPosition > 200) {
+      if (yPosition > 210) {
         doc.addPage();
         yPosition = 20;
       }
-      
+
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("📦 Materiais a Utilizar", 20, yPosition);
-      yPosition += 8;
-      
+      doc.setTextColor(255, 255, 255);
+      doc.setFillColor(128, 128, 128);
+      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+      doc.text('PEÇAS NECESSÁRIAS', pageWidth / 2, yPosition + 7, { align: 'center' });
+      yPosition += 10;
+
+      // Cabeçalho da tabela
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
-      doc.line(20, yPosition, pageWidth - 20, yPosition);
-      yPosition += 5;
-      
-      doc.setFont("helvetica", "bold");
-      doc.text("Qtd.", 22, yPosition);
-      doc.text("Materiais a Utilizar", 40, yPosition);
-      doc.text("Complemento", 120, yPosition);
-      doc.text("Valor Un.", pageWidth - 70, yPosition, { align: "right" });
-      doc.text("Valor Total", pageWidth - 40, yPosition, { align: "right" });
-      yPosition += 5;
-      doc.line(20, yPosition, pageWidth - 20, yPosition);
-      yPosition += 5;
-      
-      doc.setFont("helvetica", "normal");
-      let totalMateriais = 0;
-      
-      itensAnalise.pecas.forEach(item => {
+      doc.setFillColor(220, 220, 220);
+      doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, pageWidth - 40, 8);
+
+      let xPos = 22;
+      doc.text('Código', xPos, yPosition + 5.5);
+      xPos += 20;
+      doc.text('Descrição', xPos, yPosition + 5.5);
+      xPos += 50;
+      doc.text('Material', xPos, yPosition + 5.5);
+      xPos += 35;
+      doc.text('Medidas', xPos, yPosition + 5.5);
+      xPos += 30;
+      doc.text('Qtd', xPos, yPosition + 5.5);
+      if (informacoesComerciais.mostrarValores !== false) {
+        xPos += 15;
+        doc.text('Valor Un.', xPos, yPosition + 5.5);
+        xPos += 22;
+        doc.text('Total', xPos, yPosition + 5.5);
+      }
+      yPosition += 8;
+
+      // Linhas de dados
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      let totalPecas = 0;
+
+      itensAnalise.pecas.forEach((item, index) => {
         if (yPosition > 270) {
           doc.addPage();
           yPosition = 20;
         }
-        doc.text(`${item.quantidade.toFixed(2)} un.`, 22, yPosition);
-        const descricao = item.descricao.length > 35 ? item.descricao.substring(0, 32) + "..." : item.descricao;
-        doc.text(descricao, 40, yPosition);
-        if (informacoesComerciais.mostrarValores !== false) {
-          doc.text(`R$ ${item.valorUnitario.toFixed(2)}`, pageWidth - 70, yPosition, { align: "right" });
-          doc.text(`R$ ${item.valorTotal.toFixed(2)}`, pageWidth - 40, yPosition, { align: "right" });
-          totalMateriais += item.valorTotal;
+
+        const rowHeight = 8;
+        if (index % 2 === 0) {
+          doc.setFillColor(245, 245, 245);
+        } else {
+          doc.setFillColor(255, 255, 255);
         }
-        yPosition += 5;
+        doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(20, yPosition, pageWidth - 40, rowHeight);
+
+        let xPos = 22;
+        doc.text(item.codigo || '-', xPos, yPosition + 5.5);
+        xPos += 20;
+        const desc = item.descricao.length > 25 ? item.descricao.substring(0, 22) + '...' : item.descricao;
+        doc.text(desc, xPos, yPosition + 5.5);
+        xPos += 50;
+        doc.text(item.detalhes?.material || '-', xPos, yPosition + 5.5);
+        xPos += 35;
+        doc.text(item.detalhes?.medidas || '-', xPos, yPosition + 5.5);
+        xPos += 30;
+        doc.text(item.quantidade.toString(), xPos, yPosition + 5.5);
+        
+        if (informacoesComerciais.mostrarValores !== false) {
+          xPos += 15;
+          doc.text(`R$ ${item.valorUnitario.toFixed(2)}`, xPos, yPosition + 5.5);
+          xPos += 22;
+          doc.text(`R$ ${item.valorTotal.toFixed(2)}`, xPos, yPosition + 5.5);
+          totalPecas += item.valorTotal;
+        }
+
+        yPosition += rowHeight;
       });
-      
-      yPosition += 3;
-      doc.setFont("helvetica", "bold");
-      doc.line(20, yPosition, pageWidth - 20, yPosition);
-      yPosition += 5;
+
+      // Total das peças
       if (informacoesComerciais.mostrarValores !== false) {
-        doc.text(`Valor Total Material: R$ ${totalMateriais.toFixed(2)}`, pageWidth - 40, yPosition, { align: "right" });
+        yPosition += 2;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text(`Total Peças: R$ ${totalPecas.toFixed(2)}`, pageWidth - 25, yPosition, { align: 'right' });
       }
+      
       yPosition += 10;
     }
-    
-    // Total Geral
+
+    // Tabela: Serviços a Executar (com código)
+    if (itensAnalise.servicos.length > 0) {
+      if (yPosition > 210) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      doc.setFillColor(128, 128, 128);
+      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+      doc.text('SERVIÇOS A EXECUTAR', pageWidth / 2, yPosition + 7, { align: 'center' });
+      yPosition += 10;
+
+      // Cabeçalho da tabela
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setFillColor(220, 220, 220);
+      doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, pageWidth - 40, 8);
+
+      let xPos = 22;
+      doc.text('Código', xPos, yPosition + 5.5);
+      xPos += 25;
+      doc.text('Descrição', xPos, yPosition + 5.5);
+      xPos += 90;
+      doc.text('Qtd', xPos, yPosition + 5.5);
+      if (informacoesComerciais.mostrarValores !== false) {
+        xPos += 15;
+        doc.text('Valor Un.', xPos, yPosition + 5.5);
+        xPos += 22;
+        doc.text('Total', xPos, yPosition + 5.5);
+      }
+      yPosition += 8;
+
+      // Linhas de dados
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      let totalServicos = 0;
+
+      itensAnalise.servicos.forEach((item, index) => {
+        if (yPosition > 270) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        const rowHeight = 8;
+        if (index % 2 === 0) {
+          doc.setFillColor(245, 245, 245);
+        } else {
+          doc.setFillColor(255, 255, 255);
+        }
+        doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(20, yPosition, pageWidth - 40, rowHeight);
+
+        let xPos = 22;
+        doc.text(item.codigo || '-', xPos, yPosition + 5.5);
+        xPos += 25;
+        const desc = item.descricao.length > 45 ? item.descricao.substring(0, 42) + '...' : item.descricao;
+        doc.text(desc, xPos, yPosition + 5.5);
+        xPos += 90;
+        doc.text(item.quantidade.toString(), xPos, yPosition + 5.5);
+        
+        if (informacoesComerciais.mostrarValores !== false) {
+          xPos += 15;
+          doc.text(`R$ ${item.valorUnitario.toFixed(2)}`, xPos, yPosition + 5.5);
+          xPos += 22;
+          doc.text(`R$ ${item.valorTotal.toFixed(2)}`, xPos, yPosition + 5.5);
+          totalServicos += item.valorTotal;
+        }
+
+        yPosition += rowHeight;
+      });
+
+      // Total dos serviços
+      if (informacoesComerciais.mostrarValores !== false) {
+        yPosition += 2;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text(`Total Serviços: R$ ${totalServicos.toFixed(2)}`, pageWidth - 25, yPosition, { align: 'right' });
+      }
+      
+      yPosition += 10;
+    }
+
+    // Tabela: Usinagem Necessária (com código)
+    if (itensAnalise.usinagem.length > 0) {
+      if (yPosition > 210) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      doc.setFillColor(128, 128, 128);
+      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+      doc.text('USINAGEM NECESSÁRIA', pageWidth / 2, yPosition + 7, { align: 'center' });
+      yPosition += 10;
+
+      // Cabeçalho da tabela
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setFillColor(220, 220, 220);
+      doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, pageWidth - 40, 8);
+
+      let xPos = 22;
+      doc.text('Código', xPos, yPosition + 5.5);
+      xPos += 25;
+      doc.text('Descrição', xPos, yPosition + 5.5);
+      xPos += 90;
+      doc.text('Qtd', xPos, yPosition + 5.5);
+      if (informacoesComerciais.mostrarValores !== false) {
+        xPos += 15;
+        doc.text('Valor Un.', xPos, yPosition + 5.5);
+        xPos += 22;
+        doc.text('Total', xPos, yPosition + 5.5);
+      }
+      yPosition += 8;
+
+      // Linhas de dados
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      let totalUsinagem = 0;
+
+      itensAnalise.usinagem.forEach((item, index) => {
+        if (yPosition > 270) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        const rowHeight = 8;
+        if (index % 2 === 0) {
+          doc.setFillColor(245, 245, 245);
+        } else {
+          doc.setFillColor(255, 255, 255);
+        }
+        doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(20, yPosition, pageWidth - 40, rowHeight);
+
+        let xPos = 22;
+        doc.text(item.codigo || '-', xPos, yPosition + 5.5);
+        xPos += 25;
+        const desc = item.descricao.length > 45 ? item.descricao.substring(0, 42) + '...' : item.descricao;
+        doc.text(desc, xPos, yPosition + 5.5);
+        xPos += 90;
+        doc.text(item.quantidade.toString(), xPos, yPosition + 5.5);
+        
+        if (informacoesComerciais.mostrarValores !== false) {
+          xPos += 15;
+          doc.text(`R$ ${item.valorUnitario.toFixed(2)}`, xPos, yPosition + 5.5);
+          xPos += 22;
+          doc.text(`R$ ${item.valorTotal.toFixed(2)}`, xPos, yPosition + 5.5);
+          totalUsinagem += item.valorTotal;
+        }
+
+        yPosition += rowHeight;
+      });
+
+      // Total da usinagem
+      if (informacoesComerciais.mostrarValores !== false) {
+        yPosition += 2;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text(`Total Usinagem: R$ ${totalUsinagem.toFixed(2)}`, pageWidth - 25, yPosition, { align: 'right' });
+      }
+      
+      yPosition += 10;
+    }
+
+    // Tabela: Resumo Financeiro
     if (informacoesComerciais.mostrarValores !== false) {
       if (yPosition > 240) {
         doc.addPage();
         yPosition = 20;
       }
-      
-      yPosition += 10;
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      const valorTotal = calcularTotalGeral();
-      
-      doc.text(`Valor Total: R$ ${valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, pageWidth - 40, yPosition, { align: "right" });
-      
+
+      const dadosResumo: Array<{label: string, value: string}> = [
+        { label: 'Valor Total:', value: `R$ ${valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
+      ];
+
       if (informacoesComerciais.desconto > 0) {
-        yPosition += 8;
-        doc.text(`Desconto (${informacoesComerciais.desconto}%): R$ ${(valorTotal - valorComDesconto).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, pageWidth - 40, yPosition, { align: "right" });
-        yPosition += 8;
-        doc.setFontSize(14);
-        doc.setTextColor(30, 64, 175);
-        doc.text(`Valor Final: R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, pageWidth - 40, yPosition, { align: "right" });
-        doc.setTextColor(0, 0, 0);
+        dadosResumo.push({ 
+          label: `Desconto (${informacoesComerciais.desconto}%):`, 
+          value: `R$ ${(valorTotal - valorComDesconto).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` 
+        });
+        dadosResumo.push({ 
+          label: 'Valor Final:', 
+          value: `R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` 
+        });
       }
+
+      criarTabela('Resumo Financeiro', dadosResumo, [220, 38, 38]);
     }
+
+    // Seção de Fotos do Orçamento (apenas as marcadas para apresentação)
+    const fotosApresentacao = fotos.filter(f => f.apresentar_orcamento);
     
-    // ============ PÁGINAS SEGUINTES - PERITAGEM ============
-    const todasFotos = [];
-    if (analiseData?.fotosChegada) todasFotos.push(...analiseData.fotosChegada.filter((f: string) => f));
-    if (analiseData?.fotosAnalise) todasFotos.push(...analiseData.fotosAnalise.filter((f: string) => f));
-    if (fotos.length > 0) todasFotos.push(...fotos.filter(f => f.apresentar_orcamento).map(f => f.arquivo_url));
-    
-    if (todasFotos.length > 0) {
-      doc.addPage();
-      yPosition = 20;
-      
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(30, 64, 175);
-      doc.text("PERITAGEM", pageWidth / 2, yPosition, { align: "center" });
-      doc.setTextColor(0, 0, 0);
-      yPosition += 15;
-      
-      // Informações Técnicas
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      if (dadosOrcamento.tag) {
-        doc.text(`• Equipamento: ${dadosOrcamento.tag}`, 20, yPosition);
-        yPosition += 6;
-      }
-      if (dadosOrcamento.numeroSerie) {
-        doc.text(`• Número de Série: ${dadosOrcamento.numeroSerie}`, 20, yPosition);
-        yPosition += 6;
-      }
-      yPosition += 10;
-      
-      // Fotos em grade 2x2
-      const adicionarFotosGrade = async (fotos: string[]) => {
+    if (fotosApresentacao.length > 0) {
+      const adicionarFotosGrade = async (fotos: any[], titulo: string) => {
+        if (fotos.length === 0) return;
+        
+        if (yPosition > 210) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(220, 38, 38);
+        doc.text(titulo, 20, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += 10;
+        
         const fotosPorPagina = 4;
-        const fotoWidth = 85;
-        const fotoHeight = 60;
-        const espacoHorizontal = 10;
-        const espacoVertical = 15;
+        const maxFotoWidth = 80;
+        const maxFotoHeight = 55;
+        const espacoHorizontal = 12;
+        const espacoVertical = 12;
         
         for (let i = 0; i < fotos.length; i += fotosPorPagina) {
           if (i > 0) {
             doc.addPage();
             yPosition = 20;
-            doc.setFontSize(16);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(30, 64, 175);
-            doc.text("PERITAGEM", pageWidth / 2, yPosition, { align: "center" });
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.setTextColor(220, 38, 38);
+            doc.text(titulo + ' (continuação)', 20, yPosition);
             doc.setTextColor(0, 0, 0);
-            yPosition = 40;
+            yPosition += 10;
           }
           
           const fotosPagina = fotos.slice(i, i + fotosPorPagina);
@@ -1170,32 +1359,54 @@ export default function NovoOrcamento() {
           for (let j = 0; j < fotosPagina.length; j++) {
             const col = j % 2;
             const row = Math.floor(j / 2);
-            const xPos = 20 + col * (fotoWidth + espacoHorizontal);
-            const yPos = yPosition + row * (fotoHeight + espacoVertical);
+            const xPos = 20 + col * (maxFotoWidth + espacoHorizontal);
+            const yPos = yPosition + row * (maxFotoHeight + espacoVertical);
             
             try {
               await new Promise<void>((resolve) => {
                 const img = new Image();
+                img.crossOrigin = 'anonymous';
                 img.onload = () => {
-                  doc.addImage(img, 'JPEG', xPos, yPos, fotoWidth, fotoHeight);
+                  const imgAspectRatio = img.width / img.height;
+                  const maxAspectRatio = maxFotoWidth / maxFotoHeight;
+                  
+                  let finalWidth = maxFotoWidth;
+                  let finalHeight = maxFotoHeight;
+                  
+                  if (imgAspectRatio > maxAspectRatio) {
+                    finalHeight = maxFotoWidth / imgAspectRatio;
+                  } else {
+                    finalWidth = maxFotoHeight * imgAspectRatio;
+                  }
+                  
+                  const xOffset = (maxFotoWidth - finalWidth) / 2;
+                  const yOffset = (maxFotoHeight - finalHeight) / 2;
+                  
+                  doc.addImage(img, 'JPEG', xPos + xOffset, yPos + yOffset, finalWidth, finalHeight);
                   resolve();
                 };
                 img.onerror = () => resolve();
-                img.src = fotosPagina[j];
+                img.src = fotosPagina[j].arquivo_url;
               });
             } catch (error) {
               console.error('Erro ao adicionar foto:', error);
             }
           }
+          
+          if (i + fotosPorPagina < fotos.length) {
+            yPosition = 280;
+          } else {
+            yPosition += Math.ceil(fotosPagina.length / 2) * (maxFotoHeight + espacoVertical) + 10;
+          }
         }
       };
       
-      await adicionarFotosGrade(todasFotos);
+      await adicionarFotosGrade(fotosApresentacao, 'Fotos do Orçamento');
     }
-    
+
     // Adicionar rodapés a todas as páginas
     adicionarRodape();
-    
+
     // Salvar PDF
     doc.save(`Orcamento_${dadosOrcamento.numeroOrdem.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
     toast({
