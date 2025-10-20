@@ -196,10 +196,17 @@ export default function Aprovados() {
                             <CardTitle className="text-lg flex items-center gap-2">
                               <button 
                                 className="text-primary hover:underline cursor-pointer"
-                                onClick={() => navigate(`/ordem-servico/${ordem.recebimentos?.numero_ordem || ordem.numero_ordem}`)}
+                                onClick={() => {
+                                  const numeroOrdem = ordem.numero_ordem || ordem.recebimentos?.numero_ordem;
+                                  if (numeroOrdem) {
+                                    navigate(`/ordem-servico/${numeroOrdem}`);
+                                  } else {
+                                    navigate(`/visualizar-ordem/${ordem.id}`);
+                                  }
+                                }}
                               >
-                                {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
-                              </button> - {ordem.recebimentos?.tipo_equipamento || ordem.equipamento}
+                                {ordem.numero_ordem || ordem.recebimentos?.numero_ordem || 'Sem número'}
+                              </button> - {ordem.equipamento || ordem.recebimentos?.tipo_equipamento}
                             </CardTitle>
                             <CardDescription className="mt-1 flex items-center gap-4">
                               <span className="flex items-center gap-1">
