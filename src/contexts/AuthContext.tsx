@@ -61,6 +61,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Set up real-time subscription for permission changes
+  useEffect(() => {
+    if (!user || !userRole) return;
+
+    const permissionsSubscription = supabase
+      .channel('menu_permissions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'menu_permissions',
+          filter: `role=eq.${userRole}`
+        },
+        () => {
+          // Refetch permissions when they change
+          fetchUserRoleAndPermissions(user.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      permissionsSubscription.unsubscribe();
+    };
+  }, [user, userRole]);
+
   const fetchUserRoleAndPermissions = async (userId: string) => {
     try {
       // Buscar role do usuário
