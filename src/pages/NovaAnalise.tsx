@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import mecHidroLogo from "@/assets/mec-hidro-logo.png";
 
 const NovaOrdemServico = () => {
   const navigate = useNavigate();
@@ -141,17 +142,58 @@ const NovaOrdemServico = () => {
     let yPosition = 10;
     const lineHeight = 6;
     
+    // Função para adicionar detalhes decorativos
+    const adicionarDetalheDecorativo = () => {
+      // Triângulo vermelho no canto inferior direito
+      doc.setFillColor(220, 38, 38);
+      doc.triangle(
+        pageWidth - 30, pageHeight - 30,
+        pageWidth, pageHeight - 30,
+        pageWidth, pageHeight,
+        'F'
+      );
+      
+      // Detalhe preto adicional
+      doc.setFillColor(0, 0, 0);
+      doc.triangle(
+        pageWidth - 15, pageHeight - 30,
+        pageWidth, pageHeight - 30,
+        pageWidth, pageHeight,
+        'F'
+      );
+    };
+    
     // Função para adicionar rodapé
     const adicionarRodape = () => {
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
+        
+        // Adicionar detalhe decorativo em cada página
+        adicionarDetalheDecorativo();
+        
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
         doc.text(`Página ${i} de ${totalPages}`, 15, pageHeight - 10);
         doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth - 60, pageHeight - 10);
       }
     };
+    
+    // Adicionar logo MEC-HIDRO no canto superior direito
+    try {
+      const logoImg = new Image();
+      logoImg.src = mecHidroLogo;
+      
+      await new Promise<void>((resolve) => {
+        logoImg.onload = () => {
+          doc.addImage(logoImg, 'PNG', pageWidth - 50, 8, 35, 20);
+          resolve();
+        };
+        logoImg.onerror = () => resolve();
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar logo:', error);
+    }
     
     // Cabeçalho Profissional
     doc.setFontSize(14);
@@ -163,18 +205,27 @@ const NovaOrdemServico = () => {
     doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
     doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
     
-    // Linha separadora azul
-    doc.setDrawColor(30, 64, 175);
+    // Linha separadora vermelha
+    doc.setDrawColor(220, 38, 38);
     doc.setLineWidth(1);
     doc.line(20, yPosition + 28, pageWidth - 20, yPosition + 28);
     
+    // Detalhe vermelho no canto superior direito (triângulo)
+    doc.setFillColor(220, 38, 38);
+    doc.triangle(
+      pageWidth - 20, 10,
+      pageWidth, 10,
+      pageWidth, 40,
+      'F'
+    );
+    
     yPosition = 48;
     
-    // Título "Análise Técnica"
+    // Título "ORDEM DE SERVIÇO"
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(30, 64, 175);
-    doc.text("ANÁLISE TÉCNICA", pageWidth / 2, yPosition, { align: "center" });
+    doc.setTextColor(220, 38, 38);
+    doc.text("ORDEM DE SERVIÇO", pageWidth / 2, yPosition, { align: "center" });
     doc.setTextColor(0, 0, 0);
     
     yPosition = 65;
@@ -257,7 +308,7 @@ const NovaOrdemServico = () => {
       
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
-      doc.setTextColor(30, 64, 175);
+      doc.setTextColor(220, 38, 38);
       doc.text(titulo, 20, yPosition);
       doc.setTextColor(0, 0, 0);
       yPosition += 10;
