@@ -416,9 +416,12 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       
-      // Simula resposta da IA (você pode substituir por resposta real do webhook)
+      // Recebe a resposta do webhook
+      const data = await response.json()
+      const aiResponseText = data.message || data.response || data.text || "Mensagem recebida!"
+      
       const aiMessage = {
-        text: "Mensagem recebida! Processando...",
+        text: aiResponseText,
         timestamp: new Date().toISOString(),
         type: 'ai' as const
       }
