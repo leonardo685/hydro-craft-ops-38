@@ -58,6 +58,7 @@ const NovaOrdemServico = () => {
     medida1: string;
     medida2: string;
     medida3: string;
+    codigo?: string;
   }>>([]);
   
   // Estados para controlar os campos de entrada de peças
@@ -67,7 +68,8 @@ const NovaOrdemServico = () => {
     material: "",
     medida1: "",
     medida2: "",
-    medida3: ""
+    medida3: "",
+    codigo: ""
   });
   const [servicos, setServicos] = useState("");
   const [usinagem, setUsinagem] = useState({
@@ -819,7 +821,8 @@ const NovaOrdemServico = () => {
           quantidade: servicosQuantidades[servico as keyof typeof servicosQuantidades],
           servico: servicosNomes[servico as keyof typeof servicosNomes],
           descricao: servicosNomes[servico as keyof typeof servicosNomes],
-          tipo: servico
+          tipo: servico,
+          codigo: (servicosQuantidades as any)[`${servico}_codigo`] || ""
         }));
 
       // Adicionar serviços personalizados se existirem
@@ -828,7 +831,8 @@ const NovaOrdemServico = () => {
           quantidade: servicosQuantidades.personalizado,
           servico: servicosPersonalizados.trim(),
           descricao: servicosPersonalizados.trim(),
-          tipo: 'personalizado'
+          tipo: 'personalizado',
+          codigo: (servicosQuantidades as any).personalizado_codigo || ""
         });
       }
 
@@ -841,7 +845,8 @@ const NovaOrdemServico = () => {
           quantidade: usinagemQuantidades[tipo as keyof typeof usinagemQuantidades],
           trabalho: usinagemNomes[tipo as keyof typeof usinagemNomes],
           descricao: usinagemNomes[tipo as keyof typeof usinagemNomes],
-          tipo: tipo
+          tipo: tipo,
+          codigo: (usinagemQuantidades as any)[`${tipo}_codigo`] || ""
         }));
 
       // Adicionar usinagem personalizada se existir
@@ -850,7 +855,8 @@ const NovaOrdemServico = () => {
           quantidade: usinagemQuantidades.personalizada,
           trabalho: usinagemPersonalizada.trim(),
           descricao: usinagemPersonalizada.trim(),
-          tipo: 'personalizada'
+          tipo: 'personalizada',
+          codigo: (usinagemQuantidades as any).personalizada_codigo || ""
         });
       }
 
@@ -1611,7 +1617,7 @@ const NovaOrdemServico = () => {
                   </h4>
                   <div className="space-y-3">
                     {servicosPreDeterminados.desmontagem && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-desmontagem" className="text-xs text-muted-foreground">Quantidade</Label>
                           <Input
@@ -1624,6 +1630,19 @@ const NovaOrdemServico = () => {
                               ...servicosQuantidades, 
                               desmontagem: parseInt(e.target.value) || 1
                             })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="codigo-desmontagem" className="text-xs text-muted-foreground">Código</Label>
+                          <Input
+                            id="codigo-desmontagem"
+                            placeholder="Código"
+                            className="w-24 h-8"
+                            value={(servicosQuantidades as any).desmontagem_codigo || ""}
+                            onChange={(e) => setServicosQuantidades({
+                              ...servicosQuantidades, 
+                              desmontagem_codigo: e.target.value
+                            } as any)}
                           />
                         </div>
                         <div>
@@ -1641,7 +1660,7 @@ const NovaOrdemServico = () => {
                       </div>
                     )}
                     {servicosPreDeterminados.limpeza && (
-                       <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-limpeza" className="text-xs text-muted-foreground">Quantidade</Label>
                           <Input
@@ -1654,6 +1673,19 @@ const NovaOrdemServico = () => {
                               ...servicosQuantidades, 
                               limpeza: parseInt(e.target.value) || 1
                             })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="codigo-limpeza" className="text-xs text-muted-foreground">Código</Label>
+                          <Input
+                            id="codigo-limpeza"
+                            placeholder="Código"
+                            className="w-24 h-8"
+                            value={(servicosQuantidades as any).limpeza_codigo || ""}
+                            onChange={(e) => setServicosQuantidades({
+                              ...servicosQuantidades, 
+                              limpeza_codigo: e.target.value
+                            } as any)}
                           />
                         </div>
                         <div>
@@ -1671,7 +1703,7 @@ const NovaOrdemServico = () => {
                       </div>
                     )}
                     {servicosPreDeterminados.teste && (
-                       <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-teste" className="text-xs text-muted-foreground">Quantidade</Label>
                           <Input
@@ -1684,6 +1716,19 @@ const NovaOrdemServico = () => {
                               ...servicosQuantidades, 
                               teste: parseInt(e.target.value) || 1
                             })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="codigo-teste" className="text-xs text-muted-foreground">Código</Label>
+                          <Input
+                            id="codigo-teste"
+                            placeholder="Código"
+                            className="w-24 h-8"
+                            value={(servicosQuantidades as any).teste_codigo || ""}
+                            onChange={(e) => setServicosQuantidades({
+                              ...servicosQuantidades, 
+                              teste_codigo: e.target.value
+                            } as any)}
                           />
                         </div>
                         <div>
@@ -1701,7 +1746,7 @@ const NovaOrdemServico = () => {
                       </div>
                     )}
                     {servicosPreDeterminados.pintura && (
-                       <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-pintura" className="text-xs text-muted-foreground">Quantidade</Label>
                           <Input
@@ -1714,6 +1759,19 @@ const NovaOrdemServico = () => {
                               ...servicosQuantidades, 
                               pintura: parseInt(e.target.value) || 1
                             })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="codigo-pintura" className="text-xs text-muted-foreground">Código</Label>
+                          <Input
+                            id="codigo-pintura"
+                            placeholder="Código"
+                            className="w-24 h-8"
+                            value={(servicosQuantidades as any).pintura_codigo || ""}
+                            onChange={(e) => setServicosQuantidades({
+                              ...servicosQuantidades, 
+                              pintura_codigo: e.target.value
+                            } as any)}
                           />
                         </div>
                         <div>
@@ -1731,7 +1789,7 @@ const NovaOrdemServico = () => {
                       </div>
                     )}
                     {servicosPreDeterminados.recondicionamento && (
-                       <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-recondicionamento" className="text-xs text-muted-foreground">Quantidade</Label>
                           <Input
@@ -1744,6 +1802,19 @@ const NovaOrdemServico = () => {
                               ...servicosQuantidades, 
                               recondicionamento: parseInt(e.target.value) || 1
                             })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="codigo-recondicionamento" className="text-xs text-muted-foreground">Código</Label>
+                          <Input
+                            id="codigo-recondicionamento"
+                            placeholder="Código"
+                            className="w-24 h-8"
+                            value={(servicosQuantidades as any).recondicionamento_codigo || ""}
+                            onChange={(e) => setServicosQuantidades({
+                              ...servicosQuantidades, 
+                              recondicionamento_codigo: e.target.value
+                            } as any)}
                           />
                         </div>
                         <div>
@@ -1761,7 +1832,7 @@ const NovaOrdemServico = () => {
                       </div>
                     )}
                     {servicosPersonalizados.trim() && (
-                       <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-personalizado" className="text-xs text-muted-foreground">Quantidade</Label>
                           <Input
@@ -1774,6 +1845,19 @@ const NovaOrdemServico = () => {
                               ...servicosQuantidades, 
                               personalizado: parseInt(e.target.value) || 1
                             })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="codigo-personalizado" className="text-xs text-muted-foreground">Código</Label>
+                          <Input
+                            id="codigo-personalizado"
+                            placeholder="Código"
+                            className="w-24 h-8"
+                            value={(servicosQuantidades as any).personalizado_codigo || ""}
+                            onChange={(e) => setServicosQuantidades({
+                              ...servicosQuantidades, 
+                              personalizado_codigo: e.target.value
+                            } as any)}
                           />
                         </div>
                         <div>
@@ -1899,7 +1983,7 @@ const NovaOrdemServico = () => {
                   </h4>
                   <div className="space-y-3">
                     {usinagem.usinagemHaste && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-usinagem-haste" className="text-xs text-muted-foreground">Quantidade</Label>
                           <Input
@@ -1912,6 +1996,19 @@ const NovaOrdemServico = () => {
                               ...usinagemQuantidades, 
                               usinagemHaste: parseInt(e.target.value) || 1
                             })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="codigo-usinagem-haste" className="text-xs text-muted-foreground">Código</Label>
+                          <Input
+                            id="codigo-usinagem-haste"
+                            placeholder="Código"
+                            className="w-24 h-8"
+                            value={(usinagemQuantidades as any).usinagemHaste_codigo || ""}
+                            onChange={(e) => setUsinagemQuantidades({
+                              ...usinagemQuantidades, 
+                              usinagemHaste_codigo: e.target.value
+                            } as any)}
                           />
                         </div>
                         <div>
@@ -1929,7 +2026,7 @@ const NovaOrdemServico = () => {
                       </div>
                     )}
                     {usinagem.usinagemTampaGuia && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-usinagem-tampa" className="text-xs text-muted-foreground">Quantidade</Label>
                           <Input
@@ -1942,6 +2039,19 @@ const NovaOrdemServico = () => {
                               ...usinagemQuantidades, 
                               usinagemTampaGuia: parseInt(e.target.value) || 1
                             })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="codigo-usinagem-tampa" className="text-xs text-muted-foreground">Código</Label>
+                          <Input
+                            id="codigo-usinagem-tampa"
+                            placeholder="Código"
+                            className="w-24 h-8"
+                            value={(usinagemQuantidades as any).usinagemTampaGuia_codigo || ""}
+                            onChange={(e) => setUsinagemQuantidades({
+                              ...usinagemQuantidades, 
+                              usinagemTampaGuia_codigo: e.target.value
+                            } as any)}
                           />
                         </div>
                         <div>
@@ -1959,7 +2069,7 @@ const NovaOrdemServico = () => {
                       </div>
                     )}
                     {usinagem.usinagemEmbolo && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-usinagem-embolo" className="text-xs text-muted-foreground">Quantidade</Label>
                           <Input
@@ -1972,6 +2082,19 @@ const NovaOrdemServico = () => {
                               ...usinagemQuantidades, 
                               usinagemEmbolo: parseInt(e.target.value) || 1
                             })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="codigo-usinagem-embolo" className="text-xs text-muted-foreground">Código</Label>
+                          <Input
+                            id="codigo-usinagem-embolo"
+                            placeholder="Código"
+                            className="w-24 h-8"
+                            value={(usinagemQuantidades as any).usinagemEmbolo_codigo || ""}
+                            onChange={(e) => setUsinagemQuantidades({
+                              ...usinagemQuantidades, 
+                              usinagemEmbolo_codigo: e.target.value
+                            } as any)}
                           />
                         </div>
                         <div>
@@ -1989,7 +2112,7 @@ const NovaOrdemServico = () => {
                       </div>
                     )}
                     {usinagem.usinagemCabecoteDianteiro && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-usinagem-dianteiro" className="text-xs text-muted-foreground">Quantidade</Label>
                           <Input
@@ -2002,6 +2125,19 @@ const NovaOrdemServico = () => {
                               ...usinagemQuantidades, 
                               usinagemCabecoteDianteiro: parseInt(e.target.value) || 1
                             })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="codigo-usinagem-dianteiro" className="text-xs text-muted-foreground">Código</Label>
+                          <Input
+                            id="codigo-usinagem-dianteiro"
+                            placeholder="Código"
+                            className="w-24 h-8"
+                            value={(usinagemQuantidades as any).usinagemCabecoteDianteiro_codigo || ""}
+                            onChange={(e) => setUsinagemQuantidades({
+                              ...usinagemQuantidades, 
+                              usinagemCabecoteDianteiro_codigo: e.target.value
+                            } as any)}
                           />
                         </div>
                         <div>
@@ -2019,7 +2155,7 @@ const NovaOrdemServico = () => {
                       </div>
                     )}
                     {usinagem.usinagemCabecoteTraseiro && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-usinagem-traseiro" className="text-xs text-muted-foreground">Quantidade</Label>
                           <Input
@@ -2032,6 +2168,19 @@ const NovaOrdemServico = () => {
                               ...usinagemQuantidades, 
                               usinagemCabecoteTraseiro: parseInt(e.target.value) || 1
                             })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="codigo-usinagem-traseiro" className="text-xs text-muted-foreground">Código</Label>
+                          <Input
+                            id="codigo-usinagem-traseiro"
+                            placeholder="Código"
+                            className="w-24 h-8"
+                            value={(usinagemQuantidades as any).usinagemCabecoteTraseiro_codigo || ""}
+                            onChange={(e) => setUsinagemQuantidades({
+                              ...usinagemQuantidades, 
+                              usinagemCabecoteTraseiro_codigo: e.target.value
+                            } as any)}
                           />
                         </div>
                         <div>
@@ -2049,7 +2198,7 @@ const NovaOrdemServico = () => {
                       </div>
                     )}
                     {usinagemPersonalizada.trim() && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-usinagem-personalizada" className="text-xs text-muted-foreground">Quantidade</Label>
                           <Input
@@ -2062,6 +2211,19 @@ const NovaOrdemServico = () => {
                               ...usinagemQuantidades, 
                               personalizada: parseInt(e.target.value) || 1
                             })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="codigo-usinagem-personalizada" className="text-xs text-muted-foreground">Código</Label>
+                          <Input
+                            id="codigo-usinagem-personalizada"
+                            placeholder="Código"
+                            className="w-24 h-8"
+                            value={(usinagemQuantidades as any).personalizada_codigo || ""}
+                            onChange={(e) => setUsinagemQuantidades({
+                              ...usinagemQuantidades, 
+                              personalizada_codigo: e.target.value
+                            } as any)}
                           />
                         </div>
                         <div>
@@ -2092,7 +2254,7 @@ const NovaOrdemServico = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="grid grid-cols-6 gap-2 items-end">
+                <div className="grid grid-cols-7 gap-2 items-end">
                   <div>
                     <Label>Peça</Label>
                     <Input
@@ -2101,6 +2263,18 @@ const NovaOrdemServico = () => {
                       onChange={(e) => setNovaPeca({
                         ...novaPeca,
                         peca: e.target.value
+                      })}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label>Código</Label>
+                    <Input
+                      placeholder="Código"
+                      value={novaPeca.codigo}
+                      onChange={(e) => setNovaPeca({
+                        ...novaPeca,
+                        codigo: e.target.value
                       })}
                     />
                   </div>
@@ -2180,7 +2354,8 @@ const NovaOrdemServico = () => {
                             material: "",
                             medida1: "",
                             medida2: "",
-                            medida3: ""
+                            medida3: "",
+                            codigo: ""
                           });
                         }
                       }}
@@ -2241,7 +2416,8 @@ const NovaOrdemServico = () => {
                               material: "",
                               medida1: "",
                               medida2: "",
-                              medida3: ""
+                              medida3: "",
+                              codigo: ""
                             });
                           }
                         }}
@@ -2260,7 +2436,7 @@ const NovaOrdemServico = () => {
                     </h4>
                     <div className="space-y-3">
                       {pecasUtilizadas.map((peca, index) => (
-                        <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-2 items-center p-3 bg-background rounded-lg border">
+                        <div key={index} className="grid grid-cols-1 md:grid-cols-7 gap-2 items-center p-3 bg-background rounded-lg border">
                           <div>
                             <Label htmlFor={`qtd-peca-${index}`} className="text-xs text-muted-foreground">Quantidade</Label>
                             <Input
@@ -2302,6 +2478,20 @@ const NovaOrdemServico = () => {
                                 <SelectItem value="porca">Porca</SelectItem>
                               </SelectContent>
                             </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor={`codigo-peca-${index}`} className="text-xs text-muted-foreground">Código</Label>
+                            <Input
+                              id={`codigo-peca-${index}`}
+                              placeholder="Código"
+                              className="h-8"
+                              value={peca.codigo || ""}
+                              onChange={(e) => {
+                                const newPecas = [...pecasUtilizadas];
+                                newPecas[index].codigo = e.target.value;
+                                setPecasUtilizadas(newPecas);
+                              }}
+                            />
                           </div>
                           <div>
                             <Label htmlFor={`material-peca-${index}`} className="text-xs text-muted-foreground">Material</Label>
