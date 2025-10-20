@@ -69,6 +69,7 @@ export default function NovoOrcamento() {
     pedidoCompraProduto: '',
     pedidoCompraServico: '',
     assuntoProposta: '',
+    frete: 'CIF',
     freteIncluso: false,
     mostrarPecas: false,
     mostrarValores: true
@@ -128,13 +129,17 @@ export default function NovoOrcamento() {
       // Se é edição, carregar dados do orçamento
       if (orcamentoParaEdicao) {
         console.log('Carregando orçamento para edição:', orcamentoParaEdicao);
+        
+        // Buscar cliente para preencher clienteId
+        const clienteEncontrado = clientes.find(c => c.nome === orcamentoParaEdicao.cliente_nome);
+        
         setDadosOrcamento({
           id: orcamentoParaEdicao.id,
           tipoOrdem: orcamentoParaEdicao.observacoes?.split('|')[0]?.replace('Tipo:', '')?.trim() || 'reforma',
           numeroOrdem: orcamentoParaEdicao.numero,
           urgencia: false,
           cliente: orcamentoParaEdicao.cliente_nome,
-          clienteId: '',
+          clienteId: clienteEncontrado?.id || '',
           tag: orcamentoParaEdicao.equipamento,
           solicitante: orcamentoParaEdicao.observacoes?.split('|')[1]?.replace('Solicitante:', '')?.trim() || '',
           dataAbertura: new Date(orcamentoParaEdicao.data_criacao).toISOString().split('T')[0],
@@ -143,6 +148,15 @@ export default function NovoOrcamento() {
           observacoes: orcamentoParaEdicao.descricao || '',
           status: orcamentoParaEdicao.status
         });
+
+        // Carregar informações comerciais
+        setInformacoesComerciais(prev => ({
+          ...prev,
+          condicaoPagamento: orcamentoParaEdicao.condicao_pagamento || '',
+          prazoEntrega: orcamentoParaEdicao.prazo_entrega || '',
+          assuntoProposta: orcamentoParaEdicao.assunto_proposta || '',
+          frete: orcamentoParaEdicao.frete || 'CIF'
+        }));
 
         // Carregar itens do orçamento
         const { data: itensData, error: itensError } = await supabase
@@ -706,7 +720,11 @@ export default function NovoOrcamento() {
         valor: valorFinal,
         status: 'pendente',
         observacoes: `Tipo: ${dadosOrcamento.tipoOrdem} | Solicitante: ${dadosOrcamento.solicitante} | Nota: ${dadosOrcamento.numeroNota} | Série: ${dadosOrcamento.numeroSerie}`,
-        ordem_servico_id: ordemServicoId || null
+        ordem_servico_id: ordemServicoId || null,
+        condicao_pagamento: informacoesComerciais.condicaoPagamento || null,
+        prazo_entrega: informacoesComerciais.prazoEntrega || null,
+        assunto_proposta: informacoesComerciais.assuntoProposta || null,
+        frete: informacoesComerciais.frete || 'CIF'
       };
 
       let response;
@@ -1025,14 +1043,14 @@ export default function NovoOrcamento() {
     yPosition += 10;
     
     const valorTotalFormatado = `R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-    const condicaoPagamento = informacoesComerciais.condicaoPagamento || '21 DDL';
+    const condicaoPagamento = informacoesComerciais.condicaoPagamento || 'A combinar';
     const dataGeracao = new Date().toLocaleDateString('pt-BR');
-    const validadeProposta = dataValidade.toLocaleDateString('pt-BR').replace(/\d{4}/, '') + '30 Dias';
+    const validadeProposta = `${informacoesComerciais.prazoMeses} meses`;
     
     const assunto = informacoesComerciais.assuntoProposta || dadosOrcamento.tag || 'REFORMA/MANUTENÇÃO';
-    const prazoEntrega = `${informacoesComerciais.prazoEntrega || '5'} dias úteis`;
-    const garantia = `${informacoesComerciais.prazoMeses || '6'} Meses`;
-    const frete = informacoesComerciais.freteIncluso ? 'CIF' : 'FOB';
+    const prazoEntrega = informacoesComerciais.prazoEntrega || '5 dias úteis';
+    const garantia = '6 Meses';
+    const frete = informacoesComerciais.frete || 'CIF';
     
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
@@ -2030,6 +2048,32 @@ export default function NovoOrcamento() {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="assuntoProposta">Assunto da Proposta</Label>
+                <Input id="assuntoProposta" value={informacoesComerciais.assuntoProposta} onChange={e => setInformacoesComerciais(prev => ({
+                ...prev,
+                assuntoProposta: e.target.value
+              }))} placeholder="Ex: REFORMA CILINDRO HIDRÁULICO" maxLength={100} />
+              </div>
+              <div>
+                <Label htmlFor="frete">Tipo de Frete</Label>
+                <Select value={informacoesComerciais.frete} onValueChange={value => setInformacoesComerciais(prev => ({
+                ...prev,
+                frete: value
+              }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CIF">CIF (Custo, Seguro e Frete)</SelectItem>
+                    <SelectItem value="FOB">FOB (Free On Board)</SelectItem>
+                    <SelectItem value="EXW">EXW (Ex Works)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="condicaoPagamento">Condição de Pagamento</Label>
@@ -2037,6 +2081,13 @@ export default function NovoOrcamento() {
                 ...prev,
                 condicaoPagamento: e.target.value
               }))} placeholder="Ex: 21 DDL" />
+              </div>
+              <div>
+                <Label htmlFor="prazoEntrega">Prazo de Entrega</Label>
+                <Input id="prazoEntrega" value={informacoesComerciais.prazoEntrega} onChange={e => setInformacoesComerciais(prev => ({
+                ...prev,
+                prazoEntrega: e.target.value
+              }))} placeholder="Ex: 5 dias úteis" />
               </div>
               <div>
                 <Label htmlFor="prazoMeses">Prazo (Meses)</Label>
@@ -2054,13 +2105,6 @@ export default function NovoOrcamento() {
                     <SelectItem value="24">24 Meses</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <Label htmlFor="prazoEntrega">Prazo de Entrega (dias)</Label>
-                <Input id="prazoEntrega" type="number" min="1" value={informacoesComerciais.prazoEntrega} onChange={e => setInformacoesComerciais(prev => ({
-                ...prev,
-                prazoEntrega: e.target.value
-              }))} />
               </div>
             </div>
 

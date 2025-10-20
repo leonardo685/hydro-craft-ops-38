@@ -597,9 +597,11 @@ export type Database = {
       orcamentos: {
         Row: {
           aprovado_por_gestor: boolean | null
+          assunto_proposta: string | null
           cliente_nome: string
           comissao_percentual: number | null
           comissao_valor: number | null
+          condicao_pagamento: string | null
           created_at: string
           custos_variaveis: Json | null
           data_aprovacao: string | null
@@ -611,6 +613,7 @@ export type Database = {
           descricao: string | null
           equipamento: string
           forma_pagamento: string | null
+          frete: string | null
           id: string
           impostos_percentual: number | null
           impostos_valor: number | null
@@ -623,6 +626,7 @@ export type Database = {
           pdf_nota_fiscal: string | null
           percentuais_customizados: Json | null
           percentual_margem: number | null
+          prazo_entrega: string | null
           prazo_pagamento: number | null
           preco_desejado: number | null
           status: string
@@ -633,9 +637,11 @@ export type Database = {
         }
         Insert: {
           aprovado_por_gestor?: boolean | null
+          assunto_proposta?: string | null
           cliente_nome: string
           comissao_percentual?: number | null
           comissao_valor?: number | null
+          condicao_pagamento?: string | null
           created_at?: string
           custos_variaveis?: Json | null
           data_aprovacao?: string | null
@@ -647,6 +653,7 @@ export type Database = {
           descricao?: string | null
           equipamento: string
           forma_pagamento?: string | null
+          frete?: string | null
           id?: string
           impostos_percentual?: number | null
           impostos_valor?: number | null
@@ -659,6 +666,7 @@ export type Database = {
           pdf_nota_fiscal?: string | null
           percentuais_customizados?: Json | null
           percentual_margem?: number | null
+          prazo_entrega?: string | null
           prazo_pagamento?: number | null
           preco_desejado?: number | null
           status?: string
@@ -669,9 +677,11 @@ export type Database = {
         }
         Update: {
           aprovado_por_gestor?: boolean | null
+          assunto_proposta?: string | null
           cliente_nome?: string
           comissao_percentual?: number | null
           comissao_valor?: number | null
+          condicao_pagamento?: string | null
           created_at?: string
           custos_variaveis?: Json | null
           data_aprovacao?: string | null
@@ -683,6 +693,7 @@ export type Database = {
           descricao?: string | null
           equipamento?: string
           forma_pagamento?: string | null
+          frete?: string | null
           id?: string
           impostos_percentual?: number | null
           impostos_valor?: number | null
@@ -695,6 +706,7 @@ export type Database = {
           pdf_nota_fiscal?: string | null
           percentuais_customizados?: Json | null
           percentual_margem?: number | null
+          prazo_entrega?: string | null
           prazo_pagamento?: number | null
           preco_desejado?: number | null
           status?: string
