@@ -3,10 +3,14 @@
 import React from "react"
 import { cx } from "class-variance-authority"
 import { AnimatePresence, motion } from "framer-motion"
+import { Mic, MicOff } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import fixzysIcon from "@/assets/fixzys-icon.png"
+import { useAudioRecorder } from "@/hooks/useAudioRecorder"
+import { supabase } from "@/integrations/supabase/client"
+import { useToast } from "@/hooks/use-toast"
 
 interface OrbProps {
   dimension?: string
@@ -357,6 +361,10 @@ function DockBar() {
 function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; onSuccess: () => void }) {
   const { triggerClose, showForm } = useFormContext()
   const btnRef = React.useRef<HTMLButtonElement>(null)
+  const { toast } = useToast()
+  const { isRecording, audioBlob, startRecording, stopRecording, resetRecording } = useAudioRecorder()
+  const [isTranscribing, setIsTranscribing] = React.useState(false)
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -368,6 +376,61 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
     if (e.key === "Enter" && e.metaKey) {
       e.preventDefault()
       btnRef.current?.click()
+    }
+  }
+
+  const handleMicClick = async () => {
+    if (isRecording) {
+      stopRecording()
+    } else {
+      await startRecording()
+    }
+  }
+
+  React.useEffect(() => {
+    if (audioBlob && !isRecording) {
+      handleAudioTranscription()
+    }
+  }, [audioBlob, isRecording])
+
+  const handleAudioTranscription = async () => {
+    if (!audioBlob) return
+
+    setIsTranscribing(true)
+    
+    try {
+      const reader = new FileReader()
+      reader.readAsDataURL(audioBlob)
+      
+      reader.onloadend = async () => {
+        const base64Audio = (reader.result as string).split(',')[1]
+        
+        const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+          body: { audio: base64Audio }
+        })
+
+        if (error) throw error
+
+        if (data?.text && textareaRef.current) {
+          textareaRef.current.value = data.text
+          toast({
+            title: "Áudio transcrito",
+            description: "Seu áudio foi convertido em texto com sucesso!",
+          })
+        }
+        
+        resetRecording()
+        setIsTranscribing(false)
+      }
+    } catch (error) {
+      console.error('Erro na transcrição:', error)
+      toast({
+        title: "Erro",
+        description: "Não foi possível transcrever o áudio",
+        variant: "destructive",
+      })
+      resetRecording()
+      setIsTranscribing(false)
     }
   }
 
@@ -387,9 +450,24 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
             className="flex h-full flex-col p-1"
           >
             <div className="flex justify-between py-1">
-              <p className="text-foreground z-2 ml-[38px] flex items-center gap-[6px] select-none font-semibold">
-                FixZys AI
-              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleMicClick}
+                  disabled={isTranscribing}
+                  className={cn(
+                    "h-8 w-8 ml-1",
+                    isRecording && "text-destructive animate-pulse"
+                  )}
+                >
+                  {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+                <p className="text-foreground z-2 flex items-center gap-[6px] select-none font-semibold">
+                  {isRecording ? "Gravando..." : isTranscribing ? "Transcrevendo..." : "FixZys AI"}
+                </p>
+              </div>
               <button
                 type="submit"
                 ref={btnRef}
@@ -400,13 +478,21 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
               </button>
             </div>
             <textarea
-              ref={ref}
-              placeholder="Pergunte-me qualquer coisa..."
+              ref={(node) => {
+                if (typeof ref === 'function') {
+                  ref(node)
+                } else if (ref && 'current' in ref) {
+                  (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = node
+                }
+                textareaRef.current = node
+              }}
+              placeholder={isTranscribing ? "Transcrevendo áudio..." : "Pergunte-me qualquer coisa..."}
               name="message"
               className="bg-background text-foreground placeholder:text-muted-foreground h-full w-full resize-none scroll-py-2 rounded-md p-4 outline-0 border border-input focus:border-primary transition-colors"
               required
               onKeyDown={handleKeys}
               spellCheck={false}
+              disabled={isTranscribing}
             />
           </motion.div>
         )}
