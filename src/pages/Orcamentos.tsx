@@ -492,11 +492,13 @@ export default function Orcamentos() {
         yPosition += 5;
 
         const pecasRows = pecas.map(item => {
+          const valorUnit = Number(item.valor_unitario || 0);
+          const valorTot = Number(item.valor_total || 0);
           return [
             item.descricao || '-',
             Number(item.quantidade || 0).toFixed(0),
-            Number(item.valor_unitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-            Number(item.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+            valorUnit > 0 ? valorUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
+            valorTot > 0 ? valorTot.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
           ];
         });
 
@@ -545,11 +547,13 @@ export default function Orcamentos() {
         yPosition += 5;
 
         const servicosRows = servicos.map(item => {
+          const valorUnit = Number(item.valor_unitario || 0);
+          const valorTot = Number(item.valor_total || 0);
           return [
             item.descricao || '-',
             Number(item.quantidade || 0).toFixed(0),
-            Number(item.valor_unitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-            Number(item.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+            valorUnit > 0 ? valorUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
+            valorTot > 0 ? valorTot.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
           ];
         });
 
@@ -598,11 +602,13 @@ export default function Orcamentos() {
         yPosition += 5;
 
         const usinagemRows = usinagem.map(item => {
+          const valorUnit = Number(item.valor_unitario || 0);
+          const valorTot = Number(item.valor_total || 0);
           return [
             item.descricao || '-',
             Number(item.quantidade || 0).toFixed(0),
-            Number(item.valor_unitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-            Number(item.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+            valorUnit > 0 ? valorUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
+            valorTot > 0 ? valorTot.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
           ];
         });
 

@@ -1174,9 +1174,11 @@ export default function NovoOrcamento() {
         
         if (informacoesComerciais.mostrarValores !== false) {
           xPos += 15;
-          doc.text(`R$ ${item.valorUnitario.toFixed(2)}`, xPos, yPosition + 5.5);
+          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2)}` : '';
+          doc.text(valorUnit, xPos, yPosition + 5.5);
           xPos += 25;
-          doc.text(`R$ ${item.valorTotal.toFixed(2)}`, xPos, yPosition + 5.5);
+          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2)}` : '';
+          doc.text(valorTot, xPos, yPosition + 5.5);
           totalPecas += item.valorTotal;
         }
 
@@ -1271,9 +1273,11 @@ export default function NovoOrcamento() {
         
         if (informacoesComerciais.mostrarValores !== false) {
           xPos += 15;
-          doc.text(`R$ ${item.valorUnitario.toFixed(2)}`, xPos, yPosition + 5.5);
+          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2)}` : '';
+          doc.text(valorUnit, xPos, yPosition + 5.5);
           xPos += 25;
-          doc.text(`R$ ${item.valorTotal.toFixed(2)}`, xPos, yPosition + 5.5);
+          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2)}` : '';
+          doc.text(valorTot, xPos, yPosition + 5.5);
           totalServicos += item.valorTotal;
         }
 
@@ -1368,9 +1372,11 @@ export default function NovoOrcamento() {
         
         if (informacoesComerciais.mostrarValores !== false) {
           xPos += 15;
-          doc.text(`R$ ${item.valorUnitario.toFixed(2)}`, xPos, yPosition + 5.5);
+          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2)}` : '';
+          doc.text(valorUnit, xPos, yPosition + 5.5);
           xPos += 25;
-          doc.text(`R$ ${item.valorTotal.toFixed(2)}`, xPos, yPosition + 5.5);
+          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2)}` : '';
+          doc.text(valorTot, xPos, yPosition + 5.5);
           totalUsinagem += item.valorTotal;
         }
 
