@@ -126,7 +126,14 @@ const NovaOrdemServico = () => {
   });
 
   // Função para exportar PDF
-  const exportToPDF = async () => {
+  const exportToPDF = async (ordemData?: any, recebimentoData?: any) => {
+    // Usar dados passados como parâmetros ou os dados atuais do estado
+    const dadosOrdem = ordemData || {
+      tecnico: formData.tecnico,
+      prioridade: formData.prioridade,
+      data_entrada: recebimento?.data_entrada
+    };
+    const dadosRecebimento = recebimentoData || recebimento;
     const jsPDF = (await import('jspdf')).default;
     
     const EMPRESA_INFO = {
@@ -238,15 +245,15 @@ const NovaOrdemServico = () => {
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Cliente: ${recebimento?.cliente_nome || ''}`, 20, yPosition);
+    doc.text(`Cliente: ${dadosRecebimento?.cliente_nome || ''}`, 20, yPosition);
     yPosition += lineHeight;
-    doc.text(`Equipamento: ${recebimento?.tipo_equipamento || ''}`, 20, yPosition);
+    doc.text(`Equipamento: ${dadosRecebimento?.tipo_equipamento || ''}`, 20, yPosition);
     yPosition += lineHeight;
-    doc.text(`Data de Entrada: ${recebimento?.data_entrada ? new Date(recebimento.data_entrada).toLocaleDateString('pt-BR') : ''}`, 20, yPosition);
+    doc.text(`Data de Entrada: ${dadosOrdem?.data_entrada ? new Date(dadosOrdem.data_entrada).toLocaleDateString('pt-BR') : ''}`, 20, yPosition);
     yPosition += lineHeight;
-    doc.text(`Técnico: ${formData.tecnico}`, 20, yPosition);
+    doc.text(`Técnico: ${dadosOrdem?.tecnico || ''}`, 20, yPosition);
     yPosition += lineHeight;
-    doc.text(`Prioridade: ${formData.prioridade}`, 20, yPosition);
+    doc.text(`Prioridade: ${dadosOrdem?.prioridade || ''}`, 20, yPosition);
     yPosition += 15;
     
     // Dados Técnicos (Peritagem)
@@ -883,8 +890,13 @@ const NovaOrdemServico = () => {
         console.log('Ordem atualizada:', ordemAtualizada);
 
         // Atualizar dados técnicos (peritagem) no recebimento
-        if (recebimento?.id) {
-          console.log('Atualizando dados técnicos do recebimento ID:', recebimento.id);
+        let recebimentoId = recebimento?.id;
+        if (!recebimentoId && ordemExistente?.recebimento_id) {
+          recebimentoId = ordemExistente.recebimento_id;
+        }
+        
+        if (recebimentoId) {
+          console.log('Atualizando dados técnicos do recebimento ID:', recebimentoId);
           console.log('Dados técnicos a salvar:', dadosTecnicos);
           const { error: recebimentoError } = await supabase
             .from('recebimentos')
@@ -896,15 +908,22 @@ const NovaOrdemServico = () => {
               local_instalacao: dadosTecnicos.localInstalacao || null,
               potencia: dadosTecnicos.potencia || null,
               numero_serie: dadosTecnicos.numeroSerie || null,
+              camisa: dadosTecnicos.camisa || null,
+              haste_comprimento: dadosTecnicos.hasteComprimento || null,
+              curso: dadosTecnicos.curso || null,
+              conexao_a: dadosTecnicos.conexaoA || null,
+              conexao_b: dadosTecnicos.conexaoB || null,
               updated_at: new Date().toISOString()
             })
-            .eq('id', recebimento.id);
+            .eq('id', recebimentoId);
           
           if (recebimentoError) {
             console.error('Erro ao atualizar recebimento:', recebimentoError);
           } else {
             console.log('✅ Dados técnicos do recebimento atualizados com sucesso!');
           }
+        } else {
+          console.warn('⚠️ ID do recebimento não encontrado, dados técnicos não foram salvos');
         }
       } else {
         console.log('Criando nova ordem...');
@@ -2259,7 +2278,7 @@ const NovaOrdemServico = () => {
               type="button"
               variant="outline" 
               className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth"
-              onClick={exportToPDF}
+              onClick={() => exportToPDF(ordemExistente, recebimento)}
             >
               <FileText className="mr-2 h-4 w-4" />
               Exportar PDF

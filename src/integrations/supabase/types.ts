@@ -849,14 +849,19 @@ export type Database = {
       }
       recebimentos: {
         Row: {
+          camisa: string | null
           chave_acesso_nfe: string | null
           cliente_cnpj: string | null
           cliente_id: string | null
           cliente_nome: string
+          conexao_a: string | null
+          conexao_b: string | null
           created_at: string
+          curso: string | null
           data_analise: string | null
           data_entrada: string
           fluido_trabalho: string | null
+          haste_comprimento: string | null
           id: number
           local_instalacao: string | null
           na_empresa: boolean | null
@@ -875,14 +880,19 @@ export type Database = {
           urgente: boolean | null
         }
         Insert: {
+          camisa?: string | null
           chave_acesso_nfe?: string | null
           cliente_cnpj?: string | null
           cliente_id?: string | null
           cliente_nome: string
+          conexao_a?: string | null
+          conexao_b?: string | null
           created_at?: string
+          curso?: string | null
           data_analise?: string | null
           data_entrada?: string
           fluido_trabalho?: string | null
+          haste_comprimento?: string | null
           id?: number
           local_instalacao?: string | null
           na_empresa?: boolean | null
@@ -901,14 +911,19 @@ export type Database = {
           urgente?: boolean | null
         }
         Update: {
+          camisa?: string | null
           chave_acesso_nfe?: string | null
           cliente_cnpj?: string | null
           cliente_id?: string | null
           cliente_nome?: string
+          conexao_a?: string | null
+          conexao_b?: string | null
           created_at?: string
+          curso?: string | null
           data_analise?: string | null
           data_entrada?: string
           fluido_trabalho?: string | null
+          haste_comprimento?: string | null
           id?: number
           local_instalacao?: string | null
           na_empresa?: boolean | null
