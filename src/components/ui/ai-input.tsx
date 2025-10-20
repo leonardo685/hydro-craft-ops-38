@@ -417,16 +417,16 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
       console.log('Webhook status:', response.status)
       console.log('Webhook response:', responseText)
       
-      let aiResponseText = "Mensagem enviada!"
+      let aiResponseText = ""
       
       if (response.ok) {
         // Tenta fazer parse do JSON
         try {
           const data = JSON.parse(responseText)
-          aiResponseText = data.message || data.response || data.text || "Mensagem recebida!"
+          aiResponseText = data.output || data.message || data.response || data.text || responseText
         } catch (jsonError) {
           console.error('Resposta não é JSON válido:', jsonError)
-          aiResponseText = responseText || "Mensagem enviada com sucesso!"
+          aiResponseText = responseText
         }
       } else {
         // Verifica se é o erro específico do n8n
