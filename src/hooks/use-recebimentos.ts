@@ -297,28 +297,41 @@ export const useRecebimentos = () => {
   const gerarNumeroOrdem = async () => {
     try {
       const anoAtual = new Date().getFullYear();
+      const anoAbreviado = anoAtual.toString().slice(-2); // Últimos 2 dígitos do ano (ex: 25, 26)
       
+      // Buscar todas as ordens do ano atual
       const { data, error } = await supabase
         .from('recebimentos')
         .select('numero_ordem')
-        .ilike('numero_ordem', `MH-${anoAtual}-%`)
-        .order('id', { ascending: false })
-        .limit(1);
+        .ilike('numero_ordem', `%-${anoAbreviado}`)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
+      // Se não houver ordens do ano atual, começar com 001
       if (!data || data.length === 0) {
-        return `MH-${anoAtual}-001`;
+        return `MH-001-${anoAbreviado}`;
       }
 
-      const ultimoNumero = data[0].numero_ordem;
-      const [prefix, ano, numero] = ultimoNumero.split('-');
-      const proximoNumero = (parseInt(numero) + 1).toString().padStart(3, '0');
-      
-      return `${prefix}-${anoAtual}-${proximoNumero}`;
+      // Encontrar o maior número sequencial do ano atual
+      let maiorNumero = 0;
+      data.forEach(item => {
+        // Formato esperado: MH-XXX-AA (ex: MH-001-25)
+        const partes = item.numero_ordem.split('-');
+        if (partes.length === 3 && partes[2] === anoAbreviado) {
+          const numero = parseInt(partes[1]);
+          if (!isNaN(numero) && numero > maiorNumero) {
+            maiorNumero = numero;
+          }
+        }
+      });
+
+      const proximoNumero = (maiorNumero + 1).toString().padStart(3, '0');
+      return `MH-${proximoNumero}-${anoAbreviado}`;
     } catch (error) {
       console.error('Erro ao gerar número da ordem:', error);
-      return `MH-${new Date().getFullYear()}-001`;
+      const anoAbreviado = new Date().getFullYear().toString().slice(-2);
+      return `MH-001-${anoAbreviado}`;
     }
   };
 
