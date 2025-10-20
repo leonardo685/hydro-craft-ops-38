@@ -412,13 +412,27 @@ function InputForm({ ref, onSuccess }: { ref: React.Ref<HTMLTextAreaElement>; on
         }),
       })
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      let aiResponseText = "Mensagem enviada!"
       
-      // Recebe a resposta do webhook
-      const data = await response.json()
-      const aiResponseText = data.message || data.response || data.text || "Mensagem recebida!"
+      if (response.ok) {
+        try {
+          const data = await response.json()
+          aiResponseText = data.message || data.response || data.text || "Mensagem recebida!"
+        } catch (jsonError) {
+          console.error('Erro ao fazer parse do JSON:', jsonError)
+          // Se não conseguir fazer parse, usa a resposta como texto
+          const textResponse = await response.text()
+          aiResponseText = textResponse || "Mensagem enviada com sucesso!"
+        }
+      } else {
+        // Tenta extrair mensagem de erro
+        try {
+          const errorData = await response.json()
+          aiResponseText = `Erro: ${errorData.message || errorData.error || 'Erro ao processar mensagem'}`
+        } catch {
+          aiResponseText = `Erro ao enviar mensagem (status: ${response.status})`
+        }
+      }
       
       const aiMessage = {
         text: aiResponseText,
