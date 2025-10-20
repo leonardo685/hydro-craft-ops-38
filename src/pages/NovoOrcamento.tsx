@@ -23,6 +23,7 @@ interface ItemOrcamento {
   quantidade: number;
   valorUnitario: number;
   valorTotal: number;
+  codigo?: string;
   detalhes?: {
     material?: string;
     medidas?: string;
@@ -1505,6 +1506,7 @@ export default function NovoOrcamento() {
                   <TableHeader>
                       <TableRow>
                       <TableHead>Peça</TableHead>
+                      <TableHead>Código</TableHead>
                       <TableHead>Material</TableHead>
                       <TableHead>Medidas</TableHead>
                       <TableHead className="text-center">Qtd</TableHead>
@@ -1517,6 +1519,15 @@ export default function NovoOrcamento() {
                     {itensAnalise.pecas.map(peca => <TableRow key={peca.id}>
                         <TableCell>
                           <Input value={peca.descricao} onChange={e => atualizarDescricaoItem('pecas', peca.id, e.target.value)} placeholder="Descrição da peça" className="min-w-[200px]" />
+                        </TableCell>
+                        <TableCell>
+                          <Input value={peca.codigo || ''} onChange={e => setItensAnalise(prev => ({
+                      ...prev,
+                      pecas: prev.pecas.map(p => p.id === peca.id ? {
+                        ...p,
+                        codigo: e.target.value
+                      } : p)
+                    }))} placeholder="Código" className="min-w-[100px]" />
                         </TableCell>
                         <TableCell>
                           <Input value={peca.detalhes?.material || ''} onChange={e => setItensAnalise(prev => ({
@@ -1594,6 +1605,7 @@ export default function NovoOrcamento() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Serviço</TableHead>
+                      <TableHead>Código</TableHead>
                       <TableHead className="text-center">Qtd</TableHead>
                       <TableHead className="text-right">Valor Unit. (R$)</TableHead>
                       <TableHead className="text-right">Total</TableHead>
@@ -1604,6 +1616,15 @@ export default function NovoOrcamento() {
                     {itensAnalise.servicos.map(servico => <TableRow key={servico.id}>
                         <TableCell>
                           <Input value={servico.descricao} onChange={e => atualizarDescricaoItem('servicos', servico.id, e.target.value)} placeholder="Descrição do serviço" className="min-w-[250px]" />
+                        </TableCell>
+                        <TableCell>
+                          <Input value={servico.codigo || ''} onChange={e => setItensAnalise(prev => ({
+                      ...prev,
+                      servicos: prev.servicos.map(s => s.id === servico.id ? {
+                        ...s,
+                        codigo: e.target.value
+                      } : s)
+                    }))} placeholder="Código" className="min-w-[100px]" />
                         </TableCell>
                         <TableCell className="text-center">
                           <Input type="number" min="1" value={servico.quantidade} onChange={e => atualizarQuantidadeItem('servicos', servico.id, parseInt(e.target.value) || 1)} className="w-16 text-center" />
@@ -1657,6 +1678,7 @@ export default function NovoOrcamento() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Usinagem</TableHead>
+                      <TableHead>Código</TableHead>
                       <TableHead className="text-center">Qtd</TableHead>
                       <TableHead className="text-right">Valor Unit. (R$)</TableHead>
                       <TableHead className="text-right">Total</TableHead>
@@ -1667,6 +1689,15 @@ export default function NovoOrcamento() {
                     {itensAnalise.usinagem.map(usinagem => <TableRow key={usinagem.id}>
                         <TableCell>
                           <Input value={usinagem.descricao} onChange={e => atualizarDescricaoItem('usinagem', usinagem.id, e.target.value)} placeholder="Descrição da usinagem" className="min-w-[250px]" />
+                        </TableCell>
+                        <TableCell>
+                          <Input value={usinagem.codigo || ''} onChange={e => setItensAnalise(prev => ({
+                      ...prev,
+                      usinagem: prev.usinagem.map(u => u.id === usinagem.id ? {
+                        ...u,
+                        codigo: e.target.value
+                      } : u)
+                    }))} placeholder="Código" className="min-w-[100px]" />
                         </TableCell>
                         <TableCell className="text-center">
                           <Input type="number" min="1" value={usinagem.quantidade} onChange={e => atualizarQuantidadeItem('usinagem', usinagem.id, parseInt(e.target.value) || 1)} className="w-16 text-center" />
