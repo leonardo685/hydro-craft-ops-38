@@ -13,7 +13,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import hydrofixLogo from "@/assets/hydrofix-logo.png";
+import fixzysLogo from "@/assets/fixzys-logo.jpg";
 import {
   Collapsible,
   CollapsibleContent,
@@ -106,9 +106,9 @@ export function AppSidebar() {
       <SidebarHeader className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <img 
-            src={hydrofixLogo} 
+            src={fixzysLogo} 
             alt="FixZys Logo" 
-            className="h-10 w-10"
+            className="h-10 w-10 object-contain"
           />
           <div>
             <h2 className="text-lg font-semibold text-sidebar-foreground">FixZys</h2>

@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ReactNode } from "react";
-import hydrofixLogo from "@/assets/hydrofix-logo.png";
+import fixzysLogo from "@/assets/fixzys-logo.jpg";
 import { MorphPanel } from "@/components/ui/ai-input";
 
 interface AppLayoutProps {
@@ -20,7 +20,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <SidebarTrigger className="hover:bg-secondary transition-fast" />
               <div className="flex items-center gap-4 flex-1">
                 <img 
-                  src={hydrofixLogo} 
+                  src={fixzysLogo} 
                   alt="FixZys Logo" 
                   className="h-10 w-auto"
                 />
