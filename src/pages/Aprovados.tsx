@@ -305,7 +305,7 @@ export default function Aprovados() {
                                                           ordem.recebimentos?.chave_acesso_nfe || 
                                                           'n/a';
                                   
-                                  await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
+                                  await fetch('https://primary-production-dc42.up.railway.app/webhook-test/01607294-b2b4-4482-931f-c3723b128d7d', {
                                     method: 'POST',
                                     headers: {
                                       'Content-Type': 'application/json',
