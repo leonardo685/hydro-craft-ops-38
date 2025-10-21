@@ -24,6 +24,7 @@ import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
 import { useMemo, useEffect } from "react";
+import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 
 export default function DFC() {
   const { getCategoriasForSelect, getNomeCategoriaMae } = useCategoriasFinanceiras();
@@ -1036,40 +1037,77 @@ export default function DFC() {
 
                           {/* Campos condicionais para PARCELADO */}
                           {lancamentoForm.formaPagamento === 'parcelado' && (
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label>Número de Parcelas</Label>
-                                <Input
-                                  type="number"
-                                  min="2"
-                                  value={lancamentoForm.numeroParcelas}
-                                  onChange={(e) => setLancamentoForm(prev => ({ 
-                                    ...prev, 
-                                    numeroParcelas: parseInt(e.target.value) || 2 
-                                  }))}
-                                />
+                            <>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Número de Parcelas</Label>
+                                  <Input
+                                    type="number"
+                                    min="2"
+                                    value={lancamentoForm.numeroParcelas}
+                                    onChange={(e) => setLancamentoForm(prev => ({ 
+                                      ...prev, 
+                                      numeroParcelas: parseInt(e.target.value) || 2 
+                                    }))}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Frequência</Label>
+                                  <Select 
+                                    value={lancamentoForm.frequenciaRepeticao} 
+                                    onValueChange={(value) => setLancamentoForm(prev => ({ 
+                                      ...prev, 
+                                      frequenciaRepeticao: value as 'semanal' | 'quinzenal' | 'mensal' | 'anual'
+                                    }))}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="semanal">Semanal</SelectItem>
+                                      <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                                      <SelectItem value="mensal">Mensal</SelectItem>
+                                      <SelectItem value="anual">Anual</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               </div>
-                              <div className="space-y-2">
-                                <Label>Frequência</Label>
-                                <Select 
-                                  value={lancamentoForm.frequenciaRepeticao} 
-                                  onValueChange={(value) => setLancamentoForm(prev => ({ 
-                                    ...prev, 
-                                    frequenciaRepeticao: value as 'semanal' | 'quinzenal' | 'mensal' | 'anual'
-                                  }))}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="semanal">Semanal</SelectItem>
-                                    <SelectItem value="quinzenal">Quinzenal</SelectItem>
-                                    <SelectItem value="mensal">Mensal</SelectItem>
-                                    <SelectItem value="anual">Anual</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
+
+                              {/* Prévia das Parcelas */}
+                              {lancamentoForm.valor && lancamentoForm.numeroParcelas > 0 && (
+                                <div className="space-y-2 p-4 bg-muted/30 rounded-lg border">
+                                  <Label className="text-sm font-medium">Prévia das Parcelas</Label>
+                                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                                    {(() => {
+                                      const valorTotal = parseFloat(lancamentoForm.valor);
+                                      const valorParcela = valorTotal / lancamentoForm.numeroParcelas;
+                                      const datas = gerarDatasParcelamento(
+                                        lancamentoForm.dataEsperada,
+                                        lancamentoForm.numeroParcelas,
+                                        lancamentoForm.frequenciaRepeticao
+                                      );
+
+                                      return datas.map((data, index) => (
+                                        <div 
+                                          key={index}
+                                          className="flex items-center justify-between p-2 bg-background rounded border text-sm"
+                                        >
+                                          <span className="font-medium">
+                                            Parcela {index + 1}/{lancamentoForm.numeroParcelas}
+                                          </span>
+                                          <span className="text-primary font-semibold">
+                                            R$ {valorParcela.toFixed(2)}
+                                          </span>
+                                          <span className="text-muted-foreground">
+                                            {format(data, "dd/MM/yyyy")}
+                                          </span>
+                                        </div>
+                                      ));
+                                    })()}
+                                  </div>
+                                </div>
+                              )}
+                            </>
                           )}
 
                           {/* Campos condicionais para RECORRENTE */}

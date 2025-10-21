@@ -23,6 +23,7 @@ import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 import { toast } from "sonner";
+import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 
 export default function Financeiro() {
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
@@ -1907,6 +1908,41 @@ export default function Financeiro() {
                                     </Select>
                                   </div>
                                 </div>
+
+                                {/* Prévia das Parcelas */}
+                                {lancamentoForm.valor && lancamentoForm.numeroParcelas > 0 && (
+                                  <div className="space-y-2 p-4 bg-muted/30 rounded-lg border">
+                                    <Label className="text-sm font-medium">Prévia das Parcelas</Label>
+                                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                                      {(() => {
+                                        const valorTotal = parseFloat(lancamentoForm.valor);
+                                        const valorParcela = valorTotal / lancamentoForm.numeroParcelas;
+                                        const datas = gerarDatasParcelamento(
+                                          lancamentoForm.dataEsperada,
+                                          lancamentoForm.numeroParcelas,
+                                          lancamentoForm.frequenciaRepeticao
+                                        );
+
+                                        return datas.map((data, index) => (
+                                          <div 
+                                            key={index}
+                                            className="flex items-center justify-between p-2 bg-background rounded border text-sm"
+                                          >
+                                            <span className="font-medium">
+                                              Parcela {index + 1}/{lancamentoForm.numeroParcelas}
+                                            </span>
+                                            <span className="text-primary font-semibold">
+                                              R$ {valorParcela.toFixed(2)}
+                                            </span>
+                                            <span className="text-muted-foreground">
+                                              {format(data, "dd/MM/yyyy")}
+                                            </span>
+                                          </div>
+                                        ));
+                                      })()}
+                                    </div>
+                                  </div>
+                                )}
                               </>
                             )}
 
