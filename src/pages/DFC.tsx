@@ -193,6 +193,7 @@ export default function DFC() {
       tipo: lancamento.tipo,
       descricao: lancamento.descricao,
       categoria: getNomeCategoriaMae(lancamento.categoriaId || '') || 'Sem categoria',
+      categoriaId: lancamento.categoriaId || '',
       valor: lancamento.valor,
       conta: lancamento.contaBancaria,
       dataEsperada: new Date(lancamento.dataEsperada),
@@ -273,8 +274,8 @@ export default function DFC() {
     // Filtro de conta
     if (filtrosExtrato.conta !== 'todas' && item.conta !== filtrosExtrato.conta) return false;
     
-    // Filtro de categoria
-    if (filtrosExtrato.categoria !== 'todas' && item.categoria !== filtrosExtrato.categoria) return false;
+    // Filtro de categoria (comparando IDs)
+    if (filtrosExtrato.categoria !== 'todas' && item.categoriaId !== filtrosExtrato.categoria) return false;
     
     // Filtro de fornecedor
     if (filtrosExtrato.fornecedor !== 'todos' && item.fornecedor !== filtrosExtrato.fornecedor) return false;
