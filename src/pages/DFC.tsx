@@ -230,10 +230,6 @@ export default function DFC() {
     return 'no_prazo';
   };
 
-  const aplicarFiltros = () => {
-    // Implementar lógica de filtros
-  };
-
   const limparFiltros = () => {
     setFiltrosExtrato({
       dataInicio: null,
@@ -250,17 +246,51 @@ export default function DFC() {
   };
 
   const extratoFiltrado = extratoData.filter(item => {
+    // Filtro de tipo
     if (filtrosExtrato.tipo !== 'todos' && item.tipo !== filtrosExtrato.tipo) return false;
+    
+    // Filtro de conta
     if (filtrosExtrato.conta !== 'todas' && item.conta !== filtrosExtrato.conta) return false;
+    
+    // Filtro de categoria
     if (filtrosExtrato.categoria !== 'todas' && item.categoria !== filtrosExtrato.categoria) return false;
+    
+    // Filtro de fornecedor
     if (filtrosExtrato.fornecedor !== 'todos' && item.fornecedor !== filtrosExtrato.fornecedor) return false;
+    
+    // Filtro de descrição
     if (filtrosExtrato.descricao && !item.descricao.toLowerCase().includes(filtrosExtrato.descricao.toLowerCase())) return false;
+    
+    // Filtro de valor mínimo
     if (filtrosExtrato.valorMinimo && item.valor < parseFloat(filtrosExtrato.valorMinimo)) return false;
+    
+    // Filtro de valor máximo
     if (filtrosExtrato.valorMaximo && item.valor > parseFloat(filtrosExtrato.valorMaximo)) return false;
+    
+    // Filtro de status
     if (filtrosExtrato.status !== 'todos') {
       const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
       if (status !== filtrosExtrato.status) return false;
     }
+    
+    // Filtro de data início
+    if (filtrosExtrato.dataInicio) {
+      const dataInicio = new Date(filtrosExtrato.dataInicio);
+      dataInicio.setHours(0, 0, 0, 0);
+      const dataItem = new Date(item.dataEsperada);
+      dataItem.setHours(0, 0, 0, 0);
+      if (dataItem < dataInicio) return false;
+    }
+    
+    // Filtro de data fim
+    if (filtrosExtrato.dataFim) {
+      const dataFim = new Date(filtrosExtrato.dataFim);
+      dataFim.setHours(23, 59, 59, 999);
+      const dataItem = new Date(item.dataEsperada);
+      dataItem.setHours(0, 0, 0, 0);
+      if (dataItem > dataFim) return false;
+    }
+    
     return true;
   });
 
@@ -971,6 +1001,46 @@ export default function DFC() {
                   {filtrosExpanded && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-muted/30">
                       <div className="space-y-2">
+                        <Label className="text-xs">Data Início</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full h-9 justify-start text-left font-normal", !filtrosExtrato.dataInicio && "text-muted-foreground")}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {filtrosExtrato.dataInicio ? format(filtrosExtrato.dataInicio, "dd/MM/yyyy") : "Selecionar"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={filtrosExtrato.dataInicio || undefined}
+                              onSelect={(date) => setFiltrosExtrato(prev => ({ ...prev, dataInicio: date || null }))}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Data Fim</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full h-9 justify-start text-left font-normal", !filtrosExtrato.dataFim && "text-muted-foreground")}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {filtrosExtrato.dataFim ? format(filtrosExtrato.dataFim, "dd/MM/yyyy") : "Selecionar"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={filtrosExtrato.dataFim || undefined}
+                              onSelect={(date) => setFiltrosExtrato(prev => ({ ...prev, dataFim: date || null }))}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      <div className="space-y-2">
                         <Label className="text-xs">Tipo</Label>
                         <Select value={filtrosExtrato.tipo} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, tipo: value }))}>
                           <SelectTrigger className="h-9">
@@ -1076,11 +1146,10 @@ export default function DFC() {
                         />
                       </div>
 
-                      <div className="col-span-full flex gap-2">
-                        <Button onClick={aplicarFiltros} className="flex-1">Aplicar Filtros</Button>
-                        <Button variant="outline" onClick={limparFiltros}>
+                       <div className="col-span-full flex gap-2">
+                        <Button variant="outline" onClick={limparFiltros} className="flex-1">
                           <X className="h-4 w-4 mr-2" />
-                          Limpar
+                          Limpar Filtros
                         </Button>
                       </div>
                     </div>
@@ -1089,6 +1158,136 @@ export default function DFC() {
               </CardHeader>
 
               <CardContent>
+                <div className="flex justify-end gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const doc = new jsPDF();
+                      
+                      doc.setFontSize(18);
+                      doc.text('Extrato Bancário', 14, 20);
+                      
+                      doc.setFontSize(10);
+                      let y = 30;
+                      
+                      // Informações dos filtros aplicados
+                      if (filtrosExtrato.dataInicio || filtrosExtrato.dataFim) {
+                        doc.text(`Período: ${filtrosExtrato.dataInicio ? format(filtrosExtrato.dataInicio, "dd/MM/yyyy") : "Início"} até ${filtrosExtrato.dataFim ? format(filtrosExtrato.dataFim, "dd/MM/yyyy") : "Atual"}`, 14, y);
+                        y += 6;
+                      }
+                      if (filtrosExtrato.tipo !== 'todos') {
+                        doc.text(`Tipo: ${filtrosExtrato.tipo === 'entrada' ? 'Entrada' : 'Saída'}`, 14, y);
+                        y += 6;
+                      }
+                      if (filtrosExtrato.conta !== 'todas') {
+                        const conta = contasBancarias.find(c => c.id === filtrosExtrato.conta);
+                        doc.text(`Conta: ${conta?.nome || ''}`, 14, y);
+                        y += 6;
+                      }
+                      
+                      y += 5;
+                      
+                      // Cabeçalhos
+                      doc.setFontSize(9);
+                      doc.text('Data', 14, y);
+                      doc.text('Descrição', 40, y);
+                      doc.text('Categoria', 90, y);
+                      doc.text('Valor', 140, y);
+                      doc.text('Status', 170, y);
+                      
+                      y += 5;
+                      doc.line(14, y, 196, y);
+                      y += 5;
+                      
+                      // Dados
+                      extratoFiltrado.forEach((item, index) => {
+                        if (y > 270) {
+                          doc.addPage();
+                          y = 20;
+                        }
+                        
+                        const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
+                        
+                        doc.text(format(item.dataEsperada, "dd/MM/yyyy"), 14, y);
+                        doc.text(item.descricao.substring(0, 25), 40, y);
+                        doc.text(item.categoria.substring(0, 20), 90, y);
+                        doc.text(formatCurrency(item.valor), 140, y);
+                        doc.text(status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo', 170, y);
+                        
+                        y += 6;
+                      });
+                      
+                      // Totais
+                      y += 5;
+                      doc.line(14, y, 196, y);
+                      y += 5;
+                      
+                      const totalEntradas = extratoFiltrado.filter(i => i.tipo === 'entrada').reduce((acc, i) => acc + i.valor, 0);
+                      const totalSaidas = extratoFiltrado.filter(i => i.tipo === 'saida').reduce((acc, i) => acc + i.valor, 0);
+                      
+                      doc.setFontSize(10);
+                      doc.text('Total Entradas:', 14, y);
+                      doc.text(formatCurrency(totalEntradas), 140, y);
+                      y += 6;
+                      doc.text('Total Saídas:', 14, y);
+                      doc.text(formatCurrency(totalSaidas), 140, y);
+                      y += 6;
+                      doc.text('Saldo:', 14, y);
+                      doc.text(formatCurrency(totalEntradas - totalSaidas), 140, y);
+                      
+                      doc.save(`extrato-${format(new Date(), "dd-MM-yyyy")}.pdf`);
+                      toast.success("PDF exportado com sucesso!");
+                    }}
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Exportar PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const dadosExcel = extratoFiltrado.map(item => {
+                        const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
+                        const conta = contasBancarias.find(c => c.id === item.conta);
+                        const fornecedor = fornecedores.find(f => f.id === item.fornecedor);
+                        
+                        return {
+                          'Data Esperada': format(item.dataEsperada, "dd/MM/yyyy"),
+                          'Data Realizada': item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-',
+                          'Tipo': item.tipo === 'entrada' ? 'Entrada' : 'Saída',
+                          'Descrição': item.descricao,
+                          'Categoria': item.categoria,
+                          'Conta': conta?.nome || '-',
+                          'Fornecedor/Cliente': fornecedor?.nome || '-',
+                          'Valor': item.valor,
+                          'Status': status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo'
+                        };
+                      });
+                      
+                      const ws = XLSX.utils.json_to_sheet(dadosExcel);
+                      const wb = XLSX.utils.book_new();
+                      XLSX.utils.book_append_sheet(wb, ws, "Extrato");
+                      
+                      // Adicionar totais
+                      const totalEntradas = extratoFiltrado.filter(i => i.tipo === 'entrada').reduce((acc, i) => acc + i.valor, 0);
+                      const totalSaidas = extratoFiltrado.filter(i => i.tipo === 'saida').reduce((acc, i) => acc + i.valor, 0);
+                      
+                      XLSX.utils.sheet_add_json(ws, [
+                        { 'Descrição': 'Total Entradas', 'Valor': totalEntradas },
+                        { 'Descrição': 'Total Saídas', 'Valor': totalSaidas },
+                        { 'Descrição': 'Saldo', 'Valor': totalEntradas - totalSaidas }
+                      ], { skipHeader: true, origin: -1 });
+                      
+                      XLSX.writeFile(wb, `extrato-${format(new Date(), "dd-MM-yyyy")}.xlsx`);
+                      toast.success("Excel exportado com sucesso!");
+                    }}
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Exportar Excel
+                  </Button>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <Card className="bg-green-50 dark:bg-green-950/20 border-2 shadow-lg">
                     <CardHeader className="pb-2">
