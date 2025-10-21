@@ -28,64 +28,100 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserRoleAndPermissions = useCallback(async (userId: string) => {
     try {
-      console.log('[AuthContext] Fetching role and permissions for user:', userId);
+      console.log('[AuthContext] 🔍 Iniciando busca de role e permissões para userId:', userId);
       
-      // Buscar role do usuário - forçar conversão para texto
+      // Buscar role do usuário - CONVERSÃO EXPLÍCITA PARA TEXT
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('role::text')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-      console.log('[AuthContext] Raw roleData:', roleData);
-      console.log('[AuthContext] roleError:', roleError);
+      console.log('[AuthContext] 📦 Raw roleData retornado:', roleData);
+      console.log('[AuthContext] ❌ roleError:', roleError);
 
       if (roleError) {
-        console.error('[AuthContext] Erro ao buscar role:', roleError);
-        setLoading(false);
-        return;
-      }
-
-      if (!roleData) {
-        console.warn('[AuthContext] Nenhum role encontrado para o usuário:', userId);
+        console.error('[AuthContext] ❌ ERRO ao buscar role:', roleError);
         setUserRole(null);
         setMenuPermissions({});
         setLoading(false);
         return;
       }
 
-      // Converter o role - o Supabase pode retornar o enum de formas diferentes
+      if (!roleData || !roleData.role) {
+        console.warn('[AuthContext] ⚠️ Nenhum role encontrado na tabela user_roles para userId:', userId);
+        setUserRole(null);
+        setMenuPermissions({});
+        setLoading(false);
+        return;
+      }
+
+      // Converter o role - com validação rigorosa
       const rawRole = String(roleData.role).toLowerCase().trim();
-      console.log('[AuthContext] rawRole recebido:', rawRole, 'tipo:', typeof rawRole);
+      console.log('[AuthContext] 🔄 Role processado:', {
+        rawRole,
+        tipo: typeof rawRole,
+        tamanho: rawRole.length,
+        bytes: Array.from(rawRole).map(c => c.charCodeAt(0))
+      });
       
       const validRoles: AppRole[] = ['admin', 'gestor', 'operador'];
       const role = validRoles.includes(rawRole as AppRole) ? (rawRole as AppRole) : null;
       
-      console.log('[AuthContext] Role validado e setado:', role);
+      if (!role) {
+        console.error('[AuthContext] ❌ Role inválido ou não reconhecido:', rawRole, 'Roles válidos:', validRoles);
+        setUserRole(null);
+        setMenuPermissions({});
+        setLoading(false);
+        return;
+      }
+
+      console.log('[AuthContext] ✅ Role validado e definido:', role);
       setUserRole(role);
 
-      if (role) {
-        // Buscar permissões de menu
-        const { data: permissionsData, error: permError } = await supabase
-          .from('menu_permissions')
-          .select('menu_item, can_access')
-          .eq('role', role);
+      // Admin sempre tem todas as permissões - não precisa buscar
+      if (role === 'admin') {
+        console.log('[AuthContext] 👑 Usuário é ADMIN - acesso total concedido');
+        setMenuPermissions({});
+        setLoading(false);
+        return;
+      }
 
-        if (permError) {
-          console.error('Erro ao buscar permissões:', permError);
-        } else if (permissionsData) {
-          const permissions = permissionsData.reduce((acc, perm) => {
-            acc[perm.menu_item] = perm.can_access;
-            return acc;
-          }, {} as Record<string, boolean>);
-          console.log('[AuthContext] Permissions loaded:', permissions);
-          setMenuPermissions(permissions);
-        }
+      // Buscar permissões de menu
+      console.log('[AuthContext] 🔍 Buscando permissões para role:', role);
+      const { data: permissionsData, error: permError } = await supabase
+        .from('menu_permissions')
+        .select('menu_item, can_access')
+        .eq('role', role) as { data: Array<{ menu_item: string; can_access: boolean }> | null; error: any };
+
+      console.log('[AuthContext] 📦 Permissions raw data:', permissionsData);
+      console.log('[AuthContext] ❌ Permissions error:', permError);
+
+      if (permError) {
+        console.error('[AuthContext] ❌ ERRO ao buscar permissões:', permError);
+        setMenuPermissions({});
+      } else if (permissionsData && permissionsData.length > 0) {
+        const permissions = permissionsData.reduce((acc, perm) => {
+          acc[perm.menu_item] = perm.can_access;
+          return acc;
+        }, {} as Record<string, boolean>);
+        console.log('[AuthContext] ✅ Permissões carregadas:', {
+          totalPermissoes: Object.keys(permissions).length,
+          permissoes: permissions,
+          permissoesAtivas: Object.entries(permissions).filter(([_, v]) => v).map(([k]) => k)
+        });
+        setMenuPermissions(permissions);
+      } else {
+        console.warn('[AuthContext] ⚠️ Nenhuma permissão encontrada para role:', role);
+        setMenuPermissions({});
       }
     } catch (error) {
-      console.error('Erro ao buscar dados do usuário:', error);
+      console.error('[AuthContext] ❌ EXCEÇÃO ao buscar dados do usuário:', error);
+      setUserRole(null);
+      setMenuPermissions({});
     } finally {
       setLoading(false);
+      console.log('[AuthContext] 🏁 Fetch finalizado. Loading:', false);
     }
   }, []);
 
@@ -189,9 +225,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const hasPermission = useCallback((menuItem: string): boolean => {
-    if (!userRole) return false;
-    if (userRole === 'admin') return true;
-    return menuPermissions[menuItem] === true;
+    if (!userRole) {
+      console.log('[AuthContext] 🚫 hasPermission negado: usuário sem role para item:', menuItem);
+      return false;
+    }
+    
+    if (userRole === 'admin') {
+      console.log('[AuthContext] ✅ hasPermission concedido: ADMIN tem acesso total ao item:', menuItem);
+      return true;
+    }
+    
+    const hasAccess = menuPermissions[menuItem] === true;
+    console.log('[AuthContext]', hasAccess ? '✅' : '🚫', 'hasPermission para', menuItem, '- Role:', userRole, '- Tem acesso:', hasAccess);
+    
+    return hasAccess;
   }, [userRole, menuPermissions]);
 
   return (
