@@ -310,7 +310,8 @@ export default function DFC() {
       dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : undefined,
       dataEmissao: lancamentoForm.dataEmissao,
       pago: lancamentoForm.paga,
-      fornecedorCliente: lancamentoForm.fornecedor
+      fornecedorCliente: lancamentoForm.fornecedor,
+      formaPagamento: 'a_vista',
     });
 
     if (sucesso) {

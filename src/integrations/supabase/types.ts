@@ -461,9 +461,15 @@ export type Database = {
           data_esperada: string
           data_realizada: string | null
           descricao: string
+          forma_pagamento: string | null
           fornecedor_cliente: string | null
+          frequencia_repeticao: string | null
           id: string
+          lancamento_pai_id: string | null
+          meses_recorrencia: number | null
+          numero_parcelas: number | null
           pago: boolean
+          parcela_numero: number | null
           tipo: string
           updated_at: string
           valor: number
@@ -476,9 +482,15 @@ export type Database = {
           data_esperada: string
           data_realizada?: string | null
           descricao: string
+          forma_pagamento?: string | null
           fornecedor_cliente?: string | null
+          frequencia_repeticao?: string | null
           id?: string
+          lancamento_pai_id?: string | null
+          meses_recorrencia?: number | null
+          numero_parcelas?: number | null
           pago?: boolean
+          parcela_numero?: number | null
           tipo: string
           updated_at?: string
           valor: number
@@ -491,9 +503,15 @@ export type Database = {
           data_esperada?: string
           data_realizada?: string | null
           descricao?: string
+          forma_pagamento?: string | null
           fornecedor_cliente?: string | null
+          frequencia_repeticao?: string | null
           id?: string
+          lancamento_pai_id?: string | null
+          meses_recorrencia?: number | null
+          numero_parcelas?: number | null
           pago?: boolean
+          parcela_numero?: number | null
           tipo?: string
           updated_at?: string
           valor?: number
@@ -504,6 +522,13 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_financeiros_lancamento_pai_id_fkey"
+            columns: ["lancamento_pai_id"]
+            isOneToOne: false
+            referencedRelation: "lancamentos_financeiros"
             referencedColumns: ["id"]
           },
         ]

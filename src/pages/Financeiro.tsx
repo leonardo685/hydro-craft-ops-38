@@ -22,10 +22,11 @@ import { cn } from "@/lib/utils";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
+import { toast } from "sonner";
 
 export default function Financeiro() {
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
-  const { lancamentos, loading: loadingLancamentos } = useLancamentosFinanceiros();
+  const { lancamentos, loading: loadingLancamentos, adicionarLancamento } = useLancamentosFinanceiros();
   
   // Estados para filtros de data e período
   const [dataInicial, setDataInicial] = useState("");
@@ -118,7 +119,11 @@ export default function Financeiro() {
     dataEmissao: new Date(), // Data de hoje por padrão
     dataPagamento: new Date(),
     dataRealizada: new Date(),
-    dataEsperada: new Date()
+    dataEsperada: new Date(),
+    formaPagamento: 'a_vista' as 'a_vista' | 'parcelado' | 'recorrente',
+    numeroParcelas: 2,
+    frequenciaRepeticao: 'mensal' as 'semanal' | 'quinzenal' | 'mensal' | 'anual',
+    mesesRecorrencia: 12,
   });
 
   // Estados para os filtros do extrato
@@ -942,45 +947,165 @@ export default function Financeiro() {
     return true;
   });
 
-  const handleLancamento = () => {
-    if (!lancamentoForm.valor || !lancamentoForm.descricao) return;
+  const handleLancamento = async () => {
+    if (!lancamentoForm.valor || !lancamentoForm.descricao || !lancamentoForm.categoria) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
     
-    const novoLancamento = {
-      id: extratoData.length + 1,
-      hora: new Date(2024, 7, 29).toLocaleTimeString('pt-BR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      tipo: lancamentoForm.tipo,
-      descricao: lancamentoForm.descricao,
-      categoria: (() => {
-        const categoriasSelecionadas = getCategoriasForSelect();
-        const categoriaSelecionada = categoriasSelecionadas.find(cat => cat.value === lancamentoForm.categoria);
-        return categoriaSelecionada ? categoriaSelecionada.label : 'Outros';
-      })(),
-      valor: parseFloat(lancamentoForm.valor),
-      conta: lancamentoForm.conta,
-      dataEsperada: lancamentoForm.dataEsperada,
-      dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : null,
-      pago: lancamentoForm.paga,
-      fornecedor: lancamentoForm.fornecedor
-    };
-
-    setExtratoData(prev => [...prev, novoLancamento]);
-    setLancamentoForm({
-      tipo: 'entrada',
-      valor: '',
-      descricao: '',
-      categoria: '',
-      conta: 'conta_corrente',
-      fornecedor: 'cliente_joao',
-      paga: false,
-      dataEmissao: new Date(), // Data de hoje por padrão
-      dataPagamento: new Date(),
-      dataRealizada: new Date(),
-      dataEsperada: new Date()
-    });
-    setIsLancamentoDialogOpen(false);
+    const valorTotal = parseFloat(lancamentoForm.valor);
+    const dataBase = lancamentoForm.dataEsperada;
+    
+    if (lancamentoForm.formaPagamento === 'a_vista') {
+      // Lançamento único
+      const resultado = await adicionarLancamento({
+        tipo: lancamentoForm.tipo as 'entrada' | 'saida',
+        descricao: lancamentoForm.descricao,
+        categoriaId: lancamentoForm.categoria,
+        valor: valorTotal,
+        contaBancaria: lancamentoForm.conta,
+        fornecedorCliente: lancamentoForm.fornecedor,
+        dataEsperada: dataBase,
+        dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : null,
+        dataEmissao: lancamentoForm.dataEmissao,
+        pago: lancamentoForm.paga,
+        formaPagamento: 'a_vista',
+      });
+      
+      if (resultado.success) {
+        setLancamentoForm({
+          tipo: 'entrada',
+          valor: '',
+          descricao: '',
+          categoria: '',
+          conta: 'conta_corrente',
+          fornecedor: 'cliente_joao',
+          paga: false,
+          dataEmissao: new Date(),
+          dataPagamento: new Date(),
+          dataRealizada: new Date(),
+          dataEsperada: new Date(),
+          formaPagamento: 'a_vista',
+          numeroParcelas: 2,
+          frequenciaRepeticao: 'mensal',
+          mesesRecorrencia: 12,
+        });
+        setIsLancamentoDialogOpen(false);
+      }
+    } else if (lancamentoForm.formaPagamento === 'parcelado') {
+      // Criar lançamento pai primeiro
+      const resultadoPai = await adicionarLancamento({
+        tipo: lancamentoForm.tipo as 'entrada' | 'saida',
+        descricao: `${lancamentoForm.descricao} (Parcelado - ${lancamentoForm.numeroParcelas}x)`,
+        categoriaId: lancamentoForm.categoria,
+        valor: valorTotal,
+        contaBancaria: lancamentoForm.conta,
+        fornecedorCliente: lancamentoForm.fornecedor,
+        dataEsperada: dataBase,
+        dataRealizada: null,
+        dataEmissao: lancamentoForm.dataEmissao,
+        pago: false,
+        formaPagamento: 'parcelado',
+        numeroParcelas: lancamentoForm.numeroParcelas,
+        frequenciaRepeticao: lancamentoForm.frequenciaRepeticao,
+      });
+      
+      if (resultadoPai.success && resultadoPai.id) {
+        // Gerar parcelas
+        const { gerarDatasParcelamento } = await import('@/lib/lancamento-utils');
+        const datas = gerarDatasParcelamento(
+          dataBase,
+          lancamentoForm.numeroParcelas,
+          lancamentoForm.frequenciaRepeticao
+        );
+        
+        const valorParcela = valorTotal / lancamentoForm.numeroParcelas;
+        
+        for (let i = 0; i < datas.length; i++) {
+          await adicionarLancamento({
+            tipo: lancamentoForm.tipo as 'entrada' | 'saida',
+            descricao: `${lancamentoForm.descricao} - Parcela ${i + 1}/${lancamentoForm.numeroParcelas}`,
+            categoriaId: lancamentoForm.categoria,
+            valor: valorParcela,
+            contaBancaria: lancamentoForm.conta,
+            fornecedorCliente: lancamentoForm.fornecedor,
+            dataEsperada: datas[i],
+            dataRealizada: null,
+            dataEmissao: lancamentoForm.dataEmissao,
+            pago: false,
+            formaPagamento: 'parcelado',
+            numeroParcelas: lancamentoForm.numeroParcelas,
+            parcelaNumero: i + 1,
+            frequenciaRepeticao: lancamentoForm.frequenciaRepeticao,
+            lancamentoPaiId: resultadoPai.id,
+          });
+        }
+        
+        setLancamentoForm({
+          tipo: 'entrada',
+          valor: '',
+          descricao: '',
+          categoria: '',
+          conta: 'conta_corrente',
+          fornecedor: 'cliente_joao',
+          paga: false,
+          dataEmissao: new Date(),
+          dataPagamento: new Date(),
+          dataRealizada: new Date(),
+          dataEsperada: new Date(),
+          formaPagamento: 'a_vista',
+          numeroParcelas: 2,
+          frequenciaRepeticao: 'mensal',
+          mesesRecorrencia: 12,
+        });
+        setIsLancamentoDialogOpen(false);
+      }
+    } else if (lancamentoForm.formaPagamento === 'recorrente') {
+      // Gerar lançamentos recorrentes
+      const { gerarDatasRecorrencia } = await import('@/lib/lancamento-utils');
+      const datas = gerarDatasRecorrencia(
+        dataBase,
+        lancamentoForm.mesesRecorrencia,
+        lancamentoForm.frequenciaRepeticao
+      );
+      
+      for (let i = 0; i < datas.length; i++) {
+        await adicionarLancamento({
+          tipo: lancamentoForm.tipo as 'entrada' | 'saida',
+          descricao: `${lancamentoForm.descricao} - Recorrência ${i + 1}`,
+          categoriaId: lancamentoForm.categoria,
+          valor: valorTotal,
+          contaBancaria: lancamentoForm.conta,
+          fornecedorCliente: lancamentoForm.fornecedor,
+          dataEsperada: datas[i],
+          dataRealizada: null,
+          dataEmissao: datas[i], // Data de emissão é a data da recorrência
+          pago: false,
+          formaPagamento: 'recorrente',
+          frequenciaRepeticao: lancamentoForm.frequenciaRepeticao,
+          mesesRecorrencia: lancamentoForm.mesesRecorrencia,
+        });
+      }
+      
+      setLancamentoForm({
+        tipo: 'entrada',
+        valor: '',
+        descricao: '',
+        categoria: '',
+        conta: 'conta_corrente',
+        fornecedor: 'cliente_joao',
+        paga: false,
+        dataEmissao: new Date(),
+        dataPagamento: new Date(),
+        dataRealizada: new Date(),
+        dataEsperada: new Date(),
+        formaPagamento: 'a_vista',
+        numeroParcelas: 2,
+        frequenciaRepeticao: 'mensal',
+        mesesRecorrencia: 12,
+      });
+      setIsLancamentoDialogOpen(false);
+    }
   };
 
   return (
@@ -1722,6 +1847,109 @@ export default function Financeiro() {
                                 </SelectContent>
                               </Select>
                             </div>
+                            
+                            {/* Forma de Pagamento */}
+                            <div>
+                              <Label htmlFor="formaPagamento">Forma de Pagamento</Label>
+                              <Select 
+                                value={lancamentoForm.formaPagamento} 
+                                onValueChange={(value) => setLancamentoForm(prev => ({ 
+                                  ...prev, 
+                                  formaPagamento: value as 'a_vista' | 'parcelado' | 'recorrente'
+                                }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="a_vista">À Vista</SelectItem>
+                                  <SelectItem value="parcelado">Parcelado</SelectItem>
+                                  <SelectItem value="recorrente">Recorrente</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Campos condicionais para PARCELADO */}
+                            {lancamentoForm.formaPagamento === 'parcelado' && (
+                              <>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor="numeroParcelas">Número de Parcelas</Label>
+                                    <Input
+                                      id="numeroParcelas"
+                                      type="number"
+                                      min="2"
+                                      value={lancamentoForm.numeroParcelas}
+                                      onChange={(e) => setLancamentoForm(prev => ({ 
+                                        ...prev, 
+                                        numeroParcelas: parseInt(e.target.value) || 2 
+                                      }))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="frequenciaRepeticao">Frequência</Label>
+                                    <Select 
+                                      value={lancamentoForm.frequenciaRepeticao} 
+                                      onValueChange={(value) => setLancamentoForm(prev => ({ 
+                                        ...prev, 
+                                        frequenciaRepeticao: value as 'semanal' | 'quinzenal' | 'mensal' | 'anual'
+                                      }))}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="semanal">Semanal</SelectItem>
+                                        <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                                        <SelectItem value="mensal">Mensal</SelectItem>
+                                        <SelectItem value="anual">Anual</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              </>
+                            )}
+
+                            {/* Campos condicionais para RECORRENTE */}
+                            {lancamentoForm.formaPagamento === 'recorrente' && (
+                              <>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor="mesesRecorrencia">Meses de Recorrência</Label>
+                                    <Input
+                                      id="mesesRecorrencia"
+                                      type="number"
+                                      min="1"
+                                      value={lancamentoForm.mesesRecorrencia}
+                                      onChange={(e) => setLancamentoForm(prev => ({ 
+                                        ...prev, 
+                                        mesesRecorrencia: parseInt(e.target.value) || 12 
+                                      }))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="frequenciaRepeticao">Frequência</Label>
+                                    <Select 
+                                      value={lancamentoForm.frequenciaRepeticao} 
+                                      onValueChange={(value) => setLancamentoForm(prev => ({ 
+                                        ...prev, 
+                                        frequenciaRepeticao: value as 'semanal' | 'quinzenal' | 'mensal' | 'anual'
+                                      }))}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="semanal">Semanal</SelectItem>
+                                        <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                                        <SelectItem value="mensal">Mensal</SelectItem>
+                                        <SelectItem value="anual">Anual</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              </>
+                            )}
                             
                             <div>
                               <Label htmlFor="fornecedor">Fornecedor/Cliente</Label>

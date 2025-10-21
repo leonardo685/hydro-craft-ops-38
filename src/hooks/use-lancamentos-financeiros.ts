@@ -15,6 +15,12 @@ export interface LancamentoFinanceiro {
   dataEmissao: Date;
   pago: boolean;
   createdAt: Date;
+  formaPagamento: 'a_vista' | 'parcelado' | 'recorrente';
+  numeroParcelas?: number;
+  parcelaNumero?: number;
+  frequenciaRepeticao?: 'semanal' | 'quinzenal' | 'mensal' | 'anual';
+  lancamentoPaiId?: string;
+  mesesRecorrencia?: number;
 }
 
 export const useLancamentosFinanceiros = () => {
@@ -43,7 +49,13 @@ export const useLancamentosFinanceiros = () => {
         dataRealizada: lanc.data_realizada ? new Date(lanc.data_realizada) : null,
         dataEmissao: new Date(lanc.data_emissao),
         pago: lanc.pago,
-        createdAt: new Date(lanc.created_at)
+        createdAt: new Date(lanc.created_at),
+        formaPagamento: (lanc.forma_pagamento || 'a_vista') as 'a_vista' | 'parcelado' | 'recorrente',
+        numeroParcelas: lanc.numero_parcelas,
+        parcelaNumero: lanc.parcela_numero,
+        frequenciaRepeticao: lanc.frequencia_repeticao as 'semanal' | 'quinzenal' | 'mensal' | 'anual' | undefined,
+        lancamentoPaiId: lanc.lancamento_pai_id,
+        mesesRecorrencia: lanc.meses_recorrencia,
       }));
 
       setLancamentos(lancamentosFormatados);
@@ -61,9 +73,9 @@ export const useLancamentosFinanceiros = () => {
 
   const adicionarLancamento = async (
     lancamento: Omit<LancamentoFinanceiro, 'id' | 'createdAt'>
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; id?: string }> => {
     try {
-      const { error } = await supabase
+      const { data: insertData, error } = await supabase
         .from('lancamentos_financeiros')
         .insert({
           tipo: lancamento.tipo,
@@ -75,18 +87,26 @@ export const useLancamentosFinanceiros = () => {
           data_esperada: lancamento.dataEsperada.toISOString(),
           data_realizada: lancamento.dataRealizada?.toISOString() || null,
           data_emissao: lancamento.dataEmissao.toISOString(),
-          pago: lancamento.pago
-        });
+          pago: lancamento.pago,
+          forma_pagamento: lancamento.formaPagamento,
+          numero_parcelas: lancamento.numeroParcelas || null,
+          parcela_numero: lancamento.parcelaNumero || null,
+          frequencia_repeticao: lancamento.frequenciaRepeticao || null,
+          lancamento_pai_id: lancamento.lancamentoPaiId || null,
+          meses_recorrencia: lancamento.mesesRecorrencia || null,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
       await fetchLancamentos();
       toast.success('Lançamento adicionado com sucesso!');
-      return true;
+      return insertData ? { success: true, id: insertData.id } : { success: true };
     } catch (error) {
       console.error('Erro ao adicionar lançamento:', error);
       toast.error('Erro ao criar lançamento');
-      return false;
+      return { success: false };
     }
   };
 
@@ -109,6 +129,12 @@ export const useLancamentosFinanceiros = () => {
       }
       if (lancamento.dataEmissao) updateData.data_emissao = lancamento.dataEmissao.toISOString();
       if (lancamento.pago !== undefined) updateData.pago = lancamento.pago;
+      if (lancamento.formaPagamento) updateData.forma_pagamento = lancamento.formaPagamento;
+      if (lancamento.numeroParcelas !== undefined) updateData.numero_parcelas = lancamento.numeroParcelas;
+      if (lancamento.parcelaNumero !== undefined) updateData.parcela_numero = lancamento.parcelaNumero;
+      if (lancamento.frequenciaRepeticao !== undefined) updateData.frequencia_repeticao = lancamento.frequenciaRepeticao;
+      if (lancamento.lancamentoPaiId !== undefined) updateData.lancamento_pai_id = lancamento.lancamentoPaiId;
+      if (lancamento.mesesRecorrencia !== undefined) updateData.meses_recorrencia = lancamento.mesesRecorrencia;
 
       const { error } = await supabase
         .from('lancamentos_financeiros')
