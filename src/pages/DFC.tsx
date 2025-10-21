@@ -58,6 +58,7 @@ export default function DFC() {
     contasVencer: 0
   });
 
+
   const [lancamentoForm, setLancamentoForm] = useState({
     tipo: 'entrada',
     valor: '',
@@ -75,6 +76,21 @@ export default function DFC() {
     frequenciaRepeticao: 'mensal' as 'semanal' | 'quinzenal' | 'mensal' | 'anual',
     mesesRecorrencia: 12,
   });
+
+  // Estado para datas customizadas das parcelas
+  const [datasParcelasCustom, setDatasParcelasCustom] = useState<Date[]>([]);
+
+  // Recalcula datas quando mudar parcelas ou frequência
+  useEffect(() => {
+    if (lancamentoForm.formaPagamento === 'parcelado' && lancamentoForm.numeroParcelas > 0) {
+      const novasDatas = gerarDatasParcelamento(
+        lancamentoForm.dataEsperada,
+        lancamentoForm.numeroParcelas,
+        lancamentoForm.frequenciaRepeticao
+      );
+      setDatasParcelasCustom(novasDatas);
+    }
+  }, [lancamentoForm.numeroParcelas, lancamentoForm.frequenciaRepeticao, lancamentoForm.dataEsperada, lancamentoForm.formaPagamento]);
 
   const [filtrosExtrato, setFiltrosExtrato] = useState({
     dataInicio: null as Date | null,
@@ -347,9 +363,8 @@ export default function DFC() {
       });
       
       if (resultadoPai.success && resultadoPai.id) {
-        // Gerar parcelas
-        const { gerarDatasParcelamento } = await import('@/lib/lancamento-utils');
-        const datas = gerarDatasParcelamento(
+        // Usar datas customizadas das parcelas
+        const datas = datasParcelasCustom.length > 0 ? datasParcelasCustom : gerarDatasParcelamento(
           dataBase,
           lancamentoForm.numeroParcelas,
           lancamentoForm.frequenciaRepeticao
@@ -430,6 +445,7 @@ export default function DFC() {
       frequenciaRepeticao: 'mensal',
       mesesRecorrencia: 12,
     });
+    setDatasParcelasCustom([]);
     setIsLancamentoDialogOpen(false);
   };
 
@@ -1074,33 +1090,52 @@ export default function DFC() {
                               </div>
 
                               {/* Prévia das Parcelas */}
-                              {lancamentoForm.valor && lancamentoForm.numeroParcelas > 0 && (
+                              {lancamentoForm.valor && lancamentoForm.numeroParcelas > 0 && datasParcelasCustom.length > 0 && (
                                 <div className="space-y-2 p-4 bg-muted/30 rounded-lg border">
-                                  <Label className="text-sm font-medium">Prévia das Parcelas</Label>
+                                  <Label className="text-sm font-medium">Prévia das Parcelas (clique na data para editar)</Label>
                                   <div className="space-y-2 max-h-64 overflow-y-auto">
                                     {(() => {
                                       const valorTotal = parseFloat(lancamentoForm.valor);
                                       const valorParcela = valorTotal / lancamentoForm.numeroParcelas;
-                                      const datas = gerarDatasParcelamento(
-                                        lancamentoForm.dataEsperada,
-                                        lancamentoForm.numeroParcelas,
-                                        lancamentoForm.frequenciaRepeticao
-                                      );
 
-                                      return datas.map((data, index) => (
+                                      return datasParcelasCustom.map((data, index) => (
                                         <div 
                                           key={index}
-                                          className="flex items-center justify-between p-2 bg-background rounded border text-sm"
+                                          className="flex items-center justify-between p-2 bg-background rounded border text-sm gap-2"
                                         >
-                                          <span className="font-medium">
+                                          <span className="font-medium whitespace-nowrap">
                                             Parcela {index + 1}/{lancamentoForm.numeroParcelas}
                                           </span>
-                                          <span className="text-primary font-semibold">
+                                          <span className="text-primary font-semibold whitespace-nowrap">
                                             R$ {valorParcela.toFixed(2)}
                                           </span>
-                                          <span className="text-muted-foreground">
-                                            {format(data, "dd/MM/yyyy")}
-                                          </span>
+                                          <Popover>
+                                            <PopoverTrigger asChild>
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                className="h-8 text-muted-foreground hover:text-foreground"
+                                              >
+                                                <CalendarIcon className="mr-2 h-3 w-3" />
+                                                {format(data, "dd/MM/yyyy")}
+                                              </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="end">
+                                              <Calendar
+                                                mode="single"
+                                                selected={data}
+                                                onSelect={(novaData) => {
+                                                  if (novaData) {
+                                                    const novasDatas = [...datasParcelasCustom];
+                                                    novasDatas[index] = novaData;
+                                                    setDatasParcelasCustom(novasDatas);
+                                                  }
+                                                }}
+                                                initialFocus
+                                                className={cn("p-3 pointer-events-auto")}
+                                              />
+                                            </PopoverContent>
+                                          </Popover>
                                         </div>
                                       ));
                                     })()}
