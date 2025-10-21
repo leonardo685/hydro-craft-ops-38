@@ -30,10 +30,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[AuthContext] 🔍 Iniciando busca de role e permissões para userId:', userId);
       
-      // Buscar role do usuário - CONVERSÃO EXPLÍCITA PARA TEXT
+      // Buscar role do usuário
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
-        .select('role::text')
+        .select('role')
         .eq('user_id', userId)
         .maybeSingle();
 
