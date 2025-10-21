@@ -902,17 +902,17 @@ export default function DFC() {
                           Novo Lançamento
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-2xl overflow-hidden p-0">
+                      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 flex flex-col">
                         <div className={cn(
-                          "h-4 w-full transition-colors duration-300",
+                          "h-4 w-full transition-colors duration-300 flex-shrink-0",
                           lancamentoForm.tipo === 'entrada' ? "bg-green-500" : "bg-red-500"
                         )} />
-                        <div className="p-6">
+                        <div className="p-6 overflow-y-auto flex-1">
                           <DialogHeader>
                             <DialogTitle>Novo Lançamento</DialogTitle>
                             <DialogDescription>Adicione um novo lançamento ao extrato bancário</DialogDescription>
                           </DialogHeader>
-                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-4 py-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label>Tipo de Lançamento</Label>
@@ -1197,10 +1197,10 @@ export default function DFC() {
                               )}
                             </div>
                           </div>
-                        </div>
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-2 pt-4">
                             <Button variant="outline" onClick={() => setIsLancamentoDialogOpen(false)}>Cancelar</Button>
                             <Button onClick={handleLancamento}>Adicionar Lançamento</Button>
+                          </div>
                           </div>
                         </div>
                       </DialogContent>

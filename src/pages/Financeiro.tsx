@@ -1737,13 +1737,14 @@ export default function Financeiro() {
                             Novo Lançamento
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Novo Lançamento</DialogTitle>
-                           <DialogDescription>
-                              Adicione uma nova entrada ou saída no extrato do dia.
-                            </DialogDescription>
-                          </DialogHeader>
+                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 flex flex-col">
+                          <div className="p-6 overflow-y-auto flex-1">
+                            <DialogHeader>
+                              <DialogTitle>Novo Lançamento</DialogTitle>
+                             <DialogDescription>
+                                Adicione uma nova entrada ou saída no extrato do dia.
+                              </DialogDescription>
+                            </DialogHeader>
                           <div className="space-y-4">
                             <div>
                               <Label htmlFor="dataEmissao">Data da Emissão</Label>
@@ -2137,6 +2138,7 @@ export default function Financeiro() {
                                 Cancelar
                               </Button>
                             </div>
+                          </div>
                           </div>
                         </DialogContent>
                       </Dialog>
