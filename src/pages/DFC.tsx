@@ -1000,6 +1000,16 @@ export default function DFC() {
                                   ))}
                                 </SelectContent>
                               </Select>
+                              <Button 
+                                type="button"
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full"
+                                onClick={() => navigate('/cadastros', { state: { activeTab: 'categorias' } })}
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Cadastrar Nova Categoria
+                              </Button>
                             </div>
                             <div className="space-y-2">
                               <Label>Conta Bancária</Label>
