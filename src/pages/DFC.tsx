@@ -33,7 +33,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 export default function DFC() {
   const navigate = useNavigate();
   const { getCategoriasForSelect, getNomeCategoriaMae } = useCategoriasFinanceiras();
-  const { lancamentos, loading, adicionarLancamento, atualizarLancamento, deletarLancamento } = useLancamentosFinanceiros();
+  const { lancamentos, loading, adicionarLancamento, atualizarLancamento, deletarLancamento, deletarRecorrenciaCompleta } = useLancamentosFinanceiros();
   const { clientes } = useClientes();
   const { fornecedores: fornecedoresData } = useFornecedores();
 
@@ -2438,27 +2438,97 @@ export default function DFC() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão do Lançamento?</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>Você está prestes a excluir este lançamento permanentemente.</p>
-              <p className="font-semibold text-destructive">
-                ⚠️ ATENÇÃO: Ao excluir este lançamento, ele também será removido do DRE (Demonstrativo de Resultado do Exercício).
-              </p>
-              <p>Esta ação não pode ser desfeita. Deseja continuar?</p>
+              {(() => {
+                const lancamento = lancamentos.find(l => l.id === confirmarExclusaoDialog.lancamentoId);
+                const ehRecorrencia = lancamento && (
+                  lancamento.lancamentoPaiId || 
+                  lancamentos.some(l => l.lancamentoPaiId === lancamento.id)
+                );
+                
+                if (ehRecorrencia) {
+                  return (
+                    <>
+                      <p>Este lançamento faz parte de uma série de recorrência.</p>
+                      <p className="font-semibold text-primary">
+                        💡 Escolha uma das opções abaixo:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        <li><strong>Deletar apenas este:</strong> Remove apenas o lançamento selecionado</li>
+                        <li><strong>Deletar toda a série:</strong> Remove todos os lançamentos desta recorrência</li>
+                      </ul>
+                      <p className="font-semibold text-destructive">
+                        ⚠️ ATENÇÃO: A exclusão afetará os cálculos do DRE e DFC.
+                      </p>
+                    </>
+                  );
+                }
+                
+                return (
+                  <>
+                    <p>Você está prestes a excluir este lançamento permanentemente.</p>
+                    <p className="font-semibold text-destructive">
+                      ⚠️ ATENÇÃO: Ao excluir este lançamento, ele também será removido do DRE (Demonstrativo de Resultado do Exercício) e DFC (Demonstração do Fluxo de Caixa).
+                    </p>
+                    <p>Esta ação não pode ser desfeita. Deseja continuar?</p>
+                  </>
+                );
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              className="bg-destructive hover:bg-destructive/90"
-              onClick={async () => {
-                if (confirmarExclusaoDialog.lancamentoId) {
-                  await deletarLancamento(confirmarExclusaoDialog.lancamentoId);
-                  toast.success("Lançamento excluído com sucesso!");
-                  setConfirmarExclusaoDialog({ open: false, lancamentoId: '' });
-                }
-              }}
-            >
-              Excluir Permanentemente
-            </AlertDialogAction>
+            {(() => {
+              const lancamento = lancamentos.find(l => l.id === confirmarExclusaoDialog.lancamentoId);
+              const ehRecorrencia = lancamento && (
+                lancamento.lancamentoPaiId || 
+                lancamentos.some(l => l.lancamentoPaiId === lancamento.id)
+              );
+              
+              if (ehRecorrencia) {
+                return (
+                  <>
+                    <AlertDialogAction 
+                      className="bg-orange-600 hover:bg-orange-700"
+                      onClick={async () => {
+                        if (confirmarExclusaoDialog.lancamentoId) {
+                          await deletarLancamento(confirmarExclusaoDialog.lancamentoId);
+                          toast.success("Lançamento excluído com sucesso!");
+                          setConfirmarExclusaoDialog({ open: false, lancamentoId: '' });
+                        }
+                      }}
+                    >
+                      Deletar Apenas Este
+                    </AlertDialogAction>
+                    <AlertDialogAction 
+                      className="bg-destructive hover:bg-destructive/90"
+                      onClick={async () => {
+                        if (confirmarExclusaoDialog.lancamentoId) {
+                          await deletarRecorrenciaCompleta(confirmarExclusaoDialog.lancamentoId);
+                          setConfirmarExclusaoDialog({ open: false, lancamentoId: '' });
+                        }
+                      }}
+                    >
+                      Deletar Toda a Série
+                    </AlertDialogAction>
+                  </>
+                );
+              }
+              
+              return (
+                <AlertDialogAction 
+                  className="bg-destructive hover:bg-destructive/90"
+                  onClick={async () => {
+                    if (confirmarExclusaoDialog.lancamentoId) {
+                      await deletarLancamento(confirmarExclusaoDialog.lancamentoId);
+                      toast.success("Lançamento excluído com sucesso!");
+                      setConfirmarExclusaoDialog({ open: false, lancamentoId: '' });
+                    }
+                  }}
+                >
+                  Excluir Permanentemente
+                </AlertDialogAction>
+              );
+            })()}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

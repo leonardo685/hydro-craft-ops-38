@@ -172,12 +172,47 @@ export const useLancamentosFinanceiros = () => {
     }
   };
 
+  const deletarRecorrenciaCompleta = async (lancamentoId: string): Promise<boolean> => {
+    try {
+      // Buscar o lançamento para verificar se é pai ou filho
+      const lancamento = lancamentos.find(l => l.id === lancamentoId);
+      if (!lancamento) {
+        toast.error("Lançamento não encontrado");
+        return false;
+      }
+
+      // Se for filho, buscar o ID do pai; se for pai, usar o próprio ID
+      const idPai = lancamento.lancamentoPaiId || lancamento.id;
+
+      // Deletar o pai e todos os filhos
+      const { error } = await supabase
+        .from('lancamentos_financeiros')
+        .delete()
+        .or(`id.eq.${idPai},lancamento_pai_id.eq.${idPai}`);
+
+      if (error) throw error;
+
+      // Atualizar estado local - remover o pai e todos os filhos
+      setLancamentos(prev => prev.filter(l => 
+        l.id !== idPai && l.lancamentoPaiId !== idPai
+      ));
+      
+      toast.success("Série de recorrência excluída com sucesso!");
+      return true;
+    } catch (error) {
+      console.error('Erro ao excluir recorrência:', error);
+      toast.error("Erro ao excluir série de recorrência");
+      return false;
+    }
+  };
+
   return {
     lancamentos,
     loading,
     adicionarLancamento,
     atualizarLancamento,
     deletarLancamento,
+    deletarRecorrenciaCompleta,
     refetch: fetchLancamentos
   };
 };
