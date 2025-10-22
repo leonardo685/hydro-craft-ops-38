@@ -181,23 +181,63 @@ export const useLancamentosFinanceiros = () => {
         return false;
       }
 
-      // Se for filho, buscar o ID do pai; se for pai, usar o próprio ID
-      const idPai = lancamento.lancamentoPaiId || lancamento.id;
+      console.log('🗑️ Deletando série completa:', {
+        lancamentoId,
+        lancamento,
+        lancamentoPaiId: lancamento.lancamentoPaiId,
+        descricao: lancamento.descricao
+      });
 
-      // Deletar o pai e todos os filhos
+      let idsParaDeletar: string[] = [];
+
+      if (lancamento.lancamentoPaiId) {
+        // É um filho - deletar o pai e todos os irmãos
+        const idPai = lancamento.lancamentoPaiId;
+        idsParaDeletar = [
+          idPai,
+          ...lancamentos.filter(l => l.lancamentoPaiId === idPai).map(l => l.id)
+        ];
+      } else {
+        // É um pai ou lançamento sem relação pai-filho
+        // Verificar se tem filhos
+        const filhos = lancamentos.filter(l => l.lancamentoPaiId === lancamento.id);
+        
+        if (filhos.length > 0) {
+          // Tem filhos - deletar ele e os filhos
+          idsParaDeletar = [lancamento.id, ...filhos.map(l => l.id)];
+        } else {
+          // Não tem filhos - pode ser uma recorrência criada sem pai-filho
+          // Buscar todos os lançamentos com mesma descrição e forma de pagamento recorrente/parcelado
+          const serieCompleta = lancamentos.filter(l => 
+            l.descricao === lancamento.descricao &&
+            (l.formaPagamento === 'recorrente' || l.formaPagamento === 'parcelado') &&
+            l.categoriaId === lancamento.categoriaId &&
+            l.valor === lancamento.valor
+          );
+          
+          if (serieCompleta.length > 1) {
+            idsParaDeletar = serieCompleta.map(l => l.id);
+            console.log('📋 Encontrados lançamentos da série por descrição:', serieCompleta.length);
+          } else {
+            idsParaDeletar = [lancamento.id];
+          }
+        }
+      }
+
+      console.log('🗑️ IDs para deletar:', idsParaDeletar);
+
+      // Deletar todos os IDs encontrados
       const { error } = await supabase
         .from('lancamentos_financeiros')
         .delete()
-        .or(`id.eq.${idPai},lancamento_pai_id.eq.${idPai}`);
+        .in('id', idsParaDeletar);
 
       if (error) throw error;
 
-      // Atualizar estado local - remover o pai e todos os filhos
-      setLancamentos(prev => prev.filter(l => 
-        l.id !== idPai && l.lancamentoPaiId !== idPai
-      ));
+      // Atualizar estado local
+      setLancamentos(prev => prev.filter(l => !idsParaDeletar.includes(l.id)));
       
-      toast.success("Série de recorrência excluída com sucesso!");
+      toast.success(`${idsParaDeletar.length} lançamento(s) da série excluído(s) com sucesso!`);
       return true;
     } catch (error) {
       console.error('Erro ao excluir recorrência:', error);
