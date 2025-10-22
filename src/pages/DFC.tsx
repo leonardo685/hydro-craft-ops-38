@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign, Check, Minus } from "lucide-react";
+import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign, Check, Minus, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
@@ -28,6 +28,7 @@ import { MultipleSelector, type Option } from "@/components/ui/multiple-selector
 import { useMemo, useEffect } from "react";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 import { useNavigate } from 'react-router-dom';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 export default function DFC() {
   const navigate = useNavigate();
@@ -40,6 +41,8 @@ export default function DFC() {
   const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
   const [colunasVisiveisExpanded, setColunasVisiveisExpanded] = useState(true);
   const [filtrosExpanded, setFiltrosExpanded] = useState(true);
+  const [openCategoriaCombobox, setOpenCategoriaCombobox] = useState(false);
+  const [openFornecedorCombobox, setOpenFornecedorCombobox] = useState(false);
   const [dataInicial, setDataInicial] = useState("");
   const [dataFinal, setDataFinal] = useState("");
   const [periodoSelecionado, setPeriodoSelecionado] = useState("");
@@ -988,18 +991,49 @@ export default function DFC() {
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label>Categoria</Label>
-                              <Select value={lancamentoForm.categoria} onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, categoria: value }))}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecionar categoria" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {getCategoriasForSelect().map(categoria => (
-                                    <SelectItem key={categoria.value} value={categoria.value}>
-                                      {categoria.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <Popover open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={openCategoriaCombobox}
+                                    className="w-full justify-between"
+                                  >
+                                    {lancamentoForm.categoria
+                                      ? getCategoriasForSelect().find((cat) => cat.value === lancamentoForm.categoria)?.label
+                                      : "Selecionar categoria"}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-full p-0">
+                                  <Command>
+                                    <CommandInput placeholder="Buscar categoria..." />
+                                    <CommandList>
+                                      <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+                                      <CommandGroup>
+                                        {getCategoriasForSelect().map((categoria) => (
+                                          <CommandItem
+                                            key={categoria.value}
+                                            value={categoria.label}
+                                            onSelect={() => {
+                                              setLancamentoForm(prev => ({ ...prev, categoria: categoria.value }));
+                                              setOpenCategoriaCombobox(false);
+                                            }}
+                                          >
+                                            <Check
+                                              className={cn(
+                                                "mr-2 h-4 w-4",
+                                                lancamentoForm.categoria === categoria.value ? "opacity-100" : "opacity-0"
+                                              )}
+                                            />
+                                            {categoria.label}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
                               <Button 
                                 type="button"
                                 variant="outline" 
@@ -1028,23 +1062,64 @@ export default function DFC() {
 
                           <div className="space-y-2">
                             <Label>Fornecedor/Cliente</Label>
-                            <Select value={lancamentoForm.fornecedor} onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, fornecedor: value }))}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione um fornecedor/cliente" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {fornecedoresClientes.map(item => (
-                                  <SelectItem key={item.id} value={item.id}>
-                                    <div className="flex items-center gap-2">
-                                      <Badge variant={item.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
-                                        {item.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
-                                      </Badge>
-                                      {item.nome}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <Popover open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-expanded={openFornecedorCombobox}
+                                  className="w-full justify-between"
+                                >
+                                  {lancamentoForm.fornecedor
+                                    ? (() => {
+                                        const item = fornecedoresClientes.find((f) => f.id === lancamentoForm.fornecedor);
+                                        return item ? (
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant={item.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
+                                              {item.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
+                                            </Badge>
+                                            {item.nome}
+                                          </div>
+                                        ) : "Selecione um fornecedor/cliente";
+                                      })()
+                                    : "Selecione um fornecedor/cliente"}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0">
+                                <Command>
+                                  <CommandInput placeholder="Buscar fornecedor/cliente..." />
+                                  <CommandList>
+                                    <CommandEmpty>Nenhum fornecedor/cliente encontrado.</CommandEmpty>
+                                    <CommandGroup>
+                                      {fornecedoresClientes.map((item) => (
+                                        <CommandItem
+                                          key={item.id}
+                                          value={item.nome}
+                                          onSelect={() => {
+                                            setLancamentoForm(prev => ({ ...prev, fornecedor: item.id }));
+                                            setOpenFornecedorCombobox(false);
+                                          }}
+                                        >
+                                          <Check
+                                            className={cn(
+                                              "mr-2 h-4 w-4",
+                                              lancamentoForm.fornecedor === item.id ? "opacity-100" : "opacity-0"
+                                            )}
+                                          />
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant={item.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
+                                              {item.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
+                                            </Badge>
+                                            {item.nome}
+                                          </div>
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
                             <Button 
                               type="button"
                               variant="outline" 

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { TrendingUp, TrendingDown, DollarSign, Activity, Edit, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, FileDown, ChevronDown, ChevronUp, X } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Activity, Edit, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, FileDown, ChevronDown, ChevronUp, X, ChevronsUpDown, Check } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
@@ -27,6 +27,7 @@ import { useFornecedores } from '@/hooks/use-fornecedores';
 import { toast } from "sonner";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 import { useNavigate } from 'react-router-dom';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 export default function Financeiro() {
   const navigate = useNavigate();
@@ -202,6 +203,8 @@ export default function Financeiro() {
   // Estados para collapse das seções
   const [colunasVisiveisExpanded, setColunasVisiveisExpanded] = useState(true);
   const [filtrosExpanded, setFiltrosExpanded] = useState(true);
+  const [openCategoriaCombobox, setOpenCategoriaCombobox] = useState(false);
+  const [openFornecedorCombobox, setOpenFornecedorCombobox] = useState(false);
 
   const colunasVisiveis = {
     tipo: selectedExtratoColumns.some(col => col.value === 'tipo'),
@@ -1845,26 +1848,49 @@ export default function Financeiro() {
                             </div>
                             <div>
                               <Label htmlFor="categoria">Categoria</Label>
-                              <Select 
-                                value={lancamentoForm.categoria} 
-                                onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, categoria: value }))}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione uma categoria" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {getCategoriasForSelect().map(categoria => (
-                                    <SelectItem key={categoria.value} value={categoria.value}>
-                                      <div className="flex items-center gap-2">
-                                        <Badge variant={categoria.tipo === 'mae' ? 'default' : 'secondary'} className="text-xs">
-                                          {categoria.tipo === 'mae' ? 'Mãe' : 'Filha'}
-                                        </Badge>
-                                        {categoria.label}
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <Popover open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={openCategoriaCombobox}
+                                    className="w-full justify-between"
+                                  >
+                                    {lancamentoForm.categoria
+                                      ? getCategoriasForSelect().find((cat) => cat.value === lancamentoForm.categoria)?.label
+                                      : "Selecionar categoria"}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-full p-0">
+                                  <Command>
+                                    <CommandInput placeholder="Buscar categoria..." />
+                                    <CommandList>
+                                      <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+                                      <CommandGroup>
+                                        {getCategoriasForSelect().map((categoria) => (
+                                          <CommandItem
+                                            key={categoria.value}
+                                            value={categoria.label}
+                                            onSelect={() => {
+                                              setLancamentoForm(prev => ({ ...prev, categoria: categoria.value }));
+                                              setOpenCategoriaCombobox(false);
+                                            }}
+                                          >
+                                            <Check
+                                              className={cn(
+                                                "mr-2 h-4 w-4",
+                                                lancamentoForm.categoria === categoria.value ? "opacity-100" : "opacity-0"
+                                              )}
+                                            />
+                                            {categoria.label}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
                               <Button 
                                 type="button"
                                 variant="outline" 
@@ -2038,26 +2064,64 @@ export default function Financeiro() {
                             
                             <div>
                               <Label htmlFor="fornecedor">Fornecedor/Cliente</Label>
-                              <Select 
-                                value={lancamentoForm.fornecedor} 
-                                onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, fornecedor: value }))}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione um fornecedor/cliente" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {fornecedoresClientes.map(fornecedor => (
-                                    <SelectItem key={fornecedor.id} value={fornecedor.id}>
-                                      <div className="flex items-center gap-2">
-                                        <Badge variant={fornecedor.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
-                                          {fornecedor.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
-                                        </Badge>
-                                        {fornecedor.nome}
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <Popover open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={openFornecedorCombobox}
+                                    className="w-full justify-between"
+                                  >
+                                    {lancamentoForm.fornecedor
+                                      ? (() => {
+                                          const item = fornecedoresClientes.find((f) => f.id === lancamentoForm.fornecedor);
+                                          return item ? (
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant={item.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
+                                                {item.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
+                                              </Badge>
+                                              {item.nome}
+                                            </div>
+                                          ) : "Selecione um fornecedor/cliente";
+                                        })()
+                                      : "Selecione um fornecedor/cliente"}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-full p-0">
+                                  <Command>
+                                    <CommandInput placeholder="Buscar fornecedor/cliente..." />
+                                    <CommandList>
+                                      <CommandEmpty>Nenhum fornecedor/cliente encontrado.</CommandEmpty>
+                                      <CommandGroup>
+                                        {fornecedoresClientes.map((item) => (
+                                          <CommandItem
+                                            key={item.id}
+                                            value={item.nome}
+                                            onSelect={() => {
+                                              setLancamentoForm(prev => ({ ...prev, fornecedor: item.id }));
+                                              setOpenFornecedorCombobox(false);
+                                            }}
+                                          >
+                                            <Check
+                                              className={cn(
+                                                "mr-2 h-4 w-4",
+                                                lancamentoForm.fornecedor === item.id ? "opacity-100" : "opacity-0"
+                                              )}
+                                            />
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant={item.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
+                                                {item.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
+                                              </Badge>
+                                              {item.nome}
+                                            </div>
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
                               <Button 
                                 type="button"
                                 variant="outline" 
