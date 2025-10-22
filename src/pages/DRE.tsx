@@ -30,13 +30,21 @@ export default function DRE() {
   const dreData = useMemo(() => {
     const resultado: DREItem[] = [];
 
+    console.log('🔍 DRE Debug - Total de lançamentos:', lancamentos.length);
+    console.log('🔍 DRE Debug - Filtros:', filtrosDRE);
+    console.log('🔍 DRE Debug - Categorias disponíveis:', categorias);
+
     // Filtrar lançamentos por data de emissão (independente se foi pago)
     const lancamentosFiltrados = lancamentos.filter(l => {
       const data = new Date(l.dataEmissao);
       const ano = data.getFullYear().toString();
       const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+      console.log(`📅 Lançamento: ${l.descricao} - Data: ${l.dataEmissao} - Ano: ${ano} - Mês: ${mes} - Categoria ID: ${l.categoriaId}`);
       return ano === filtrosDRE.ano && mes === filtrosDRE.mes;
     });
+
+    console.log('✅ DRE Debug - Lançamentos filtrados:', lancamentosFiltrados.length);
+    console.log('✅ DRE Debug - Lançamentos filtrados detalhes:', lancamentosFiltrados);
 
     // Calcular total de receitas (para base do percentual)
     const totalReceitas = lancamentosFiltrados
