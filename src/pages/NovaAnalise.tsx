@@ -1264,7 +1264,7 @@ const NovaOrdemServico = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Cliente</Label>
-                  <p className="font-semibold text-primary">{recebimento.cliente}</p>
+                  <p className="font-semibold text-primary">{recebimento.cliente_nome}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Data de Entrada</Label>
