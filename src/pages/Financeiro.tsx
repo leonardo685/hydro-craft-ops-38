@@ -904,25 +904,32 @@ export default function Financeiro() {
     });
   };
 
-  // Dados do extrato filtrados
-  const extratoFiltrado = extratoData.filter(item => {
+  // Dados do extrato filtrados - filtra lançamentos reais do banco de dados
+  const extratoFiltrado = lancamentos.filter(item => {
+    // IMPORTANTE: No extrato, não mostrar lançamentos "pai" de parcelamento
+    // Mostrar apenas: lançamentos à vista, parcelas individuais, e lançamentos recorrentes
+    if (item.formaPagamento === 'parcelado' && !item.parcelaNumero) {
+      // Este é um lançamento pai (parcelado sem número de parcela) - não mostrar no extrato
+      return false;
+    }
+
     // Filtro por tipo
     if (filtrosExtrato.tipo !== 'todos' && item.tipo !== filtrosExtrato.tipo) {
       return false;
     }
 
     // Filtro por conta
-    if (filtrosExtrato.conta !== 'todas' && item.conta !== filtrosExtrato.conta) {
+    if (filtrosExtrato.conta !== 'todas' && item.contaBancaria !== filtrosExtrato.conta) {
       return false;
     }
 
     // Filtro por categoria
-    if (filtrosExtrato.categoria !== 'todas' && item.categoria !== filtrosExtrato.categoria) {
+    if (filtrosExtrato.categoria !== 'todas' && item.categoriaId !== filtrosExtrato.categoria) {
       return false;
     }
 
     // Filtro por fornecedor
-    if (filtrosExtrato.fornecedor !== 'todos' && item.fornecedor !== filtrosExtrato.fornecedor) {
+    if (filtrosExtrato.fornecedor !== 'todos' && item.fornecedorCliente !== filtrosExtrato.fornecedor) {
       return false;
     }
 
@@ -949,18 +956,28 @@ export default function Financeiro() {
       }
     }
 
-    // Para filtro de data, vamos assumir que temos uma propriedade data no item
-    // Como os dados atuais só têm hora, vamos simular com a data atual
-    const itemDate = new Date(2024, 7, 29); // Data fixa para os dados de exemplo
-    
-    // Filtro por data início
-    if (filtrosExtrato.dataInicio && itemDate < filtrosExtrato.dataInicio) {
-      return false;
+    // Filtro por data início (baseado na data esperada)
+    if (filtrosExtrato.dataInicio) {
+      const dataInicioComparar = new Date(filtrosExtrato.dataInicio);
+      dataInicioComparar.setHours(0, 0, 0, 0);
+      const itemDate = new Date(item.dataEsperada);
+      itemDate.setHours(0, 0, 0, 0);
+      
+      if (itemDate < dataInicioComparar) {
+        return false;
+      }
     }
 
-    // Filtro por data fim
-    if (filtrosExtrato.dataFim && itemDate > filtrosExtrato.dataFim) {
-      return false;
+    // Filtro por data fim (baseado na data esperada)
+    if (filtrosExtrato.dataFim) {
+      const dataFimComparar = new Date(filtrosExtrato.dataFim);
+      dataFimComparar.setHours(23, 59, 59, 999);
+      const itemDate = new Date(item.dataEsperada);
+      itemDate.setHours(0, 0, 0, 0);
+      
+      if (itemDate > dataFimComparar) {
+        return false;
+      }
     }
 
     return true;
@@ -2562,10 +2579,17 @@ export default function Financeiro() {
                           {colunasVisiveis.fornecedor && <TableHead>Fornecedor</TableHead>}
                         </TableRow>
                       </TableHeader>
-                      <TableBody>
+                       <TableBody>
                         {extratoFiltrado
-                          .sort((a, b) => b.id - a.id)
-                          .map((item) => (
+                          .sort((a, b) => {
+                            // Ordenar por data esperada (mais recente primeiro)
+                            return b.dataEsperada.getTime() - a.dataEsperada.getTime();
+                          })
+                          .map((item) => {
+                            // Buscar informações de categoria
+                            const categoriaInfo = getCategoriasForSelect().find(c => c.value === item.categoriaId);
+                            
+                            return (
                           <TableRow key={item.id}>
                             {colunasVisiveis.tipo && (
                               <TableCell>
@@ -2590,14 +2614,14 @@ export default function Financeiro() {
                             {colunasVisiveis.categoria && (
                               <TableCell>
                                 <Badge variant="outline">
-                                  {item.categoria}
+                                  {categoriaInfo?.label || 'Sem categoria'}
                                 </Badge>
                               </TableCell>
                             )}
                             {colunasVisiveis.conta && (
                               <TableCell>
                                 <Badge variant="outline" className="text-xs">
-                                  {contasBancarias.find(c => c.id === item.conta)?.nome.split(' - ')[1] || 'N/A'}
+                                  {contasBancarias.find(c => c.id === item.contaBancaria)?.nome.split(' - ')[1] || 'N/A'}
                                 </Badge>
                               </TableCell>
                             )}
@@ -2642,23 +2666,24 @@ export default function Financeiro() {
                                  <div className="flex items-center gap-2">
                                     <Badge 
                                       variant={
-                                        fornecedoresClientes.find(f => f.id === item.fornecedor)?.tipo === 'cliente' ? 'default' : 'secondary'
+                                        fornecedoresClientes.find(f => f.id === item.fornecedorCliente)?.tipo === 'cliente' ? 'default' : 'secondary'
                                       } 
                                       className="text-xs"
                                     >
                                       {(() => {
-                                        const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor);
+                                        const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedorCliente);
                                         return fornecedor?.tipo === 'cliente' ? 'Cliente' : 'Fornecedor';
                                       })()}
                                     </Badge>
                                     <span className="text-sm">
-                                      {fornecedoresClientes.find(f => f.id === item.fornecedor)?.nome || 'N/A'}
+                                      {fornecedoresClientes.find(f => f.id === item.fornecedorCliente)?.nome || 'N/A'}
                                     </span>
                                  </div>
                                </TableCell>
                              )}
                           </TableRow>
-                        ))}
+                        );
+                        })}
                       </TableBody>
                     </Table>
                   </CardContent>
