@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign, Check, Minus, ChevronsUpDown } from "lucide-react";
+import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign, Check, Minus, ChevronsUpDown, Settings, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
@@ -33,7 +33,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 export default function DFC() {
   const navigate = useNavigate();
   const { getCategoriasForSelect, getNomeCategoriaMae } = useCategoriasFinanceiras();
-  const { lancamentos, loading, adicionarLancamento, atualizarLancamento } = useLancamentosFinanceiros();
+  const { lancamentos, loading, adicionarLancamento, atualizarLancamento, deletarLancamento } = useLancamentosFinanceiros();
   const { clientes } = useClientes();
   const { fornecedores: fornecedoresData } = useFornecedores();
 
@@ -59,6 +59,15 @@ export default function DFC() {
     tipo: 'confirmar' | 'cancelar';
   }>({ open: false, lancamentoId: '', tipo: 'confirmar' });
   const [dataRecebimento, setDataRecebimento] = useState<Date>(new Date());
+
+  // Estados para edição e exclusão
+  const [editandoLancamento, setEditandoLancamento] = useState<string | null>(null);
+  const [lancamentoEditado, setLancamentoEditado] = useState<any>(null);
+  const [confirmarEdicaoDialog, setConfirmarEdicaoDialog] = useState(false);
+  const [confirmarExclusaoDialog, setConfirmarExclusaoDialog] = useState<{
+    open: boolean;
+    lancamentoId: string;
+  }>({ open: false, lancamentoId: '' });
 
   const [valoresFinanceiros, setValoresFinanceiros] = useState({
     aReceber: 0,
@@ -1748,64 +1757,303 @@ export default function DFC() {
                                 </Badge>
                               </TableCell>
                             )}
-                            {colunasVisiveis.descricao && <TableCell>{item.descricao}</TableCell>}
-                            {colunasVisiveis.categoria && <TableCell><Badge variant="outline">{item.categoria}</Badge></TableCell>}
-                            {colunasVisiveis.conta && <TableCell>{conta?.nome.split(' - ')[1] || '-'}</TableCell>}
-                            {colunasVisiveis.fornecedor && <TableCell>{fornecedor?.nome || '-'}</TableCell>}
+                            {colunasVisiveis.descricao && (
+                              <TableCell>
+                                {editandoLancamento === item.id ? (
+                                  <Input
+                                    value={lancamentoEditado?.descricao || ''}
+                                    onChange={(e) => setLancamentoEditado({
+                                      ...lancamentoEditado,
+                                      descricao: e.target.value
+                                    })}
+                                  />
+                                ) : (
+                                  item.descricao
+                                )}
+                              </TableCell>
+                            )}
+                            {colunasVisiveis.categoria && (
+                              <TableCell>
+                                {editandoLancamento === item.id ? (
+                                  <Select
+                                    value={lancamentoEditado?.categoriaId || ''}
+                                    onValueChange={(value) => setLancamentoEditado({
+                                      ...lancamentoEditado,
+                                      categoriaId: value
+                                    })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {getCategoriasForSelect().map(cat => (
+                                        <SelectItem key={cat.value} value={cat.value}>
+                                          {cat.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <Badge variant="outline">{item.categoria}</Badge>
+                                )}
+                              </TableCell>
+                            )}
+                            {colunasVisiveis.conta && (
+                              <TableCell>
+                                {editandoLancamento === item.id ? (
+                                  <Select
+                                    value={lancamentoEditado?.contaBancaria || ''}
+                                    onValueChange={(value) => setLancamentoEditado({
+                                      ...lancamentoEditado,
+                                      contaBancaria: value
+                                    })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {contasBancarias.map(conta => (
+                                        <SelectItem key={conta.id} value={conta.id}>
+                                          {conta.nome}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  conta?.nome.split(' - ')[1] || '-'
+                                )}
+                              </TableCell>
+                            )}
+                            {colunasVisiveis.fornecedor && (
+                              <TableCell>
+                                {editandoLancamento === item.id ? (
+                                  <Select
+                                    value={lancamentoEditado?.fornecedorCliente || ''}
+                                    onValueChange={(value) => setLancamentoEditado({
+                                      ...lancamentoEditado,
+                                      fornecedorCliente: value
+                                    })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {fornecedoresClientes.map(f => (
+                                        <SelectItem key={f.id} value={f.id}>
+                                          {f.nome}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  fornecedor?.nome || '-'
+                                )}
+                              </TableCell>
+                            )}
                             {colunasVisiveis.valor && (
                               <TableCell className={`text-right font-medium ${item.tipo === 'entrada' ? 'text-green-600' : 'text-destructive'}`}>
-                                {formatCurrency(item.valor)}
+                                {editandoLancamento === item.id ? (
+                                  <Input
+                                    type="number"
+                                    value={lancamentoEditado?.valor || 0}
+                                    onChange={(e) => setLancamentoEditado({
+                                      ...lancamentoEditado,
+                                      valor: parseFloat(e.target.value)
+                                    })}
+                                    className="text-right"
+                                  />
+                                ) : (
+                                  formatCurrency(item.valor)
+                                )}
                               </TableCell>
                             )}
                             {colunasVisiveis.dataEsperada && (
-                              <TableCell>{format(item.dataEsperada, "dd/MM/yyyy")}</TableCell>
+                              <TableCell>
+                                {editandoLancamento === item.id ? (
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {lancamentoEditado?.dataEsperada ? format(lancamentoEditado.dataEsperada, "dd/MM/yyyy") : "Selecionar"}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                      <Calendar
+                                        mode="single"
+                                        selected={lancamentoEditado?.dataEsperada}
+                                        onSelect={(date) => date && setLancamentoEditado({
+                                          ...lancamentoEditado,
+                                          dataEsperada: date
+                                        })}
+                                        initialFocus
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                ) : (
+                                  format(item.dataEsperada, "dd/MM/yyyy")
+                                )}
+                              </TableCell>
                             )}
                             {colunasVisiveis.dataRealizada && (
-                              <TableCell>{item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-'}</TableCell>
+                              <TableCell>
+                                {editandoLancamento === item.id ? (
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {lancamentoEditado?.dataRealizada ? format(lancamentoEditado.dataRealizada, "dd/MM/yyyy") : "-"}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                      <Calendar
+                                        mode="single"
+                                        selected={lancamentoEditado?.dataRealizada}
+                                        onSelect={(date) => setLancamentoEditado({
+                                          ...lancamentoEditado,
+                                          dataRealizada: date || null
+                                        })}
+                                        initialFocus
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                ) : (
+                                  item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-'
+                                )}
+                              </TableCell>
                             )}
                             {colunasVisiveis.status && (
                               <TableCell>
-                                <Badge variant={
-                                  status === 'pago' ? 'default' : 
-                                  status === 'atrasado' ? 'destructive' : 
-                                  'outline'
-                                }>
-                                  {status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo'}
-                                </Badge>
+                                {editandoLancamento === item.id ? (
+                                  <Select 
+                                    value={lancamentoEditado?.pago ? 'pago' : 'nao_pago'}
+                                    onValueChange={(value) => setLancamentoEditado({
+                                      ...lancamentoEditado,
+                                      pago: value === 'pago',
+                                      dataRealizada: value === 'pago' ? (lancamentoEditado?.dataRealizada || new Date()) : null
+                                    })}
+                                  >
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pago">Pago</SelectItem>
+                                      <SelectItem value="nao_pago">Não Pago</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <Badge variant={
+                                    status === 'pago' ? 'default' : 
+                                    status === 'atrasado' ? 'destructive' : 
+                                    'outline'
+                                  }>
+                                    {status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo'}
+                                  </Badge>
+                                )}
                               </TableCell>
                             )}
                             <TableCell className="text-center">
-                              {!item.pago ? (
-                                <Button
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-8 w-8 border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-950"
-                                  onClick={() => {
-                                    setConfirmarPagamentoDialog({
-                                      open: true,
-                                      lancamentoId: item.id,
-                                      tipo: 'confirmar'
-                                    });
-                                    setDataRecebimento(new Date());
-                                  }}
-                                >
-                                  <Check className="h-4 w-4" />
-                                </Button>
+                              {editandoLancamento === item.id ? (
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => setConfirmarEdicaoDialog(true)}
+                                  >
+                                    Salvar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditandoLancamento(null);
+                                      setLancamentoEditado(null);
+                                    }}
+                                  >
+                                    Cancelar
+                                  </Button>
+                                </div>
                               ) : (
-                                <Button
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-8 w-8 border-red-500 text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
-                                  onClick={() => {
-                                    setConfirmarPagamentoDialog({
-                                      open: true,
-                                      lancamentoId: item.id,
-                                      tipo: 'cancelar'
-                                    });
-                                  }}
-                                >
-                                  <Minus className="h-4 w-4" />
-                                </Button>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      size="icon"
+                                      variant="outline"
+                                      className="h-8 w-8"
+                                    >
+                                      <Settings className="h-4 w-4" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-48 p-2">
+                                    <div className="flex flex-col gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="justify-start text-green-600 hover:text-green-700 hover:bg-green-50"
+                                        onClick={async () => {
+                                          await atualizarLancamento(item.id, {
+                                            pago: true,
+                                            dataRealizada: new Date()
+                                          });
+                                          toast.success("Lançamento marcado como pago!");
+                                        }}
+                                      >
+                                        <Check className="h-4 w-4 mr-2" />
+                                        Marcar como Pago
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        onClick={async () => {
+                                          await atualizarLancamento(item.id, {
+                                            pago: false,
+                                            dataRealizada: null
+                                          });
+                                          toast.success("Lançamento marcado como não pago!");
+                                        }}
+                                      >
+                                        <X className="h-4 w-4 mr-2" />
+                                        Marcar como Não Pago
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        onClick={() => {
+                                          setEditandoLancamento(item.id);
+                                          setLancamentoEditado({
+                                            tipo: item.tipo,
+                                            descricao: item.descricao,
+                                            categoriaId: item.categoriaId,
+                                            valor: item.valor,
+                                            contaBancaria: item.conta,
+                                            dataEsperada: item.dataEsperada,
+                                            dataRealizada: item.dataRealizada,
+                                            pago: item.pago,
+                                            fornecedorCliente: item.fornecedor
+                                          });
+                                        }}
+                                      >
+                                        <Pencil className="h-4 w-4 mr-2" />
+                                        Editar
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="justify-start text-destructive hover:bg-destructive/10"
+                                        onClick={() => {
+                                          setConfirmarExclusaoDialog({
+                                            open: true,
+                                            lancamentoId: item.id
+                                          });
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Excluir
+                                      </Button>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
                               )}
                             </TableCell>
                           </TableRow>
@@ -2136,6 +2384,80 @@ export default function DFC() {
             <AlertDialogCancel>Não</AlertDialogCancel>
             <AlertDialogAction onClick={() => handleCancelarPagamento(confirmarPagamentoDialog.lancamentoId)}>
               Sim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Modal de Confirmação de Edição */}
+      <AlertDialog open={confirmarEdicaoDialog} onOpenChange={setConfirmarEdicaoDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Edição do Lançamento?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Você está prestes a editar este lançamento.</p>
+              <p className="font-semibold text-amber-600">
+                ⚠️ ATENÇÃO: Alterar a data realizada pode interferir no cálculo do DRE (Demonstrativo de Resultado do Exercício).
+              </p>
+              <p>Deseja continuar com a edição?</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => {
+              if (editandoLancamento && lancamentoEditado) {
+                await atualizarLancamento(editandoLancamento, {
+                  tipo: lancamentoEditado.tipo,
+                  descricao: lancamentoEditado.descricao,
+                  categoriaId: lancamentoEditado.categoriaId,
+                  valor: lancamentoEditado.valor,
+                  contaBancaria: lancamentoEditado.contaBancaria,
+                  dataEsperada: lancamentoEditado.dataEsperada,
+                  dataRealizada: lancamentoEditado.dataRealizada,
+                  pago: lancamentoEditado.pago,
+                  fornecedorCliente: lancamentoEditado.fornecedorCliente
+                });
+                toast.success("Lançamento atualizado com sucesso!");
+                setEditandoLancamento(null);
+                setLancamentoEditado(null);
+                setConfirmarEdicaoDialog(false);
+              }
+            }}>
+              Confirmar Edição
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <AlertDialog 
+        open={confirmarExclusaoDialog.open} 
+        onOpenChange={(open) => !open && setConfirmarExclusaoDialog({ open: false, lancamentoId: '' })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão do Lançamento?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Você está prestes a excluir este lançamento permanentemente.</p>
+              <p className="font-semibold text-destructive">
+                ⚠️ ATENÇÃO: Ao excluir este lançamento, ele também será removido do DRE (Demonstrativo de Resultado do Exercício).
+              </p>
+              <p>Esta ação não pode ser desfeita. Deseja continuar?</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={async () => {
+                if (confirmarExclusaoDialog.lancamentoId) {
+                  await deletarLancamento(confirmarExclusaoDialog.lancamentoId);
+                  toast.success("Lançamento excluído com sucesso!");
+                  setConfirmarExclusaoDialog({ open: false, lancamentoId: '' });
+                }
+              }}
+            >
+              Excluir Permanentemente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
