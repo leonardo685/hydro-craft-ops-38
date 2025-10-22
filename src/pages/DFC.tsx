@@ -2440,11 +2440,26 @@ export default function DFC() {
             <AlertDialogDescription className="space-y-2">
               {(() => {
                 const lancamento = lancamentos.find(l => l.id === confirmarExclusaoDialog.lancamentoId);
+                
+                // Debug: Log para verificar os dados do lançamento
+                console.log('🔍 Verificando recorrência:', {
+                  lancamento,
+                  formaPagamento: lancamento?.formaPagamento,
+                  lancamentoPaiId: lancamento?.lancamentoPaiId,
+                  frequenciaRepeticao: lancamento?.frequenciaRepeticao,
+                  mesesRecorrencia: lancamento?.mesesRecorrencia,
+                  numeroParcelas: lancamento?.numeroParcelas,
+                  temFilhos: lancamentos.some(l => l.lancamentoPaiId === lancamento?.id)
+                });
+                
                 const ehRecorrencia = lancamento && (
                   lancamento.formaPagamento === 'recorrente' ||
                   lancamento.formaPagamento === 'parcelado' ||
-                  lancamento.lancamentoPaiId || 
-                  lancamentos.some(l => l.lancamentoPaiId === lancamento.id)
+                  !!lancamento.lancamentoPaiId || 
+                  lancamentos.some(l => l.lancamentoPaiId === lancamento.id) ||
+                  !!lancamento.frequenciaRepeticao ||
+                  (lancamento.mesesRecorrencia && lancamento.mesesRecorrencia > 0) ||
+                  (lancamento.numeroParcelas && lancamento.numeroParcelas > 1)
                 );
                 
                 if (ehRecorrencia) {
@@ -2484,8 +2499,11 @@ export default function DFC() {
               const ehRecorrencia = lancamento && (
                 lancamento.formaPagamento === 'recorrente' ||
                 lancamento.formaPagamento === 'parcelado' ||
-                lancamento.lancamentoPaiId || 
-                lancamentos.some(l => l.lancamentoPaiId === lancamento.id)
+                !!lancamento.lancamentoPaiId || 
+                lancamentos.some(l => l.lancamentoPaiId === lancamento.id) ||
+                !!lancamento.frequenciaRepeticao ||
+                (lancamento.mesesRecorrencia && lancamento.mesesRecorrencia > 0) ||
+                (lancamento.numeroParcelas && lancamento.numeroParcelas > 1)
               );
               
               if (ehRecorrencia) {
