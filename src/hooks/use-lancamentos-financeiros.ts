@@ -207,17 +207,30 @@ export const useLancamentosFinanceiros = () => {
           idsParaDeletar = [lancamento.id, ...filhos.map(l => l.id)];
         } else {
           // Não tem filhos - pode ser uma recorrência criada sem pai-filho
-          // Buscar todos os lançamentos com mesma descrição e forma de pagamento recorrente/parcelado
-          const serieCompleta = lancamentos.filter(l => 
-            l.descricao === lancamento.descricao &&
-            (l.formaPagamento === 'recorrente' || l.formaPagamento === 'parcelado') &&
-            l.categoriaId === lancamento.categoriaId &&
-            l.valor === lancamento.valor
-          );
+          // Extrair descrição base (sem " - Recorrência X" ou " - Parcela X")
+          const descricaoBase = lancamento.descricao
+            .replace(/ - Recorrência \d+$/, '')
+            .replace(/ - Parcela \d+$/, '')
+            .trim();
+          
+          console.log('🔍 Buscando série com descrição base:', descricaoBase);
+          
+          // Buscar todos os lançamentos que fazem parte da mesma série
+          const serieCompleta = lancamentos.filter(l => {
+            const descricaoLancamento = l.descricao
+              .replace(/ - Recorrência \d+$/, '')
+              .replace(/ - Parcela \d+$/, '')
+              .trim();
+            
+            return descricaoLancamento === descricaoBase &&
+              (l.formaPagamento === 'recorrente' || l.formaPagamento === 'parcelado') &&
+              l.categoriaId === lancamento.categoriaId &&
+              l.valor === lancamento.valor;
+          });
           
           if (serieCompleta.length > 1) {
             idsParaDeletar = serieCompleta.map(l => l.id);
-            console.log('📋 Encontrados lançamentos da série por descrição:', serieCompleta.length);
+            console.log('📋 Encontrados lançamentos da série:', serieCompleta.length, serieCompleta.map(l => l.descricao));
           } else {
             idsParaDeletar = [lancamento.id];
           }
