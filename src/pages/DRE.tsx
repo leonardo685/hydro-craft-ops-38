@@ -6,20 +6,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useMemo } from "react";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
+import { cn } from "@/lib/utils";
+
+interface DREItem {
+  codigo?: string;
+  conta: string;
+  valor: number;
+  percentual: number;
+  tipo: 'categoria_mae' | 'categoria_filha' | 'calculo';
+  nivel: number;
+}
 
 export default function DRE() {
   const { lancamentos, loading } = useLancamentosFinanceiros();
-  const { getNomeCategoriaMae } = useCategoriasFinanceiras();
+  const { categorias } = useCategoriasFinanceiras();
   
   const [filtrosDRE, setFiltrosDRE] = useState({
     ano: new Date().getFullYear().toString(),
     mes: (new Date().getMonth() + 1).toString().padStart(2, '0')
   });
 
-  // Calcular DRE dinamicamente a partir dos lançamentos
+  // Calcular DRE hierárquico baseado nas categorias cadastradas
   const dreData = useMemo(() => {
-    // Filtrar lançamentos pelo ano e mês selecionados usando data de emissão
-    // INDEPENDENTE se foi pago ou não
+    const resultado: DREItem[] = [];
+
+    // Filtrar lançamentos por data de emissão (independente se foi pago)
     const lancamentosFiltrados = lancamentos.filter(l => {
       const data = new Date(l.dataEmissao);
       const ano = data.getFullYear().toString();
@@ -27,45 +38,180 @@ export default function DRE() {
       return ano === filtrosDRE.ano && mes === filtrosDRE.mes;
     });
 
-    const receitaBruta = lancamentosFiltrados
+    // Calcular total de receitas (para base do percentual)
+    const totalReceitas = lancamentosFiltrados
       .filter(l => l.tipo === 'entrada')
       .reduce((acc, l) => acc + l.valor, 0);
 
-    const despesasTotais = lancamentosFiltrados
-      .filter(l => l.tipo === 'saida')
-      .reduce((acc, l) => acc + l.valor, 0);
+    // Função para obter categoria por ID
+    const getCategoriaById = (id: string) => categorias.find(c => c.id === id);
 
-    // Simplificação: assumir 15% de impostos sobre vendas
-    const impostos = receitaBruta * 0.15;
-    const receitaLiquida = receitaBruta - impostos;
+    // Função para calcular valor de uma categoria
+    const calcularValorCategoria = (categoriaId: string): number => {
+      return lancamentosFiltrados
+        .filter(l => l.categoriaId === categoriaId)
+        .reduce((acc, l) => acc + l.valor, 0);
+    };
 
-    // Simplificação: assumir 40% como CMV
-    const cmv = receitaBruta * 0.40;
-    const lucroBruto = receitaLiquida - cmv;
+    // Função para adicionar categoria mãe e suas filhas
+    const adicionarCategoriaMae = (codigo: string, tipo: 'entrada' | 'saida'): number => {
+      const categoriaMae = categorias.find(c => c.tipo === 'mae' && c.codigo === codigo && c.classificacao === tipo);
+      if (!categoriaMae) return 0;
 
-    const ebitda = lucroBruto - despesasTotais;
-    const depreciacao = receitaBruta * 0.02; // 2% de depreciação
-    const ebit = ebitda - depreciacao;
-    const lucroLiquido = ebit;
+      const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === categoriaMae.id);
+      
+      let totalCategoriaMae = 0;
 
-    return [
-      { conta: "Receita Bruta", valor: receitaBruta, tipo: "receita" },
-      { conta: "(-) Impostos sobre Vendas", valor: -impostos, tipo: "deducao" },
-      { conta: "Receita Líquida", valor: receitaLiquida, tipo: "subtotal" },
-      { conta: "(-) CMV - Custo dos Materiais Vendidos", valor: -cmv, tipo: "custo" },
-      { conta: "Lucro Bruto", valor: lucroBruto, tipo: "subtotal" },
-      { conta: "(-) Despesas Operacionais", valor: -despesasTotais, tipo: "despesa" },
-      { conta: "EBITDA", valor: ebitda, tipo: "resultado" },
-      { conta: "(-) Depreciação", valor: -depreciacao, tipo: "deducao" },
-      { conta: "EBIT", valor: ebit, tipo: "resultado" },
-      { conta: "Lucro Líquido", valor: lucroLiquido, tipo: "final" },
-    ];
+      // Adicionar categorias filhas
+      categoriasFilhas.forEach(filha => {
+        const valorFilha = calcularValorCategoria(filha.id);
+        totalCategoriaMae += valorFilha;
+        
+        if (valorFilha !== 0) {
+          resultado.push({
+            codigo: filha.codigo,
+            conta: filha.nome,
+            valor: valorFilha,
+            percentual: totalReceitas > 0 ? (valorFilha / totalReceitas) * 100 : 0,
+            tipo: 'categoria_filha',
+            nivel: 2
+          });
+        }
+      });
+
+      // Adicionar categoria mãe (total)
+      if (totalCategoriaMae !== 0) {
+        resultado.unshift({
+          codigo: categoriaMae.codigo,
+          conta: categoriaMae.nome,
+          valor: totalCategoriaMae,
+          percentual: totalReceitas > 0 ? (totalCategoriaMae / totalReceitas) * 100 : 0,
+          tipo: 'categoria_mae',
+          nivel: 1
+        });
+      }
+
+      return totalCategoriaMae;
+    };
+
+    // 1. RECEITAS OPERACIONAIS (todas categorias mãe de entrada)
+    const categoriasMaeEntrada = categorias.filter(c => c.tipo === 'mae' && c.classificacao === 'entrada');
+    let totalReceitasOperacionais = 0;
+
+    categoriasMaeEntrada.forEach(mae => {
+      const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === mae.id);
+      let totalMae = 0;
+
+      // Adicionar filhas
+      categoriasFilhas.forEach(filha => {
+        const valorFilha = calcularValorCategoria(filha.id);
+        totalMae += valorFilha;
+        
+        if (valorFilha !== 0) {
+          resultado.push({
+            codigo: filha.codigo,
+            conta: filha.nome,
+            valor: valorFilha,
+            percentual: totalReceitas > 0 ? (valorFilha / totalReceitas) * 100 : 0,
+            tipo: 'categoria_filha',
+            nivel: 2
+          });
+        }
+      });
+
+      // Adicionar mãe
+      if (totalMae !== 0) {
+        const indexInsert = resultado.length - categoriasFilhas.filter(f => calcularValorCategoria(f.id) !== 0).length;
+        resultado.splice(indexInsert, 0, {
+          codigo: mae.codigo,
+          conta: mae.nome,
+          valor: totalMae,
+          percentual: totalReceitas > 0 ? (totalMae / totalReceitas) * 100 : 0,
+          tipo: 'categoria_mae',
+          nivel: 1
+        });
+      }
+
+      totalReceitasOperacionais += totalMae;
+    });
+
+    // 2. DESPESAS OPERACIONAIS (categorias mãe de saída)
+    const categoriasMaeSaida = categorias.filter(c => c.tipo === 'mae' && c.classificacao === 'saida');
+    let totalDespesasOperacionais = 0;
+
+    categoriasMaeSaida.forEach(mae => {
+      const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === mae.id);
+      let totalMae = 0;
+
+      // Adicionar filhas
+      categoriasFilhas.forEach(filha => {
+        const valorFilha = calcularValorCategoria(filha.id);
+        totalMae += valorFilha;
+        
+        if (valorFilha !== 0) {
+          resultado.push({
+            codigo: filha.codigo,
+            conta: filha.nome,
+            valor: valorFilha,
+            percentual: totalReceitas > 0 ? (valorFilha / totalReceitas) * 100 : 0,
+            tipo: 'categoria_filha',
+            nivel: 2
+          });
+        }
+      });
+
+      // Adicionar mãe
+      if (totalMae !== 0) {
+        const indexInsert = resultado.length - categoriasFilhas.filter(f => calcularValorCategoria(f.id) !== 0).length;
+        resultado.splice(indexInsert, 0, {
+          codigo: mae.codigo,
+          conta: mae.nome,
+          valor: totalMae,
+          percentual: totalReceitas > 0 ? (totalMae / totalReceitas) * 100 : 0,
+          tipo: 'categoria_mae',
+          nivel: 1
+        });
+      }
+
+      totalDespesasOperacionais += totalMae;
+    });
+
+    // 3. CÁLCULOS
+    const margemContribuicao = totalReceitasOperacionais - totalDespesasOperacionais;
+    
+    resultado.push({
+      conta: 'Margem de Contribuição',
+      valor: margemContribuicao,
+      percentual: totalReceitas > 0 ? (margemContribuicao / totalReceitas) * 100 : 0,
+      tipo: 'calculo',
+      nivel: 0
+    });
+
+    const lucroLiquido = margemContribuicao;
+
+    resultado.push({
+      conta: 'Lucro Líquido',
+      valor: lucroLiquido,
+      percentual: totalReceitas > 0 ? (lucroLiquido / totalReceitas) * 100 : 0,
+      tipo: 'calculo',
+      nivel: 0
+    });
+
+    return resultado;
+  }, [lancamentos, filtrosDRE, categorias]);
+
+  const totalReceitas = useMemo(() => {
+    const lancamentosFiltrados = lancamentos.filter(l => {
+      const data = new Date(l.dataEmissao);
+      const ano = data.getFullYear().toString();
+      const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+      return ano === filtrosDRE.ano && mes === filtrosDRE.mes && l.tipo === 'entrada';
+    });
+    return lancamentosFiltrados.reduce((acc, l) => acc + l.valor, 0);
   }, [lancamentos, filtrosDRE]);
 
-  const receitaLiquida = dreData.find(d => d.conta === "Receita Líquida")?.valor || 0;
-  const ebitda = dreData.find(d => d.conta === "EBITDA")?.valor || 0;
+  const margemContribuicao = dreData.find(d => d.conta === "Margem de Contribuição")?.valor || 0;
   const lucroLiquido = dreData.find(d => d.conta === "Lucro Líquido")?.valor || 0;
-  const receitaBruta = dreData.find(d => d.conta === "Receita Bruta")?.valor || 0;
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', { 
@@ -76,20 +222,20 @@ export default function DRE() {
 
   const getDreRowStyle = (tipo: string) => {
     switch (tipo) {
-      case 'subtotal':
-      case 'resultado':
+      case 'categoria_mae':
         return "font-semibold bg-muted/50";
-      case 'final':
+      case 'calculo':
         return "font-bold bg-primary/10 text-primary";
+      case 'categoria_filha':
+        return "";
       default:
         return "";
     }
   };
 
   const getDreValueStyle = (value: number, tipo: string) => {
-    if (tipo === 'final') return "text-primary font-bold";
-    if (value < 0) return "text-destructive";
-    if (tipo === 'receita') return "text-green-600";
+    if (tipo === 'calculo') return "text-primary font-bold";
+    if (tipo === 'categoria_mae') return "font-semibold";
     return "";
   };
 
@@ -150,7 +296,7 @@ export default function DRE() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Receita Líquida</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Receitas</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -158,7 +304,7 @@ export default function DRE() {
               ) : (
                 <>
                   <div className="text-2xl font-bold text-green-600">
-                    {formatCurrency(receitaLiquida)}
+                    {formatCurrency(totalReceitas)}
                   </div>
                   <Badge variant="outline" className="text-xs mt-1">
                     {filtrosDRE.mes}/{filtrosDRE.ano}
@@ -170,7 +316,7 @@ export default function DRE() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">EBITDA</CardTitle>
+              <CardTitle className="text-sm font-medium">Margem de Contribuição</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -178,10 +324,10 @@ export default function DRE() {
               ) : (
                 <>
                   <div className="text-2xl font-bold">
-                    {formatCurrency(ebitda)}
+                    {formatCurrency(margemContribuicao)}
                   </div>
                   <Badge variant="outline" className="text-xs mt-1">
-                    Margem: {receitaBruta > 0 ? ((ebitda / receitaBruta) * 100).toFixed(1) : 0}%
+                    Margem: {totalReceitas > 0 ? ((margemContribuicao / totalReceitas) * 100).toFixed(1) : 0}%
                   </Badge>
                 </>
               )}
@@ -201,7 +347,7 @@ export default function DRE() {
                     {formatCurrency(lucroLiquido)}
                   </div>
                   <Badge variant="outline" className="text-xs mt-1">
-                    Margem: {receitaBruta > 0 ? ((lucroLiquido / receitaBruta) * 100).toFixed(1) : 0}%
+                    Margem: {totalReceitas > 0 ? ((lucroLiquido / totalReceitas) * 100).toFixed(1) : 0}%
                   </Badge>
                 </>
               )}
@@ -217,35 +363,47 @@ export default function DRE() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Código</TableHead>
                   <TableHead>Conta</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
-                  <TableHead className="text-right">% da Receita</TableHead>
+                  <TableHead className="text-right">%</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
                       Carregando dados...
                     </TableCell>
                   </TableRow>
-                ) : dreData.length === 0 || receitaBruta === 0 ? (
+                ) : dreData.length === 0 || totalReceitas === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
                       Nenhum dado financeiro para o período selecionado. Comece adicionando lançamentos financeiros.
                     </TableCell>
                   </TableRow>
                 ) : (
                   dreData.map((item, index) => (
                     <TableRow key={index} className={getDreRowStyle(item.tipo)}>
-                      <TableCell>{item.conta}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {item.codigo || ''}
+                      </TableCell>
+                      <TableCell 
+                        className={cn(
+                          item.nivel === 0 && "font-bold",
+                          item.nivel === 1 && "pl-6 font-semibold",
+                          item.nivel === 2 && "pl-12"
+                        )}
+                      >
+                        {item.conta}
+                      </TableCell>
                       <TableCell 
                         className={`text-right ${getDreValueStyle(item.valor, item.tipo)}`}
                       >
                         {formatCurrency(item.valor)}
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {receitaBruta > 0 ? ((item.valor / receitaBruta) * 100).toFixed(1) : 0}%
+                        {item.percentual.toFixed(1)}%
                       </TableCell>
                     </TableRow>
                   ))
