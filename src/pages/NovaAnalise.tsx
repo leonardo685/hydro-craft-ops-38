@@ -71,6 +71,12 @@ const NovaOrdemServico = () => {
     medida3: "",
     codigo: ""
   });
+  
+  // Estado separado para peças adicionais (sem medidas)
+  const [novaPecaAdicional, setNovaPecaAdicional] = useState({
+    quantidade: 1,
+    peca: ""
+  });
   const [servicos, setServicos] = useState("");
   const [usinagem, setUsinagem] = useState({
     usinagemHaste: false,
@@ -2446,14 +2452,29 @@ const NovaOrdemServico = () => {
                 <div className="grid grid-cols-7 gap-2 items-end">
                   <div>
                     <Label>Peça</Label>
-                    <Input
-                      placeholder="Nome da peça"
-                      value={novaPeca.peca}
-                      onChange={(e) => setNovaPeca({
+                    <Select 
+                      value={novaPeca.peca} 
+                      onValueChange={(value) => setNovaPeca({
                         ...novaPeca,
-                        peca: e.target.value
+                        peca: value
                       })}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a peça" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="anel-vedacao">Anel de Vedação</SelectItem>
+                        <SelectItem value="oring">O-Ring</SelectItem>
+                        <SelectItem value="retentores">Retentores</SelectItem>
+                        <SelectItem value="haste">Haste</SelectItem>
+                        <SelectItem value="embolo">Êmbolo</SelectItem>
+                        <SelectItem value="bucha">Bucha</SelectItem>
+                        <SelectItem value="tampa">Tampa</SelectItem>
+                        <SelectItem value="parafuso">Parafuso</SelectItem>
+                        <SelectItem value="arruela">Arruela</SelectItem>
+                        <SelectItem value="porca">Porca</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div>
@@ -2554,7 +2575,7 @@ const NovaOrdemServico = () => {
                   </div>
                 </div>
 
-                {/* Seção de Peças Adicionais */}
+                {/* Seção de Peças Adicionais - sem medidas */}
                 <div className="mt-6 space-y-4">
                   <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
                     🔧 Peças Adicionais
@@ -2566,9 +2587,9 @@ const NovaOrdemServico = () => {
                         type="number"
                         min="1"
                         placeholder="1"
-                        value={novaPeca.quantidade}
-                        onChange={(e) => setNovaPeca({
-                          ...novaPeca,
+                        value={novaPecaAdicional.quantidade}
+                        onChange={(e) => setNovaPecaAdicional({
+                          ...novaPecaAdicional,
                           quantidade: parseInt(e.target.value) || 1
                         })}
                       />
@@ -2577,10 +2598,10 @@ const NovaOrdemServico = () => {
                     <div>
                       <Label>Nome da Peça</Label>
                       <Input
-                        placeholder="Descreva outros trabalhos de usinagem realizados..."
-                        value={novaPeca.peca}
-                        onChange={(e) => setNovaPeca({
-                          ...novaPeca,
+                        placeholder="Descreva a peça adicional..."
+                        value={novaPecaAdicional.peca}
+                        onChange={(e) => setNovaPecaAdicional({
+                          ...novaPecaAdicional,
                           peca: e.target.value
                         })}
                       />
@@ -2591,22 +2612,19 @@ const NovaOrdemServico = () => {
                         type="button"
                         className="bg-primary hover:bg-primary-hover text-primary-foreground"
                         onClick={() => {
-                          if (novaPeca.peca && novaPeca.quantidade) {
+                          if (novaPecaAdicional.peca && novaPecaAdicional.quantidade) {
                             setPecasUtilizadas([...pecasUtilizadas, { 
-                              ...novaPeca, 
+                              quantidade: novaPecaAdicional.quantidade,
+                              peca: novaPecaAdicional.peca,
                               material: "-", 
                               medida1: "-", 
                               medida2: "-", 
-                              medida3: "-" 
-                            }]);
-                            setNovaPeca({
-                              quantidade: 1,
-                              peca: "",
-                              material: "",
-                              medida1: "",
-                              medida2: "",
-                              medida3: "",
+                              medida3: "-",
                               codigo: ""
+                            }]);
+                            setNovaPecaAdicional({
+                              quantidade: 1,
+                              peca: ""
                             });
                           }
                         }}
@@ -2643,30 +2661,16 @@ const NovaOrdemServico = () => {
                           </div>
                           <div>
                             <Label htmlFor={`nome-peca-${index}`} className="text-xs text-muted-foreground">Peça</Label>
-                            <Select 
-                              value={peca.peca} 
-                              onValueChange={(value) => {
+                            <Input
+                              id={`nome-peca-${index}`}
+                              className="h-8"
+                              value={peca.peca}
+                              onChange={(e) => {
                                 const newPecas = [...pecasUtilizadas];
-                                newPecas[index].peca = value;
+                                newPecas[index].peca = e.target.value;
                                 setPecasUtilizadas(newPecas);
                               }}
-                            >
-                              <SelectTrigger className="h-8">
-                                <SelectValue placeholder="Selecione a peça" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="anel-vedacao">Anel de Vedação</SelectItem>
-                                <SelectItem value="oring">O-Ring</SelectItem>
-                                <SelectItem value="retentores">Retentores</SelectItem>
-                                <SelectItem value="haste">Haste</SelectItem>
-                                <SelectItem value="embolo">Êmbolo</SelectItem>
-                                <SelectItem value="bucha">Bucha</SelectItem>
-                                <SelectItem value="tampa">Tampa</SelectItem>
-                                <SelectItem value="parafuso">Parafuso</SelectItem>
-                                <SelectItem value="arruela">Arruela</SelectItem>
-                                <SelectItem value="porca">Porca</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            />
                           </div>
                           <div>
                             <Label htmlFor={`codigo-peca-${index}`} className="text-xs text-muted-foreground">Código</Label>
@@ -2684,29 +2688,16 @@ const NovaOrdemServico = () => {
                           </div>
                           <div>
                             <Label htmlFor={`material-peca-${index}`} className="text-xs text-muted-foreground">Material</Label>
-                            <Select 
-                              value={peca.material} 
-                              onValueChange={(value) => {
+                            <Input
+                              id={`material-peca-${index}`}
+                              className="h-8"
+                              value={peca.material}
+                              onChange={(e) => {
                                 const newPecas = [...pecasUtilizadas];
-                                newPecas[index].material = value;
+                                newPecas[index].material = e.target.value;
                                 setPecasUtilizadas(newPecas);
                               }}
-                            >
-                              <SelectTrigger className="h-8">
-                                <SelectValue placeholder="Material" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="borracha">Borracha</SelectItem>
-                                <SelectItem value="viton">Viton</SelectItem>
-                                <SelectItem value="nbr">NBR</SelectItem>
-                                <SelectItem value="teflon">Teflon</SelectItem>
-                                <SelectItem value="aco-inox">Aço Inox</SelectItem>
-                                <SelectItem value="aco-carbono">Aço Carbono</SelectItem>
-                                <SelectItem value="bronze">Bronze</SelectItem>
-                                <SelectItem value="lata">Lata</SelectItem>
-                                <SelectItem value="plastico">Plástico</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            />
                           </div>
                           <div>
                             <Label htmlFor={`medida1-peca-${index}`} className="text-xs text-muted-foreground">Medida 1</Label>
