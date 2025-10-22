@@ -2441,6 +2441,8 @@ export default function DFC() {
               {(() => {
                 const lancamento = lancamentos.find(l => l.id === confirmarExclusaoDialog.lancamentoId);
                 const ehRecorrencia = lancamento && (
+                  lancamento.formaPagamento === 'recorrente' ||
+                  lancamento.formaPagamento === 'parcelado' ||
                   lancamento.lancamentoPaiId || 
                   lancamentos.some(l => l.lancamentoPaiId === lancamento.id)
                 );
@@ -2480,6 +2482,8 @@ export default function DFC() {
             {(() => {
               const lancamento = lancamentos.find(l => l.id === confirmarExclusaoDialog.lancamentoId);
               const ehRecorrencia = lancamento && (
+                lancamento.formaPagamento === 'recorrente' ||
+                lancamento.formaPagamento === 'parcelado' ||
                 lancamento.lancamentoPaiId || 
                 lancamentos.some(l => l.lancamentoPaiId === lancamento.id)
               );
