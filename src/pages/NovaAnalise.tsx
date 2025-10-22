@@ -754,7 +754,7 @@ const NovaOrdemServico = () => {
 
             // Carregar fotos separando por tipo (chegada vs análise)
             if (recebimentoData.fotos_equipamentos && recebimentoData.fotos_equipamentos.length > 0) {
-              console.log('Carregando fotos:', recebimentoData.fotos_equipamentos);
+              console.log('Carregando fotos do banco:', recebimentoData.fotos_equipamentos);
               
               // Fotos de chegada (apresentar_orcamento = true)
               const fotosChegadaUrls = recebimentoData.fotos_equipamentos
@@ -762,9 +762,11 @@ const NovaOrdemServico = () => {
                 .map((foto: any) => foto.arquivo_url);
               
               if (fotosChegadaUrls.length > 0) {
-                console.log('Fotos de chegada carregadas:', fotosChegadaUrls.length);
-                setFotosChegada(fotosChegadaUrls);
+                console.log('✅ Fotos de CHEGADA carregadas:', fotosChegadaUrls.length, fotosChegadaUrls);
+                // Manter apenas nos previews, fotosChegada fica vazio até adicionar novas
                 setPreviewsChegada(fotosChegadaUrls);
+                // Marcar como URLs existentes (string) para não fazer re-upload
+                setFotosChegada(fotosChegadaUrls as any);
               }
               
               // Fotos de análise (apresentar_orcamento = false)
@@ -773,9 +775,11 @@ const NovaOrdemServico = () => {
                 .map((foto: any) => foto.arquivo_url);
               
               if (fotosAnaliseUrls.length > 0) {
-                console.log('Fotos de análise carregadas:', fotosAnaliseUrls.length);
-                setFotosAnalise(fotosAnaliseUrls);
+                console.log('✅ Fotos de ANÁLISE carregadas:', fotosAnaliseUrls.length, fotosAnaliseUrls);
+                // Manter apenas nos previews, fotosAnalise fica vazio até adicionar novas
                 setPreviewsAnalise(fotosAnaliseUrls);
+                // Marcar como URLs existentes (string) para não fazer re-upload
+                setFotosAnalise(fotosAnaliseUrls as any);
               }
             }
           }
@@ -1134,19 +1138,24 @@ const NovaOrdemServico = () => {
       }
 
       // Upload de fotos de chegada (com flag apresentar_orcamento)
-      console.log('Iniciando processamento de fotos de chegada...');
+      console.log('=== INICIANDO PROCESSAMENTO DE FOTOS DE CHEGADA ===');
+      console.log('fotosChegada array:', fotosChegada);
+      console.log('previewsChegada array:', previewsChegada);
       
       // Se for edição, primeiro remover fotos de chegada antigas que não estão mais presentes
       if (isEdicao && recebimento?.id) {
         // Obter URLs atuais de fotos de chegada
         const urlsAtuais = previewsChegada.filter(url => url && typeof url === 'string');
+        console.log('URLs atuais de fotos de CHEGADA:', urlsAtuais);
         
         // Buscar fotos de chegada existentes no banco
         const { data: fotosExistentes } = await supabase
           .from('fotos_equipamentos')
-          .select('id, arquivo_url')
+          .select('id, arquivo_url, apresentar_orcamento')
           .eq('recebimento_id', recebimento.id)
           .eq('apresentar_orcamento', true);
+        
+        console.log('Fotos de CHEGADA existentes no banco:', fotosExistentes);
         
         // Deletar fotos que não estão mais nas previews atuais
         if (fotosExistentes) {
@@ -1156,7 +1165,9 @@ const NovaOrdemServico = () => {
                 .from('fotos_equipamentos')
                 .delete()
                 .eq('id', fotoExistente.id);
-              console.log(`Foto de chegada removida: ${fotoExistente.arquivo_url}`);
+              console.log(`❌ Foto de CHEGADA removida do banco: ${fotoExistente.arquivo_url}`);
+            } else {
+              console.log(`✅ Foto de CHEGADA mantida: ${fotoExistente.arquivo_url}`);
             }
           }
         }
@@ -1208,19 +1219,24 @@ const NovaOrdemServico = () => {
       }
 
       // Upload de fotos de análise
-      console.log('Iniciando processamento de fotos de análise...');
+      console.log('=== INICIANDO PROCESSAMENTO DE FOTOS DE ANÁLISE ===');
+      console.log('fotosAnalise array:', fotosAnalise);
+      console.log('previewsAnalise array:', previewsAnalise);
       
       // Se for edição, primeiro remover fotos de análise antigas que não estão mais presentes
       if (isEdicao && recebimento?.id) {
         // Obter URLs atuais de fotos de análise
         const urlsAtuais = previewsAnalise.filter(url => url && typeof url === 'string');
+        console.log('URLs atuais de fotos de ANÁLISE:', urlsAtuais);
         
         // Buscar fotos de análise existentes no banco
         const { data: fotosExistentes } = await supabase
           .from('fotos_equipamentos')
-          .select('id, arquivo_url')
+          .select('id, arquivo_url, apresentar_orcamento')
           .eq('recebimento_id', recebimento.id)
           .eq('apresentar_orcamento', false);
+        
+        console.log('Fotos de ANÁLISE existentes no banco:', fotosExistentes);
         
         // Deletar fotos que não estão mais nas previews atuais
         if (fotosExistentes) {
@@ -1230,7 +1246,9 @@ const NovaOrdemServico = () => {
                 .from('fotos_equipamentos')
                 .delete()
                 .eq('id', fotoExistente.id);
-              console.log(`Foto de análise removida: ${fotoExistente.arquivo_url}`);
+              console.log(`❌ Foto de ANÁLISE removida do banco: ${fotoExistente.arquivo_url}`);
+            } else {
+              console.log(`✅ Foto de ANÁLISE mantida: ${fotoExistente.arquivo_url}`);
             }
           }
         }
