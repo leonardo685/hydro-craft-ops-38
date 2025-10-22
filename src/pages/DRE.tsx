@@ -18,9 +18,10 @@ export default function DRE() {
 
   // Calcular DRE dinamicamente a partir dos lançamentos
   const dreData = useMemo(() => {
-    // Filtrar lançamentos pelo ano e mês selecionados
+    // Filtrar lançamentos pelo ano e mês selecionados usando data de emissão
+    // INDEPENDENTE se foi pago ou não
     const lancamentosFiltrados = lancamentos.filter(l => {
-      const data = new Date(l.dataEsperada);
+      const data = new Date(l.dataEmissao);
       const ano = data.getFullYear().toString();
       const mes = (data.getMonth() + 1).toString().padStart(2, '0');
       return ano === filtrosDRE.ano && mes === filtrosDRE.mes;
