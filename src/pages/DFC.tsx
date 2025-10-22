@@ -32,7 +32,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 
 export default function DFC() {
   const navigate = useNavigate();
-  const { getCategoriasForSelect, getNomeCategoriaMae } = useCategoriasFinanceiras();
+  const { categorias, getCategoriasForSelect, getNomeCategoriaMae } = useCategoriasFinanceiras();
   const { lancamentos, loading, adicionarLancamento, atualizarLancamento, deletarLancamento, deletarRecorrenciaCompleta } = useLancamentosFinanceiros();
   const { clientes } = useClientes();
   const { fornecedores: fornecedoresData } = useFornecedores();
@@ -538,26 +538,176 @@ export default function DFC() {
     }
   };
 
-  // Calcular receitas e despesas operacionais a partir dos lançamentos
-  const receitasOperacionais = useMemo(() => {
-    const totalReceitas = lancamentos
-      .filter(l => l.tipo === 'entrada' && l.pago && l.dataRealizada)
-      .reduce((acc, l) => acc + l.valor, 0);
-    
-    return [
-      { item: "Total Receitas Operacionais", valor: totalReceitas, isTotal: true }
-    ];
-  }, [lancamentos]);
+  // Interface para itens do DFC
+  interface DFCItem {
+    codigo?: string;
+    conta: string;
+    valor: number;
+    percentual: number;
+    tipo: 'categoria_mae' | 'categoria_filha' | 'calculo';
+    nivel: number;
+  }
 
-  const despesasOperacionais = useMemo(() => {
-    const totalDespesas = lancamentos
-      .filter(l => l.tipo === 'saida' && l.pago && l.dataRealizada)
+  // Calcular DFC hierárquico baseado nas categorias (apenas lançamentos PAGOS)
+  const dfcData = useMemo(() => {
+    const resultado: DFCItem[] = [];
+
+    // 1. Filtrar lançamentos PAGOS dentro do período selecionado
+    const lancamentosFiltrados = lancamentos.filter(l => {
+      if (!l.pago || !l.dataRealizada) return false;
+      
+      const dataRealizada = new Date(l.dataRealizada);
+      
+      if (dfcDataInicio) {
+        const inicio = new Date(dfcDataInicio);
+        inicio.setHours(0, 0, 0, 0);
+        if (dataRealizada < inicio) return false;
+      }
+      
+      if (dfcDataFim) {
+        const fim = new Date(dfcDataFim);
+        fim.setHours(23, 59, 59, 999);
+        if (dataRealizada > fim) return false;
+      }
+      
+      return true;
+    });
+
+    // 2. Calcular total de receitas (base para percentuais)
+    const totalReceitas = lancamentosFiltrados
+      .filter(l => l.tipo === 'entrada')
       .reduce((acc, l) => acc + l.valor, 0);
+
+    // 3. Função auxiliar para calcular valor de categoria
+    const calcularValorCategoria = (categoriaId: string): number => {
+      return lancamentosFiltrados
+        .filter(l => l.categoriaId === categoriaId)
+        .reduce((acc, l) => acc + l.valor, 0);
+    };
+
+    // 4. Processar categorias mães de ENTRADA (Receitas)
+    const categoriasMaeEntrada = categorias.filter(c => c.tipo === 'mae' && c.classificacao === 'entrada');
+    let totalReceitasOperacionais = 0;
+
+    categoriasMaeEntrada.forEach(mae => {
+      const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === mae.id);
+      let totalMae = 0;
+
+      // Adicionar filhas
+      categoriasFilhas.forEach(filha => {
+        const valorFilha = calcularValorCategoria(filha.id);
+        totalMae += valorFilha;
+        
+        if (valorFilha !== 0) {
+          resultado.push({
+            codigo: filha.codigo,
+            conta: filha.nome,
+            valor: valorFilha,
+            percentual: totalReceitas > 0 ? (valorFilha / totalReceitas) * 100 : 0,
+            tipo: 'categoria_filha',
+            nivel: 2
+          });
+        }
+      });
+
+      // Adicionar mãe
+      if (totalMae !== 0) {
+        const indexInsert = resultado.length - categoriasFilhas.filter(f => calcularValorCategoria(f.id) !== 0).length;
+        resultado.splice(indexInsert, 0, {
+          codigo: mae.codigo,
+          conta: mae.nome,
+          valor: totalMae,
+          percentual: totalReceitas > 0 ? (totalMae / totalReceitas) * 100 : 0,
+          tipo: 'categoria_mae',
+          nivel: 1
+        });
+      }
+
+      totalReceitasOperacionais += totalMae;
+    });
+
+    // 5. Processar categorias mães de SAÍDA (Despesas)
+    const categoriasMaeSaida = categorias.filter(c => c.tipo === 'mae' && c.classificacao === 'saida');
+    let totalDespesasOperacionais = 0;
+
+    categoriasMaeSaida.forEach(mae => {
+      const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === mae.id);
+      let totalMae = 0;
+
+      // Adicionar filhas
+      categoriasFilhas.forEach(filha => {
+        const valorFilha = calcularValorCategoria(filha.id);
+        totalMae += valorFilha;
+        
+        if (valorFilha !== 0) {
+          resultado.push({
+            codigo: filha.codigo,
+            conta: filha.nome,
+            valor: valorFilha,
+            percentual: totalReceitas > 0 ? (valorFilha / totalReceitas) * 100 : 0,
+            tipo: 'categoria_filha',
+            nivel: 2
+          });
+        }
+      });
+
+      // Adicionar mãe
+      if (totalMae !== 0) {
+        const indexInsert = resultado.length - categoriasFilhas.filter(f => calcularValorCategoria(f.id) !== 0).length;
+        resultado.splice(indexInsert, 0, {
+          codigo: mae.codigo,
+          conta: mae.nome,
+          valor: totalMae,
+          percentual: totalReceitas > 0 ? (totalMae / totalReceitas) * 100 : 0,
+          tipo: 'categoria_mae',
+          nivel: 1
+        });
+      }
+
+      totalDespesasOperacionais += totalMae;
+    });
+
+    // 6. Adicionar cálculos finais
+    const margemContribuicao = totalReceitasOperacionais - totalDespesasOperacionais;
     
-    return [
-      { item: "Total Despesas Operacionais", valor: -totalDespesas, isTotal: true }
-    ];
-  }, [lancamentos]);
+    resultado.push({
+      conta: 'Margem de Contribuição',
+      valor: margemContribuicao,
+      percentual: totalReceitas > 0 ? (margemContribuicao / totalReceitas) * 100 : 0,
+      tipo: 'calculo',
+      nivel: 0
+    });
+
+    resultado.push({
+      conta: 'Lucro Líquido',
+      valor: margemContribuicao,
+      percentual: totalReceitas > 0 ? (margemContribuicao / totalReceitas) * 100 : 0,
+      tipo: 'calculo',
+      nivel: 0
+    });
+
+    return resultado;
+  }, [lancamentos, categorias, dfcDataInicio, dfcDataFim]);
+
+  // Helper para estilo de linhas do DFC
+  const getDfcRowStyle = (tipo: string) => {
+    switch (tipo) {
+      case 'categoria_mae':
+        return "font-semibold bg-muted/50";
+      case 'calculo':
+        return "font-bold bg-primary/10 text-primary";
+      case 'categoria_filha':
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const getDfcValueStyle = (value: number, tipo: string) => {
+    if (tipo === 'calculo') return "text-primary font-bold";
+    if (tipo === 'categoria_mae') return "font-semibold";
+    return value >= 0 ? "text-green-600" : "text-destructive";
+  };
 
   // Obter o lançamento atual para exibir informações no modal
   const lancamentoAtual = lancamentos.find(l => l.id === confirmarPagamentoDialog.lancamentoId);
@@ -722,31 +872,29 @@ export default function DFC() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Código</TableHead>
                       <TableHead>Conta</TableHead>
                       <TableHead className="text-right">Valor</TableHead>
                       <TableHead className="text-right">% da Receita</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {receitasOperacionais.map((item, index) => (
-                      <TableRow key={`receita-${index}`} className={item.isTotal ? "font-semibold bg-muted/50" : ""}>
-                        <TableCell>{item.item}</TableCell>
-                        <TableCell className={`text-right text-green-600 ${item.isTotal ? "font-bold" : ""}`}>
+                    {dfcData.map((item, index) => (
+                      <TableRow key={`dfc-${index}`} className={getDfcRowStyle(item.tipo)}>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {item.codigo || ''}
+                        </TableCell>
+                        <TableCell className={cn(
+                          item.nivel === 1 && "pl-6",
+                          item.nivel === 2 && "pl-12"
+                        )}>
+                          {item.conta}
+                        </TableCell>
+                        <TableCell className={cn("text-right", getDfcValueStyle(item.valor, item.tipo))}>
                           {formatCurrency(item.valor)}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">
-                          {((item.valor / 85000) * 100).toFixed(1)}%
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {despesasOperacionais.map((item, index) => (
-                      <TableRow key={`despesa-${index}`} className={item.isTotal ? "font-semibold bg-muted/50" : ""}>
-                        <TableCell>(-) {item.item}</TableCell>
-                        <TableCell className={`text-right text-destructive ${item.isTotal ? "font-bold" : ""}`}>
-                          {formatCurrency(item.valor)}
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {((item.valor / 85000) * 100).toFixed(1)}%
+                          {item.percentual.toFixed(1)}%
                         </TableCell>
                       </TableRow>
                     ))}
@@ -770,33 +918,24 @@ export default function DFC() {
                       
                       // Receitas Operacionais
                       doc.setFontSize(12);
-                      doc.text("Receitas Operacionais", 20, 45);
+                      doc.text("Demonstracao Detalhada do Fluxo de Caixa", 20, 45);
                       doc.setFontSize(10);
                       let y = 55;
                       
-                      receitasOperacionais.forEach(item => {
+                      dfcData.forEach(item => {
                         const valor = formatCurrency(item.valor);
-                        const percentual = ((item.valor / 85000) * 100).toFixed(1) + "%";
-                        doc.text(item.item, 20, y);
+                        const percentual = item.percentual.toFixed(1) + "%";
+                        const indent = item.nivel * 5;
+                        
+                        doc.text(`${item.codigo || ''} ${item.conta}`, 20 + indent, y);
                         doc.text(valor, 120, y);
                         doc.text(percentual, 170, y);
                         y += 8;
-                      });
-                      
-                      // Despesas Operacionais
-                      y += 5;
-                      doc.setFontSize(12);
-                      doc.text("Despesas Operacionais", 20, y);
-                      y += 10;
-                      doc.setFontSize(10);
-                      
-                      despesasOperacionais.forEach(item => {
-                        const valor = formatCurrency(item.valor);
-                        const percentual = ((item.valor / 85000) * 100).toFixed(1) + "%";
-                        doc.text(`(-) ${item.item}`, 20, y);
-                        doc.text(valor, 120, y);
-                        doc.text(percentual, 170, y);
-                        y += 8;
+                        
+                        if (y > 270) {
+                          doc.addPage();
+                          y = 20;
+                        }
                       });
                       
                       doc.save(`DFC_${dataInicio.replace(/\//g, "-")}_${dataFim.replace(/\//g, "-")}.pdf`);
@@ -818,29 +957,17 @@ export default function DFC() {
                         ["Demonstração Detalhada do Fluxo de Caixa"],
                         [`Período: ${dataInicio} a ${dataFim}`],
                         [],
-                        ["Conta", "Valor", "% da Receita"],
+                        ["Código", "Conta", "Valor", "% da Receita"],
                         []
                       ];
                       
-                      // Adicionar receitas
-                      dados.push(["RECEITAS OPERACIONAIS"]);
-                      receitasOperacionais.forEach(item => {
+                      // Adicionar todos os itens do DFC
+                      dfcData.forEach(item => {
                         dados.push([
-                          item.item,
+                          item.codigo || '',
+                          item.conta,
                           item.valor,
-                          ((item.valor / 85000) * 100).toFixed(1) + "%"
-                        ]);
-                      });
-                      
-                      dados.push([]);
-                      
-                      // Adicionar despesas
-                      dados.push(["DESPESAS OPERACIONAIS"]);
-                      despesasOperacionais.forEach(item => {
-                        dados.push([
-                          `(-) ${item.item}`,
-                          item.valor,
-                          ((item.valor / 85000) * 100).toFixed(1) + "%"
+                          item.percentual.toFixed(1) + "%"
                         ]);
                       });
                       
