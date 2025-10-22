@@ -90,6 +90,14 @@ const NovaOrdemServico = () => {
   });
   const [servicosPersonalizados, setServicosPersonalizados] = useState("");
   const [usinagemPersonalizada, setUsinagemPersonalizada] = useState("");
+  
+  // Arrays para múltiplos serviços e usinagens adicionais
+  const [servicosAdicionais, setServicosAdicionais] = useState<Array<{ quantidade: number; nome: string; codigo?: string }>>([]);
+  const [usinagemAdicional, setUsinagemAdicional] = useState<Array<{ quantidade: number; nome: string; codigo?: string }>>([]);
+  
+  // Campos temporários para novos itens
+  const [novoServicoAdicional, setNovoServicoAdicional] = useState({ quantidade: 1, nome: "", codigo: "" });
+  const [novaUsinagemAdicional, setNovaUsinagemAdicional] = useState({ quantidade: 1, nome: "", codigo: "" });
 
   // Estados para quantidades e nomes editáveis dos serviços
   const [servicosQuantidades, setServicosQuantidades] = useState({
@@ -1581,26 +1589,119 @@ const NovaOrdemServico = () => {
               
               <div>
                 <Label htmlFor="servicosPersonalizados">Serviços Adicionais</Label>
-                <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
-                  <div>
-                    <Label htmlFor="qtd-servicos-adicionais" className="text-xs text-muted-foreground">Quantidade</Label>
-                    <Input
-                      id="qtd-servicos-adicionais"
-                      type="number"
-                      min="1"
-                      className="w-20"
-                      placeholder="1"
-                    />
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-end p-3 bg-background rounded-lg border">
+                    <div>
+                      <Label htmlFor="qtd-servicos-adicionais" className="text-xs text-muted-foreground">Quantidade</Label>
+                      <Input
+                        id="qtd-servicos-adicionais"
+                        type="number"
+                        min="1"
+                        className="w-20"
+                        value={novoServicoAdicional.quantidade}
+                        onChange={(e) => setNovoServicoAdicional({
+                          ...novoServicoAdicional,
+                          quantidade: parseInt(e.target.value) || 1
+                        })}
+                        placeholder="1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="codigo-servicos-adicionais" className="text-xs text-muted-foreground">Código</Label>
+                      <Input
+                        id="codigo-servicos-adicionais"
+                        className="w-24"
+                        value={novoServicoAdicional.codigo}
+                        onChange={(e) => setNovoServicoAdicional({
+                          ...novoServicoAdicional,
+                          codigo: e.target.value
+                        })}
+                        placeholder="Código"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nome-servicos-adicionais" className="text-xs text-muted-foreground">Nome do Serviço</Label>
+                      <Input
+                        id="nome-servicos-adicionais"
+                        value={novoServicoAdicional.nome}
+                        onChange={(e) => setNovoServicoAdicional({
+                          ...novoServicoAdicional,
+                          nome: e.target.value
+                        })}
+                        placeholder="Descreva o serviço..."
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (novoServicoAdicional.nome.trim()) {
+                          setServicosAdicionais([...servicosAdicionais, { ...novoServicoAdicional }]);
+                          setNovoServicoAdicional({ quantidade: 1, nome: "", codigo: "" });
+                        }
+                      }}
+                      disabled={!novoServicoAdicional.nome.trim()}
+                    >
+                      Adicionar
+                    </Button>
                   </div>
-                  <div>
-                    <Label htmlFor="nome-servicos-adicionais" className="text-xs text-muted-foreground">Nome do Serviço</Label>
-                    <Input
-                      id="nome-servicos-adicionais"
-                      value={servicosPersonalizados}
-                      onChange={(e) => setServicosPersonalizados(e.target.value)}
-                      placeholder="Descreva outros serviços realizados no equipamento..."
-                    />
-                  </div>
+                  
+                  {servicosAdicionais.length > 0 && (
+                    <div className="space-y-2">
+                      {servicosAdicionais.map((servico, index) => (
+                        <div key={index} className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-muted/30 rounded-lg border">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Quantidade</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              className="w-20 h-8"
+                              value={servico.quantidade}
+                              onChange={(e) => {
+                                const updated = [...servicosAdicionais];
+                                updated[index].quantidade = parseInt(e.target.value) || 1;
+                                setServicosAdicionais(updated);
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Código</Label>
+                            <Input
+                              className="w-24 h-8"
+                              value={servico.codigo || ""}
+                              onChange={(e) => {
+                                const updated = [...servicosAdicionais];
+                                updated[index].codigo = e.target.value;
+                                setServicosAdicionais(updated);
+                              }}
+                              placeholder="Código"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Nome do Serviço</Label>
+                            <Input
+                              className="h-8"
+                              value={servico.nome}
+                              onChange={(e) => {
+                                const updated = [...servicosAdicionais];
+                                updated[index].nome = e.target.value;
+                                setServicosAdicionais(updated);
+                              }}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              setServicosAdicionais(servicosAdicionais.filter((_, i) => i !== index));
+                            }}
+                          >
+                            Remover
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1942,31 +2043,119 @@ const NovaOrdemServico = () => {
               
               <div>
                 <Label htmlFor="usinagemPersonalizada">Usinagem Adicionais</Label>
-                <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
-                  <div>
-                    <Label htmlFor="qtd-usinagem-adicionais" className="text-xs text-muted-foreground">Quantidade</Label>
-                    <Input
-                      id="qtd-usinagem-adicionais"
-                      type="number"
-                      min="1"
-                      className="w-20"
-                      value={usinagemQuantidades.personalizada}
-                      onChange={(e) => setUsinagemQuantidades({
-                        ...usinagemQuantidades, 
-                        personalizada: parseInt(e.target.value) || 1
-                      })}
-                      placeholder="1"
-                    />
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-end p-3 bg-background rounded-lg border">
+                    <div>
+                      <Label htmlFor="qtd-usinagem-adicionais" className="text-xs text-muted-foreground">Quantidade</Label>
+                      <Input
+                        id="qtd-usinagem-adicionais"
+                        type="number"
+                        min="1"
+                        className="w-20"
+                        value={novaUsinagemAdicional.quantidade}
+                        onChange={(e) => setNovaUsinagemAdicional({
+                          ...novaUsinagemAdicional,
+                          quantidade: parseInt(e.target.value) || 1
+                        })}
+                        placeholder="1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="codigo-usinagem-adicionais" className="text-xs text-muted-foreground">Código</Label>
+                      <Input
+                        id="codigo-usinagem-adicionais"
+                        className="w-24"
+                        value={novaUsinagemAdicional.codigo}
+                        onChange={(e) => setNovaUsinagemAdicional({
+                          ...novaUsinagemAdicional,
+                          codigo: e.target.value
+                        })}
+                        placeholder="Código"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nome-usinagem-adicionais" className="text-xs text-muted-foreground">Nome da Usinagem</Label>
+                      <Input
+                        id="nome-usinagem-adicionais"
+                        value={novaUsinagemAdicional.nome}
+                        onChange={(e) => setNovaUsinagemAdicional({
+                          ...novaUsinagemAdicional,
+                          nome: e.target.value
+                        })}
+                        placeholder="Descreva a usinagem..."
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (novaUsinagemAdicional.nome.trim()) {
+                          setUsinagemAdicional([...usinagemAdicional, { ...novaUsinagemAdicional }]);
+                          setNovaUsinagemAdicional({ quantidade: 1, nome: "", codigo: "" });
+                        }
+                      }}
+                      disabled={!novaUsinagemAdicional.nome.trim()}
+                    >
+                      Adicionar
+                    </Button>
                   </div>
-                  <div>
-                    <Label htmlFor="nome-usinagem-adicionais" className="text-xs text-muted-foreground">Nome da Usinagem</Label>
-                    <Input
-                      id="nome-usinagem-adicionais"
-                      value={usinagemPersonalizada}
-                      onChange={(e) => setUsinagemPersonalizada(e.target.value)}
-                      placeholder="Descreva outros trabalhos de usinagem realizados..."
-                    />
-                  </div>
+                  
+                  {usinagemAdicional.length > 0 && (
+                    <div className="space-y-2">
+                      {usinagemAdicional.map((usinagem, index) => (
+                        <div key={index} className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-muted/30 rounded-lg border">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Quantidade</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              className="w-20 h-8"
+                              value={usinagem.quantidade}
+                              onChange={(e) => {
+                                const updated = [...usinagemAdicional];
+                                updated[index].quantidade = parseInt(e.target.value) || 1;
+                                setUsinagemAdicional(updated);
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Código</Label>
+                            <Input
+                              className="w-24 h-8"
+                              value={usinagem.codigo || ""}
+                              onChange={(e) => {
+                                const updated = [...usinagemAdicional];
+                                updated[index].codigo = e.target.value;
+                                setUsinagemAdicional(updated);
+                              }}
+                              placeholder="Código"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Nome da Usinagem</Label>
+                            <Input
+                              className="h-8"
+                              value={usinagem.nome}
+                              onChange={(e) => {
+                                const updated = [...usinagemAdicional];
+                                updated[index].nome = e.target.value;
+                                setUsinagemAdicional(updated);
+                              }}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              setUsinagemAdicional(usinagemAdicional.filter((_, i) => i !== index));
+                            }}
+                          >
+                            Remover
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
