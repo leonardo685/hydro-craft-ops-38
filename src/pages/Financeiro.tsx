@@ -22,12 +22,18 @@ import { cn } from "@/lib/utils";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
+import { useClientes } from '@/hooks/use-clientes';
+import { useFornecedores } from '@/hooks/use-fornecedores';
 import { toast } from "sonner";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
+import { useNavigate } from 'react-router-dom';
 
 export default function Financeiro() {
+  const navigate = useNavigate();
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
   const { lancamentos, loading: loadingLancamentos, adicionarLancamento } = useLancamentosFinanceiros();
+  const { clientes } = useClientes();
+  const { fornecedores: fornecedoresData } = useFornecedores();
   
   // Estados para filtros de data e período
   const [dataInicial, setDataInicial] = useState("");
@@ -115,7 +121,7 @@ export default function Financeiro() {
     descricao: '',
     categoria: '',
     conta: 'conta_corrente',
-    fornecedor: 'cliente_joao',
+      fornecedor: '',
     paga: false,
     dataEmissao: new Date(), // Data de hoje por padrão
     dataPagamento: new Date(),
@@ -209,16 +215,10 @@ export default function Financeiro() {
     fornecedor: selectedExtratoColumns.some(col => col.value === 'fornecedor'),
   };
 
-  // Lista de fornecedores/clientes
-  const fornecedores = [
-    { id: 'cliente_joao', nome: 'João Silva', tipo: 'cliente' },
-    { id: 'cliente_maria', nome: 'Maria Santos', tipo: 'cliente' },
-    { id: 'cliente_pedro', nome: 'Pedro Costa', tipo: 'cliente' },
-    { id: 'fornecedor_hidraulica', nome: 'Hidráulica Central', tipo: 'fornecedor' },
-    { id: 'fornecedor_pecas', nome: 'Peças & Equipamentos Ltda', tipo: 'fornecedor' },
-    { id: 'fornecedor_manutencao', nome: 'Manutenção Express', tipo: 'fornecedor' },
-    { id: 'funcionario', nome: 'Funcionário', tipo: 'funcionario' },
-    { id: 'posto_combustivel', nome: 'Posto Combustível', tipo: 'fornecedor' }
+  // Combinar clientes e fornecedores em uma lista
+  const fornecedoresClientes = [
+    ...clientes.map(c => ({ id: c.id, nome: c.nome, tipo: 'cliente' as const })),
+    ...fornecedoresData.map(f => ({ id: f.id, nome: f.nome, tipo: 'fornecedor' as const }))
   ];
 
   const contasBancarias = [
@@ -1865,6 +1865,18 @@ export default function Financeiro() {
                                   ))}
                                 </SelectContent>
                               </Select>
+                              <Button 
+                                type="button"
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full mt-2"
+                                onClick={() => {
+                                  navigate('/cadastros', { state: { activeTab: 'categorias' } });
+                                }}
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Cadastrar Nova Categoria
+                              </Button>
                             </div>
                             
                             {/* Forma de Pagamento */}
@@ -2034,11 +2046,11 @@ export default function Financeiro() {
                                   <SelectValue placeholder="Selecione um fornecedor/cliente" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {fornecedores.map(fornecedor => (
+                                  {fornecedoresClientes.map(fornecedor => (
                                     <SelectItem key={fornecedor.id} value={fornecedor.id}>
                                       <div className="flex items-center gap-2">
-                                        <Badge variant={fornecedor.tipo === 'cliente' ? 'default' : fornecedor.tipo === 'fornecedor' ? 'secondary' : 'outline'} className="text-xs">
-                                          {fornecedor.tipo === 'cliente' ? 'Cliente' : fornecedor.tipo === 'fornecedor' ? 'Fornecedor' : 'Funcionário'}
+                                        <Badge variant={fornecedor.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
+                                          {fornecedor.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
                                         </Badge>
                                         {fornecedor.nome}
                                       </div>
@@ -2046,6 +2058,18 @@ export default function Financeiro() {
                                   ))}
                                 </SelectContent>
                               </Select>
+                              <Button 
+                                type="button"
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full mt-2"
+                                onClick={() => {
+                                  navigate('/cadastros', { state: { activeTab: lancamentoForm.tipo === 'entrada' ? 'clientes' : 'fornecedores' } });
+                                }}
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Cadastrar Novo
+                              </Button>
                             </div>
                             
                             <div>
@@ -2426,18 +2450,16 @@ export default function Financeiro() {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="todos">Todos fornecedores</SelectItem>
-                                {fornecedores.map((fornecedor) => (
+                                {fornecedoresClientes.map((fornecedor) => (
                                   <SelectItem key={fornecedor.id} value={fornecedor.id}>
                                     <div className="flex items-center gap-2">
                                       <Badge 
                                         variant={
-                                          fornecedor.tipo === 'cliente' ? 'default' : 
-                                          fornecedor.tipo === 'fornecedor' ? 'secondary' : 'outline'
-                                        } 
+                                          fornecedor.tipo === 'cliente' ? 'default' : 'secondary'
+                                        }
                                         className="text-xs"
                                       >
-                                        {fornecedor.tipo === 'cliente' ? 'Cliente' : 
-                                         fornecedor.tipo === 'fornecedor' ? 'Fornecedor' : 'Funcionário'}
+                                        {fornecedor.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
                                       </Badge>
                                       <span className="text-xs">{fornecedor.nome}</span>
                                     </div>
@@ -2554,22 +2576,20 @@ export default function Financeiro() {
                              {colunasVisiveis.fornecedor && (
                                <TableCell>
                                  <div className="flex items-center gap-2">
-                                   <Badge 
-                                     variant={
-                                       fornecedores.find(f => f.id === item.fornecedor)?.tipo === 'cliente' ? 'default' : 
-                                       fornecedores.find(f => f.id === item.fornecedor)?.tipo === 'fornecedor' ? 'secondary' : 'outline'
-                                     } 
-                                     className="text-xs"
-                                   >
-                                     {(() => {
-                                       const fornecedor = fornecedores.find(f => f.id === item.fornecedor);
-                                       return fornecedor?.tipo === 'cliente' ? 'Cliente' : 
-                                              fornecedor?.tipo === 'fornecedor' ? 'Fornecedor' : 'Funcionário';
-                                     })()}
-                                   </Badge>
-                                   <span className="text-sm">
-                                     {fornecedores.find(f => f.id === item.fornecedor)?.nome || 'N/A'}
-                                   </span>
+                                    <Badge 
+                                      variant={
+                                        fornecedoresClientes.find(f => f.id === item.fornecedor)?.tipo === 'cliente' ? 'default' : 'secondary'
+                                      } 
+                                      className="text-xs"
+                                    >
+                                      {(() => {
+                                        const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor);
+                                        return fornecedor?.tipo === 'cliente' ? 'Cliente' : 'Fornecedor';
+                                      })()}
+                                    </Badge>
+                                    <span className="text-sm">
+                                      {fornecedoresClientes.find(f => f.id === item.fornecedor)?.nome || 'N/A'}
+                                    </span>
                                  </div>
                                </TableCell>
                              )}

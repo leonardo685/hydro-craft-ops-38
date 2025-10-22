@@ -22,13 +22,19 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
+import { useClientes } from '@/hooks/use-clientes';
+import { useFornecedores } from '@/hooks/use-fornecedores';
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
 import { useMemo, useEffect } from "react";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
+import { useNavigate } from 'react-router-dom';
 
 export default function DFC() {
+  const navigate = useNavigate();
   const { getCategoriasForSelect, getNomeCategoriaMae } = useCategoriasFinanceiras();
   const { lancamentos, loading, adicionarLancamento, atualizarLancamento } = useLancamentosFinanceiros();
+  const { clientes } = useClientes();
+  const { fornecedores: fornecedoresData } = useFornecedores();
 
   const [contaSelecionada, setContaSelecionada] = useState('todas');
   const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
@@ -65,7 +71,7 @@ export default function DFC() {
     descricao: '',
     categoria: '',
     conta: 'conta_corrente',
-    fornecedor: 'cliente_joao',
+      fornecedor: '',
     paga: false,
     dataEmissao: new Date(),
     dataPagamento: new Date(2024, 7, 29),
@@ -141,15 +147,10 @@ export default function DFC() {
     fornecedor: selectedExtratoColumns.some(col => col.value === 'fornecedor'),
   };
 
-  const fornecedores = [
-    { id: 'cliente_joao', nome: 'João Silva', tipo: 'cliente' },
-    { id: 'cliente_maria', nome: 'Maria Santos', tipo: 'cliente' },
-    { id: 'cliente_pedro', nome: 'Pedro Costa', tipo: 'cliente' },
-    { id: 'fornecedor_hidraulica', nome: 'Hidráulica Central', tipo: 'fornecedor' },
-    { id: 'fornecedor_pecas', nome: 'Peças & Equipamentos Ltda', tipo: 'fornecedor' },
-    { id: 'fornecedor_manutencao', nome: 'Manutenção Express', tipo: 'fornecedor' },
-    { id: 'funcionario', nome: 'Funcionário', tipo: 'funcionario' },
-    { id: 'posto_combustivel', nome: 'Posto Combustível', tipo: 'fornecedor' }
+  // Combinar clientes e fornecedores em uma lista
+  const fornecedoresClientes = [
+    ...clientes.map(c => ({ id: c.id, nome: c.nome, tipo: 'cliente' as const })),
+    ...fornecedoresData.map(f => ({ id: f.id, nome: f.nome, tipo: 'fornecedor' as const }))
   ];
 
   const contasBancarias = [
@@ -435,7 +436,7 @@ export default function DFC() {
       descricao: '',
       categoria: '',
       conta: 'conta_corrente',
-      fornecedor: 'cliente_joao',
+      fornecedor: '',
       paga: false,
       dataEmissao: new Date(),
       dataPagamento: new Date(),
@@ -1019,16 +1020,33 @@ export default function DFC() {
                             <Label>Fornecedor/Cliente</Label>
                             <Select value={lancamentoForm.fornecedor} onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, fornecedor: value }))}>
                               <SelectTrigger>
-                                <SelectValue />
+                                <SelectValue placeholder="Selecione um fornecedor/cliente" />
                               </SelectTrigger>
                               <SelectContent>
-                                {fornecedores.map(fornecedor => (
-                                  <SelectItem key={fornecedor.id} value={fornecedor.id}>
-                                    {fornecedor.nome} ({fornecedor.tipo})
+                                {fornecedoresClientes.map(item => (
+                                  <SelectItem key={item.id} value={item.id}>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant={item.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
+                                        {item.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
+                                      </Badge>
+                                      {item.nome}
+                                    </div>
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
+                            <Button 
+                              type="button"
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full"
+                              onClick={() => {
+                                navigate('/cadastros', { state: { activeTab: lancamentoForm.tipo === 'entrada' ? 'clientes' : 'fornecedores' } });
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Cadastrar Novo
+                            </Button>
                           </div>
 
                           {/* Forma de Pagamento */}
@@ -1361,7 +1379,7 @@ export default function DFC() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="todos">Todos</SelectItem>
-                            {fornecedores.map(f => (
+                            {fornecedoresClientes.map(f => (
                               <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
                             ))}
                           </SelectContent>
@@ -1519,7 +1537,7 @@ export default function DFC() {
                       const dadosExcel = extratoFiltrado.map(item => {
                         const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
                         const conta = contasBancarias.find(c => c.id === item.conta);
-                        const fornecedor = fornecedores.find(f => f.id === item.fornecedor);
+                        const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor);
                         
                         return {
                           'Data Esperada': format(item.dataEsperada, "dd/MM/yyyy"),
@@ -1622,7 +1640,7 @@ export default function DFC() {
                       {extratoFiltrado.map((item) => {
                         const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
                         const conta = contasBancarias.find(c => c.id === item.conta);
-                        const fornecedor = fornecedores.find(f => f.id === item.fornecedor);
+                        const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor);
                         
                         return (
                           <TableRow key={item.id}>
