@@ -670,11 +670,19 @@ const NovaOrdemServico = () => {
               const quantidades: any = {};
               const nomes: any = {};
               let personalizado = "";
+              const adicionais: Array<{ quantidade: number; nome: string; codigo?: string }> = [];
               
               ordem.servicos_necessarios.forEach((servico: any) => {
                 if (servico.tipo === 'personalizado') {
                   personalizado = servico.descricao || servico.servico;
                   quantidades.personalizado = servico.quantidade || 1;
+                } else if (servico.tipo === 'adicional') {
+                  // Adicionar aos serviços adicionais
+                  adicionais.push({
+                    quantidade: servico.quantidade || 1,
+                    nome: servico.descricao || servico.servico,
+                    codigo: servico.codigo || ""
+                  });
                 } else if (servico.tipo) {
                   servicosObj[servico.tipo] = true;
                   quantidades[servico.tipo] = servico.quantidade || 1;
@@ -688,6 +696,7 @@ const NovaOrdemServico = () => {
               setServicosQuantidades(prev => ({ ...prev, ...quantidades }));
               setServicosNomes(prev => ({ ...prev, ...nomes }));
               setServicosPersonalizados(personalizado);
+              setServicosAdicionais(adicionais);
             }
 
             // Carregar usinagem se existir
@@ -697,11 +706,19 @@ const NovaOrdemServico = () => {
               const quantidades: any = {};
               const nomes: any = {};
               let personalizada = "";
+              const adicionais: Array<{ quantidade: number; nome: string; codigo?: string }> = [];
               
               ordem.usinagem_necessaria.forEach((usinag: any) => {
                 if (usinag.tipo === 'personalizada') {
                   personalizada = usinag.descricao || usinag.trabalho;
                   quantidades.personalizada = usinag.quantidade || 1;
+                } else if (usinag.tipo === 'adicional') {
+                  // Adicionar às usinagens adicionais
+                  adicionais.push({
+                    quantidade: usinag.quantidade || 1,
+                    nome: usinag.descricao || usinag.trabalho,
+                    codigo: usinag.codigo || ""
+                  });
                 } else if (usinag.tipo) {
                   usinagemObj[usinag.tipo] = true;
                   quantidades[usinag.tipo] = usinag.quantidade || 1;
@@ -715,6 +732,7 @@ const NovaOrdemServico = () => {
               setUsinagemQuantidades(prev => ({ ...prev, ...quantidades }));
               setUsinagemNomes(prev => ({ ...prev, ...nomes }));
               setUsinagemPersonalizada(personalizada);
+              setUsinagemAdicional(adicionais);
             }
 
             // Dados técnicos - Carregar TODOS os dados do recebimento
@@ -849,6 +867,17 @@ const NovaOrdemServico = () => {
         });
       }
 
+      // Adicionar serviços adicionais
+      servicosAdicionais.forEach((servico) => {
+        servicosSelecionados.push({
+          quantidade: servico.quantidade,
+          servico: servico.nome,
+          descricao: servico.nome,
+          tipo: 'adicional',
+          codigo: servico.codigo || ""
+        });
+      });
+
       console.log('Serviços selecionados preparados:', servicosSelecionados);
 
       // Preparar dados das usinagens selecionadas
@@ -872,6 +901,17 @@ const NovaOrdemServico = () => {
           codigo: (usinagemQuantidades as any).personalizada_codigo || ""
         });
       }
+
+      // Adicionar usinagem adicional
+      usinagemAdicional.forEach((usinag) => {
+        usinagemSelecionada.push({
+          quantidade: usinag.quantidade,
+          trabalho: usinag.nome,
+          descricao: usinag.nome,
+          tipo: 'adicional',
+          codigo: usinag.codigo || ""
+        });
+      });
 
       console.log('Usinagem selecionada preparada:', usinagemSelecionada);
       console.log('Peças utilizadas:', pecasUtilizadas);
@@ -1094,7 +1134,35 @@ const NovaOrdemServico = () => {
       }
 
       // Upload de fotos de chegada (com flag apresentar_orcamento)
-      console.log('Iniciando upload de fotos de chegada...');
+      console.log('Iniciando processamento de fotos de chegada...');
+      
+      // Se for edição, primeiro remover fotos de chegada antigas que não estão mais presentes
+      if (isEdicao && recebimento?.id) {
+        // Obter URLs atuais de fotos de chegada
+        const urlsAtuais = previewsChegada.filter(url => url && typeof url === 'string');
+        
+        // Buscar fotos de chegada existentes no banco
+        const { data: fotosExistentes } = await supabase
+          .from('fotos_equipamentos')
+          .select('id, arquivo_url')
+          .eq('recebimento_id', recebimento.id)
+          .eq('apresentar_orcamento', true);
+        
+        // Deletar fotos que não estão mais nas previews atuais
+        if (fotosExistentes) {
+          for (const fotoExistente of fotosExistentes) {
+            if (!urlsAtuais.includes(fotoExistente.arquivo_url)) {
+              await supabase
+                .from('fotos_equipamentos')
+                .delete()
+                .eq('id', fotoExistente.id);
+              console.log(`Foto de chegada removida: ${fotoExistente.arquivo_url}`);
+            }
+          }
+        }
+      }
+      
+      // Upload de novas fotos de chegada
       for (let i = 0; i < fotosChegada.length; i++) {
         const foto = fotosChegada[i];
         if (foto && recebimento?.id) {
@@ -1119,7 +1187,7 @@ const NovaOrdemServico = () => {
                 .from('equipamentos')
                 .getPublicUrl(filePath);
 
-              // Salvar foto com apresentar_orcamento = true por padrão
+              // Salvar foto com apresentar_orcamento = true
               await supabase
                 .from('fotos_equipamentos')
                 .insert({
@@ -1140,7 +1208,35 @@ const NovaOrdemServico = () => {
       }
 
       // Upload de fotos de análise
-      console.log('Iniciando upload de fotos de análise...');
+      console.log('Iniciando processamento de fotos de análise...');
+      
+      // Se for edição, primeiro remover fotos de análise antigas que não estão mais presentes
+      if (isEdicao && recebimento?.id) {
+        // Obter URLs atuais de fotos de análise
+        const urlsAtuais = previewsAnalise.filter(url => url && typeof url === 'string');
+        
+        // Buscar fotos de análise existentes no banco
+        const { data: fotosExistentes } = await supabase
+          .from('fotos_equipamentos')
+          .select('id, arquivo_url')
+          .eq('recebimento_id', recebimento.id)
+          .eq('apresentar_orcamento', false);
+        
+        // Deletar fotos que não estão mais nas previews atuais
+        if (fotosExistentes) {
+          for (const fotoExistente of fotosExistentes) {
+            if (!urlsAtuais.includes(fotoExistente.arquivo_url)) {
+              await supabase
+                .from('fotos_equipamentos')
+                .delete()
+                .eq('id', fotoExistente.id);
+              console.log(`Foto de análise removida: ${fotoExistente.arquivo_url}`);
+            }
+          }
+        }
+      }
+      
+      // Upload de novas fotos de análise
       for (let i = 0; i < fotosAnalise.length; i++) {
         const foto = fotosAnalise[i];
         if (foto && recebimento?.id) {
