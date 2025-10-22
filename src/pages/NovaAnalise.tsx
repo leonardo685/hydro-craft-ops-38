@@ -50,7 +50,6 @@ const NovaOrdemServico = () => {
   const [fotosAnalise, setFotosAnalise] = useState<File[]>([]);
   const [previewsChegada, setPreviewsChegada] = useState<string[]>([]);
   const [previewsAnalise, setPreviewsAnalise] = useState<string[]>([]);
-  const [apresentarOrcamento, setApresentarOrcamento] = useState([false, false, false, false]);
   const [pecasUtilizadas, setPecasUtilizadas] = useState<Array<{
     quantidade: number;
     peca: string;
@@ -1102,7 +1101,6 @@ const NovaOrdemServico = () => {
           // Verificar se é um arquivo novo (File) ou URL existente (string)
           if (typeof foto !== 'string' && foto instanceof File) {
             console.log(`Fazendo upload da foto de chegada ${i + 1}...`);
-            console.log(`Apresentar orçamento: ${apresentarOrcamento[i]}`);
             try {
               const fileExt = foto.name.split('.').pop();
               const fileName = `${recebimento.id}_chegada_${i}_${Date.now()}.${fileExt}`;
@@ -1121,17 +1119,17 @@ const NovaOrdemServico = () => {
                 .from('equipamentos')
                 .getPublicUrl(filePath);
 
-              // Salvar foto com flag apresentar_orcamento do checkbox correspondente
+              // Salvar foto com apresentar_orcamento = true por padrão
               await supabase
                 .from('fotos_equipamentos')
                 .insert({
                   recebimento_id: recebimento.id,
                   arquivo_url: publicUrl,
                   nome_arquivo: fileName,
-                  apresentar_orcamento: apresentarOrcamento[i] === true
+                  apresentar_orcamento: true
                 });
               
-              console.log(`Foto de chegada ${i + 1} salva com apresentar_orcamento = ${apresentarOrcamento[i]}`);
+              console.log(`Foto de chegada ${i + 1} salva com apresentar_orcamento = true`);
             } catch (error) {
               console.error('Erro ao processar foto de chegada:', error);
             }
@@ -1335,18 +1333,6 @@ const NovaOrdemServico = () => {
                         )}
                       </CardContent>
                     </Card>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={`orcamento-${index}`}
-                        checked={apresentarOrcamento[index]}
-                        onCheckedChange={(checked) => {
-                          const newArray = [...apresentarOrcamento];
-                          newArray[index] = checked as boolean;
-                          setApresentarOrcamento(newArray);
-                        }}
-                      />
-                      <Label htmlFor={`orcamento-${index}`} className="text-sm">Apresentar Orçamento</Label>
-                    </div>
                   </div>
                 ))}
               </div>
