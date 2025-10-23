@@ -305,7 +305,6 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
               data_realizada: null,
               pago: false,
               fornecedor_cliente: lancamentoForm.fornecedor,
-              numero_parcelas: numeroParcelas,
               parcela_numero: i + 1
             });
 
