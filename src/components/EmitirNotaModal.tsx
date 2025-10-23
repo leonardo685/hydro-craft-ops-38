@@ -29,13 +29,8 @@ export default function EmitirNotaModal({
   onConfirm
 }: EmitirNotaModalProps) {
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
-  const [etapa, setEtapa] = useState<'dados' | 'contas_receber'>('dados');
-  const [numeroNF, setNumeroNF] = useState(() => {
-    const hoje = new Date();
-    const ano = hoje.getFullYear();
-    const numero = Math.floor(Math.random() * 90000) + 10000;
-    return numero.toString();
-  });
+  const [etapa, setEtapa] = useState<'dados' | 'nota_fiscal' | 'contas_receber'>('dados');
+  const [numeroNF, setNumeroNF] = useState('');
   const [anexoNota, setAnexoNota] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -184,6 +179,29 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
   };
 
   const handleConfirmarDados = () => {
+    setEtapa('nota_fiscal');
+  };
+
+  const handleConfirmarNotaFiscal = () => {
+    // Validar campos obrigatórios
+    if (!numeroNF.trim()) {
+      toast({
+        title: "Número da NF obrigatório",
+        description: "Por favor, informe o número da nota fiscal",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!anexoNota) {
+      toast({
+        title: "Arquivo obrigatório",
+        description: "Por favor, anexe o PDF da nota fiscal",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Pré-preencher formulário com dados do orçamento
     const novaDataEsperada = new Date(Date.now() + prazoDias * 24 * 60 * 60 * 1000);
     setLancamentoForm({
@@ -202,6 +220,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
 
   const handleFechar = () => {
     setEtapa('dados');
+    setNumeroNF('');
     setAnexoNota(null);
     setPrazoDias(30);
     setLancamentoForm({
@@ -224,15 +243,6 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
       toast({
         title: "Campos obrigatórios",
         description: "Preencha todos os campos obrigatórios",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!anexoNota) {
-      toast({
-        title: "Arquivo obrigatório",
-        description: "Selecione um arquivo PDF da nota fiscal",
         variant: "destructive"
       });
       return;
@@ -309,6 +319,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
 
       // Reset
       setEtapa('dados');
+      setNumeroNF('');
       setAnexoNota(null);
       setPrazoDias(30);
       setLancamentoForm({
@@ -423,6 +434,88 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                 Cancelar
               </Button>
               <Button onClick={handleConfirmarDados} className="flex-1 bg-red-500 hover:bg-red-600 text-white">
+                Continuar
+              </Button>
+            </div>
+          </>
+        ) : etapa === 'nota_fiscal' ? (
+          <>
+            {/* Segunda tela - Nota Fiscal e Anexo */}
+            <DialogHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-red-500" />
+                <DialogTitle className="text-lg font-semibold">Dados da Nota Fiscal</DialogTitle>
+              </div>
+              <DialogDescription>
+                Informe o número da nota fiscal e anexe o PDF
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="numeroNF" className="text-base font-semibold">
+                  Número da Nota Fiscal *
+                </Label>
+                <Input
+                  id="numeroNF"
+                  type="text"
+                  placeholder="Ex: 12345"
+                  value={numeroNF}
+                  onChange={(e) => setNumeroNF(e.target.value)}
+                  className="text-lg"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pdf" className="text-base font-semibold">
+                  Anexar PDF da Nota Fiscal *
+                </Label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    id="pdf"
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handleFileChange}
+                    className="flex-1"
+                  />
+                  {anexoNota && (
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <Check className="h-4 w-4" />
+                      {anexoNota.name}
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Formato: PDF • Tamanho máximo: 10MB
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex gap-3">
+                  <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-blue-900">Informações importantes</p>
+                    <p className="text-sm text-blue-700">
+                      O número da nota fiscal informado será usado na descrição do lançamento financeiro
+                      e na conta a receber.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-6">
+              <Button 
+                variant="outline" 
+                onClick={() => setEtapa('dados')} 
+                className="flex-1"
+              >
+                Voltar
+              </Button>
+              <Button 
+                onClick={handleConfirmarNotaFiscal} 
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+              >
                 Criar Lançamento Financeiro
               </Button>
             </div>
@@ -562,33 +655,10 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                     </Popover>
                   </div>
                 </div>
-
-                {/* Anexar PDF */}
-                <div className="space-y-2">
-                  <Label className="text-base font-semibold">Anexar PDF da Nota Fiscal</Label>
-                  <div className="border-2 border-dashed rounded-lg p-4">
-                    <Input 
-                      type="file" 
-                      accept=".pdf" 
-                      onChange={handleFileChange} 
-                      className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" 
-                    />
-                    {anexoNota ? (
-                      <p className="text-sm text-green-600 mt-2 font-medium flex items-center gap-2">
-                        <Check className="h-4 w-4" />
-                        {anexoNota.name}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Nenhum arquivo escolhido
-                      </p>
-                    )}
-                  </div>
-                </div>
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setEtapa('dados')}>Voltar</Button>
+                <Button variant="outline" onClick={() => setEtapa('nota_fiscal')}>Voltar</Button>
                 <Button 
                   onClick={handleFinalizarLancamento} 
                   disabled={uploading}
