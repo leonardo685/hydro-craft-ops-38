@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { TrendingUp, TrendingDown, DollarSign, Activity, Edit, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, FileDown, ChevronDown, ChevronUp, X, ChevronsUpDown, Check } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Activity, Edit, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, FileDown, ChevronDown, ChevronUp, X, ChevronsUpDown, Check, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
@@ -42,6 +42,10 @@ export default function Financeiro() {
   const [periodoSelecionado, setPeriodoSelecionado] = useState("");
   const [contaBancariaFiltro, setContaBancariaFiltro] = useState("todas");
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
+
+  // Estados para ordenação de colunas
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
 
   // Estados para valores dinâmicos dos cards financeiros
   const [valoresFinanceiros, setValoresFinanceiros] = useState({
@@ -645,6 +649,117 @@ export default function Financeiro() {
       style: 'currency', 
       currency: 'BRL' 
     });
+  };
+
+  // Funções de ordenação
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      // Mesma coluna: ciclar através dos estados
+      if (sortDirection === null) {
+        setSortDirection('asc');
+      } else if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else {
+        setSortDirection(null);
+        setSortColumn(null);
+      }
+    } else {
+      // Nova coluna: começar com ascendente
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortData = (data: any[]) => {
+    if (!sortColumn || !sortDirection) return data;
+
+    return [...data].sort((a, b) => {
+      let aVal = a[sortColumn];
+      let bVal = b[sortColumn];
+
+      // Tratamento especial para diferentes tipos
+      if (sortColumn === 'valor') {
+        aVal = parseFloat(aVal) || 0;
+        bVal = parseFloat(bVal) || 0;
+      } else if (sortColumn === 'dataEsperada' || sortColumn === 'dataRealizada') {
+        aVal = aVal ? new Date(aVal).getTime() : 0;
+        bVal = bVal ? new Date(bVal).getTime() : 0;
+      } else if (sortColumn === 'status') {
+        // Status tem ordem: pago < pendente < atrasado
+        const getStatusValue = (item: any) => {
+          const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
+          const statusOrder: Record<string, number> = { 'pago': 1, 'pendente': 2, 'atrasado': 3 };
+          return statusOrder[status] || 999;
+        };
+        aVal = getStatusValue(a);
+        bVal = getStatusValue(b);
+      } else if (sortColumn === 'tipo') {
+        aVal = a.tipo === 'entrada' ? 'entrada' : 'saida';
+        bVal = b.tipo === 'entrada' ? 'entrada' : 'saida';
+      } else if (sortColumn === 'categoria') {
+        const getCategoriaLabel = (item: any) => {
+          const categoriaInfo = getCategoriasForSelect().find(c => c.value === item.categoriaId);
+          return categoriaInfo?.label || 'Sem categoria';
+        };
+        aVal = getCategoriaLabel(a).toLowerCase();
+        bVal = getCategoriaLabel(b).toLowerCase();
+      } else if (sortColumn === 'conta') {
+        const getContaNome = (item: any) => {
+          return contasBancarias.find(c => c.id === item.contaBancaria)?.nome.split(' - ')[1] || 'N/A';
+        };
+        aVal = getContaNome(a).toLowerCase();
+        bVal = getContaNome(b).toLowerCase();
+      } else if (sortColumn === 'fornecedor') {
+        const getFornecedorNome = (item: any) => {
+          return fornecedoresClientes.find(f => f.id === item.fornecedorCliente)?.nome || 'N/A';
+        };
+        aVal = getFornecedorNome(a).toLowerCase();
+        bVal = getFornecedorNome(b).toLowerCase();
+      } else {
+        // String - case insensitive
+        aVal = String(aVal || '').toLowerCase();
+        bVal = String(bVal || '').toLowerCase();
+      }
+
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  // Componente de cabeçalho ordenável
+  const SortableTableHead = ({ 
+    column, 
+    children, 
+    className = "" 
+  }: { 
+    column: string; 
+    children: React.ReactNode; 
+    className?: string;
+  }) => {
+    const isActive = sortColumn === column;
+    
+    return (
+      <TableHead className={className}>
+        <button
+          onClick={() => handleSort(column)}
+          className="flex items-center gap-1 hover:text-foreground transition-colors w-full"
+        >
+          {children}
+          <div className="flex flex-col">
+            {isActive && sortDirection === 'asc' && (
+              <ArrowUp className="h-3 w-3" />
+            )}
+            {isActive && sortDirection === 'desc' && (
+              <ArrowDown className="h-3 w-3" />
+            )}
+            {(!isActive || sortDirection === null) && (
+              <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+            )}
+          </div>
+        </button>
+      </TableHead>
+    );
   };
 
   const getDreRowStyle = (tipo: string) => {
@@ -2566,24 +2681,19 @@ export default function Financeiro() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          {colunasVisiveis.tipo && <TableHead>Tipo</TableHead>}
-                          {colunasVisiveis.descricao && <TableHead>Descrição</TableHead>}
-                          {colunasVisiveis.categoria && <TableHead>Categoria</TableHead>}
-                          {colunasVisiveis.conta && <TableHead>Conta</TableHead>}
-                          {colunasVisiveis.valor && <TableHead className="text-right">Valor</TableHead>}
-                          {colunasVisiveis.dataEsperada && <TableHead>Data Esperada</TableHead>}
-                          {colunasVisiveis.dataRealizada && <TableHead>Data Realizada</TableHead>}
-                          {colunasVisiveis.status && <TableHead>Status</TableHead>}
-                          {colunasVisiveis.fornecedor && <TableHead>Fornecedor</TableHead>}
+                          {colunasVisiveis.tipo && <SortableTableHead column="tipo">Tipo</SortableTableHead>}
+                          {colunasVisiveis.descricao && <SortableTableHead column="descricao">Descrição</SortableTableHead>}
+                          {colunasVisiveis.categoria && <SortableTableHead column="categoria">Categoria</SortableTableHead>}
+                          {colunasVisiveis.conta && <SortableTableHead column="conta">Conta</SortableTableHead>}
+                          {colunasVisiveis.valor && <SortableTableHead column="valor" className="text-right">Valor</SortableTableHead>}
+                          {colunasVisiveis.dataEsperada && <SortableTableHead column="dataEsperada">Data Esperada</SortableTableHead>}
+                          {colunasVisiveis.dataRealizada && <SortableTableHead column="dataRealizada">Data Realizada</SortableTableHead>}
+                          {colunasVisiveis.status && <SortableTableHead column="status">Status</SortableTableHead>}
+                          {colunasVisiveis.fornecedor && <SortableTableHead column="fornecedor">Fornecedor</SortableTableHead>}
                         </TableRow>
                       </TableHeader>
                        <TableBody>
-                        {extratoFiltrado
-                          .sort((a, b) => {
-                            // Ordenar por data esperada (mais recente primeiro)
-                            return b.dataEsperada.getTime() - a.dataEsperada.getTime();
-                          })
-                          .map((item) => {
+                        {sortData(extratoFiltrado).map((item) => {
                             // Buscar informações de categoria
                             const categoriaInfo = getCategoriasForSelect().find(c => c.value === item.categoriaId);
                             

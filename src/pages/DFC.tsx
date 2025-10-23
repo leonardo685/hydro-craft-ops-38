@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign, Check, Minus, ChevronsUpDown, Settings, Pencil, Trash2 } from "lucide-react";
+import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign, Check, Minus, ChevronsUpDown, Settings, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { useState } from "react";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
@@ -51,6 +51,10 @@ export default function DFC() {
   const [contaBancariaFiltro, setContaBancariaFiltro] = useState("todas");
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
   const [planejamentoExpanded, setPlanejamentoExpanded] = useState(true);
+  
+  // Estados para ordenação de colunas
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
   
   // Estados para confirmação de recebimento/pagamento
   const [confirmarPagamentoDialog, setConfirmarPagamentoDialog] = useState<{
@@ -516,6 +520,91 @@ export default function DFC() {
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
+
+  // Funções de ordenação
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      // Mesma coluna: ciclar através dos estados
+      if (sortDirection === null) {
+        setSortDirection('asc');
+      } else if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else {
+        setSortDirection(null);
+        setSortColumn(null);
+      }
+    } else {
+      // Nova coluna: começar com ascendente
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortData = (data: any[]) => {
+    if (!sortColumn || !sortDirection) return data;
+
+    return [...data].sort((a, b) => {
+      let aVal = a[sortColumn];
+      let bVal = b[sortColumn];
+
+      // Tratamento especial para diferentes tipos
+      if (sortColumn === 'valor') {
+        aVal = parseFloat(aVal) || 0;
+        bVal = parseFloat(bVal) || 0;
+      } else if (sortColumn === 'dataEsperada' || sortColumn === 'dataRealizada') {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      } else if (sortColumn === 'status') {
+        // Status tem ordem: pago < pendente < atrasado
+        const statusOrder: Record<string, number> = { 'pago': 1, 'pendente': 2, 'atrasado': 3 };
+        aVal = statusOrder[aVal] || 999;
+        bVal = statusOrder[bVal] || 999;
+      } else {
+        // String - case insensitive
+        aVal = String(aVal || '').toLowerCase();
+        bVal = String(bVal || '').toLowerCase();
+      }
+
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  // Componente de cabeçalho ordenável
+  const SortableTableHead = ({ 
+    column, 
+    children, 
+    className = "" 
+  }: { 
+    column: string; 
+    children: React.ReactNode; 
+    className?: string;
+  }) => {
+    const isActive = sortColumn === column;
+    
+    return (
+      <TableHead className={className}>
+        <button
+          onClick={() => handleSort(column)}
+          className="flex items-center gap-1 hover:text-foreground transition-colors w-full"
+        >
+          {children}
+          <div className="flex flex-col">
+            {isActive && sortDirection === 'asc' && (
+              <ArrowUp className="h-3 w-3" />
+            )}
+            {isActive && sortDirection === 'desc' && (
+              <ArrowDown className="h-3 w-3" />
+            )}
+            {(!isActive || sortDirection === null) && (
+              <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+            )}
+          </div>
+        </button>
+      </TableHead>
+    );
   };
 
   // Funções para confirmação de recebimento/pagamento
@@ -1860,20 +1949,20 @@ export default function DFC() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        {colunasVisiveis.tipo && <TableHead>Tipo</TableHead>}
-                        {colunasVisiveis.descricao && <TableHead>Descrição</TableHead>}
-                        {colunasVisiveis.categoria && <TableHead>Categoria</TableHead>}
-                        {colunasVisiveis.conta && <TableHead>Conta</TableHead>}
-                        {colunasVisiveis.fornecedor && <TableHead>Fornecedor/Cliente</TableHead>}
-                        {colunasVisiveis.valor && <TableHead className="text-right">Valor</TableHead>}
-                        {colunasVisiveis.dataEsperada && <TableHead>Data Esperada</TableHead>}
-                        {colunasVisiveis.dataRealizada && <TableHead>Data Realizada</TableHead>}
-                        {colunasVisiveis.status && <TableHead>Status</TableHead>}
+                        {colunasVisiveis.tipo && <SortableTableHead column="tipo">Tipo</SortableTableHead>}
+                        {colunasVisiveis.descricao && <SortableTableHead column="descricao">Descrição</SortableTableHead>}
+                        {colunasVisiveis.categoria && <SortableTableHead column="categoria">Categoria</SortableTableHead>}
+                        {colunasVisiveis.conta && <SortableTableHead column="conta">Conta</SortableTableHead>}
+                        {colunasVisiveis.fornecedor && <SortableTableHead column="fornecedor">Fornecedor/Cliente</SortableTableHead>}
+                        {colunasVisiveis.valor && <SortableTableHead column="valor" className="text-right">Valor</SortableTableHead>}
+                        {colunasVisiveis.dataEsperada && <SortableTableHead column="dataEsperada">Data Esperada</SortableTableHead>}
+                        {colunasVisiveis.dataRealizada && <SortableTableHead column="dataRealizada">Data Realizada</SortableTableHead>}
+                        {colunasVisiveis.status && <SortableTableHead column="status">Status</SortableTableHead>}
                         <TableHead className="text-center">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {extratoFiltrado.map((item) => {
+                      {sortData(extratoFiltrado).map((item) => {
                         const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
                         const conta = contasBancarias.find(c => c.id === item.conta);
                         const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor);
