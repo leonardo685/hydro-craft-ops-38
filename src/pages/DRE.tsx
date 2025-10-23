@@ -61,19 +61,18 @@ export default function DRE() {
         .reduce((acc, l) => acc + l.valor, 0);
     };
 
-    // Função para adicionar categoria mãe e suas filhas
-    const adicionarCategoriaMae = (codigo: string, tipo: 'entrada' | 'saida'): number => {
-      const categoriaMae = categorias.find(c => c.tipo === 'mae' && c.codigo === codigo && c.classificacao === tipo);
+    // Função auxiliar para adicionar categoria mãe por código
+    const adicionarCategoriaPorCodigo = (codigo: string): number => {
+      const categoriaMae = categorias.find(c => c.tipo === 'mae' && c.codigo === codigo);
       if (!categoriaMae) return 0;
 
       const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === categoriaMae.id);
-      
-      let totalCategoriaMae = 0;
+      let totalMae = 0;
 
-      // Adicionar categorias filhas
+      // Adicionar filhas primeiro
       categoriasFilhas.forEach(filha => {
         const valorFilha = calcularValorCategoria(filha.id);
-        totalCategoriaMae += valorFilha;
+        totalMae += valorFilha;
         
         if (valorFilha !== 0) {
           resultado.push({
@@ -87,118 +86,74 @@ export default function DRE() {
         }
       });
 
-      // Adicionar categoria mãe (total)
-      if (totalCategoriaMae !== 0) {
-        resultado.unshift({
+      // Adicionar mãe se tiver valor
+      if (totalMae !== 0) {
+        const indexInsert = resultado.length - categoriasFilhas.filter(f => calcularValorCategoria(f.id) !== 0).length;
+        resultado.splice(indexInsert, 0, {
           codigo: categoriaMae.codigo,
           conta: categoriaMae.nome,
-          valor: totalCategoriaMae,
-          percentual: totalReceitas > 0 ? (totalCategoriaMae / totalReceitas) * 100 : 0,
+          valor: totalMae,
+          percentual: totalReceitas > 0 ? (totalMae / totalReceitas) * 100 : 0,
           tipo: 'categoria_mae',
           nivel: 1
         });
       }
 
-      return totalCategoriaMae;
+      return totalMae;
     };
 
-    // 1. RECEITAS OPERACIONAIS (todas categorias mãe de entrada)
-    const categoriasMaeEntrada = categorias.filter(c => c.tipo === 'mae' && c.classificacao === 'entrada');
-    let totalReceitasOperacionais = 0;
+    // 1. RECEITAS OPERACIONAIS (Código 1)
+    const receitasOperacionais = adicionarCategoriaPorCodigo('1');
 
-    categoriasMaeEntrada.forEach(mae => {
-      const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === mae.id);
-      let totalMae = 0;
+    // 2. CUSTOS VARIÁVEIS (Código 2)
+    const custosVariaveis = adicionarCategoriaPorCodigo('2');
 
-      // Adicionar filhas
-      categoriasFilhas.forEach(filha => {
-        const valorFilha = calcularValorCategoria(filha.id);
-        totalMae += valorFilha;
-        
-        if (valorFilha !== 0) {
-          resultado.push({
-            codigo: filha.codigo,
-            conta: filha.nome,
-            valor: valorFilha,
-            percentual: totalReceitas > 0 ? (valorFilha / totalReceitas) * 100 : 0,
-            tipo: 'categoria_filha',
-            nivel: 2
-          });
-        }
-      });
-
-      // Adicionar mãe
-      if (totalMae !== 0) {
-        const indexInsert = resultado.length - categoriasFilhas.filter(f => calcularValorCategoria(f.id) !== 0).length;
-        resultado.splice(indexInsert, 0, {
-          codigo: mae.codigo,
-          conta: mae.nome,
-          valor: totalMae,
-          percentual: totalReceitas > 0 ? (totalMae / totalReceitas) * 100 : 0,
-          tipo: 'categoria_mae',
-          nivel: 1
-        });
-      }
-
-      totalReceitasOperacionais += totalMae;
-    });
-
-    // 2. DESPESAS OPERACIONAIS (categorias mãe de saída)
-    const categoriasMaeSaida = categorias.filter(c => c.tipo === 'mae' && c.classificacao === 'saida');
-    let totalDespesasOperacionais = 0;
-
-    categoriasMaeSaida.forEach(mae => {
-      const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === mae.id);
-      let totalMae = 0;
-
-      // Adicionar filhas
-      categoriasFilhas.forEach(filha => {
-        const valorFilha = calcularValorCategoria(filha.id);
-        totalMae += valorFilha;
-        
-        if (valorFilha !== 0) {
-          resultado.push({
-            codigo: filha.codigo,
-            conta: filha.nome,
-            valor: valorFilha,
-            percentual: totalReceitas > 0 ? (valorFilha / totalReceitas) * 100 : 0,
-            tipo: 'categoria_filha',
-            nivel: 2
-          });
-        }
-      });
-
-      // Adicionar mãe
-      if (totalMae !== 0) {
-        const indexInsert = resultado.length - categoriasFilhas.filter(f => calcularValorCategoria(f.id) !== 0).length;
-        resultado.splice(indexInsert, 0, {
-          codigo: mae.codigo,
-          conta: mae.nome,
-          valor: totalMae,
-          percentual: totalReceitas > 0 ? (totalMae / totalReceitas) * 100 : 0,
-          tipo: 'categoria_mae',
-          nivel: 1
-        });
-      }
-
-      totalDespesasOperacionais += totalMae;
-    });
-
-    // 3. CÁLCULOS
-    const margemContribuicao = totalReceitasOperacionais - totalDespesasOperacionais;
-    
+    // 3. MARGEM DE CONTRIBUIÇÃO
+    const margemContribuicao = receitasOperacionais - custosVariaveis;
     resultado.push({
-      conta: 'Margem de Contribuição',
+      conta: '(=) MARGEM DE CONTRIBUIÇÃO',
       valor: margemContribuicao,
       percentual: totalReceitas > 0 ? (margemContribuicao / totalReceitas) * 100 : 0,
       tipo: 'calculo',
       nivel: 0
     });
 
-    const lucroLiquido = margemContribuicao;
+    // 4. DESPESAS FIXAS (Código 3)
+    const despesasFixas = adicionarCategoriaPorCodigo('3');
 
+    // 5. LUCRO ANTES DOS INVESTIMENTOS
+    const lucroAntesInvestimentos = margemContribuicao - despesasFixas;
     resultado.push({
-      conta: 'Lucro Líquido',
+      conta: '(=) LUCRO ANTES DOS INVESTIMENTOS',
+      valor: lucroAntesInvestimentos,
+      percentual: totalReceitas > 0 ? (lucroAntesInvestimentos / totalReceitas) * 100 : 0,
+      tipo: 'calculo',
+      nivel: 0
+    });
+
+    // 6. INVESTIMENTOS (Código 4)
+    const investimentos = adicionarCategoriaPorCodigo('4');
+
+    // 7. LUCRO OPERACIONAL
+    const lucroOperacional = lucroAntesInvestimentos - investimentos;
+    resultado.push({
+      conta: '(=) LUCRO OPERACIONAL',
+      valor: lucroOperacional,
+      percentual: totalReceitas > 0 ? (lucroOperacional / totalReceitas) * 100 : 0,
+      tipo: 'calculo',
+      nivel: 0
+    });
+
+    // 8. RECEITAS NÃO OPERACIONAIS (Código 5)
+    const receitasNaoOperacionais = adicionarCategoriaPorCodigo('5');
+
+    // 9. SAÍDAS NÃO OPERACIONAIS (Código 6)
+    const saidasNaoOperacionais = adicionarCategoriaPorCodigo('6');
+
+    // 10. LUCRO LÍQUIDO
+    const lucroLiquido = lucroOperacional + receitasNaoOperacionais - saidasNaoOperacionais;
+    resultado.push({
+      conta: '(=) LUCRO LÍQUIDO',
       valor: lucroLiquido,
       percentual: totalReceitas > 0 ? (lucroLiquido / totalReceitas) * 100 : 0,
       tipo: 'calculo',
@@ -218,8 +173,10 @@ export default function DRE() {
     return lancamentosFiltrados.reduce((acc, l) => acc + l.valor, 0);
   }, [lancamentos, filtrosDRE]);
 
-  const margemContribuicao = dreData.find(d => d.conta === "Margem de Contribuição")?.valor || 0;
-  const lucroLiquido = dreData.find(d => d.conta === "Lucro Líquido")?.valor || 0;
+  const margemContribuicao = dreData.find(d => d.conta === "(=) MARGEM DE CONTRIBUIÇÃO")?.valor || 0;
+  const lucroAntesInvestimentos = dreData.find(d => d.conta === "(=) LUCRO ANTES DOS INVESTIMENTOS")?.valor || 0;
+  const lucroOperacional = dreData.find(d => d.conta === "(=) LUCRO OPERACIONAL")?.valor || 0;
+  const lucroLiquido = dreData.find(d => d.conta === "(=) LUCRO LÍQUIDO")?.valor || 0;
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', { 
