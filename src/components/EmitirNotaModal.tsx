@@ -41,6 +41,7 @@ export default function EmitirNotaModal({
   const [parcelado, setParcelado] = useState(false);
   const [numeroParcelas, setNumeroParcelas] = useState(1);
   const [frequenciaParcelas, setFrequenciaParcelas] = useState<'mensal' | 'quinzenal'>('mensal');
+  const [datasCustomizadas, setDatasCustomizadas] = useState<Date[]>([]);
   const [lancamentoForm, setLancamentoForm] = useState({
     tipo: 'entrada' as const,
     valor: '',
@@ -230,6 +231,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
     setParcelado(false);
     setNumeroParcelas(1);
     setFrequenciaParcelas('mensal');
+    setDatasCustomizadas([]);
     setLancamentoForm({
       tipo: 'entrada',
       valor: '',
@@ -275,17 +277,18 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
         // Faturamento parcelado
         const valorParcela = valorTotal / numeroParcelas;
         
-        // Gerar datas das parcelas
-        const { gerarDatasParcelamento } = await import('@/lib/lancamento-utils');
-        const datasParcelas = gerarDatasParcelamento(
-          lancamentoForm.dataEsperada,
-          numeroParcelas,
-          frequenciaParcelas
-        );
+        // Usar datas customizadas ou gerar novas
+        const datasParaUsar = datasCustomizadas.length === numeroParcelas 
+          ? datasCustomizadas 
+          : gerarDatasParcelamento(
+              lancamentoForm.dataEsperada,
+              numeroParcelas,
+              frequenciaParcelas
+            );
 
         // Criar lançamentos e contas a receber para cada parcela
         for (let i = 0; i < numeroParcelas; i++) {
-          const dataVencimento = datasParcelas[i];
+          const dataVencimento = datasParaUsar[i];
           const descricaoParcela = `${lancamentoForm.descricao} - Parcela ${i + 1}/${numeroParcelas}`;
 
           // Criar lançamento financeiro para a parcela
@@ -411,6 +414,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
       setParcelado(false);
       setNumeroParcelas(1);
       setFrequenciaParcelas('mensal');
+      setDatasCustomizadas([]);
       setLancamentoForm({
         tipo: 'entrada',
         valor: '',
@@ -440,6 +444,17 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
       return [];
     }
 
+    // Se temos datas customizadas, usar elas
+    if (datasCustomizadas.length === numeroParcelas) {
+      const valorParcela = parseFloat(lancamentoForm.valor || '0') / numeroParcelas;
+      return datasCustomizadas.map((data, index) => ({
+        numero: index + 1,
+        data,
+        valor: valorParcela
+      }));
+    }
+
+    // Caso contrário, calcular automaticamente
     const datas = gerarDatasParcelamento(
       lancamentoForm.dataEsperada,
       numeroParcelas,
@@ -447,12 +462,34 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
     );
     const valorParcela = parseFloat(lancamentoForm.valor || '0') / numeroParcelas;
 
+    // Inicializar datas customizadas com as calculadas
+    if (datasCustomizadas.length === 0) {
+      setDatasCustomizadas(datas);
+    }
+
     return datas.map((data, index) => ({
       numero: index + 1,
       data,
       valor: valorParcela
     }));
-  }, [parcelado, numeroParcelas, frequenciaParcelas, lancamentoForm.dataEsperada, lancamentoForm.valor]);
+  }, [parcelado, numeroParcelas, frequenciaParcelas, lancamentoForm.dataEsperada, lancamentoForm.valor, datasCustomizadas]);
+
+  // Atualizar datas customizadas quando mudar número de parcelas ou frequência
+  const handleNumeroParcelas = (valor: number) => {
+    setNumeroParcelas(valor);
+    setDatasCustomizadas([]); // Reset para recalcular
+  };
+
+  const handleFrequenciaParcelas = (valor: 'mensal' | 'quinzenal') => {
+    setFrequenciaParcelas(valor);
+    setDatasCustomizadas([]); // Reset para recalcular
+  };
+
+  const handleDataParcelaChange = (index: number, novaData: Date) => {
+    const novasDatas = [...datasCustomizadas];
+    novasDatas[index] = novaData;
+    setDatasCustomizadas(novasDatas);
+  };
 
   if (!orcamento) return null;
 
@@ -752,13 +789,13 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                             min="2"
                             max="12"
                             value={numeroParcelas}
-                            onChange={(e) => setNumeroParcelas(parseInt(e.target.value) || 1)}
+                            onChange={(e) => handleNumeroParcelas(parseInt(e.target.value) || 1)}
                             placeholder="Ex: 3"
                           />
                         </div>
                         <div className="space-y-2">
                           <Label>Frequência</Label>
-                          <Select value={frequenciaParcelas} onValueChange={(value: 'mensal' | 'quinzenal') => setFrequenciaParcelas(value)}>
+                          <Select value={frequenciaParcelas} onValueChange={handleFrequenciaParcelas}>
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
@@ -795,13 +832,31 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                         <div className="pl-6 space-y-2">
                           <Label className="text-sm font-semibold">Previsão das Parcelas:</Label>
                           <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                            {parcelasPreview.map((parcela) => (
-                              <div key={parcela.numero} className="flex items-center justify-between p-2 bg-background rounded border text-sm">
-                                <span className="font-medium">Parcela {parcela.numero}/{numeroParcelas}</span>
-                                <div className="flex items-center gap-4">
-                                  <span className="text-muted-foreground">{format(parcela.data, "dd/MM/yyyy")}</span>
-                                  <span className="font-semibold text-green-600">R$ {parcela.valor.toFixed(2)}</span>
-                                </div>
+                            {parcelasPreview.map((parcela, index) => (
+                              <div key={parcela.numero} className="flex items-center justify-between gap-2 p-2 bg-background rounded border text-sm">
+                                <span className="font-medium min-w-[80px]">Parcela {parcela.numero}/{numeroParcelas}</span>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      className="h-8 justify-start text-left font-normal flex-1"
+                                    >
+                                      <CalendarIcon className="mr-2 h-3 w-3" />
+                                      {format(parcela.data, "dd/MM/yyyy")}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                      mode="single"
+                                      selected={parcela.data}
+                                      onSelect={(date) => date && handleDataParcelaChange(index, date)}
+                                      initialFocus
+                                      className={cn("p-3 pointer-events-auto")}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                <span className="font-semibold text-green-600 min-w-[90px] text-right">R$ {parcela.valor.toFixed(2)}</span>
                               </div>
                             ))}
                           </div>
