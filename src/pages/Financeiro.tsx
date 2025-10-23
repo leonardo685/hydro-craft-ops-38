@@ -695,8 +695,9 @@ export default function Financeiro() {
         aVal = getStatusValue(a);
         bVal = getStatusValue(b);
       } else if (sortColumn === 'tipo') {
-        aVal = a.tipo === 'entrada' ? 'entrada' : 'saida';
-        bVal = b.tipo === 'entrada' ? 'entrada' : 'saida';
+        const tipoOrder = { entrada: 1, saida: 2, transferencia: 3 };
+        aVal = tipoOrder[a.tipo as keyof typeof tipoOrder] || 4;
+        bVal = tipoOrder[b.tipo as keyof typeof tipoOrder] || 4;
       } else if (sortColumn === 'categoria') {
         const getCategoriaLabel = (item: any) => {
           const categoriaInfo = getCategoriasForSelect().find(c => c.value === item.categoriaId);
@@ -2714,6 +2715,7 @@ export default function Financeiro() {
                                 <SelectItem value="todos">Todos os tipos</SelectItem>
                                 <SelectItem value="entrada">Entrada</SelectItem>
                                 <SelectItem value="saida">Saída</SelectItem>
+                                <SelectItem value="transferencia">Transferência</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -2801,17 +2803,24 @@ export default function Financeiro() {
                             {colunasVisiveis.tipo && (
                               <TableCell>
                                 <Badge 
-                                  variant={item.tipo === 'entrada' ? 'secondary' : 'destructive'}
+                                  variant={
+                                    item.tipo === 'transferencia' ? 'outline' : 
+                                    item.tipo === 'entrada' ? 'secondary' : 'destructive'
+                                  }
                                   className={`flex items-center gap-1 w-fit ${
+                                    item.tipo === 'transferencia' ? 'bg-purple-100 text-purple-700 border-purple-200' :
                                     item.tipo === 'entrada' ? 'bg-green-100 text-green-700 border-green-200' : ''
                                   }`}
                                 >
-                                  {item.tipo === 'entrada' ? (
+                                  {item.tipo === 'transferencia' ? (
+                                    <ArrowRightLeft className="h-3 w-3" />
+                                  ) : item.tipo === 'entrada' ? (
                                     <ArrowUpRight className="h-3 w-3" />
                                   ) : (
                                     <ArrowDownLeft className="h-3 w-3" />
                                   )}
-                                  {item.tipo === 'entrada' ? 'Entrada' : 'Saída'}
+                                  {item.tipo === 'transferencia' ? 'Transferência' : 
+                                   item.tipo === 'entrada' ? 'Entrada' : 'Saída'}
                                 </Badge>
                               </TableCell>
                             )}
@@ -2835,10 +2844,12 @@ export default function Financeiro() {
                             {colunasVisiveis.valor && (
                               <TableCell 
                                 className={`text-right font-semibold ${
+                                  item.tipo === 'transferencia' ? 'text-purple-600' :
                                   item.tipo === 'entrada' ? 'text-green-600' : 'text-destructive'
                                 }`}
                               >
-                                {item.tipo === 'entrada' ? '+' : '-'} {formatCurrency(item.valor)}
+                                {item.tipo === 'transferencia' ? '↔' : 
+                                 item.tipo === 'entrada' ? '+' : '-'} {formatCurrency(item.valor)}
                               </TableCell>
                             )}
                             {colunasVisiveis.dataEsperada && (
