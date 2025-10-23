@@ -35,7 +35,11 @@ export default function DRE() {
     console.log('🔍 DRE Debug - Categorias disponíveis:', categorias);
 
     // Filtrar lançamentos por data de emissão (independente se foi pago)
+    // EXCLUIR parcelas (lançamentos filhos) - apenas mostrar lançamento PAI ou lançamentos simples
     const lancamentosFiltrados = lancamentos.filter(l => {
+      // Excluir parcelas (lançamentos com lancamentoPaiId preenchido)
+      if (l.lancamentoPaiId) return false;
+      
       const data = new Date(l.dataEmissao);
       const ano = data.getFullYear().toString();
       const mes = (data.getMonth() + 1).toString().padStart(2, '0');

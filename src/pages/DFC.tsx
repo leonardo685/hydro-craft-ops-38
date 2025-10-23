@@ -553,7 +553,15 @@ export default function DFC() {
     const resultado: DFCItem[] = [];
 
     // 1. Filtrar lançamentos PAGOS dentro do período selecionado
+    // EXCLUIR lançamentos PAI de parcelamentos - apenas mostrar as parcelas individuais
     const lancamentosFiltrados = lancamentos.filter(l => {
+      // Excluir lançamentos PAI de parcelamento
+      // (lançamentos que têm filhos, identificados por numeroParcelas > 1 e lancamentoPaiId === null)
+      if (!l.lancamentoPaiId && l.numeroParcelas && l.numeroParcelas > 1) {
+        return false;
+      }
+      
+      // Só incluir se estiver pago e tiver data realizada
       if (!l.pago || !l.dataRealizada) return false;
       
       const dataRealizada = new Date(l.dataRealizada);
