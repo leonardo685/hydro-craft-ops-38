@@ -87,6 +87,7 @@ export default function DFC() {
     descricao: '',
     categoria: '',
     conta: 'conta_corrente',
+    contaDestino: '',
       fornecedor: '',
     paga: false,
     dataEmissao: new Date(),
@@ -343,14 +344,60 @@ export default function DFC() {
   });
 
   const handleLancamento = async () => {
-    if (!lancamentoForm.valor || !lancamentoForm.descricao || !lancamentoForm.categoria) {
+    if (!lancamentoForm.valor || !lancamentoForm.descricao) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
+    }
+
+    // Validação específica para transferências
+    if (lancamentoForm.tipo === 'transferencia') {
+      if (!lancamentoForm.contaDestino) {
+        toast.error("Selecione a conta de destino para transferência");
+        return;
+      }
+      if (lancamentoForm.conta === lancamentoForm.contaDestino) {
+        toast.error("Conta de origem e destino devem ser diferentes");
+        return;
+      }
+    } else {
+      if (!lancamentoForm.categoria) {
+        toast.error("Preencha todos os campos obrigatórios");
+        return;
+      }
     }
 
     const valorTotal = parseFloat(lancamentoForm.valor);
     const dataBase = lancamentoForm.dataEsperada;
     
+    // Lógica especial para transferências entre contas
+    if (lancamentoForm.tipo === 'transferencia') {
+      const contaOrigem = contasBancariasAtualizadas.find(c => c.id === lancamentoForm.conta);
+      const contaDestinoObj = contasBancariasAtualizadas.find(c => c.id === lancamentoForm.contaDestino);
+      
+      // Criar lançamento de transferência
+      const descricaoBase = lancamentoForm.descricao || 'Transferência entre contas';
+      
+      await adicionarLancamento({
+        tipo: 'transferencia' as any,
+        descricao: `${descricaoBase} - Saída de ${contaOrigem?.nome}`,
+        categoriaId: lancamentoForm.categoria || undefined,
+        valor: valorTotal,
+        contaBancaria: lancamentoForm.conta,
+        contaDestino: lancamentoForm.contaDestino,
+        dataEsperada: dataBase,
+        dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : null,
+        dataEmissao: lancamentoForm.dataEmissao,
+        pago: lancamentoForm.paga,
+        fornecedorCliente: lancamentoForm.fornecedor,
+        formaPagamento: 'a_vista',
+      });
+      
+      toast.success("Transferência registrada com sucesso!");
+      resetForm();
+      setIsLancamentoDialogOpen(false);
+      return;
+    }
+
     if (lancamentoForm.formaPagamento === 'a_vista') {
       // Lançamento único
       const resultado = await adicionarLancamento({
@@ -461,6 +508,7 @@ export default function DFC() {
       descricao: '',
       categoria: '',
       conta: 'conta_corrente',
+      contaDestino: '',
       fornecedor: '',
       paga: false,
       dataEmissao: new Date(),
@@ -1180,13 +1228,14 @@ export default function DFC() {
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label>Tipo de Lançamento</Label>
-                              <Select value={lancamentoForm.tipo} onValueChange={(value: 'entrada' | 'saida') => setLancamentoForm(prev => ({ ...prev, tipo: value }))}>
+                              <Select value={lancamentoForm.tipo} onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, tipo: value }))}>
                                 <SelectTrigger>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="entrada">Entrada</SelectItem>
                                   <SelectItem value="saida">Saída</SelectItem>
+                                  <SelectItem value="transferencia">Transferência entre Contas</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -1289,7 +1338,9 @@ export default function DFC() {
                               </Button>
                             </div>
                             <div className="space-y-2">
-                              <Label>Conta Bancária</Label>
+                              <Label>
+                                {lancamentoForm.tipo === 'transferencia' ? 'Conta Bancária de Origem' : 'Conta Bancária'}
+                              </Label>
                               <Select value={lancamentoForm.conta} onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, conta: value }))}>
                                 <SelectTrigger>
                                   <SelectValue />
@@ -1302,6 +1353,30 @@ export default function DFC() {
                               </Select>
                             </div>
                           </div>
+
+                          {/* Campo condicional para Conta de Destino */}
+                          {lancamentoForm.tipo === 'transferencia' && (
+                            <div className="space-y-2">
+                              <Label>Conta Bancária de Destino</Label>
+                              <Select 
+                                value={lancamentoForm.contaDestino} 
+                                onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, contaDestino: value }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione a conta de destino" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {contasBancarias
+                                    .filter(conta => conta.id !== lancamentoForm.conta)
+                                    .map((conta) => (
+                                      <SelectItem key={conta.id} value={conta.id}>
+                                        {conta.nome}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
 
                           <div className="space-y-2">
                             <Label>Fornecedor/Cliente</Label>
@@ -1665,6 +1740,7 @@ export default function DFC() {
                             <SelectItem value="todos">Todos</SelectItem>
                             <SelectItem value="entrada">Entrada</SelectItem>
                             <SelectItem value="saida">Saída</SelectItem>
+                            <SelectItem value="transferencia">Transferência</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1870,7 +1946,8 @@ export default function DFC() {
                         return {
                           'Data Esperada': format(item.dataEsperada, "dd/MM/yyyy"),
                           'Data Realizada': item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-',
-                          'Tipo': item.tipo === 'entrada' ? 'Entrada' : 'Saída',
+                          'Tipo': item.tipo === 'transferencia' ? 'Transferência' : 
+                                  item.tipo === 'entrada' ? 'Entrada' : 'Saída',
                           'Descrição': item.descricao,
                           'Categoria': item.categoria,
                           'Conta': conta?.nome || '-',
@@ -1977,17 +2054,28 @@ export default function DFC() {
                                 <Badge 
                                   className="gap-1"
                                   style={{
-                                    backgroundColor: item.tipo === 'entrada' 
+                                    backgroundColor: item.tipo === 'transferencia'
+                                      ? 'hsl(280 80% 50%)'
+                                      : item.tipo === 'entrada' 
                                       ? 'hsl(142 76% 36%)' 
                                       : 'hsl(0 84% 60%)',
                                     color: 'white',
-                                    borderColor: item.tipo === 'entrada' 
+                                    borderColor: item.tipo === 'transferencia'
+                                      ? 'hsl(280 80% 50%)'
+                                      : item.tipo === 'entrada' 
                                       ? 'hsl(142 76% 36%)' 
                                       : 'hsl(0 84% 60%)'
                                   }}
                                 >
-                                  {item.tipo === 'entrada' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
-                                  {item.tipo === 'entrada' ? 'Entrada' : 'Saída'}
+                                  {item.tipo === 'transferencia' ? (
+                                    <ArrowRightLeft className="h-3 w-3" />
+                                  ) : item.tipo === 'entrada' ? (
+                                    <ArrowDownLeft className="h-3 w-3" />
+                                  ) : (
+                                    <ArrowUpRight className="h-3 w-3" />
+                                  )}
+                                  {item.tipo === 'transferencia' ? 'Transferência' : 
+                                   item.tipo === 'entrada' ? 'Entrada' : 'Saída'}
                                 </Badge>
                               </TableCell>
                             )}
@@ -2085,7 +2173,10 @@ export default function DFC() {
                               </TableCell>
                             )}
                             {colunasVisiveis.valor && (
-                              <TableCell className={`text-right font-medium ${item.tipo === 'entrada' ? 'text-green-600' : 'text-destructive'}`}>
+                              <TableCell className={`text-right font-medium ${
+                                item.tipo === 'transferencia' ? 'text-purple-600' :
+                                item.tipo === 'entrada' ? 'text-green-600' : 'text-destructive'
+                              }`}>
                                 {editandoLancamento === item.id ? (
                                   <Input
                                     type="number"
@@ -2097,7 +2188,8 @@ export default function DFC() {
                                     className="text-right"
                                   />
                                 ) : (
-                                  formatCurrency(item.valor)
+                                  `${item.tipo === 'transferencia' ? '↔' : 
+                                      item.tipo === 'entrada' ? '+' : '-'} ${formatCurrency(item.valor)}`
                                 )}
                               </TableCell>
                             )}
