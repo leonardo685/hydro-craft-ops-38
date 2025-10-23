@@ -37,6 +37,9 @@ export default function EmitirNotaModal({
   
   // Estados para o formulário de lançamento (igual ao DFC)
   const [prazoDias, setPrazoDias] = useState(30);
+  const [parcelado, setParcelado] = useState(false);
+  const [numeroParcelas, setNumeroParcelas] = useState(1);
+  const [frequenciaParcelas, setFrequenciaParcelas] = useState<'mensal' | 'quinzenal'>('mensal');
   const [lancamentoForm, setLancamentoForm] = useState({
     tipo: 'entrada' as const,
     valor: '',
@@ -223,6 +226,9 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
     setNumeroNF('');
     setAnexoNota(null);
     setPrazoDias(30);
+    setParcelado(false);
+    setNumeroParcelas(1);
+    setFrequenciaParcelas('mensal');
     setLancamentoForm({
       tipo: 'entrada',
       valor: '',
@@ -248,50 +254,134 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
       return;
     }
 
+    if (parcelado && numeroParcelas < 2) {
+      toast({
+        title: "Número de parcelas inválido",
+        description: "Para faturamento parcelado, informe pelo menos 2 parcelas",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setUploading(true);
     try {
       // 1. Upload do PDF
       const urlAnexo = await uploadAnexo();
 
-      // 2. Criar lançamento financeiro
-      const { error: lancamentoError } = await supabase
-        .from('lancamentos_financeiros')
-        .insert({
-          tipo: lancamentoForm.tipo,
-          descricao: lancamentoForm.descricao,
-          categoria_id: lancamentoForm.categoria,
-          valor: parseFloat(lancamentoForm.valor),
-          conta_bancaria: lancamentoForm.conta,
-          data_emissao: lancamentoForm.dataEmissao.toISOString(),
-          data_esperada: lancamentoForm.dataEsperada.toISOString(),
-          data_realizada: null,
-          pago: false,
-          fornecedor_cliente: lancamentoForm.fornecedor
+      const valorTotal = parseFloat(lancamentoForm.valor);
+      
+      if (parcelado) {
+        // Faturamento parcelado
+        const valorParcela = valorTotal / numeroParcelas;
+        
+        // Gerar datas das parcelas
+        const { gerarDatasParcelamento } = await import('@/lib/lancamento-utils');
+        const datasParcelas = gerarDatasParcelamento(
+          lancamentoForm.dataEsperada,
+          numeroParcelas,
+          frequenciaParcelas
+        );
+
+        // Criar lançamentos e contas a receber para cada parcela
+        for (let i = 0; i < numeroParcelas; i++) {
+          const dataVencimento = datasParcelas[i];
+          const descricaoParcela = `${lancamentoForm.descricao} - Parcela ${i + 1}/${numeroParcelas}`;
+
+          // Criar lançamento financeiro para a parcela
+          const { error: lancamentoError } = await supabase
+            .from('lancamentos_financeiros')
+            .insert({
+              tipo: lancamentoForm.tipo,
+              descricao: descricaoParcela,
+              categoria_id: lancamentoForm.categoria,
+              valor: valorParcela,
+              conta_bancaria: lancamentoForm.conta,
+              data_emissao: lancamentoForm.dataEmissao.toISOString(),
+              data_esperada: dataVencimento.toISOString(),
+              data_realizada: null,
+              pago: false,
+              fornecedor_cliente: lancamentoForm.fornecedor,
+              numero_parcelas: numeroParcelas,
+              parcela_numero: i + 1
+            });
+
+          if (lancamentoError) {
+            console.error('Erro ao criar lançamento financeiro:', lancamentoError);
+            throw lancamentoError;
+          }
+
+          // Criar conta a receber para a parcela
+          const { error: contaReceberError } = await supabase
+            .from('contas_receber')
+            .insert({
+              orcamento_id: orcamento.id,
+              numero_nf: `${numeroNF} - ${i + 1}/${numeroParcelas}`,
+              cliente_nome: orcamento.cliente_nome,
+              valor: valorParcela,
+              data_emissao: lancamentoForm.dataEmissao.toISOString(),
+              data_vencimento: dataVencimento.toISOString().split('T')[0],
+              forma_pagamento: lancamentoForm.conta.includes('corrente') ? 'transferencia' : 'boleto',
+              observacoes: descricaoParcela,
+              status: 'pendente'
+            });
+
+          if (contaReceberError) {
+            console.error('Erro ao criar conta a receber:', contaReceberError);
+            throw contaReceberError;
+          }
+        }
+
+        toast({
+          title: "Nota fiscal emitida!",
+          description: `Nota fiscal ${numeroNF} emitida com ${numeroParcelas} parcelas`
         });
+      } else {
+        // Faturamento à vista (fluxo original)
+        // 2. Criar lançamento financeiro
+        const { error: lancamentoError } = await supabase
+          .from('lancamentos_financeiros')
+          .insert({
+            tipo: lancamentoForm.tipo,
+            descricao: lancamentoForm.descricao,
+            categoria_id: lancamentoForm.categoria,
+            valor: valorTotal,
+            conta_bancaria: lancamentoForm.conta,
+            data_emissao: lancamentoForm.dataEmissao.toISOString(),
+            data_esperada: lancamentoForm.dataEsperada.toISOString(),
+            data_realizada: null,
+            pago: false,
+            fornecedor_cliente: lancamentoForm.fornecedor
+          });
 
-      if (lancamentoError) {
-        console.error('Erro ao criar lançamento financeiro:', lancamentoError);
-        throw lancamentoError;
-      }
+        if (lancamentoError) {
+          console.error('Erro ao criar lançamento financeiro:', lancamentoError);
+          throw lancamentoError;
+        }
 
-      // 3. Criar conta a receber
-      const { error: contaReceberError } = await supabase
-        .from('contas_receber')
-        .insert({
-          orcamento_id: orcamento.id,
-          numero_nf: numeroNF,
-          cliente_nome: orcamento.cliente_nome,
-          valor: parseFloat(lancamentoForm.valor),
-          data_emissao: lancamentoForm.dataEmissao.toISOString(),
-          data_vencimento: lancamentoForm.dataEsperada.toISOString().split('T')[0],
-          forma_pagamento: lancamentoForm.conta.includes('corrente') ? 'transferencia' : 'boleto',
-          observacoes: lancamentoForm.descricao,
-          status: 'pendente'
+        // 3. Criar conta a receber
+        const { error: contaReceberError } = await supabase
+          .from('contas_receber')
+          .insert({
+            orcamento_id: orcamento.id,
+            numero_nf: numeroNF,
+            cliente_nome: orcamento.cliente_nome,
+            valor: valorTotal,
+            data_emissao: lancamentoForm.dataEmissao.toISOString(),
+            data_vencimento: lancamentoForm.dataEsperada.toISOString().split('T')[0],
+            forma_pagamento: lancamentoForm.conta.includes('corrente') ? 'transferencia' : 'boleto',
+            observacoes: lancamentoForm.descricao,
+            status: 'pendente'
+          });
+
+        if (contaReceberError) {
+          console.error('Erro ao criar conta a receber:', contaReceberError);
+          throw contaReceberError;
+        }
+
+        toast({
+          title: "Nota fiscal emitida!",
+          description: `Nota fiscal ${numeroNF} emitida e lançamento criado com sucesso`
         });
-
-      if (contaReceberError) {
-        console.error('Erro ao criar conta a receber:', contaReceberError);
-        throw contaReceberError;
       }
 
       // 4. Atualizar orçamento com nota fiscal
@@ -309,11 +399,6 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
         throw orcamentoError;
       }
 
-      toast({
-        title: "Nota fiscal emitida!",
-        description: `Nota fiscal ${numeroNF} emitida e lançamento criado com sucesso`
-      });
-
       onConfirm();
       onOpenChange(false);
 
@@ -322,6 +407,9 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
       setNumeroNF('');
       setAnexoNota(null);
       setPrazoDias(30);
+      setParcelado(false);
+      setNumeroParcelas(1);
+      setFrequenciaParcelas('mensal');
       setLancamentoForm({
         tipo: 'entrada',
         valor: '',
@@ -620,6 +708,54 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                   />
                 </div>
 
+                {/* Opção de parcelamento */}
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="parcelado" 
+                      checked={parcelado}
+                      onCheckedChange={(checked) => setParcelado(checked as boolean)}
+                    />
+                    <Label htmlFor="parcelado" className="cursor-pointer font-semibold">
+                      Faturamento Parcelado
+                    </Label>
+                  </div>
+
+                  {parcelado && (
+                    <div className="grid grid-cols-2 gap-4 pl-6">
+                      <div className="space-y-2">
+                        <Label>Número de Parcelas</Label>
+                        <Input 
+                          type="number"
+                          min="2"
+                          max="12"
+                          value={numeroParcelas}
+                          onChange={(e) => setNumeroParcelas(parseInt(e.target.value) || 1)}
+                          placeholder="Ex: 3"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Frequência</Label>
+                        <Select value={frequenciaParcelas} onValueChange={(value: 'mensal' | 'quinzenal') => setFrequenciaParcelas(value)}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="mensal">Mensal</SelectItem>
+                            <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  {parcelado && numeroParcelas > 1 && (
+                    <div className="pl-6 text-sm text-muted-foreground">
+                      Valor da parcela: R$ {(parseFloat(lancamentoForm.valor || '0') / numeroParcelas).toFixed(2)}
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Prazo de Pagamento (dias)</Label>
@@ -629,13 +765,17 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                       value={prazoDias}
                       onChange={(e) => handlePrazoDiasChange(e.target.value)}
                       placeholder="Ex: 30"
+                      disabled={parcelado}
                     />
                     <p className="text-xs text-muted-foreground">
-                      {prazoDias} {prazoDias === 1 ? 'dia' : 'dias'} a partir da emissão
+                      {parcelado 
+                        ? 'Data da 1ª parcela' 
+                        : `${prazoDias} ${prazoDias === 1 ? 'dia' : 'dias'} a partir da emissão`
+                      }
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label>Data Esperada</Label>
+                    <Label>{parcelado ? 'Data da 1ª Parcela' : 'Data Esperada'}</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !lancamentoForm.dataEsperada && "text-muted-foreground")}>
