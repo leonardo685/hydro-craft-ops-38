@@ -906,10 +906,8 @@ export default function Financeiro() {
 
   // Dados do extrato filtrados - filtra lançamentos reais do banco de dados
   const extratoFiltrado = lancamentos.filter(item => {
-    // IMPORTANTE: No extrato, não mostrar lançamentos "pai" de parcelamento
-    // Mostrar apenas: lançamentos à vista, parcelas individuais, e lançamentos recorrentes
-    if (item.formaPagamento === 'parcelado' && !item.parcelaNumero) {
-      // Este é um lançamento pai (parcelado sem número de parcela) - não mostrar no extrato
+    // IMPORTANTE: Excluir lançamentos PAI de parcelamento (numeroParcelas > 1 e sem lancamentoPaiId)
+    if (!item.lancamentoPaiId && item.numeroParcelas && item.numeroParcelas > 1) {
       return false;
     }
 
