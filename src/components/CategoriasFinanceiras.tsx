@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ export const CategoriasFinanceiras = () => {
   
   const [expandedCategorias, setExpandedCategorias] = useState<Set<string>>(new Set());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [formData, setFormData] = useState({
     codigo: '',
     nome: '',
@@ -105,18 +107,30 @@ export const CategoriasFinanceiras = () => {
 
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Tag className="h-5 w-5" />
-              Categorias Financeiras
-            </CardTitle>
-            <CardDescription>
-              Organize suas transações por categorias com contas mães e filhas
-            </CardDescription>
-          </div>
+    <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-5 w-5" />
+                  <div className="text-left">
+                    <CardTitle className="flex items-center gap-2">
+                      Categorias Financeiras
+                    </CardTitle>
+                    <CardDescription>
+                      Organize suas transações por categorias com contas mães e filhas
+                    </CardDescription>
+                  </div>
+                </div>
+                {isCollapsed ? (
+                  <ChevronDown className="h-5 w-5 ml-2" />
+                ) : (
+                  <ChevronUp className="h-5 w-5 ml-2" />
+                )}
+              </button>
+            </CollapsibleTrigger>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
@@ -203,9 +217,10 @@ export const CategoriasFinanceiras = () => {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-      </CardHeader>
-      <CardContent>
+          </div>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
@@ -309,6 +324,8 @@ export const CategoriasFinanceiras = () => {
           </TableBody>
         </Table>
       </CardContent>
-    </Card>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 };

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Users, Building, Tag, Edit, Trash2 } from "lucide-react";
 import { CategoriasFinanceiras } from "@/components/CategoriasFinanceiras";
+import { ContasBancarias } from "@/components/ContasBancarias";
 import { CNPJInput } from "@/components/CNPJInput";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
@@ -338,7 +339,7 @@ const Cadastros = () => {
             </TabsTrigger>
             <TabsTrigger value="categorias" className="flex items-center gap-2">
               <Tag className="h-4 w-4" />
-              Categorias Financeiras
+              Financeiro
             </TabsTrigger>
           </TabsList>
 
@@ -744,8 +745,9 @@ const Cadastros = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="categorias" className="mt-6">
+          <TabsContent value="categorias" className="mt-6 space-y-6">
             <CategoriasFinanceiras />
+            <ContasBancarias />
           </TabsContent>
         </Tabs>
       </div>
