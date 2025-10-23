@@ -434,24 +434,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
     }
   };
 
-  if (!orcamento) return null;
-
-  const formatarData = (data: string) => {
-    return new Date(data).toLocaleDateString('pt-BR');
-  };
-
-  const textoNota = `I - NF referente ao orçamento ${orcamento.numero}.
-II - NF referente ao pedido ${dadosAprovacao.numeroPedido}.
-III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
-
-  const contasBancarias = [
-    { id: 'conta_corrente', nome: 'Conta Corrente - Banco do Brasil' },
-    { id: 'conta_poupanca', nome: 'Poupança - Banco do Brasil' },
-    { id: 'conta_itau', nome: 'Conta Corrente - Itaú' },
-    { id: 'conta_caixa', nome: 'Conta Corrente - Caixa' }
-  ];
-
-  // Calcular datas e valores das parcelas
+  // Calcular datas e valores das parcelas - ANTES do early return
   const parcelasPreview = useMemo(() => {
     if (!parcelado || numeroParcelas < 2 || !lancamentoForm.valor || !lancamentoForm.dataEsperada) {
       return [];
@@ -470,6 +453,23 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
       valor: valorParcela
     }));
   }, [parcelado, numeroParcelas, frequenciaParcelas, lancamentoForm.dataEsperada, lancamentoForm.valor]);
+
+  if (!orcamento) return null;
+
+  const formatarData = (data: string) => {
+    return new Date(data).toLocaleDateString('pt-BR');
+  };
+
+  const textoNota = `I - NF referente ao orçamento ${orcamento.numero}.
+II - NF referente ao pedido ${dadosAprovacao.numeroPedido}.
+III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
+
+  const contasBancarias = [
+    { id: 'conta_corrente', nome: 'Conta Corrente - Banco do Brasil' },
+    { id: 'conta_poupanca', nome: 'Poupança - Banco do Brasil' },
+    { id: 'conta_itau', nome: 'Conta Corrente - Itaú' },
+    { id: 'conta_caixa', nome: 'Conta Corrente - Caixa' }
+  ];
 
   return (
     <Dialog open={open} onOpenChange={handleFechar}>
