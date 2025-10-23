@@ -37,6 +37,9 @@ export default function DRE() {
     // Filtrar lançamentos por data de emissão (independente se foi pago)
     // EXCLUIR parcelas (lançamentos filhos) - apenas mostrar lançamento PAI ou lançamentos simples
     const lancamentosFiltrados = lancamentos.filter(l => {
+      // Excluir transferências entre contas do DRE
+      if (l.tipo === 'transferencia') return false;
+      
       // Excluir parcelas (lançamentos com lancamentoPaiId preenchido)
       if (l.lancamentoPaiId) return false;
       

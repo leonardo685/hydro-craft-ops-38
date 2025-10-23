@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign, Check, Minus, ChevronsUpDown, Settings, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign, Check, Minus, ChevronsUpDown, Settings, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown, ArrowRightLeft } from "lucide-react";
 import { useState } from "react";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
@@ -653,6 +653,9 @@ export default function DFC() {
     // 1. Filtrar lançamentos PAGOS dentro do período selecionado
     // EXCLUIR lançamentos PAI de parcelamentos - apenas mostrar as parcelas individuais
     const lancamentosFiltrados = lancamentos.filter(l => {
+      // Excluir transferências entre contas do DFC
+      if (l.tipo === 'transferencia') return false;
+      
       // Excluir lançamentos PAI de parcelamento
       // (lançamentos que têm filhos, identificados por numeroParcelas > 1 e lancamentoPaiId === null)
       if (!l.lancamentoPaiId && l.numeroParcelas && l.numeroParcelas > 1) {

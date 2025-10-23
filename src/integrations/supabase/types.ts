@@ -492,6 +492,7 @@ export type Database = {
         Row: {
           categoria_id: string | null
           conta_bancaria: string
+          conta_destino: string | null
           created_at: string
           data_emissao: string
           data_esperada: string
@@ -513,6 +514,7 @@ export type Database = {
         Insert: {
           categoria_id?: string | null
           conta_bancaria: string
+          conta_destino?: string | null
           created_at?: string
           data_emissao?: string
           data_esperada: string
@@ -534,6 +536,7 @@ export type Database = {
         Update: {
           categoria_id?: string | null
           conta_bancaria?: string
+          conta_destino?: string | null
           created_at?: string
           data_emissao?: string
           data_esperada?: string

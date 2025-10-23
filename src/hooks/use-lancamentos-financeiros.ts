@@ -4,8 +4,9 @@ import { toast } from 'sonner';
 
 export interface LancamentoFinanceiro {
   id: string;
-  tipo: 'entrada' | 'saida';
+  tipo: 'entrada' | 'saida' | 'transferencia';
   descricao: string;
+  contaDestino?: string;
   categoriaId?: string;
   valor: number;
   contaBancaria: string;

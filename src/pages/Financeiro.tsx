@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { TrendingUp, TrendingDown, DollarSign, Activity, Edit, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, FileDown, ChevronDown, ChevronUp, X, ChevronsUpDown, Check, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Activity, Edit, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, FileDown, ChevronDown, ChevronUp, X, ChevronsUpDown, Check, ArrowUp, ArrowDown, ArrowUpDown, ArrowRightLeft } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
@@ -126,6 +126,7 @@ export default function Financeiro() {
     descricao: '',
     categoria: '',
     conta: 'conta_corrente',
+    contaDestino: '',
       fornecedor: '',
     paga: false,
     dataEmissao: new Date(), // Data de hoje por padrão
@@ -1097,13 +1098,78 @@ export default function Financeiro() {
   });
 
   const handleLancamento = async () => {
-    if (!lancamentoForm.valor || !lancamentoForm.descricao || !lancamentoForm.categoria) {
+    if (!lancamentoForm.valor || !lancamentoForm.descricao) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
+    }
+
+    // Validação específica para transferências
+    if (lancamentoForm.tipo === 'transferencia') {
+      if (!lancamentoForm.contaDestino) {
+        toast.error("Selecione a conta de destino para transferência");
+        return;
+      }
+      if (lancamentoForm.conta === lancamentoForm.contaDestino) {
+        toast.error("Conta de origem e destino devem ser diferentes");
+        return;
+      }
+    } else {
+      if (!lancamentoForm.categoria) {
+        toast.error("Preencha todos os campos obrigatórios");
+        return;
+      }
     }
     
     const valorTotal = parseFloat(lancamentoForm.valor);
     const dataBase = lancamentoForm.dataEsperada;
+    
+    // Lógica especial para transferências entre contas
+    if (lancamentoForm.tipo === 'transferencia') {
+      const contaOrigem = contasBancarias.find(c => c.id === lancamentoForm.conta);
+      const contaDestinoObj = contasBancarias.find(c => c.id === lancamentoForm.contaDestino);
+      
+      // Criar dois lançamentos vinculados (saída da origem e entrada no destino)
+      const descricaoBase = lancamentoForm.descricao || 'Transferência entre contas';
+      
+      // Lançamento 1: Saída da conta origem
+      await adicionarLancamento({
+        tipo: 'transferencia' as any,
+        descricao: `${descricaoBase} - Saída de ${contaOrigem?.nome}`,
+        categoriaId: lancamentoForm.categoria || undefined,
+        valor: valorTotal,
+        contaBancaria: lancamentoForm.conta,
+        contaDestino: lancamentoForm.contaDestino,
+        dataEsperada: dataBase,
+        dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : null,
+        dataEmissao: lancamentoForm.dataEmissao,
+        pago: lancamentoForm.paga,
+        fornecedorCliente: lancamentoForm.fornecedor,
+        formaPagamento: 'a_vista',
+      });
+      
+      toast.success("Transferência registrada com sucesso!");
+      setLancamentoForm({
+        tipo: 'entrada',
+        valor: '',
+        descricao: '',
+        categoria: '',
+        conta: 'conta_corrente',
+        contaDestino: '',
+        fornecedor: '',
+        paga: false,
+        dataEmissao: new Date(),
+        dataPagamento: new Date(),
+        dataRealizada: new Date(),
+        dataEsperada: new Date(),
+        formaPagamento: 'a_vista',
+        numeroParcelas: 2,
+        frequenciaRepeticao: 'mensal',
+        mesesRecorrencia: 12,
+      });
+      setDatasParcelasCustom([]);
+      setIsLancamentoDialogOpen(false);
+      return;
+    }
     
     if (lancamentoForm.formaPagamento === 'a_vista') {
       // Lançamento único
@@ -1128,6 +1194,7 @@ export default function Financeiro() {
           descricao: '',
           categoria: '',
           conta: 'conta_corrente',
+          contaDestino: '',
           fornecedor: 'cliente_joao',
           paga: false,
           dataEmissao: new Date(),
@@ -1196,6 +1263,7 @@ export default function Financeiro() {
           descricao: '',
           categoria: '',
           conta: 'conta_corrente',
+          contaDestino: '',
           fornecedor: 'cliente_joao',
           paga: false,
           dataEmissao: new Date(),
@@ -1243,6 +1311,7 @@ export default function Financeiro() {
         descricao: '',
         categoria: '',
         conta: 'conta_corrente',
+        contaDestino: '',
         fornecedor: 'cliente_joao',
         paga: false,
         dataEmissao: new Date(),
@@ -1935,6 +2004,7 @@ export default function Financeiro() {
                                 <SelectContent>
                                   <SelectItem value="entrada">Entrada</SelectItem>
                                   <SelectItem value="saida">Saída</SelectItem>
+                                  <SelectItem value="transferencia">Transferência entre Contas</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -1959,7 +2029,9 @@ export default function Financeiro() {
                               />
                             </div>
                             <div>
-                              <Label htmlFor="conta">Conta Bancária</Label>
+                              <Label htmlFor="conta">
+                                {lancamentoForm.tipo === 'transferencia' ? 'Conta Bancária de Origem' : 'Conta Bancária'}
+                              </Label>
                               <Select 
                                 value={lancamentoForm.conta} 
                                 onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, conta: value }))}
@@ -1976,8 +2048,35 @@ export default function Financeiro() {
                                 </SelectContent>
                               </Select>
                             </div>
+                            
+                            {/* Campo condicional para Conta de Destino */}
+                            {lancamentoForm.tipo === 'transferencia' && (
+                              <div>
+                                <Label htmlFor="contaDestino">Conta Bancária de Destino</Label>
+                                <Select 
+                                  value={lancamentoForm.contaDestino} 
+                                  onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, contaDestino: value }))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione a conta de destino" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {contasBancarias
+                                      .filter(conta => conta.id !== lancamentoForm.conta)
+                                      .map((conta) => (
+                                        <SelectItem key={conta.id} value={conta.id}>
+                                          {conta.nome}
+                                        </SelectItem>
+                                      ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+                            
                             <div>
-                              <Label htmlFor="categoria">Categoria</Label>
+                              <Label htmlFor="categoria">
+                                Categoria {lancamentoForm.tipo === 'transferencia' && '(opcional)'}
+                              </Label>
                               <Popover open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
                                 <PopoverTrigger asChild>
                                   <Button
