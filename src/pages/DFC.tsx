@@ -200,7 +200,16 @@ export default function DFC() {
   }));
 
   const extratoData = useMemo(() => {
-    return lancamentos.map(lancamento => ({
+    // FILTRAR lançamentos ANTES de mapear - excluir lançamentos PAI de parcelamento
+    const lancamentosFiltrados = lancamentos.filter(lancamento => {
+      // Excluir lançamentos PAI de parcelamento (numeroParcelas > 1 e sem lancamentoPaiId)
+      if (!lancamento.lancamentoPaiId && lancamento.numeroParcelas && lancamento.numeroParcelas > 1) {
+        return false;
+      }
+      return true;
+    });
+
+    return lancamentosFiltrados.map(lancamento => ({
       id: lancamento.id,
       hora: new Date(lancamento.dataEsperada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       tipo: lancamento.tipo,
