@@ -1217,7 +1217,8 @@ export default function DFC() {
                       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 flex flex-col">
                         <div className={cn(
                           "h-4 w-full transition-colors duration-300 flex-shrink-0",
-                          lancamentoForm.tipo === 'entrada' ? "bg-green-500" : "bg-red-500"
+                          lancamentoForm.tipo === 'entrada' ? "bg-green-500" : 
+                          lancamentoForm.tipo === 'transferencia' ? "bg-blue-500" : "bg-red-500"
                         )} />
                         <div className="p-6 overflow-y-auto flex-1">
                           <DialogHeader>
