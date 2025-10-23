@@ -238,7 +238,7 @@ export function MorphPanel() {
   }, [showForm, triggerClose])
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (showForm || isMobile) return // Não arrasta quando o formulário está aberto ou em mobile
+    if (showForm) return // Não arrasta quando o formulário está aberto
     setIsDragging(true)
     setDragStart({
       x: e.clientX - position.x,
@@ -246,12 +246,57 @@ export function MorphPanel() {
     })
   }
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (showForm) return
+    e.preventDefault() // Previne scroll
+    const touch = e.touches[0]
+    setIsDragging(true)
+    setDragStart({
+      x: touch.clientX - position.x,
+      y: touch.clientY - position.y,
+    })
+  }
+
+  const handleTouchMove = React.useCallback(
+    (e: TouchEvent) => {
+      if (!isDragging) return
+      e.preventDefault()
+      const touch = e.touches[0]
+      
+      // Calcula nova posição
+      let newX = touch.clientX - dragStart.x
+      let newY = touch.clientY - dragStart.y
+      
+      // Adiciona limites para não sair da tela
+      const maxX = window.innerWidth - 100
+      const maxY = window.innerHeight - 100
+      
+      newX = Math.max(-maxX, Math.min(maxX, newX))
+      newY = Math.max(-maxY, Math.min(maxY, newY))
+      
+      setPosition({ x: newX, y: newY })
+    },
+    [isDragging, dragStart]
+  )
+
+  const handleTouchEnd = React.useCallback(() => {
+    setIsDragging(false)
+  }, [])
+
   const handleMouseMove = React.useCallback(
     (e: MouseEvent) => {
       if (!isDragging) return
       
-      const newX = e.clientX - dragStart.x
-      const newY = e.clientY - dragStart.y
+      // Calcula nova posição
+      let newX = e.clientX - dragStart.x
+      let newY = e.clientY - dragStart.y
+      
+      // Adiciona limites para não sair da tela
+      const maxX = window.innerWidth - 100
+      const maxY = window.innerHeight - 100
+      
+      newX = Math.max(-maxX, Math.min(maxX, newX))
+      newY = Math.max(-maxY, Math.min(maxY, newY))
       
       setPosition({ x: newX, y: newY })
     },
@@ -266,12 +311,16 @@ export function MorphPanel() {
     if (isDragging) {
       document.addEventListener("mousemove", handleMouseMove)
       document.addEventListener("mouseup", handleMouseUp)
+      document.addEventListener("touchmove", handleTouchMove, { passive: false })
+      document.addEventListener("touchend", handleTouchEnd)
       return () => {
         document.removeEventListener("mousemove", handleMouseMove)
         document.removeEventListener("mouseup", handleMouseUp)
+        document.removeEventListener("touchmove", handleTouchMove)
+        document.removeEventListener("touchend", handleTouchEnd)
       }
     }
-  }, [isDragging, handleMouseMove, handleMouseUp])
+  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd])
 
   const ctx = React.useMemo(
     () => ({ showForm, successFlag, triggerOpen, triggerClose }),
@@ -287,9 +336,10 @@ export function MorphPanel() {
           ? "bottom-4 left-1/2 -translate-x-1/2" 
           : "bottom-8 right-8"
       )}
-      style={isMobile ? {} : {
+      style={{
         transform: `translate(${position.x}px, ${position.y}px)`,
         cursor: isDragging ? 'grabbing' : (showForm ? 'default' : 'grab'),
+        touchAction: showForm ? 'auto' : 'none', // Previne scroll quando arrastando
       }}
     >
       <motion.div
@@ -313,6 +363,7 @@ export function MorphPanel() {
           delay: showForm ? 0 : 0.08,
         }}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
       >
         <FormContext.Provider value={ctx}>
           <DockBar />
