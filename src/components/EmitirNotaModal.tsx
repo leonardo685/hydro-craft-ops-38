@@ -722,79 +722,121 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                   </div>
 
                   {parcelado && (
-                    <div className="grid grid-cols-2 gap-4 pl-6">
-                      <div className="space-y-2">
-                        <Label>Número de Parcelas</Label>
-                        <Input 
-                          type="number"
-                          min="2"
-                          max="12"
-                          value={numeroParcelas}
-                          onChange={(e) => setNumeroParcelas(parseInt(e.target.value) || 1)}
-                          placeholder="Ex: 3"
-                        />
+                    <>
+                      <div className="grid grid-cols-2 gap-4 pl-6">
+                        <div className="space-y-2">
+                          <Label>Número de Parcelas</Label>
+                          <Input 
+                            type="number"
+                            min="2"
+                            max="12"
+                            value={numeroParcelas}
+                            onChange={(e) => setNumeroParcelas(parseInt(e.target.value) || 1)}
+                            placeholder="Ex: 3"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Frequência</Label>
+                          <Select value={frequenciaParcelas} onValueChange={(value: 'mensal' | 'quinzenal') => setFrequenciaParcelas(value)}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="mensal">Mensal</SelectItem>
+                              <SelectItem value="quinzenal">Quinzenal</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label>Frequência</Label>
-                        <Select value={frequenciaParcelas} onValueChange={(value: 'mensal' | 'quinzenal') => setFrequenciaParcelas(value)}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="mensal">Mensal</SelectItem>
-                            <SelectItem value="quinzenal">Quinzenal</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
 
-                  {parcelado && numeroParcelas > 1 && (
-                    <div className="pl-6 text-sm text-muted-foreground">
-                      Valor da parcela: R$ {(parseFloat(lancamentoForm.valor || '0') / numeroParcelas).toFixed(2)}
-                    </div>
+                      <div className="space-y-2 pl-6">
+                        <Label>Data da 1ª Parcela</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !lancamentoForm.dataEsperada && "text-muted-foreground")}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {lancamentoForm.dataEsperada ? format(lancamentoForm.dataEsperada, "dd/MM/yyyy") : "Selecionar data"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={lancamentoForm.dataEsperada}
+                              onSelect={(date) => date && setLancamentoForm(prev => ({ ...prev, dataEsperada: date }))}
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      {numeroParcelas > 1 && lancamentoForm.valor && (
+                        <div className="pl-6 space-y-2">
+                          <Label className="text-sm font-semibold">Previsão das Parcelas:</Label>
+                          <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                            {(() => {
+                              const { gerarDatasParcelamento } = require('@/lib/lancamento-utils');
+                              const datas = gerarDatasParcelamento(
+                                lancamentoForm.dataEsperada,
+                                numeroParcelas,
+                                frequenciaParcelas
+                              );
+                              const valorParcela = parseFloat(lancamentoForm.valor || '0') / numeroParcelas;
+                              
+                              return datas.map((data, index) => (
+                                <div key={index} className="flex items-center justify-between p-2 bg-background rounded border text-sm">
+                                  <span className="font-medium">Parcela {index + 1}/{numeroParcelas}</span>
+                                  <div className="flex items-center gap-4">
+                                    <span className="text-muted-foreground">{format(data, "dd/MM/yyyy")}</span>
+                                    <span className="font-semibold text-green-600">R$ {valorParcela.toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              ));
+                            })()}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Prazo de Pagamento (dias)</Label>
-                    <Input 
-                      type="number"
-                      min="1"
-                      value={prazoDias}
-                      onChange={(e) => handlePrazoDiasChange(e.target.value)}
-                      placeholder="Ex: 30"
-                      disabled={parcelado}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {parcelado 
-                        ? 'Data da 1ª parcela' 
-                        : `${prazoDias} ${prazoDias === 1 ? 'dia' : 'dias'} a partir da emissão`
-                      }
-                    </p>
+                {!parcelado && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Prazo de Pagamento (dias)</Label>
+                      <Input 
+                        type="number"
+                        min="1"
+                        value={prazoDias}
+                        onChange={(e) => handlePrazoDiasChange(e.target.value)}
+                        placeholder="Ex: 30"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {prazoDias} {prazoDias === 1 ? 'dia' : 'dias'} a partir da emissão
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Data Esperada</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !lancamentoForm.dataEsperada && "text-muted-foreground")}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {lancamentoForm.dataEsperada ? format(lancamentoForm.dataEsperada, "dd/MM/yyyy") : "Selecionar data"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={lancamentoForm.dataEsperada}
+                            onSelect={(date) => date && setLancamentoForm(prev => ({ ...prev, dataEsperada: date }))}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>{parcelado ? 'Data da 1ª Parcela' : 'Data Esperada'}</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !lancamentoForm.dataEsperada && "text-muted-foreground")}>
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {lancamentoForm.dataEsperada ? format(lancamentoForm.dataEsperada, "dd/MM/yyyy") : "Selecionar data"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={lancamentoForm.dataEsperada}
-                          onSelect={(date) => date && setLancamentoForm(prev => ({ ...prev, dataEsperada: date }))}
-                          initialFocus
-                          className={cn("p-3 pointer-events-auto")}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2">
