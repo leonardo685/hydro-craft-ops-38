@@ -364,6 +364,42 @@ export type Database = {
           },
         ]
       }
+      historico_lancamentos: {
+        Row: {
+          campo_alterado: string | null
+          created_at: string
+          id: string
+          lancamento_id: string
+          metadados: Json | null
+          tipo_acao: string
+          usuario_id: string | null
+          valor_anterior: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          campo_alterado?: string | null
+          created_at?: string
+          id?: string
+          lancamento_id: string
+          metadados?: Json | null
+          tipo_acao: string
+          usuario_id?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          campo_alterado?: string | null
+          created_at?: string
+          id?: string
+          lancamento_id?: string
+          metadados?: Json | null
+          tipo_acao?: string
+          usuario_id?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: []
+      }
       itens_nfe: {
         Row: {
           codigo: string

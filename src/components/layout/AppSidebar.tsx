@@ -44,7 +44,8 @@ import {
   CreditCard,
   ChevronDown,
   Target,
-  Shield
+  Shield,
+  History
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -208,6 +209,10 @@ export function AppSidebar() {
                 <span>Gerenciar Permissões</span>
               </DropdownMenuItem>
             )}
+            <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/historico-lancamentos')}>
+              <History className="mr-2 h-4 w-4" />
+              <span>Histórico de Lançamentos</span>
+            </DropdownMenuItem>
             <DropdownMenuItem className="cursor-pointer">
               <Settings className="mr-2 h-4 w-4" />
               <span>Configurações</span>
