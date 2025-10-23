@@ -11,6 +11,7 @@ import fixzysIcon from "@/assets/fixzys-icon.png"
 import { useAudioRecorder } from "@/hooks/useAudioRecorder"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface OrbProps {
   dimension?: string
@@ -200,6 +201,7 @@ export function MorphPanel() {
   const wrapperRef = React.useRef<HTMLDivElement>(null)
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null)
   const containerRef = React.useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
 
   const [showForm, setShowForm] = React.useState(false)
   const [successFlag, setSuccessFlag] = React.useState(false)
@@ -236,7 +238,7 @@ export function MorphPanel() {
   }, [showForm, triggerClose])
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (showForm) return // Não arrasta quando o formulário está aberto
+    if (showForm || isMobile) return // Não arrasta quando o formulário está aberto ou em mobile
     setIsDragging(true)
     setDragStart({
       x: e.clientX - position.x,
@@ -279,8 +281,13 @@ export function MorphPanel() {
   return (
     <div 
       ref={containerRef}
-      className="fixed bottom-8 right-8 z-50"
-      style={{
+      className={cn(
+        "fixed z-50",
+        isMobile 
+          ? "bottom-4 left-1/2 -translate-x-1/2" 
+          : "bottom-8 right-8"
+      )}
+      style={isMobile ? {} : {
         transform: `translate(${position.x}px, ${position.y}px)`,
         cursor: isDragging ? 'grabbing' : (showForm ? 'default' : 'grab'),
       }}
@@ -289,12 +296,13 @@ export function MorphPanel() {
         ref={wrapperRef}
         data-panel
         className={cx(
-          "bg-card relative flex flex-col items-center overflow-hidden border border-border shadow-lg backdrop-blur-sm"
+          "bg-card relative flex flex-col items-center overflow-hidden border border-border shadow-lg backdrop-blur-sm",
+          isMobile && "max-w-[calc(100vw-2rem)]"
         )}
         initial={false}
         animate={{
-          width: showForm ? FORM_WIDTH : "auto",
-          height: showForm ? FORM_HEIGHT : 88,
+          width: showForm ? (isMobile ? "min(90vw, 600px)" : FORM_WIDTH) : "auto",
+          height: showForm ? (isMobile ? "min(70vh, 500px)" : FORM_HEIGHT) : 88,
           borderRadius: showForm ? 14 : 20,
         }}
         transition={{
