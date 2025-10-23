@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, Copy, FileText, Calendar as CalendarIcon, User, FileImage, X, AlertCircle, DollarSign, Check, Download } from "lucide-react";
@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { Checkbox } from "@/components/ui/checkbox";
+import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 
 interface EmitirNotaModalProps {
   open: boolean;
@@ -450,6 +451,26 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
     { id: 'conta_caixa', nome: 'Conta Corrente - Caixa' }
   ];
 
+  // Calcular datas e valores das parcelas
+  const parcelasPreview = useMemo(() => {
+    if (!parcelado || numeroParcelas < 2 || !lancamentoForm.valor || !lancamentoForm.dataEsperada) {
+      return [];
+    }
+
+    const datas = gerarDatasParcelamento(
+      lancamentoForm.dataEsperada,
+      numeroParcelas,
+      frequenciaParcelas
+    );
+    const valorParcela = parseFloat(lancamentoForm.valor || '0') / numeroParcelas;
+
+    return datas.map((data, index) => ({
+      numero: index + 1,
+      data,
+      valor: valorParcela
+    }));
+  }, [parcelado, numeroParcelas, frequenciaParcelas, lancamentoForm.dataEsperada, lancamentoForm.valor]);
+
   return (
     <Dialog open={open} onOpenChange={handleFechar}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -770,29 +791,19 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                         </Popover>
                       </div>
 
-                      {numeroParcelas > 1 && lancamentoForm.valor && (
+                      {parcelasPreview.length > 0 && (
                         <div className="pl-6 space-y-2">
                           <Label className="text-sm font-semibold">Previsão das Parcelas:</Label>
                           <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                            {(() => {
-                              const { gerarDatasParcelamento } = require('@/lib/lancamento-utils');
-                              const datas = gerarDatasParcelamento(
-                                lancamentoForm.dataEsperada,
-                                numeroParcelas,
-                                frequenciaParcelas
-                              );
-                              const valorParcela = parseFloat(lancamentoForm.valor || '0') / numeroParcelas;
-                              
-                              return datas.map((data, index) => (
-                                <div key={index} className="flex items-center justify-between p-2 bg-background rounded border text-sm">
-                                  <span className="font-medium">Parcela {index + 1}/{numeroParcelas}</span>
-                                  <div className="flex items-center gap-4">
-                                    <span className="text-muted-foreground">{format(data, "dd/MM/yyyy")}</span>
-                                    <span className="font-semibold text-green-600">R$ {valorParcela.toFixed(2)}</span>
-                                  </div>
+                            {parcelasPreview.map((parcela) => (
+                              <div key={parcela.numero} className="flex items-center justify-between p-2 bg-background rounded border text-sm">
+                                <span className="font-medium">Parcela {parcela.numero}/{numeroParcelas}</span>
+                                <div className="flex items-center gap-4">
+                                  <span className="text-muted-foreground">{format(parcela.data, "dd/MM/yyyy")}</span>
+                                  <span className="font-semibold text-green-600">R$ {parcela.valor.toFixed(2)}</span>
                                 </div>
-                              ));
-                            })()}
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )}
