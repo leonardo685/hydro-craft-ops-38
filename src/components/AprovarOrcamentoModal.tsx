@@ -192,7 +192,7 @@ export const AprovarOrcamentoModal = ({
 
       // Enviar notificação para o n8n/Telegram
       try {
-        await fetch('https://primary-production-dc42.up.railway.app/webhook-test/01607294-b2b4-4482-931f-c3723b128d7d', {
+        await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
