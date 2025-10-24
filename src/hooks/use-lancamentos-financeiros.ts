@@ -260,6 +260,23 @@ export const useLancamentosFinanceiros = () => {
     }
   };
 
+  const limparTodosLancamentos = async () => {
+    try {
+      const { error } = await supabase
+        .from('lancamentos_financeiros')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Deleta todos os registros
+
+      if (error) throw error;
+
+      setLancamentos([]);
+      toast.success('Todos os lançamentos foram removidos');
+    } catch (error) {
+      console.error('Erro ao limpar lançamentos:', error);
+      toast.error('Erro ao limpar lançamentos');
+    }
+  };
+
   return {
     lancamentos,
     loading,
@@ -267,6 +284,7 @@ export const useLancamentosFinanceiros = () => {
     atualizarLancamento,
     deletarLancamento,
     deletarRecorrenciaCompleta,
+    limparTodosLancamentos,
     refetch: fetchLancamentos
   };
 };
