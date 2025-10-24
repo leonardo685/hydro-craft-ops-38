@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Printer, Download } from "lucide-react";
 import QRCode from "qrcode";
+import engrenagemLogo from "@/assets/engrenagem-logo.jpg";
 
 interface EquipmentLabelProps {
   equipment: {
@@ -16,6 +17,7 @@ interface EquipmentLabelProps {
 export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [logoDataUrl, setLogoDataUrl] = useState<string>("");
 
   useEffect(() => {
     const generateQRCode = async () => {
@@ -39,6 +41,21 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
 
     generateQRCode();
   }, [equipment]);
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = engrenagemLogo;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        setLogoDataUrl(canvas.toDataURL());
+      }
+    };
+  }, []);
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
@@ -67,8 +84,21 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
               .content {
                 flex: 1;
                 display: flex;
-                flex-direction: column;
+                align-items: center;
                 justify-content: center;
+              }
+              .logo-img {
+                width: 32px;
+                height: 32px;
+                margin-right: 8px;
+              }
+              .header {
+                display: flex;
+                align-items: center;
+              }
+              .text-content {
+                display: flex;
+                flex-direction: column;
               }
               .logo {
                 font-weight: bold;
@@ -97,8 +127,13 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
           <body>
             <div class="label">
               <div class="content">
-                <div class="logo">MEC-HIDRO</div>
-                <div class="order">${equipment.numeroOrdem}</div>
+                <div class="header">
+                  <img src="${logoDataUrl}" alt="Logo" class="logo-img" />
+                  <div class="text-content">
+                    <div class="logo">MEC-HIDRO</div>
+                    <div class="order">${equipment.numeroOrdem}</div>
+                  </div>
+                </div>
               </div>
               <div class="qr-container">
                 <img src="${qrDataUrl}" alt="QR Code" class="qr-code" />
@@ -129,30 +164,38 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
 
-    // Texto MEC-HIDRO
-    ctx.fillStyle = '#dc2626';
-    ctx.font = 'bold 16px Arial';
-    ctx.fillText('MEC-HIDRO', 15, 35);
-
-    // Número da ordem
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 24px Arial';
-    ctx.fillText(equipment.numeroOrdem, 15, 70);
-
-    // QR Code
-    if (qrDataUrl) {
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 200, 20, 80, 80);
-        
-        // Download
-        const link = document.createElement('a');
-        link.download = `etiqueta-${equipment.numeroOrdem}.png`;
-        link.href = canvas.toDataURL();
-        link.click();
-      };
-      img.src = qrDataUrl;
-    }
+    // Logo da engrenagem
+    const logoImg = new Image();
+    logoImg.src = engrenagemLogo;
+    logoImg.onload = () => {
+      // Desenhar logo
+      ctx.drawImage(logoImg, 10, 25, 30, 30);
+      
+      // Texto MEC-HIDRO (ajustado para direita do logo)
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 16px Arial';
+      ctx.fillText('MEC-HIDRO', 50, 40);
+      
+      // Número da ordem (ajustado para direita do logo)
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 24px Arial';
+      ctx.fillText(equipment.numeroOrdem, 50, 70);
+      
+      // QR Code
+      if (qrDataUrl) {
+        const qrImg = new Image();
+        qrImg.onload = () => {
+          ctx.drawImage(qrImg, 200, 20, 80, 80);
+          
+          // Download
+          const link = document.createElement('a');
+          link.download = `etiqueta-${equipment.numeroOrdem}.png`;
+          link.href = canvas.toDataURL();
+          link.click();
+        };
+        qrImg.src = qrDataUrl;
+      }
+    };
   };
 
   return (
@@ -166,9 +209,12 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
           {/* Preview da etiqueta */}
           <div className="border-2 border-border rounded-lg p-4 bg-white">
             <div className="flex items-center justify-between h-20">
-              <div className="flex flex-col justify-center">
-                <div className="text-red-600 font-bold text-sm mb-1">MEC-HIDRO</div>
-                <div className="text-xl font-bold text-foreground">{equipment.numeroOrdem}</div>
+              <div className="flex items-center gap-2">
+                <img src={engrenagemLogo} alt="Logo" className="w-10 h-10" />
+                <div className="flex flex-col justify-center">
+                  <div className="text-red-600 font-bold text-sm mb-1">MEC-HIDRO</div>
+                  <div className="text-xl font-bold text-foreground">{equipment.numeroOrdem}</div>
+                </div>
               </div>
               <div className="flex-shrink-0">
                 {qrDataUrl && (
