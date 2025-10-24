@@ -9,13 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 import jsPDF from "jspdf";
 import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 export default function Orcamentos() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -25,6 +30,12 @@ export default function Orcamentos() {
   const [selectedOrdemServico, setSelectedOrdemServico] = useState<any>(null);
   const [orcamentos, setOrcamentos] = useState<any[]>([]);
   const navigate = useNavigate();
+
+  // Estados para filtros
+  const [dataInicio, setDataInicio] = useState<Date | undefined>();
+  const [dataFim, setDataFim] = useState<Date | undefined>();
+  const [filtroCliente, setFiltroCliente] = useState("");
+  const [filtroNumero, setFiltroNumero] = useState("");
 
   useEffect(() => {
     carregarOrdensServico();
@@ -156,6 +167,40 @@ export default function Orcamentos() {
   const abrirPrecificacao = (orcamento: any) => {
     setOrcamentoParaPrecificar(orcamento);
     setShowPrecificacaoModal(true);
+  };
+
+  // Função para aplicar filtros
+  const aplicarFiltros = (orcamentosLista: any[]) => {
+    return orcamentosLista.filter((orc) => {
+      // Filtro por cliente
+      if (filtroCliente && !orc.cliente_nome?.toLowerCase().includes(filtroCliente.toLowerCase())) {
+        return false;
+      }
+      
+      // Filtro por número
+      if (filtroNumero && !orc.numero?.toLowerCase().includes(filtroNumero.toLowerCase())) {
+        return false;
+      }
+      
+      // Filtro por data
+      if (dataInicio || dataFim) {
+        const dataOrcamento = new Date(orc.data_criacao);
+        
+        if (dataInicio && dataOrcamento < dataInicio) {
+          return false;
+        }
+        
+        if (dataFim) {
+          const dataFimAjustada = new Date(dataFim);
+          dataFimAjustada.setHours(23, 59, 59, 999);
+          if (dataOrcamento > dataFimAjustada) {
+            return false;
+          }
+        }
+      }
+      
+      return true;
+    });
   };
 
   const gerarPDFOrcamento = async (orcamento: any) => {
@@ -859,6 +904,110 @@ export default function Orcamentos() {
           </Sheet>
         </div>
 
+        {/* Card de Filtros */}
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Filtro por Data Início */}
+              <div className="space-y-2">
+                <Label htmlFor="data-inicio">Data Início</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="data-inicio"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dataInicio && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dataInicio ? format(dataInicio, "PPP", { locale: ptBR }) : "Selecione..."}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dataInicio}
+                      onSelect={setDataInicio}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Filtro por Data Fim */}
+              <div className="space-y-2">
+                <Label htmlFor="data-fim">Data Fim</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="data-fim"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dataFim && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dataFim ? format(dataFim, "PPP", { locale: ptBR }) : "Selecione..."}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dataFim}
+                      onSelect={setDataFim}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Filtro por Cliente */}
+              <div className="space-y-2">
+                <Label htmlFor="filtro-cliente">Cliente</Label>
+                <Input
+                  id="filtro-cliente"
+                  placeholder="Nome do cliente..."
+                  value={filtroCliente}
+                  onChange={(e) => setFiltroCliente(e.target.value)}
+                />
+              </div>
+
+              {/* Filtro por Número */}
+              <div className="space-y-2">
+                <Label htmlFor="filtro-numero">Número do Orçamento</Label>
+                <Input
+                  id="filtro-numero"
+                  placeholder="Ex: 2024-001"
+                  value={filtroNumero}
+                  onChange={(e) => setFiltroNumero(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Botão para Limpar Filtros */}
+            {(dataInicio || dataFim || filtroCliente || filtroNumero) && (
+              <div className="mt-4 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setDataInicio(undefined);
+                    setDataFim(undefined);
+                    setFiltroCliente("");
+                    setFiltroNumero("");
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Limpar Filtros
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="pendente" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="pendente">Aguardando Aprovação</TabsTrigger>
@@ -867,8 +1016,8 @@ export default function Orcamentos() {
           </TabsList>
 
           <TabsContent value="pendente" className="space-y-4">
-            {orcamentos.filter(o => o.status === 'pendente').length > 0 ? (
-              orcamentos.filter(o => o.status === 'pendente').map((item) => (
+            {aplicarFiltros(orcamentos.filter(o => o.status === 'pendente')).length > 0 ? (
+              aplicarFiltros(orcamentos.filter(o => o.status === 'pendente')).map((item) => (
                 <Card key={item.id} className="hover:shadow-md transition-smooth">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -944,8 +1093,8 @@ export default function Orcamentos() {
           </TabsContent>
 
           <TabsContent value="aprovado" className="space-y-4">
-            {orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').length > 0 ? (
-              orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').map((item) => (
+            {aplicarFiltros(orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento')).length > 0 ? (
+              aplicarFiltros(orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento')).map((item) => (
                 <Card key={item.id} className="hover:shadow-md transition-smooth">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -1007,8 +1156,8 @@ export default function Orcamentos() {
           </TabsContent>
 
           <TabsContent value="rejeitado" className="space-y-4">
-            {orcamentos.filter(o => o.status === 'rejeitado').length > 0 ? (
-              orcamentos.filter(o => o.status === 'rejeitado').map((item) => (
+            {aplicarFiltros(orcamentos.filter(o => o.status === 'rejeitado')).length > 0 ? (
+              aplicarFiltros(orcamentos.filter(o => o.status === 'rejeitado')).map((item) => (
                 <Card key={item.id} className="hover:shadow-md transition-smooth">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
