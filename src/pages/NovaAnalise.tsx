@@ -1411,7 +1411,7 @@ const NovaOrdemServico = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 {[0, 1, 2, 3].map((index) => (
                   <div key={index} className="space-y-3">
                     <Card 
