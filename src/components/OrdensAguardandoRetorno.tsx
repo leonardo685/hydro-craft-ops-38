@@ -163,10 +163,10 @@ export function OrdensAguardandoRetorno({
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <FileText className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Status</p>
-                        <p className="font-medium">Teste Concluído</p>
+                        <p className="text-sm text-muted-foreground">Nota de Entrada</p>
+                        <p className="font-medium">{ordem.nota_fiscal || '-'}</p>
                       </div>
                     </div>
                   </div>
