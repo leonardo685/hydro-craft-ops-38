@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ItemSelectionModal } from "@/components/ItemSelectionModal";
 import { TesteModal } from "@/components/TesteModal";
+import { UploadProdutoProntoModal } from "@/components/UploadProdutoProntoModal";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 
@@ -16,6 +17,8 @@ export default function Aprovados() {
   const [ordensServico, setOrdensServico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [ordensEmProducao, setOrdensEmProducao] = useState<Set<string>>(new Set());
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [ordemSelecionada, setOrdemSelecionada] = useState<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -291,54 +294,9 @@ export default function Aprovados() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={async () => {
-                              try {
-                                const { error } = await supabase
-                                  .from('ordens_servico')
-                                  .update({ status: 'aguardando_retorno' })
-                                  .eq('id', ordem.id);
-
-                                if (error) throw error;
-
-                                // Enviar notificação para o n8n/Telegram
-                                try {
-                                  const notaFiscalEntrada = ordem.recebimentos?.nota_fiscal || 
-                                                          ordem.recebimentos?.chave_acesso_nfe || 
-                                                          'n/a';
-                                  
-                                  await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
-                                    method: 'POST',
-                                    headers: {
-                                      'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({
-                                      tipo: 'ordem_retorno',
-                                      numero_ordem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem,
-                                      cliente: ordem.recebimentos?.cliente_nome || ordem.cliente_nome,
-                                      equipamento: ordem.equipamento,
-                                      nota_fiscal_entrada: notaFiscalEntrada,
-                                      data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
-                                      data_aprovacao: ordem.updated_at ? format(parseISO(ordem.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy')
-                                    })
-                                  });
-                                } catch (webhookError) {
-                                  console.error('Erro ao enviar webhook:', webhookError);
-                                }
-
-                                toast({
-                                  title: "Ordem finalizada",
-                                  description: "A ordem foi finalizada e enviada para faturamento",
-                                });
-
-                                loadOrdensAprovadas();
-                              } catch (error) {
-                                console.error('Erro ao finalizar ordem:', error);
-                                toast({
-                                  title: "Erro",
-                                  description: "Erro ao finalizar ordem",
-                                  variant: "destructive",
-                                });
-                              }
+                            onClick={() => {
+                              setOrdemSelecionada(ordem);
+                              setUploadModalOpen(true);
                             }}
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
@@ -400,6 +358,64 @@ export default function Aprovados() {
               )}
             </div>
           </div>
+        )}
+
+        {/* Modal de Upload do Produto Pronto */}
+        {ordemSelecionada && (
+          <UploadProdutoProntoModal
+            open={uploadModalOpen}
+            onOpenChange={setUploadModalOpen}
+            ordem={ordemSelecionada}
+            onConfirm={async () => {
+              try {
+                const { error } = await supabase
+                  .from('ordens_servico')
+                  .update({ status: 'aguardando_retorno' })
+                  .eq('id', ordemSelecionada.id);
+
+                if (error) throw error;
+
+                // Enviar notificação para o n8n/Telegram
+                try {
+                  const notaFiscalEntrada = ordemSelecionada.recebimentos?.nota_fiscal || 
+                                          ordemSelecionada.recebimentos?.chave_acesso_nfe || 
+                                          'n/a';
+                  
+                  await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      tipo: 'ordem_retorno',
+                      numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
+                      cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
+                      equipamento: ordemSelecionada.equipamento,
+                      nota_fiscal_entrada: notaFiscalEntrada,
+                      data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
+                      data_aprovacao: ordemSelecionada.updated_at ? format(parseISO(ordemSelecionada.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy')
+                    })
+                  });
+                } catch (webhookError) {
+                  console.error('Erro ao enviar webhook:', webhookError);
+                }
+
+                toast({
+                  title: "Ordem finalizada",
+                  description: "A ordem foi finalizada e enviada para faturamento",
+                });
+
+                loadOrdensAprovadas();
+              } catch (error) {
+                console.error('Erro ao finalizar ordem:', error);
+                toast({
+                  title: "Erro",
+                  description: "Erro ao finalizar ordem",
+                  variant: "destructive",
+                });
+              }
+            }}
+          />
         )}
       </div>
     </AppLayout>
