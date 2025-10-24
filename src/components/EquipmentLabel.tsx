@@ -98,7 +98,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
             <div class="label">
               <div class="content">
                 <div class="logo">MEC-HIDRO</div>
-                <div class="order">OS ${equipment.numeroOrdem}</div>
+                <div class="order">${equipment.numeroOrdem}</div>
               </div>
               <div class="qr-container">
                 <img src="${qrDataUrl}" alt="QR Code" class="qr-code" />
@@ -137,7 +137,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     // Número da ordem
     ctx.fillStyle = '#000000';
     ctx.font = 'bold 24px Arial';
-    ctx.fillText(`OS ${equipment.numeroOrdem}`, 15, 70);
+    ctx.fillText(equipment.numeroOrdem, 15, 70);
 
     // QR Code
     if (qrDataUrl) {
@@ -168,7 +168,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
             <div className="flex items-center justify-between h-20">
               <div className="flex flex-col justify-center">
                 <div className="text-red-600 font-bold text-sm mb-1">MEC-HIDRO</div>
-                <div className="text-xl font-bold text-foreground">OS {equipment.numeroOrdem}</div>
+                <div className="text-xl font-bold text-foreground">{equipment.numeroOrdem}</div>
               </div>
               <div className="flex-shrink-0">
                 {qrDataUrl && (
