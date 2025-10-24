@@ -1102,40 +1102,79 @@ export type Database = {
       }
       testes_equipamentos: {
         Row: {
+          check_ok: boolean | null
+          check_vazamento_haste: boolean | null
+          check_vazamento_pistao: boolean | null
+          check_vazamento_vedacoes_estaticas: boolean | null
           created_at: string
+          curso: string | null
           data_hora_teste: string
+          espessura_camada: string | null
           id: string
+          observacao: string | null
           observacoes_teste: string | null
           ordem_servico_id: string
+          pressao_avanco: string | null
+          pressao_maxima_trabalho: string | null
+          pressao_retorno: string | null
           pressao_teste: string | null
+          qtd_ciclos: string | null
           resultado_teste: string
           temperatura_operacao: string | null
+          tempo_minutos: string | null
+          teste_performance_pr004: string | null
           tipo_teste: string
           updated_at: string
           video_url: string | null
         }
         Insert: {
+          check_ok?: boolean | null
+          check_vazamento_haste?: boolean | null
+          check_vazamento_pistao?: boolean | null
+          check_vazamento_vedacoes_estaticas?: boolean | null
           created_at?: string
+          curso?: string | null
           data_hora_teste: string
+          espessura_camada?: string | null
           id?: string
+          observacao?: string | null
           observacoes_teste?: string | null
           ordem_servico_id: string
+          pressao_avanco?: string | null
+          pressao_maxima_trabalho?: string | null
+          pressao_retorno?: string | null
           pressao_teste?: string | null
+          qtd_ciclos?: string | null
           resultado_teste: string
           temperatura_operacao?: string | null
+          tempo_minutos?: string | null
+          teste_performance_pr004?: string | null
           tipo_teste: string
           updated_at?: string
           video_url?: string | null
         }
         Update: {
+          check_ok?: boolean | null
+          check_vazamento_haste?: boolean | null
+          check_vazamento_pistao?: boolean | null
+          check_vazamento_vedacoes_estaticas?: boolean | null
           created_at?: string
+          curso?: string | null
           data_hora_teste?: string
+          espessura_camada?: string | null
           id?: string
+          observacao?: string | null
           observacoes_teste?: string | null
           ordem_servico_id?: string
+          pressao_avanco?: string | null
+          pressao_maxima_trabalho?: string | null
+          pressao_retorno?: string | null
           pressao_teste?: string | null
+          qtd_ciclos?: string | null
           resultado_teste?: string
           temperatura_operacao?: string | null
+          tempo_minutos?: string | null
+          teste_performance_pr004?: string | null
           tipo_teste?: string
           updated_at?: string
           video_url?: string | null

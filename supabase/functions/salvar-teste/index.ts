@@ -24,13 +24,23 @@ serve(async (req) => {
       .from('testes_equipamentos')
       .insert({
         ordem_servico_id: ordemId,
-        tipo_teste: dadosTeste.tipoTeste,
-        pressao_teste: dadosTeste.pressaoTeste,
-        temperatura_operacao: dadosTeste.temperaturaOperacao,
-        observacoes_teste: dadosTeste.observacoesTeste,
-        resultado_teste: dadosTeste.resultadoTeste,
+        curso: dadosTeste.curso,
+        qtd_ciclos: dadosTeste.qtdCiclos,
+        pressao_maxima_trabalho: dadosTeste.pressaoMaximaTrabalho,
+        tempo_minutos: dadosTeste.tempoMinutos,
+        pressao_avanco: dadosTeste.pressaoAvanco,
+        pressao_retorno: dadosTeste.pressaoRetorno,
+        check_vazamento_pistao: dadosTeste.checkVazamentoPistao,
+        check_vazamento_vedacoes_estaticas: dadosTeste.checkVazamentoVedacoesEstaticas,
+        check_vazamento_haste: dadosTeste.checkVazamentoHaste,
+        teste_performance_pr004: dadosTeste.testePerformancePR004,
+        espessura_camada: dadosTeste.espessuraCamada,
+        check_ok: dadosTeste.checkOk,
+        observacao: dadosTeste.observacao,
         data_hora_teste: dadosTeste.dataHoraTeste,
-        video_url: dadosTeste.videoUrl
+        video_url: dadosTeste.videoUrl,
+        tipo_teste: 'Teste Final',
+        resultado_teste: 'Em andamento'
       })
 
     if (insertError) {

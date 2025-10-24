@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Video, FileText, Calendar } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Upload, Video, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,11 +20,19 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
   const [open, setOpen] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
-    tipoTeste: '',
-    pressaoTeste: '',
-    temperaturaOperacao: '',
-    observacoesTeste: '',
-    resultadoTeste: '',
+    curso: '',
+    qtdCiclos: '',
+    pressaoMaximaTrabalho: '',
+    tempoMinutos: '',
+    pressaoAvanco: '',
+    pressaoRetorno: '',
+    checkVazamentoPistao: false,
+    checkVazamentoVedacoesEstaticas: false,
+    checkVazamentoHaste: false,
+    testePerformancePR004: '',
+    espessuraCamada: '',
+    checkOk: false,
+    observacao: '',
     dataHoraTeste: new Date().toISOString().slice(0, 16)
   });
   const [uploading, setUploading] = useState(false);
@@ -56,7 +65,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
   };
 
   const handleSubmit = async () => {
-    if (!formData.tipoTeste || !formData.resultadoTeste) {
+    if (!formData.curso || !formData.qtdCiclos) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios",
@@ -102,11 +111,19 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
         body: {
           ordemId: ordem.id,
           dadosTeste: {
-            tipoTeste: formData.tipoTeste,
-            pressaoTeste: formData.pressaoTeste,
-            temperaturaOperacao: formData.temperaturaOperacao,
-            observacoesTeste: formData.observacoesTeste,
-            resultadoTeste: formData.resultadoTeste,
+            curso: formData.curso,
+            qtdCiclos: formData.qtdCiclos,
+            pressaoMaximaTrabalho: formData.pressaoMaximaTrabalho,
+            tempoMinutos: formData.tempoMinutos,
+            pressaoAvanco: formData.pressaoAvanco,
+            pressaoRetorno: formData.pressaoRetorno,
+            checkVazamentoPistao: formData.checkVazamentoPistao,
+            checkVazamentoVedacoesEstaticas: formData.checkVazamentoVedacoesEstaticas,
+            checkVazamentoHaste: formData.checkVazamentoHaste,
+            testePerformancePR004: formData.testePerformancePR004,
+            espessuraCamada: formData.espessuraCamada,
+            checkOk: formData.checkOk,
+            observacao: formData.observacao,
             dataHoraTeste: formData.dataHoraTeste,
             videoUrl: videoUrl
           }
@@ -125,11 +142,19 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
       
       // Limpar formulário
       setFormData({
-        tipoTeste: '',
-        pressaoTeste: '',
-        temperaturaOperacao: '',
-        observacoesTeste: '',
-        resultadoTeste: '',
+        curso: '',
+        qtdCiclos: '',
+        pressaoMaximaTrabalho: '',
+        tempoMinutos: '',
+        pressaoAvanco: '',
+        pressaoRetorno: '',
+        checkVazamentoPistao: false,
+        checkVazamentoVedacoesEstaticas: false,
+        checkVazamentoHaste: false,
+        testePerformancePR004: '',
+        espessuraCamada: '',
+        checkOk: false,
+        observacao: '',
         dataHoraTeste: new Date().toISOString().slice(0, 16)
       });
       setVideoFile(null);
@@ -155,10 +180,10 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Video className="h-5 w-5" />
-            Iniciar Teste do Equipamento
+            Testes Finais
           </DialogTitle>
           <DialogDescription>
-            Registre as informações do teste e anexe o vídeo de demonstração
+            Preencha as informações do teste final do equipamento
           </DialogDescription>
         </DialogHeader>
 
@@ -187,63 +212,161 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="tipoTeste">Tipo de Teste *</Label>
+                <Label htmlFor="curso">Curso *</Label>
                 <Input
-                  id="tipoTeste"
-                  value={formData.tipoTeste}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tipoTeste: e.target.value }))}
-                  placeholder="Ex: Teste hidrostático, Teste de funcionamento"
+                  id="curso"
+                  value={formData.curso}
+                  onChange={(e) => setFormData(prev => ({ ...prev, curso: e.target.value }))}
+                  placeholder="Ex: 500mm"
                 />
               </div>
               <div>
-                <Label htmlFor="pressaoTeste">Pressão de Teste</Label>
+                <Label htmlFor="qtdCiclos">Qtd. Ciclos *</Label>
                 <Input
-                  id="pressaoTeste"
-                  value={formData.pressaoTeste}
-                  onChange={(e) => setFormData(prev => ({ ...prev, pressaoTeste: e.target.value }))}
-                  placeholder="Ex: 350 bar"
+                  id="qtdCiclos"
+                  value={formData.qtdCiclos}
+                  onChange={(e) => setFormData(prev => ({ ...prev, qtdCiclos: e.target.value }))}
+                  placeholder="Ex: 10"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="temperaturaOperacao">Temperatura de Operação</Label>
+                <Label htmlFor="pressaoMaximaTrabalho">Pressão máxima de trabalho (bar)</Label>
                 <Input
-                  id="temperaturaOperacao"
-                  value={formData.temperaturaOperacao}
-                  onChange={(e) => setFormData(prev => ({ ...prev, temperaturaOperacao: e.target.value }))}
-                  placeholder="Ex: 20°C"
+                  id="pressaoMaximaTrabalho"
+                  value={formData.pressaoMaximaTrabalho}
+                  onChange={(e) => setFormData(prev => ({ ...prev, pressaoMaximaTrabalho: e.target.value }))}
+                  placeholder="Ex: 350"
                 />
               </div>
               <div>
-                <Label htmlFor="dataHoraTeste">Data e Hora do Teste</Label>
+                <Label htmlFor="tempoMinutos">Tempo (minutos)</Label>
                 <Input
-                  id="dataHoraTeste"
-                  type="datetime-local"
-                  value={formData.dataHoraTeste}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dataHoraTeste: e.target.value }))}
+                  id="tempoMinutos"
+                  value={formData.tempoMinutos}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tempoMinutos: e.target.value }))}
+                  placeholder="Ex: 30"
                 />
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="resultadoTeste">Resultado do Teste *</Label>
-              <Input
-                id="resultadoTeste"
-                value={formData.resultadoTeste}
-                onChange={(e) => setFormData(prev => ({ ...prev, resultadoTeste: e.target.value }))}
-                placeholder="Ex: Aprovado, Reprovado, Requer ajustes"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="pressaoAvanco">Pressão no avanço (bar)</Label>
+                <Input
+                  id="pressaoAvanco"
+                  value={formData.pressaoAvanco}
+                  onChange={(e) => setFormData(prev => ({ ...prev, pressaoAvanco: e.target.value }))}
+                  placeholder="Ex: 300"
+                />
+              </div>
+              <div>
+                <Label htmlFor="pressaoRetorno">Pressão no retorno (bar)</Label>
+                <Input
+                  id="pressaoRetorno"
+                  value={formData.pressaoRetorno}
+                  onChange={(e) => setFormData(prev => ({ ...prev, pressaoRetorno: e.target.value }))}
+                  placeholder="Ex: 280"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3 border-t pt-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="checkVazamentoPistao"
+                  checked={formData.checkVazamentoPistao}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({ ...prev, checkVazamentoPistao: checked as boolean }))
+                  }
+                />
+                <label
+                  htmlFor="checkVazamentoPistao"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Verificar a ausência de vazamento de fluido na vedação do pistão
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="checkVazamentoVedacoesEstaticas"
+                  checked={formData.checkVazamentoVedacoesEstaticas}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({ ...prev, checkVazamentoVedacoesEstaticas: checked as boolean }))
+                  }
+                />
+                <label
+                  htmlFor="checkVazamentoVedacoesEstaticas"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Verificar a ausência de vazamento de fluido em todas as vedações estáticas
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="checkVazamentoHaste"
+                  checked={formData.checkVazamentoHaste}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({ ...prev, checkVazamentoHaste: checked as boolean }))
+                  }
+                />
+                <label
+                  htmlFor="checkVazamentoHaste"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Observar o vazamento do fluido na vedação da haste
+                </label>
+              </div>
             </div>
 
             <div>
-              <Label htmlFor="observacoesTeste">Observações do Teste</Label>
+              <Label htmlFor="testePerformancePR004">Teste de performance realizado de acordo com procedimento interno PR-004</Label>
+              <Input
+                id="testePerformancePR004"
+                value={formData.testePerformancePR004}
+                onChange={(e) => setFormData(prev => ({ ...prev, testePerformancePR004: e.target.value }))}
+                placeholder="Descreva o teste de performance"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 items-end">
+              <div>
+                <Label htmlFor="espessuraCamada">Espessura da camada</Label>
+                <Input
+                  id="espessuraCamada"
+                  value={formData.espessuraCamada}
+                  onChange={(e) => setFormData(prev => ({ ...prev, espessuraCamada: e.target.value }))}
+                  placeholder="Ex: 50μm"
+                />
+              </div>
+              <div className="flex items-center space-x-2 pb-2">
+                <Checkbox
+                  id="checkOk"
+                  checked={formData.checkOk}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({ ...prev, checkOk: checked as boolean }))
+                  }
+                />
+                <label
+                  htmlFor="checkOk"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Ok
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="observacao">Observação</Label>
               <Textarea
-                id="observacoesTeste"
-                value={formData.observacoesTeste}
-                onChange={(e) => setFormData(prev => ({ ...prev, observacoesTeste: e.target.value }))}
-                placeholder="Descreva detalhes importantes do teste, anomalias encontradas, etc."
+                id="observacao"
+                value={formData.observacao}
+                onChange={(e) => setFormData(prev => ({ ...prev, observacao: e.target.value }))}
+                placeholder="Observações adicionais sobre o teste"
                 rows={3}
               />
             </div>
