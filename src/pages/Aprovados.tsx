@@ -12,25 +12,25 @@ import { TesteModal } from "@/components/TesteModal";
 import { UploadProdutoProntoModal } from "@/components/UploadProdutoProntoModal";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-
 export default function Aprovados() {
   const [ordensServico, setOrdensServico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [ordensEmProducao, setOrdensEmProducao] = useState<Set<string>>(new Set());
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [ordemSelecionada, setOrdemSelecionada] = useState<any>(null);
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
-
   useEffect(() => {
     loadOrdensAprovadas();
   }, []);
-
   const loadOrdensAprovadas = async () => {
     try {
-      const { data, error } = await supabase
-        .from('ordens_servico')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('ordens_servico').select(`
           *,
           recebimentos (
             numero_ordem,
@@ -39,73 +39,61 @@ export default function Aprovados() {
             nota_fiscal,
             chave_acesso_nfe
           )
-        `)
-        .in('status', ['aprovada', 'em_producao', 'em_teste'])
-        .order('created_at', { ascending: false });
-
+        `).in('status', ['aprovada', 'em_producao', 'em_teste']).order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
       setOrdensServico(data || []);
-      
+
       // Identificar quais ordens estão em produção ou teste
-      const ordensEmProducaoSet = new Set(
-        data?.filter(ordem => ordem.status === 'em_producao' || ordem.status === 'em_teste')
-             .map(ordem => ordem.id) || []
-      );
+      const ordensEmProducaoSet = new Set(data?.filter(ordem => ordem.status === 'em_producao' || ordem.status === 'em_teste').map(ordem => ordem.id) || []);
       setOrdensEmProducao(ordensEmProducaoSet);
     } catch (error) {
       console.error('Erro ao carregar ordens aprovadas:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar ordens aprovadas",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
   const iniciarProducao = async (ordemId: string) => {
     try {
-      const { error } = await supabase
-        .from('ordens_servico')
-        .update({ status: 'em_producao' })
-        .eq('id', ordemId);
-
+      const {
+        error
+      } = await supabase.from('ordens_servico').update({
+        status: 'em_producao'
+      }).eq('id', ordemId);
       if (error) throw error;
-      
       toast({
         title: "Produção iniciada",
-        description: "Ordem de serviço está agora em produção",
+        description: "Ordem de serviço está agora em produção"
       });
-
       loadOrdensAprovadas();
     } catch (error) {
       console.error('Erro ao iniciar produção:', error);
       toast({
         title: "Erro",
         description: "Erro ao iniciar produção",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const getSidebarColor = (ordem: any) => {
     // Verificar se existe prazo_entrega nos dados do recebimento ou na ordem
     const prazoEntrega = ordem.tempo_estimado || ordem.prazo_entrega;
     if (!prazoEntrega) return "border-l-green-500";
-    
     const hoje = new Date();
     const dataEntrega = new Date(prazoEntrega);
     const diffTime = dataEntrega.getTime() - hoje.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
     console.log('Prazo entrega:', prazoEntrega, 'Dias restantes:', diffDays);
-    
     if (diffDays <= 0) return "border-l-red-500"; // No dia da entrega ou atrasado
     if (diffDays === 1) return "border-l-yellow-500"; // Falta 1 dia
     return "border-l-green-500"; // Normal
   };
-
   const getEtapaColor = (etapa: string) => {
     switch (etapa) {
       case "aguardando_inicio":
@@ -122,7 +110,6 @@ export default function Aprovados() {
         return "bg-secondary text-secondary-foreground";
     }
   };
-
   const getEtapaText = (etapa: string) => {
     switch (etapa) {
       case "aguardando_inicio":
@@ -139,7 +126,6 @@ export default function Aprovados() {
         return etapa;
     }
   };
-
   const getEtapaIcon = (etapa: string) => {
     switch (etapa) {
       case "aguardando_inicio":
@@ -156,13 +142,11 @@ export default function Aprovados() {
         return <CheckCircle className="h-4 w-4" />;
     }
   };
-
-  return (
-    <AppLayout>
+  return <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Projetos Aprovados</h2>
+            <h2 className="text-2xl font-bold text-foreground">Ordens Aprovadas</h2>
             <p className="text-muted-foreground">
               Acompanhamento da produção, entrega e análises aprovadas
             </p>
@@ -175,21 +159,16 @@ export default function Aprovados() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="text-center py-8">Carregando...</div>
-        ) : (
-          <div className="space-y-4">
+        {loading ? <div className="text-center py-8">Carregando...</div> : <div className="space-y-4">
             <div>
-              <h3 className="text-xl font-semibold text-foreground">Projetos em Produção</h3>
+              <h3 className="text-xl font-semibold text-foreground">Ordens em Produção</h3>
               <p className="text-muted-foreground">
                 Análises técnicas aprovadas e em diferentes etapas de produção ({ordensServico.length})
               </p>
             </div>
 
             <div className="grid gap-6">
-              {ordensServico.length > 0 ? (
-                ordensServico.map((ordem) => (
-                  <Card key={ordem.id} className={`shadow-soft hover:shadow-medium transition-smooth border-l-4 ${getSidebarColor(ordem)}`}>
+              {ordensServico.length > 0 ? ordensServico.map(ordem => <Card key={ordem.id} className={`shadow-soft hover:shadow-medium transition-smooth border-l-4 ${getSidebarColor(ordem)}`}>
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
@@ -198,17 +177,14 @@ export default function Aprovados() {
                           </div>
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
-                              <button 
-                                className="text-primary hover:underline cursor-pointer"
-                                onClick={() => {
-                                  const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
-                                  if (numeroOrdem) {
-                                    navigate(`/ordem/${numeroOrdem}`);
-                                  } else {
-                                    navigate(`/visualizar-ordem/${ordem.id}`);
-                                  }
-                                }}
-                              >
+                              <button className="text-primary hover:underline cursor-pointer" onClick={() => {
+                        const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
+                        if (numeroOrdem) {
+                          navigate(`/ordem/${numeroOrdem}`);
+                        } else {
+                          navigate(`/visualizar-ordem/${ordem.id}`);
+                        }
+                      }}>
                                 {ordem.recebimentos?.numero_ordem || ordem.numero_ordem || 'Sem número'}
                               </button> - {ordem.equipamento || ordem.recebimentos?.tipo_equipamento}
                             </CardTitle>
@@ -233,27 +209,22 @@ export default function Aprovados() {
                       <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">Prazo de Entrega</p>
-                          <input
-                            type="date"
-                            className="text-lg font-semibold bg-transparent border-none text-center outline-none"
-                            defaultValue={ordem.tempo_estimado || ordem.prazo_entrega || ''}
-                            onChange={async (e) => {
-                              // Salvar a data no banco
-                              try {
-                                const { error } = await supabase
-                                  .from('ordens_servico')
-                                  .update({ tempo_estimado: e.target.value })
-                                  .eq('id', ordem.id);
-                                
-                                if (!error) {
-                                  // Atualizar estado local para re-renderizar a cor da barra
-                                  loadOrdensAprovadas();
-                                }
-                              } catch (error) {
-                                console.error('Erro ao salvar prazo:', error);
-                              }
-                            }}
-                          />
+                          <input type="date" className="text-lg font-semibold bg-transparent border-none text-center outline-none" defaultValue={ordem.tempo_estimado || ordem.prazo_entrega || ''} onChange={async e => {
+                    // Salvar a data no banco
+                    try {
+                      const {
+                        error
+                      } = await supabase.from('ordens_servico').update({
+                        tempo_estimado: e.target.value
+                      }).eq('id', ordem.id);
+                      if (!error) {
+                        // Atualizar estado local para re-renderizar a cor da barra
+                        loadOrdensAprovadas();
+                      }
+                    } catch (error) {
+                      console.error('Erro ao salvar prazo:', error);
+                    }
+                  }} />
                         </div>
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">Técnico</p>
@@ -263,77 +234,43 @@ export default function Aprovados() {
                         </div>
                       </div>
 
-                      {ordem.observacoes_tecnicas && (
-                        <div className="p-3 bg-muted/50 rounded-lg">
+                      {ordem.observacoes_tecnicas && <div className="p-3 bg-muted/50 rounded-lg">
                           <h5 className="text-sm font-medium text-foreground mb-1">Observações Técnicas:</h5>
                           <p className="text-sm text-muted-foreground">{ordem.observacoes_tecnicas}</p>
-                        </div>
-                      )}
+                        </div>}
 
                       <div className="flex flex-wrap gap-2 pt-2">
-                        {ordem.status === 'aprovada' ? (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => iniciarProducao(ordem.id)}
-                          >
+                        {ordem.status === 'aprovada' ? <Button variant="outline" size="sm" onClick={() => iniciarProducao(ordem.id)}>
                             <Play className="h-4 w-4 mr-2" />
                             Iniciar Produção
-                          </Button>
-                        ) : ordem.status === 'em_producao' ? (
-                          <TesteModal 
-                            ordem={ordem}
-                            onTesteIniciado={() => loadOrdensAprovadas()}
-                          >
+                          </Button> : ordem.status === 'em_producao' ? <TesteModal ordem={ordem} onTesteIniciado={() => loadOrdensAprovadas()}>
                             <Button variant="outline" size="sm">
                               <Settings className="h-4 w-4 mr-2" />
                               Iniciar Teste
                             </Button>
-                          </TesteModal>
-                        ) : ordem.status === 'em_teste' ? (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              setOrdemSelecionada(ordem);
-                              setUploadModalOpen(true);
-                            }}
-                          >
+                          </TesteModal> : ordem.status === 'em_teste' ? <Button variant="outline" size="sm" onClick={() => {
+                  setOrdemSelecionada(ordem);
+                  setUploadModalOpen(true);
+                }}>
                             <CheckCircle className="h-4 w-4 mr-2" />
                             Finalizar
-                          </Button>
-                        ) : null}
+                          </Button> : null}
                         
-                        <ItemSelectionModal
-                          title="Peças Necessárias"
-                          items={ordem.pecas_necessarias || []}
-                          type="pecas"
-                          ordemId={ordem.id}
-                        >
+                        <ItemSelectionModal title="Peças Necessárias" items={ordem.pecas_necessarias || []} type="pecas" ordemId={ordem.id}>
                           <Button variant="outline" size="sm">
                             <Package className="h-4 w-4 mr-2" />
                             Peças
                           </Button>
                         </ItemSelectionModal>
 
-                        <ItemSelectionModal
-                          title="Usinagem Necessária"
-                          items={ordem.usinagem_necessaria || []}
-                          type="usinagem"
-                          ordemId={ordem.id}
-                        >
+                        <ItemSelectionModal title="Usinagem Necessária" items={ordem.usinagem_necessaria || []} type="usinagem" ordemId={ordem.id}>
                           <Button variant="outline" size="sm">
                             <Settings className="h-4 w-4 mr-2" />
                             Usinagem
                           </Button>
                         </ItemSelectionModal>
 
-                        <ItemSelectionModal
-                          title="Serviços Necessários"
-                          items={ordem.servicos_necessarios || []}
-                          type="servicos"
-                          ordemId={ordem.id}
-                        >
+                        <ItemSelectionModal title="Serviços Necessários" items={ordem.servicos_necessarios || []} type="servicos" ordemId={ordem.id}>
                           <Button variant="outline" size="sm">
                             <Wrench className="h-4 w-4 mr-2" />
                             Serviços
@@ -341,83 +278,63 @@ export default function Aprovados() {
                         </ItemSelectionModal>
                       </div>
                     </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <Card>
+                  </Card>) : <Card>
                   <CardContent className="p-12 text-center">
                     <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      Nenhum projeto em produção
-                    </h3>
+                    <h3 className="text-lg font-medium text-foreground mb-2">Nenhuma Ordem em produção</h3>
                     <p className="text-muted-foreground">
                       Aprove análises técnicas para que apareçam aqui
                     </p>
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Modal de Upload do Produto Pronto */}
-        {ordemSelecionada && (
-          <UploadProdutoProntoModal
-            open={uploadModalOpen}
-            onOpenChange={setUploadModalOpen}
-            ordem={ordemSelecionada}
-            onConfirm={async () => {
-              try {
-                const { error } = await supabase
-                  .from('ordens_servico')
-                  .update({ status: 'aguardando_retorno' })
-                  .eq('id', ordemSelecionada.id);
+        {ordemSelecionada && <UploadProdutoProntoModal open={uploadModalOpen} onOpenChange={setUploadModalOpen} ordem={ordemSelecionada} onConfirm={async () => {
+        try {
+          const {
+            error
+          } = await supabase.from('ordens_servico').update({
+            status: 'aguardando_retorno'
+          }).eq('id', ordemSelecionada.id);
+          if (error) throw error;
 
-                if (error) throw error;
-
-                // Enviar notificação para o n8n/Telegram
-                try {
-                  const notaFiscalEntrada = ordemSelecionada.recebimentos?.nota_fiscal || 
-                                          ordemSelecionada.recebimentos?.chave_acesso_nfe || 
-                                          'n/a';
-                  
-                  await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      tipo: 'ordem_retorno',
-                      numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
-                      cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
-                      equipamento: ordemSelecionada.equipamento,
-                      nota_fiscal_entrada: notaFiscalEntrada,
-                      data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
-                      data_aprovacao: ordemSelecionada.updated_at ? format(parseISO(ordemSelecionada.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy')
-                    })
-                  });
-                } catch (webhookError) {
-                  console.error('Erro ao enviar webhook:', webhookError);
-                }
-
-                toast({
-                  title: "Ordem finalizada",
-                  description: "A ordem foi finalizada e enviada para faturamento",
-                });
-
-                loadOrdensAprovadas();
-              } catch (error) {
-                console.error('Erro ao finalizar ordem:', error);
-                toast({
-                  title: "Erro",
-                  description: "Erro ao finalizar ordem",
-                  variant: "destructive",
-                });
-              }
-            }}
-          />
-        )}
+          // Enviar notificação para o n8n/Telegram
+          try {
+            const notaFiscalEntrada = ordemSelecionada.recebimentos?.nota_fiscal || ordemSelecionada.recebimentos?.chave_acesso_nfe || 'n/a';
+            await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                tipo: 'ordem_retorno',
+                numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
+                cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
+                equipamento: ordemSelecionada.equipamento,
+                nota_fiscal_entrada: notaFiscalEntrada,
+                data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
+                data_aprovacao: ordemSelecionada.updated_at ? format(parseISO(ordemSelecionada.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy')
+              })
+            });
+          } catch (webhookError) {
+            console.error('Erro ao enviar webhook:', webhookError);
+          }
+          toast({
+            title: "Ordem finalizada",
+            description: "A ordem foi finalizada e enviada para faturamento"
+          });
+          loadOrdensAprovadas();
+        } catch (error) {
+          console.error('Erro ao finalizar ordem:', error);
+          toast({
+            title: "Erro",
+            description: "Erro ao finalizar ordem",
+            variant: "destructive"
+          });
+        }
+      }} />}
       </div>
-    </AppLayout>
-  );
+    </AppLayout>;
 }
