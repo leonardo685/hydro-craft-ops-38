@@ -32,11 +32,9 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 export default function Financeiro() {
   const navigate = useNavigate();
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
-  const { lancamentos, loading: loadingLancamentos, adicionarLancamento, limparTodosLancamentos } = useLancamentosFinanceiros();
+  const { lancamentos, loading: loadingLancamentos, adicionarLancamento } = useLancamentosFinanceiros();
   const { clientes } = useClientes();
   const { fornecedores: fornecedoresData } = useFornecedores();
-  
-  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   
   // Estados para filtros de data e período
   const [dataInicial, setDataInicial] = useState("");
@@ -3196,15 +3194,8 @@ export default function Financeiro() {
 
             {/* Filtros DRE */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader>
                 <CardTitle>Filtros de Período</CardTitle>
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => setIsConfirmDeleteOpen(true)}
-                >
-                  Limpar Todos os Lançamentos
-                </Button>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-4">
@@ -3315,32 +3306,6 @@ export default function Financeiro() {
           </TabsContent>
 
         </Tabs>
-
-        {/* Dialog de confirmação para limpar lançamentos */}
-        <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirmar Exclusão</DialogTitle>
-              <DialogDescription>
-                Tem certeza que deseja limpar TODOS os lançamentos financeiros? Esta ação não pode ser desfeita.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setIsConfirmDeleteOpen(false)}>
-                Cancelar
-              </Button>
-              <Button 
-                variant="destructive" 
-                onClick={() => {
-                  limparTodosLancamentos();
-                  setIsConfirmDeleteOpen(false);
-                }}
-              >
-                Confirmar Exclusão
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </AppLayout>
   );
