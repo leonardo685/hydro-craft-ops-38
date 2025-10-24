@@ -5,15 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Users, Building, Tag, Edit, Trash2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableRow, TableHeader } from "@/components/ui/table";
+import { Plus, Users, Building, Tag, Edit, Trash2, AlertTriangle } from "lucide-react";
 import { CategoriasFinanceiras } from "@/components/CategoriasFinanceiras";
 import { ContasBancarias } from "@/components/ContasBancarias";
 import { CNPJInput } from "@/components/CNPJInput";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
+import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 
 interface Cliente {
   id: string;
@@ -47,12 +49,14 @@ interface Fornecedor {
 
 const Cadastros = () => {
   const location = useLocation();
+  const { limparTodosLancamentos } = useLancamentosFinanceiros();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [showClienteForm, setShowClienteForm] = useState(false);
   const [showFornecedorForm, setShowFornecedorForm] = useState(false);
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
   // Formulário de cliente
   const [clienteForm, setClienteForm] = useState({
@@ -748,8 +752,55 @@ const Cadastros = () => {
           <TabsContent value="categorias" className="mt-6 space-y-6">
             <CategoriasFinanceiras />
             <ContasBancarias />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                  Zona de Perigo
+                </CardTitle>
+                <CardDescription>
+                  Ações irreversíveis que afetam todos os dados financeiros
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setIsConfirmDeleteOpen(true)}
+                >
+                  Limpar Todos os Lançamentos Financeiros
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Dialog de confirmação */}
+        <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmar Exclusão de Todos os Lançamentos</DialogTitle>
+              <DialogDescription>
+                Tem certeza que deseja limpar TODOS os lançamentos financeiros? 
+                Esta ação é irreversível e todos os dados de entrada, saída, despesas e receitas serão permanentemente removidos.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setIsConfirmDeleteOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  limparTodosLancamentos();
+                  setIsConfirmDeleteOpen(false);
+                }}
+              >
+                Confirmar Exclusão
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
