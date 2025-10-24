@@ -57,6 +57,7 @@ const Cadastros = () => {
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [isConfirmDeleteOrdensOpen, setIsConfirmDeleteOrdensOpen] = useState(false);
 
   // Formulário de cliente
   const [clienteForm, setClienteForm] = useState({
@@ -185,6 +186,105 @@ const Cadastros = () => {
       ...fornecedorForm,
       ...data
     });
+  };
+
+  const limparTodasOrdens = async () => {
+    try {
+      // Deletar na ordem correta para respeitar foreign keys
+      
+      // 1. Deletar fotos de orçamentos
+      const { error: fotosOrcError } = await supabase
+        .from('fotos_orcamento')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (fotosOrcError) throw fotosOrcError;
+
+      // 2. Deletar itens de orçamentos
+      const { error: itensOrcError } = await supabase
+        .from('itens_orcamento')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (itensOrcError) throw itensOrcError;
+
+      // 3. Deletar contas a receber
+      const { error: contasRecError } = await supabase
+        .from('contas_receber')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (contasRecError) throw contasRecError;
+
+      // 4. Deletar orçamentos
+      const { error: orcamentosError } = await supabase
+        .from('orcamentos')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (orcamentosError) throw orcamentosError;
+
+      // 5. Deletar testes de equipamentos
+      const { error: testesError } = await supabase
+        .from('testes_equipamentos')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (testesError) throw testesError;
+
+      // 6. Deletar ordens de serviço
+      const { error: ordensError } = await supabase
+        .from('ordens_servico')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (ordensError) throw ordensError;
+
+      // 7. Deletar fotos de equipamentos
+      const { error: fotosError } = await supabase
+        .from('fotos_equipamentos')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (fotosError) throw fotosError;
+
+      // 8. Deletar itens de NFe
+      const { error: itensNFeError } = await supabase
+        .from('itens_nfe')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (itensNFeError) throw itensNFeError;
+
+      // 9. Deletar recebimentos
+      const { error: recebimentosError } = await supabase
+        .from('recebimentos')
+        .delete()
+        .neq('id', 0);
+      if (recebimentosError) throw recebimentosError;
+
+      // 10. Deletar notas fiscais
+      const { error: notasError } = await supabase
+        .from('notas_fiscais')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (notasError) throw notasError;
+
+      // 11. Criar um recebimento placeholder com MH-011-25 para que o próximo seja MH-012-25
+      const anoAbreviado = new Date().getFullYear().toString().slice(-2);
+      const { error: placeholderError } = await supabase
+        .from('recebimentos')
+        .insert([{
+          numero_ordem: `MH-011-${anoAbreviado}`,
+          cliente_nome: 'PLACEHOLDER - NÃO USAR',
+          tipo_equipamento: 'PLACEHOLDER',
+          data_entrada: new Date().toISOString(),
+          urgente: false,
+          na_empresa: false,
+          status: 'placeholder'
+        }]);
+      if (placeholderError) throw placeholderError;
+
+      toast.success("Todos os dados de ordens foram removidos. Próxima ordem: MH-012-25");
+
+      // Recarregar dados
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (error) {
+      console.error('Erro ao limpar ordens:', error);
+      toast.error("Erro ao limpar dados de ordens");
+    }
   };
 
   const handleSaveCliente = async () => {
@@ -763,19 +863,26 @@ const Cadastros = () => {
                   Ações irreversíveis que afetam todos os dados financeiros
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <Button 
                   variant="destructive" 
                   onClick={() => setIsConfirmDeleteOpen(true)}
                 >
                   Limpar Todos os Lançamentos Financeiros
                 </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setIsConfirmDeleteOrdensOpen(true)}
+                  className="w-full"
+                >
+                  Limpar Todas as Ordens e Notas Fiscais
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
 
-        {/* Dialog de confirmação */}
+        {/* Dialog de confirmação - Lançamentos */}
         <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
           <DialogContent>
             <DialogHeader>
@@ -794,6 +901,35 @@ const Cadastros = () => {
                 onClick={() => {
                   limparTodosLancamentos();
                   setIsConfirmDeleteOpen(false);
+                }}
+              >
+                Confirmar Exclusão
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog de confirmação - Ordens */}
+        <Dialog open={isConfirmDeleteOrdensOpen} onOpenChange={setIsConfirmDeleteOrdensOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmar Exclusão de Todas as Ordens</DialogTitle>
+              <DialogDescription>
+                Tem certeza que deseja limpar TODAS as ordens de serviço, recebimentos, notas fiscais, análises, orçamentos e faturamentos? 
+                Esta ação é irreversível e todos os dados serão permanentemente removidos.
+                <br /><br />
+                A próxima ordem será iniciada em <strong>MH-012-25</strong>.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setIsConfirmDeleteOrdensOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  limparTodasOrdens();
+                  setIsConfirmDeleteOrdensOpen(false);
                 }}
               >
                 Confirmar Exclusão
