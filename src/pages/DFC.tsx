@@ -24,6 +24,7 @@ import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 import { useClientes } from '@/hooks/use-clientes';
 import { useFornecedores } from '@/hooks/use-fornecedores';
+import { useContasBancarias } from '@/hooks/use-contas-bancarias';
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
 import { useMemo, useEffect } from "react";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
@@ -36,6 +37,7 @@ export default function DFC() {
   const { lancamentos, loading, adicionarLancamento, atualizarLancamento, deletarLancamento, deletarRecorrenciaCompleta } = useLancamentosFinanceiros();
   const { clientes } = useClientes();
   const { fornecedores: fornecedoresData } = useFornecedores();
+  const { contasAtivas, getContasForSelect } = useContasBancarias();
 
   const [contaSelecionada, setContaSelecionada] = useState('todas');
   const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
@@ -170,22 +172,22 @@ export default function DFC() {
     ...fornecedoresData.map(f => ({ id: f.id, nome: f.nome, tipo: 'fornecedor' as const }))
   ];
 
-  const contasBancarias = [
-    { id: 'conta_corrente', nome: 'Conta Corrente - Banco do Brasil', saldo: 0 },
-    { id: 'conta_poupanca', nome: 'Poupança - Banco do Brasil', saldo: 0 },
-    { id: 'conta_itau', nome: 'Conta Corrente - Itaú', saldo: 0 },
-    { id: 'conta_caixa', nome: 'Conta Corrente - Caixa', saldo: 0 }
-  ];
+  const contasBancarias = contasAtivas.map(conta => ({
+    id: conta.nome,
+    nome: conta.banco ? `${conta.nome} - ${conta.banco}` : conta.nome,
+    saldo: conta.saldo_inicial
+  }));
 
   // Calcular saldos das contas baseado nos lançamentos reais
   const saldosContas = useMemo(() => {
-    const saldos: Record<string, number> = {
-      conta_corrente: 0,
-      conta_poupanca: 0,
-      conta_itau: 0,
-      conta_caixa: 0
-    };
+    const saldos: Record<string, number> = {};
+    
+    // Inicializar saldos com saldo_inicial das contas
+    contasAtivas.forEach(conta => {
+      saldos[conta.nome] = conta.saldo_inicial;
+    });
 
+    // Adicionar lançamentos pagos aos saldos
     lancamentos.forEach(lancamento => {
       if (lancamento.pago && lancamento.contaBancaria) {
         const valor = lancamento.tipo === 'entrada' ? lancamento.valor : -lancamento.valor;
@@ -196,7 +198,7 @@ export default function DFC() {
     });
 
     return saldos;
-  }, [lancamentos]);
+  }, [lancamentos, contasAtivas]);
 
   // Atualizar saldos das contas
   const contasBancariasAtualizadas = contasBancarias.map(conta => ({
