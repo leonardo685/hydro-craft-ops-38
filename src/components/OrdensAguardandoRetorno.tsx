@@ -43,13 +43,14 @@ export function OrdensAguardandoRetorno({
         error
       } = await supabase.from('ordens_servico').select(`
           *,
-          recebimentos(nota_fiscal)
+          recebimentos(nota_fiscal, numero_ordem)
         `).eq('status', 'aguardando_retorno').order('created_at', {
         ascending: false
       });
       if (error) throw error;
       const ordensFormatadas = data?.map(ordem => ({
         ...ordem,
+        numero_ordem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem,
         nota_fiscal: ordem.recebimentos?.nota_fiscal
       })) || [];
       setOrdens(ordensFormatadas);

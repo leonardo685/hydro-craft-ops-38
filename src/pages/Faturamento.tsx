@@ -79,13 +79,13 @@ export default function Faturamento() {
           if (orc.ordem_servico_id) {
             const { data: osData } = await supabase
               .from('ordens_servico')
-              .select('numero_ordem')
+              .select('recebimento_id, recebimentos(numero_ordem)')
               .eq('id', orc.ordem_servico_id)
               .single();
             
             return {
               ...orc,
-              ordem_numero: osData?.numero_ordem
+              ordem_numero: osData?.recebimentos?.numero_ordem
             };
           }
           return orc;
@@ -105,12 +105,11 @@ export default function Faturamento() {
         .from('ordens_servico')
         .select(`
           id,
-          numero_ordem,
           cliente_nome,
           equipamento,
           data_entrada,
           pdf_nota_fiscal,
-          recebimentos(pdf_nota_retorno)
+          recebimentos(numero_ordem, pdf_nota_retorno)
         `)
         .eq('status', 'faturado')
         .order('updated_at', { ascending: false });
@@ -137,6 +136,7 @@ export default function Faturamento() {
       ordensData?.forEach(ordem => {
         notasRetorno.push({
           ...ordem,
+          numero_ordem: ordem.recebimentos?.numero_ordem,
           tipo: 'nota_retorno'
         });
       });

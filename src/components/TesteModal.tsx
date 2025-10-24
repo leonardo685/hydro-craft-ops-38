@@ -196,7 +196,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
             <CardContent className="text-sm">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="font-medium">Ordem:</span> {ordem.numero_ordem}
+                  <span className="font-medium">Ordem:</span> {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
                 </div>
                 <div>
                   <span className="font-medium">Cliente:</span> {ordem.cliente_nome || ordem.recebimentos?.cliente_nome}
