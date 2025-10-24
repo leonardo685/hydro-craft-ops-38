@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ItemSelectionModal } from "@/components/ItemSelectionModal";
 import { TesteModal } from "@/components/TesteModal";
 import { useNavigate } from "react-router-dom";
+import { format, parseISO } from "date-fns";
 
 export default function Aprovados() {
   const [ordensServico, setOrdensServico] = useState<any[]>([]);
@@ -316,8 +317,8 @@ export default function Aprovados() {
                                       cliente: ordem.recebimentos?.cliente_nome || ordem.cliente_nome,
                                       equipamento: ordem.equipamento,
                                       nota_fiscal_entrada: notaFiscalEntrada,
-                                      data_finalizacao: new Date().toISOString(),
-                                      data_aprovacao: ordem.updated_at
+                                      data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
+                                      data_aprovacao: ordem.updated_at ? format(parseISO(ordem.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy')
                                     })
                                   });
                                 } catch (webhookError) {

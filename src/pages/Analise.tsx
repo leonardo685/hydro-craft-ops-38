@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 export default function OrdensServico() {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ export default function OrdensServico() {
               numero_ordem: recebimento?.numero_ordem || ordem.numero_ordem,
               cliente: ordem.cliente_nome,
               equipamento: ordem.equipamento,
-              data_aprovacao: new Date().toISOString()
+              data_aprovacao: format(new Date(), 'dd-MM-yyyy')
             })
           });
         }

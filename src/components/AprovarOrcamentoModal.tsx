@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Upload, FileText, Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 interface AprovarOrcamentoModalProps {
   open: boolean;
@@ -203,7 +204,7 @@ export const AprovarOrcamentoModal = ({
             cliente: orcamento.cliente_nome,
             valor: formData.valorComDesconto,
             numeroPedido: formData.numeroPedido,
-            data_aprovacao: new Date().toISOString()
+            data_aprovacao: format(new Date(), 'dd-MM-yyyy')
           })
         });
       } catch (webhookError) {
