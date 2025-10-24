@@ -172,6 +172,13 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
                     <span className="font-medium">Data de Entrada:</span>
                     <span>{new Date(recebimento.data_entrada).toLocaleDateString('pt-BR')}</span>
                   </div>
+                  {recebimento.nota_fiscal && (
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Nota de Entrada:</span>
+                      <span>{recebimento.nota_fiscal}</span>
+                    </div>
+                  )}
                   {recebimento.numero_serie && (
                     <div className="flex items-center gap-2">
                       <Package className="h-4 w-4 text-muted-foreground" />
