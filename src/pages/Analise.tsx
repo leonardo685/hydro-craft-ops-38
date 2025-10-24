@@ -65,6 +65,13 @@ export default function OrdensServico() {
       // Enviar notificação para o n8n/Telegram
       try {
         if (ordem) {
+          // Buscar o número correto da ordem no formato MH-XXX-YY
+          const { data: recebimento } = await supabase
+            .from('recebimentos')
+            .select('numero_ordem')
+            .eq('id', ordem.recebimento_id)
+            .single();
+
           await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
             method: 'POST',
             headers: {
@@ -72,9 +79,10 @@ export default function OrdensServico() {
             },
             body: JSON.stringify({
               tipo: 'ordem_aprovada',
-              numero_ordem: ordem.numero_ordem,
+              numero_ordem: recebimento?.numero_ordem || ordem.numero_ordem,
               cliente: ordem.cliente_nome,
-              equipamento: ordem.equipamento
+              equipamento: ordem.equipamento,
+              data_aprovacao: new Date().toISOString()
             })
           });
         }

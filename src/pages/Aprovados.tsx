@@ -312,10 +312,12 @@ export default function Aprovados() {
                                     },
                                     body: JSON.stringify({
                                       tipo: 'ordem_retorno',
-                                      numero_ordem: ordem.numero_ordem,
-                                      cliente: ordem.cliente_nome,
+                                      numero_ordem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem,
+                                      cliente: ordem.recebimentos?.cliente_nome || ordem.cliente_nome,
                                       equipamento: ordem.equipamento,
-                                      nota_fiscal_entrada: notaFiscalEntrada
+                                      nota_fiscal_entrada: notaFiscalEntrada,
+                                      data_finalizacao: new Date().toISOString(),
+                                      data_aprovacao: ordem.updated_at
                                     })
                                   });
                                 } catch (webhookError) {

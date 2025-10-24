@@ -202,7 +202,8 @@ export const AprovarOrcamentoModal = ({
             numero: orcamento.numero,
             cliente: orcamento.cliente_nome,
             valor: formData.valorComDesconto,
-            numeroPedido: formData.numeroPedido
+            numeroPedido: formData.numeroPedido,
+            data_aprovacao: new Date().toISOString()
           })
         });
       } catch (webhookError) {
