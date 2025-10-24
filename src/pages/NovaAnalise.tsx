@@ -823,9 +823,31 @@ const NovaOrdemServico = () => {
         numeroSerie: (recebimentoEncontrado as any).numero_serie || ""
       });
       
-      // Carregar fotos do recebimento se existirem
+      // Carregar fotos do recebimento separando por tipo
       if (recebimentoEncontrado.fotos && recebimentoEncontrado.fotos.length > 0) {
-        setPreviewsChegada(recebimentoEncontrado.fotos.map((foto: any) => foto.arquivo_url).filter(Boolean));
+        console.log('Carregando fotos do recebimento:', recebimentoEncontrado.fotos);
+        
+        // Fotos de chegada (apresentar_orcamento = true)
+        const fotosChegadaUrls = recebimentoEncontrado.fotos
+          .filter((foto: any) => foto.apresentar_orcamento === true)
+          .map((foto: any) => foto.arquivo_url);
+        
+        if (fotosChegadaUrls.length > 0) {
+          console.log('✅ Fotos de CHEGADA carregadas:', fotosChegadaUrls.length, fotosChegadaUrls);
+          setPreviewsChegada(fotosChegadaUrls);
+          setFotosChegada(fotosChegadaUrls as any);
+        }
+        
+        // Fotos de análise (apresentar_orcamento = false)
+        const fotosAnaliseUrls = recebimentoEncontrado.fotos
+          .filter((foto: any) => foto.apresentar_orcamento === false)
+          .map((foto: any) => foto.arquivo_url);
+        
+        if (fotosAnaliseUrls.length > 0) {
+          console.log('✅ Fotos de ANÁLISE carregadas:', fotosAnaliseUrls.length, fotosAnaliseUrls);
+          setPreviewsAnalise(fotosAnaliseUrls);
+          setFotosAnalise(fotosAnaliseUrls as any);
+        }
       }
     } else {
       console.log('Recebimento not found for ID:', decodedId);
