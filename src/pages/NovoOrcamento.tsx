@@ -862,14 +862,14 @@ export default function NovoOrcamento() {
 
     // Definir posições das colunas da tabela - ORDEM CORRETA: Descrição → Qtd → Codigo → Valor Unitario → Valor Total
     const tableStartX = 20;
-    const tableWidth = pageWidth - 40; // ~170mm para A4
+    const tableWidth = pageWidth - 50; // ~160mm para garantir margens adequadas
     
-    // Definir larguras de cada coluna (ordem correta) - total 170mm
-    const colDescricaoWidth = 75;      // Descrição (maior coluna)
-    const colQtdWidth = 15;            // Qtd (pequena, centralizada)
-    const colCodigoWidth = 20;         // Codigo (números)
-    const colValorUnitWidth = 30;      // Valor Unitario
-    const colTotalWidth = 30;          // Valor Total
+    // Definir larguras de cada coluna (ordem correta) - total 160mm
+    const colDescricaoWidth = 70;      // Descrição (maior coluna)
+    const colQtdWidth = 18;            // Qtd (pequena, centralizada)
+    const colCodigoWidth = 22;         // Codigo (números)
+    const colValorUnitWidth = 28;      // Valor Unitario
+    const colTotalWidth = 28;          // Valor Total
     
     // Calcular posições iniciais (x) de cada coluna (da esquerda para direita)
     const colDescricao = tableStartX;
@@ -1176,7 +1176,7 @@ export default function NovoOrcamento() {
         doc.setDrawColor(200, 200, 200);
         doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
-          const desc = item.descricao.length > 45 ? item.descricao.substring(0, 42) + '...' : item.descricao;
+          const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
         doc.text(desc, colDescricao + 2, yPosition + 5.5);
         doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
         doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
@@ -1216,7 +1216,10 @@ export default function NovoOrcamento() {
 
     // Tabela: Serviços a Executar (com código)
     if (itensAnalise.servicos.length > 0) {
-      if (yPosition > 210) {
+      // Verificar se há espaço suficiente para pelo menos o título + cabeçalho + 2 linhas
+      const espacoNecessario = 10 + 8 + 16; // ~34mm
+      if (yPosition + espacoNecessario > pageHeight - 30) {
+        adicionarRodape();
         doc.addPage();
         yPosition = 20;
       }
@@ -1251,7 +1254,9 @@ export default function NovoOrcamento() {
       let totalServicos = 0;
 
       itensAnalise.servicos.forEach((item, index) => {
-        if (yPosition > 270) {
+        // Verificar se há espaço para a linha (altura 8mm + margem)
+        if (yPosition + 8 > pageHeight - 30) {
+          adicionarRodape();
           doc.addPage();
           yPosition = 20;
         }
@@ -1266,7 +1271,7 @@ export default function NovoOrcamento() {
         doc.setDrawColor(200, 200, 200);
         doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
-          const desc = item.descricao.length > 45 ? item.descricao.substring(0, 42) + '...' : item.descricao;
+          const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
         doc.text(desc, colDescricao + 2, yPosition + 5.5);
         doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
         doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
@@ -1306,7 +1311,10 @@ export default function NovoOrcamento() {
 
     // Tabela: Usinagem Necessária (com código)
     if (itensAnalise.usinagem.length > 0) {
-      if (yPosition > 210) {
+      // Verificar se há espaço suficiente para pelo menos o título + cabeçalho + 2 linhas
+      const espacoNecessario = 10 + 8 + 16; // ~34mm
+      if (yPosition + espacoNecessario > pageHeight - 30) {
+        adicionarRodape();
         doc.addPage();
         yPosition = 20;
       }
@@ -1341,7 +1349,9 @@ export default function NovoOrcamento() {
       let totalUsinagem = 0;
 
       itensAnalise.usinagem.forEach((item, index) => {
-        if (yPosition > 270) {
+        // Verificar se há espaço para a linha (altura 8mm + margem)
+        if (yPosition + 8 > pageHeight - 30) {
+          adicionarRodape();
           doc.addPage();
           yPosition = 20;
         }
@@ -1356,7 +1366,7 @@ export default function NovoOrcamento() {
         doc.setDrawColor(200, 200, 200);
         doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
-        const desc = item.descricao.length > 45 ? item.descricao.substring(0, 42) + '...' : item.descricao;
+        const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
         doc.text(desc, colDescricao + 2, yPosition + 5.5);
         doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
         doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
