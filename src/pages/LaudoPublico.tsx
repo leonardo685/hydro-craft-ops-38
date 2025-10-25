@@ -57,12 +57,19 @@ interface TesteEquipamento {
   observacao: string | null;
 }
 
+interface FotoEquipamento {
+  id: string;
+  arquivo_url: string;
+  nome_arquivo: string;
+}
+
 export default function LaudoPublico() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [ordemServico, setOrdemServico] = useState<OrdemServico | null>(null);
   const [teste, setTeste] = useState<TesteEquipamento | null>(null);
+  const [fotos, setFotos] = useState<FotoEquipamento[]>([]);
 
   useEffect(() => {
     const verificarAcessoECarregarDados = async () => {
@@ -124,6 +131,16 @@ export default function LaudoPublico() {
         if (testeError) throw testeError;
 
         setTeste(testeData);
+
+        // Buscar fotos do equipamento
+        const { data: fotosData, error: fotosError } = await supabase
+          .from("fotos_equipamentos")
+          .select("id, arquivo_url, nome_arquivo")
+          .eq("recebimento_id", recebimento.id);
+
+        if (fotosError) throw fotosError;
+
+        setFotos(fotosData || []);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
         toast.error("Erro ao carregar laudo");
@@ -376,40 +393,67 @@ export default function LaudoPublico() {
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+        )}
 
-              {/* Vídeo do Teste */}
-              {teste.video_url && (
-                <>
-                  <Separator />
-                  <div className="space-y-4">
-                    <p className="font-semibold flex items-center gap-2">
-                      <Video className="w-5 h-5" />
-                      Vídeo do Teste
-                    </p>
-                    <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                      <video 
-                        controls 
-                        className="w-full h-full"
-                        src={teste.video_url}
-                      >
-                        Seu navegador não suporta a reprodução de vídeos.
-                      </video>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        if (teste.video_url) {
-                          window.open(teste.video_url, '_blank');
-                        }
-                      }}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Baixar Vídeo
-                    </Button>
+        {/* Fotos do Equipamento */}
+        {fotos.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Fotos do Equipamento
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {fotos.map((foto) => (
+                  <div key={foto.id} className="space-y-2">
+                    <img
+                      src={foto.arquivo_url}
+                      alt={foto.nome_arquivo}
+                      className="w-full h-64 object-cover rounded-lg border"
+                    />
+                    <p className="text-sm text-muted-foreground text-center">{foto.nome_arquivo}</p>
                   </div>
-                </>
-              )}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Vídeo do Teste */}
+        {teste?.video_url && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Video className="w-5 h-5" />
+                Vídeo do Teste
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                <video 
+                  controls 
+                  className="w-full h-full"
+                  src={teste.video_url}
+                >
+                  Seu navegador não suporta a reprodução de vídeos.
+                </video>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  if (teste.video_url) {
+                    window.open(teste.video_url, '_blank');
+                  }
+                }}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Baixar Vídeo
+              </Button>
             </CardContent>
           </Card>
         )}

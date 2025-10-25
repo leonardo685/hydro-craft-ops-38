@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Video, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +34,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
     espessuraCamada: '',
     checkOk: false,
     observacao: '',
+    resultadoTeste: 'aprovado',
     dataHoraTeste: new Date().toISOString().slice(0, 16)
   });
   const [uploading, setUploading] = useState(false);
@@ -124,6 +126,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
             espessuraCamada: formData.espessuraCamada,
             checkOk: formData.checkOk,
             observacao: formData.observacao,
+            resultadoTeste: formData.resultadoTeste,
             dataHoraTeste: formData.dataHoraTeste,
             videoUrl: videoUrl
           }
@@ -155,6 +158,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
         espessuraCamada: '',
         checkOk: false,
         observacao: '',
+        resultadoTeste: 'aprovado',
         dataHoraTeste: new Date().toISOString().slice(0, 16)
       });
       setVideoFile(null);
@@ -358,6 +362,22 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                   Ok
                 </label>
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="resultadoTeste">Resultado do Teste *</Label>
+              <Select
+                value={formData.resultadoTeste}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, resultadoTeste: value }))}
+              >
+                <SelectTrigger id="resultadoTeste">
+                  <SelectValue placeholder="Selecione o resultado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="aprovado">Aprovado</SelectItem>
+                  <SelectItem value="reprovado">Reprovado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
