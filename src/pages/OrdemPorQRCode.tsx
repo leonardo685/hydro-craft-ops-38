@@ -10,15 +10,6 @@ export default function OrdemPorQRCode() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (loading) return;
-    
-    if (!user) {
-      navigate("/auth", { 
-        state: { from: `/ordem/${numeroOrdem}` } 
-      });
-      return;
-    }
-
     const buscarOrdem = async () => {
       if (!numeroOrdem) {
         toast.error("Número da ordem não encontrado");
@@ -52,8 +43,8 @@ export default function OrdemPorQRCode() {
         if (ordemError) throw ordemError;
 
         if (ordemServico) {
-          // Verificar se a ordem está finalizada
-          if (ordemServico.status === 'finalizado') {
+          // Verificar se a ordem está finalizada (aguardando_retorno ou finalizado)
+          if (ordemServico.status === 'finalizado' || ordemServico.status === 'aguardando_retorno') {
             // Verificar se já existe registro de acesso no marketing
             const { data: registroMarketing, error: marketingError } = await supabase
               .from("clientes_marketing")
@@ -72,10 +63,26 @@ export default function OrdemPorQRCode() {
             }
           } else {
             // Ordem não finalizada, requer autenticação
+            if (loading) return;
+            
+            if (!user) {
+              navigate("/auth", { 
+                state: { from: `/ordem/${numeroOrdem}` } 
+              });
+              return;
+            }
             navigate(`/visualizar-ordem-servico/${ordemServico.id}`);
           }
         } else {
           // Se não existe ordem de serviço, redireciona para detalhes do recebimento
+          if (loading) return;
+          
+          if (!user) {
+            navigate("/auth", { 
+              state: { from: `/ordem/${numeroOrdem}` } 
+            });
+            return;
+          }
           navigate(`/detalhes-recebimento/${recebimento.id}`);
         }
       } catch (error) {
