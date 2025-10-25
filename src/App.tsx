@@ -14,6 +14,7 @@ import NovoRecebimento from "./pages/NovoRecebimento";
 import DetalhesRecebimento from "./pages/DetalhesRecebimento";
 import Analise from "./pages/Analise";
 import NovaAnalise from "./pages/NovaAnalise";
+import NovaOrdemDireta from "./pages/NovaOrdemDireta";
 import Orcamentos from "./pages/Orcamentos";
 import NovoOrcamento from "./pages/NovoOrcamento";
 import Aprovados from "./pages/Aprovados";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/recebimentos/:id" element={<ProtectedRoute requiredPermission="recebimentos"><DetalhesRecebimento /></ProtectedRoute>} />
             <Route path="/analise" element={<ProtectedRoute requiredPermission="analise"><Analise /></ProtectedRoute>} />
             <Route path="/analise/novo/:id" element={<ProtectedRoute requiredPermission="analise"><NovaAnalise /></ProtectedRoute>} />
+            <Route path="/analise/novo-ordem-direta" element={<ProtectedRoute requiredPermission="analise"><NovaOrdemDireta /></ProtectedRoute>} />
             <Route path="/orcamentos" element={<ProtectedRoute requiredPermission="orcamentos"><Orcamentos /></ProtectedRoute>} />
             <Route path="/orcamentos/novo" element={<ProtectedRoute requiredPermission="orcamentos"><NovoOrcamento /></ProtectedRoute>} />
             <Route path="/aprovados" element={<ProtectedRoute requiredPermission="aprovados"><Aprovados /></ProtectedRoute>} />

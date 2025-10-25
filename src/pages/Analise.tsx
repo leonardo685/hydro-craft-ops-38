@@ -268,7 +268,7 @@ export default function OrdensServico() {
           </div>
           <Button 
             className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium"
-            onClick={() => navigate('/analise/novo')}
+            onClick={() => navigate('/analise/novo-ordem-direta')}
           >
             <Plus className="h-4 w-4 mr-2" />
             Nova Ordem de Serviço
@@ -324,9 +324,16 @@ export default function OrdensServico() {
                      ) : (
                        filteredOrdensServico.map((ordem) => (
                          <TableRow key={ordem.id} className="hover:bg-muted/30 transition-fast">
-                           <TableCell className="font-medium text-primary">
-                             {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
-                           </TableCell>
+                            <TableCell className="font-medium text-primary">
+                              <div className="flex items-center gap-2">
+                                {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
+                                {!ordem.recebimento_id && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Não vinculada
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
                            <TableCell className="text-primary font-medium">
                              {ordem.recebimentos?.cliente_nome || ordem.cliente_nome}
                            </TableCell>
