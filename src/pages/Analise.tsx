@@ -148,6 +148,13 @@ export default function OrdensServico() {
     try {
       const { default: jsPDF } = await import('jspdf');
       
+      // Buscar dados completos da ordem e recebimento
+      const { data: recebimentoData } = await supabase
+        .from('recebimentos')
+        .select('*')
+        .eq('id', ordem.recebimento_id)
+        .single();
+
       const EMPRESA_INFO = {
         nome: "MEC-HIDRO MECANICA E HIDRAULICA LTDA",
         cnpj: "03.328.334/0001-87",
@@ -157,7 +164,6 @@ export default function OrdensServico() {
       
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.width;
-      const pageHeight = doc.internal.pageSize.height;
       let yPosition = 10;
       
       // Cabeçalho
@@ -186,8 +192,15 @@ export default function OrdensServico() {
       
       yPosition = 65;
       
-      // Informações da ordem
+      // Função para criar tabela
       const criarTabela = (titulo: string, dados: Array<{label: string, value: string}>) => {
+        if (dados.length === 0) return;
+        
+        if (yPosition > 210) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(12);
         doc.setTextColor(255, 255, 255);
@@ -213,43 +226,145 @@ export default function OrdensServico() {
           doc.setFont('helvetica', 'bold');
           doc.text(item.label, 25, yPosition + 7);
           doc.setFont('helvetica', 'normal');
-          doc.text(item.value, 95, yPosition + 7);
+          const valorLines = doc.splitTextToSize(item.value, pageWidth - 110);
+          doc.text(valorLines, 95, yPosition + 7);
           yPosition += 10;
         });
         
         yPosition += 10;
       };
+
+      // Função para criar tabela com colunas
+      const criarTabelaColunas = (titulo: string, colunas: string[], dados: string[][]) => {
+        if (dados.length === 0) return;
+        
+        if (yPosition > 210) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(255, 255, 255);
+        doc.setFillColor(128, 128, 128);
+        doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+        doc.text(titulo.toUpperCase(), pageWidth / 2, yPosition + 7, { align: 'center' });
+        yPosition += 10;
+        
+        const colWidths = colunas.length === 2 ? [20, pageWidth - 80] : [20, 60, 40, 45];
+        
+        // Cabeçalho das colunas
+        doc.setFillColor(200, 200, 200);
+        doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        
+        let xPos = 25;
+        colunas.forEach((col, i) => {
+          doc.text(col, xPos, yPosition + 5);
+          xPos += colWidths[i];
+        });
+        yPosition += 8;
+        
+        // Dados
+        doc.setFont('helvetica', 'normal');
+        dados.forEach((linha, index) => {
+          if (index % 2 === 0) {
+            doc.setFillColor(245, 245, 245);
+          } else {
+            doc.setFillColor(255, 255, 255);
+          }
+          doc.rect(20, yPosition, pageWidth - 40, 7, 'F');
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(20, yPosition, pageWidth - 40, 7);
+          
+          xPos = 25;
+          linha.forEach((valor, i) => {
+            const textoQuebrado = doc.splitTextToSize(valor, colWidths[i] - 5);
+            doc.text(textoQuebrado[0], xPos, yPosition + 5);
+            xPos += colWidths[i];
+          });
+          yPosition += 7;
+        });
+        
+        yPosition += 10;
+      };
       
+      // Informações Básicas
       const dadosBasicos = [
-        { label: 'Nº Ordem:', value: ordem.numero_ordem },
         { label: 'Cliente:', value: ordem.recebimentos?.cliente_nome || ordem.cliente_nome },
         { label: 'Equipamento:', value: ordem.recebimentos?.tipo_equipamento || ordem.equipamento },
-        { label: 'Status:', value: ordem.status },
-        { label: 'Data Entrada:', value: new Date(ordem.data_entrada).toLocaleDateString('pt-BR') },
-        { label: 'Técnico:', value: ordem.tecnico || '-' },
-        { label: 'Prioridade:', value: ordem.prioridade || '-' }
+        { label: 'Data de Entrada:', value: new Date(ordem.data_entrada).toLocaleDateString('pt-BR') },
+        { label: 'Técnico:', value: ordem.tecnico || '' },
+        { label: 'Prioridade:', value: ordem.prioridade || '' }
       ];
-      
       criarTabela('Informações Básicas', dadosBasicos);
       
-      if (ordem.tipo_problema) {
-        criarTabela('Problema Identificado', [
-          { label: 'Tipo:', value: ordem.tipo_problema },
-          { label: 'Descrição:', value: ordem.descricao_problema || '-' }
+      // Peritagem (dados técnicos do recebimento)
+      if (recebimentoData) {
+        const dadosPeritagem = [];
+        if (recebimentoData.camisa) dadosPeritagem.push({ label: 'Ø Camisa:', value: recebimentoData.camisa });
+        if (recebimentoData.haste_comprimento) dadosPeritagem.push({ label: 'Ø Haste x Comprimento:', value: recebimentoData.haste_comprimento });
+        if (recebimentoData.curso) dadosPeritagem.push({ label: 'Curso:', value: recebimentoData.curso });
+        if (recebimentoData.conexao_a) dadosPeritagem.push({ label: 'Conexão A:', value: recebimentoData.conexao_a });
+        if (recebimentoData.conexao_b) dadosPeritagem.push({ label: 'Conexão B:', value: recebimentoData.conexao_b });
+        if (recebimentoData.pressao_trabalho) dadosPeritagem.push({ label: 'Pressão de Trabalho:', value: recebimentoData.pressao_trabalho });
+        
+        if (dadosPeritagem.length > 0) {
+          criarTabela('Peritagem', dadosPeritagem);
+        }
+      }
+      
+      // Problemas Identificados
+      if (ordem.descricao_problema) {
+        criarTabela('Problemas Identificados', [
+          { label: 'Descrição:', value: ordem.descricao_problema }
         ]);
       }
       
-      if (ordem.observacoes_tecnicas) {
-        criarTabela('Observações Técnicas', [
-          { label: 'Observações:', value: ordem.observacoes_tecnicas }
+      // Serviços Realizados
+      if (ordem.servicos_necessarios && Array.isArray(ordem.servicos_necessarios) && ordem.servicos_necessarios.length > 0) {
+        const servicosData = ordem.servicos_necessarios.map((s: any) => [
+          s.quantidade?.toString() || '1',
+          s.nome || s.servico || ''
         ]);
+        criarTabelaColunas('Serviços Realizados', ['Qtd.', 'Descrição'], servicosData);
       }
       
-      doc.save(`ordem-servico-${ordem.numero_ordem}.pdf`);
+      // Usinagem
+      if (ordem.usinagem_necessaria && Array.isArray(ordem.usinagem_necessaria) && ordem.usinagem_necessaria.length > 0) {
+        const usinagemData = ordem.usinagem_necessaria.map((u: any) => [
+          u.quantidade?.toString() || '1',
+          u.nome || u.descricao || ''
+        ]);
+        criarTabelaColunas('Usinagem', ['Qtd.', 'Descrição'], usinagemData);
+      }
+      
+      // Peças Utilizadas
+      if (ordem.pecas_necessarias && Array.isArray(ordem.pecas_necessarias) && ordem.pecas_necessarias.length > 0) {
+        const pecasData = ordem.pecas_necessarias.map((p: any) => [
+          p.quantidade?.toString() || '1',
+          p.peca || p.nome || ''
+        ]);
+        criarTabelaColunas('Peças Utilizadas', ['Qtd.', 'Descrição'], pecasData);
+      }
+
+      // Rodapé
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Página ${i} de ${totalPages}`, 20, 287);
+        doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy, HH:mm:ss')}`, pageWidth - 20, 287, { align: 'right' });
+      }
+      
+      doc.save(`analise-tecnica-${ordem.recebimentos?.cliente_nome || ordem.cliente_nome}_${ordem.numero_ordem}.pdf`);
       
       toast({
         title: "PDF exportado",
-        description: "O PDF foi gerado com sucesso",
+        description: "A análise técnica foi gerada com sucesso",
       });
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
