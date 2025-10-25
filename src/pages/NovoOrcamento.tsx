@@ -1197,7 +1197,7 @@ export default function NovoOrcamento() {
         yPosition += 5;
         const boxWidth = 50;
         const boxHeight = 8;
-        const boxX = pageWidth - 25 - boxWidth;
+        const boxX = pageWidth - 20 - 25 - boxWidth;
         
         doc.setDrawColor(200, 200, 200);
         doc.rect(boxX, yPosition, boxWidth, boxHeight);
@@ -1292,7 +1292,7 @@ export default function NovoOrcamento() {
         yPosition += 5;
         const boxWidth = 50;
         const boxHeight = 8;
-        const boxX = pageWidth - 25 - boxWidth;
+        const boxX = pageWidth - 20 - 25 - boxWidth;
         
         doc.setDrawColor(200, 200, 200);
         doc.rect(boxX, yPosition, boxWidth, boxHeight);
@@ -1387,7 +1387,7 @@ export default function NovoOrcamento() {
         yPosition += 5;
         const boxWidth = 50;
         const boxHeight = 8;
-        const boxX = pageWidth - 25 - boxWidth;
+        const boxX = pageWidth - 20 - 25 - boxWidth;
         
         doc.setDrawColor(200, 200, 200);
         doc.rect(boxX, yPosition, boxWidth, boxHeight);
@@ -1404,30 +1404,6 @@ export default function NovoOrcamento() {
       yPosition += 15;
     }
 
-    // Tabela: Resumo Financeiro
-    if (informacoesComerciais.mostrarValores !== false) {
-      if (yPosition > 240) {
-        doc.addPage();
-        yPosition = 20;
-      }
-
-      const dadosResumo: Array<{label: string, value: string}> = [
-        { label: 'Valor Total:', value: `R$ ${valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
-      ];
-
-      if (informacoesComerciais.desconto > 0) {
-        dadosResumo.push({ 
-          label: `Desconto (${informacoesComerciais.desconto}%):`, 
-          value: `R$ ${(valorTotal - valorComDesconto).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` 
-        });
-        dadosResumo.push({ 
-          label: 'Valor Final:', 
-          value: `R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` 
-        });
-      }
-
-      criarTabela('Resumo Financeiro', dadosResumo, [220, 38, 38]);
-    }
 
     // Seção de Fotos do Orçamento (apenas as marcadas para apresentação)
     const fotosApresentacao = fotos.filter(f => f.apresentar_orcamento);
