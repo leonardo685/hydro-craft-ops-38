@@ -2096,9 +2096,18 @@ export default function NovoOrcamento() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="valorOrcamento">Valor do Orçamento</Label>
-                <Input id="valorOrcamento" value={`R$ ${informacoesComerciais.valorTotal.toLocaleString('pt-BR', {
-                minimumFractionDigits: 2
-              })}`} disabled className="bg-muted font-medium" />
+                <Input 
+                  id="valorOrcamento" 
+                  type="number" 
+                  min="0" 
+                  step="0.01"
+                  value={informacoesComerciais.valorTotal}
+                  onChange={e => setInformacoesComerciais(prev => ({
+                    ...prev,
+                    valorTotal: parseFloat(e.target.value) || 0
+                  }))}
+                  className="font-medium" 
+                />
               </div>
               <div>
                 <Label htmlFor="desconto">% Desconto</Label>
