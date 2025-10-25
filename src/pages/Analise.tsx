@@ -266,13 +266,22 @@ export default function OrdensServico() {
               Gerencie todas as ordens de serviço de equipamentos
             </p>
           </div>
-          <Button 
-            className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium"
-            onClick={() => navigate('/analise/novo')}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Ordem de Serviço
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium"
+              onClick={() => navigate('/analise/novo')}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Ordem de Serviço
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate('/analise/novo-fabricacao')}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Fabricação
+            </Button>
+          </div>
         </div>
 
         <Card className="shadow-soft">
@@ -323,16 +332,21 @@ export default function OrdensServico() {
                        </TableRow>
                      ) : (
                        filteredOrdensServico.map((ordem) => (
-                         <TableRow key={ordem.id} className="hover:bg-muted/30 transition-fast">
-                           <TableCell className="font-medium text-primary">
-                             {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
-                           </TableCell>
-                           <TableCell className="text-primary font-medium">
-                             {ordem.recebimentos?.cliente_nome || ordem.cliente_nome}
-                           </TableCell>
-                           <TableCell className="text-foreground">
-                             {ordem.recebimentos?.tipo_equipamento || ordem.equipamento}
-                           </TableCell>
+                          <TableRow key={ordem.id} className="hover:bg-muted/30 transition-fast">
+                            <TableCell className="font-medium text-primary">
+                              <div className="flex items-center gap-2">
+                                {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
+                                {!ordem.recebimento_id && (
+                                  <Badge variant="secondary" className="text-xs">FABRICAÇÃO</Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-primary font-medium">
+                              {ordem.recebimentos?.cliente_nome || ordem.cliente_nome}
+                            </TableCell>
+                            <TableCell className="text-foreground">
+                              {ordem.recebimentos?.tipo_equipamento || ordem.equipamento}
+                            </TableCell>
                            <TableCell>
                              <Badge className={getStatusColor(ordem.status)}>
                                {ordem.status === 'em_andamento' ? 'Em Andamento' : 
