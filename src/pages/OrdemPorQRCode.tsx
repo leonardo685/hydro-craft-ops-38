@@ -45,15 +45,35 @@ export default function OrdemPorQRCode() {
         // Buscar ordem de serviço pelo recebimento_id
         const { data: ordemServico, error: ordemError } = await supabase
           .from("ordens_servico")
-          .select("id")
+          .select("id, status")
           .eq("recebimento_id", recebimento.id)
           .maybeSingle();
 
         if (ordemError) throw ordemError;
 
         if (ordemServico) {
-          // Se existe ordem de serviço, redireciona para visualização
-          navigate(`/visualizar-ordem-servico/${ordemServico.id}`);
+          // Verificar se a ordem está finalizada
+          if (ordemServico.status === 'finalizado') {
+            // Verificar se já existe registro de acesso no marketing
+            const { data: registroMarketing, error: marketingError } = await supabase
+              .from("clientes_marketing")
+              .select("id")
+              .eq("ordem_servico_id", ordemServico.id)
+              .maybeSingle();
+
+            if (marketingError) throw marketingError;
+
+            if (!registroMarketing) {
+              // Primeira vez acessando, redirecionar para formulário de captura
+              navigate(`/acesso-ordem/${numeroOrdem}`);
+            } else {
+              // Já preencheu o formulário antes, liberar acesso direto ao laudo
+              navigate(`/laudo-publico/${numeroOrdem}`);
+            }
+          } else {
+            // Ordem não finalizada, requer autenticação
+            navigate(`/visualizar-ordem-servico/${ordemServico.id}`);
+          }
         } else {
           // Se não existe ordem de serviço, redireciona para detalhes do recebimento
           navigate(`/detalhes-recebimento/${recebimento.id}`);

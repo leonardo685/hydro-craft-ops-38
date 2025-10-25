@@ -29,6 +29,8 @@ import MetaGastos from "./pages/MetaGastos";
 import HistoricoLancamentos from "./pages/HistoricoLancamentos";
 import OrdemPorQRCode from "./pages/OrdemPorQRCode";
 import AdminPermissions from "./pages/AdminPermissions";
+import AcessoOrdemPublica from "./pages/AcessoOrdemPublica";
+import LaudoPublico from "./pages/LaudoPublico";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +64,8 @@ const App = () => (
             <Route path="/admin/permissions" element={<ProtectedRoute requiredPermission="admin_permissions"><AdminPermissions /></ProtectedRoute>} />
             <Route path="/historico-lancamentos" element={<ProtectedRoute><HistoricoLancamentos /></ProtectedRoute>} />
             <Route path="/ordem/:numeroOrdem" element={<OrdemPorQRCode />} />
+            <Route path="/acesso-ordem/:numeroOrdem" element={<AcessoOrdemPublica />} />
+            <Route path="/laudo-publico/:numeroOrdem" element={<LaudoPublico />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -139,6 +139,56 @@ export type Database = {
         }
         Relationships: []
       }
+      clientes_marketing: {
+        Row: {
+          created_at: string
+          data_acesso: string
+          empresa: string
+          id: string
+          ip_acesso: string | null
+          nome: string
+          numero_ordem: string
+          ordem_servico_id: string
+          telefone: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_acesso?: string
+          empresa: string
+          id?: string
+          ip_acesso?: string | null
+          nome: string
+          numero_ordem: string
+          ordem_servico_id: string
+          telefone: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_acesso?: string
+          empresa?: string
+          id?: string
+          ip_acesso?: string | null
+          nome?: string
+          numero_ordem?: string
+          ordem_servico_id?: string
+          telefone?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_marketing_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       configuracoes_sistema: {
         Row: {
           chave: string
