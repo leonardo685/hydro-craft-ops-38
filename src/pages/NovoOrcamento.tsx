@@ -860,6 +860,13 @@ export default function NovoOrcamento() {
     const pageHeight = doc.internal.pageSize.height;
     let yPosition = 10;
 
+    // Definir posições das colunas da tabela
+    const colCodigo = 20;
+    const colDescricao = 47;
+    const colQtd = 120;
+    const colValorUnit = 135;
+    const colTotal = 165;
+
     // Função para adicionar detalhes decorativos (triângulos vermelhos e pretos)
     const adicionarDetalheDecorativo = () => {
       doc.setFillColor(220, 38, 38);
@@ -1128,17 +1135,18 @@ export default function NovoOrcamento() {
       doc.setDrawColor(200, 200, 200);
       doc.rect(20, yPosition, pageWidth - 40, 8);
 
-      let xPos = 22;
-      doc.text('Código', xPos, yPosition + 5.5);
-      xPos += 25;
-      doc.text('Descrição', xPos, yPosition + 5.5);
-      xPos += 70;
-      doc.text('Qtd', xPos, yPosition + 5.5);
+      const colCodigo = 20;
+      const colDescricao = 47;
+      const colQtd = 120;
+      const colValorUnit = 135;
+      const colTotal = 165;
+
+      doc.text('Código', colCodigo + 2, yPosition + 5.5);
+      doc.text('Descrição', colDescricao, yPosition + 5.5);
+      doc.text('Qtd', colQtd, yPosition + 5.5, { align: 'center' });
       if (informacoesComerciais.mostrarValores !== false) {
-        xPos += 15;
-        doc.text('Valor Unit.', xPos, yPosition + 5.5);
-        xPos += 30;
-        doc.text('Total', xPos, yPosition + 5.5);
+        doc.text('Valor Unit.', colValorUnit + 25, yPosition + 5.5, { align: 'right' });
+        doc.text('Total', colTotal + 25, yPosition + 5.5, { align: 'right' });
       }
       yPosition += 8;
 
@@ -1163,21 +1171,16 @@ export default function NovoOrcamento() {
         doc.setDrawColor(200, 200, 200);
         doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
-        let xPos = 22;
-        doc.text(item.codigo || '-', xPos, yPosition + 5.5);
-        xPos += 25;
-        const desc = item.descricao.length > 35 ? item.descricao.substring(0, 32) + '...' : item.descricao;
-        doc.text(desc, xPos, yPosition + 5.5);
-        xPos += 70;
-        doc.text(item.quantidade.toString(), xPos, yPosition + 5.5);
+        doc.text(item.codigo || '-', colCodigo + 2, yPosition + 5.5);
+        const desc = item.descricao.length > 40 ? item.descricao.substring(0, 37) + '...' : item.descricao;
+        doc.text(desc, colDescricao, yPosition + 5.5);
+        doc.text(item.quantidade.toString(), colQtd, yPosition + 5.5, { align: 'center' });
         
         if (informacoesComerciais.mostrarValores !== false) {
-          xPos += 15;
-          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2)}` : '';
-          doc.text(valorUnit, xPos + 30, yPosition + 5.5, { align: 'right' });
-          xPos += 30;
-          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2)}` : '';
-          doc.text(valorTot, xPos + 30, yPosition + 5.5, { align: 'right' });
+          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
+          doc.text(valorUnit, colValorUnit + 25, yPosition + 5.5, { align: 'right' });
+          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
+          doc.text(valorTot, colTotal + 25, yPosition + 5.5, { align: 'right' });
           totalPecas += item.valorTotal;
         }
 
@@ -1199,7 +1202,7 @@ export default function NovoOrcamento() {
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
-        const totalPecasTexto = totalPecas > 0 ? `R$ ${totalPecas.toFixed(2)}` : '';
+        const totalPecasTexto = totalPecas > 0 ? `R$ ${totalPecas.toFixed(2).replace('.', ',')}` : '';
         doc.text(totalPecasTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
       }
       
@@ -1228,17 +1231,12 @@ export default function NovoOrcamento() {
       doc.setDrawColor(200, 200, 200);
       doc.rect(20, yPosition, pageWidth - 40, 8);
 
-      let xPos = 22;
-      doc.text('Código', xPos, yPosition + 5.5);
-      xPos += 25;
-      doc.text('Descrição', xPos, yPosition + 5.5);
-      xPos += 70;
-      doc.text('Qtd', xPos, yPosition + 5.5);
+      doc.text('Código', colCodigo + 2, yPosition + 5.5);
+      doc.text('Descrição', colDescricao, yPosition + 5.5);
+      doc.text('Qtd', colQtd, yPosition + 5.5, { align: 'center' });
       if (informacoesComerciais.mostrarValores !== false) {
-        xPos += 15;
-        doc.text('Valor Unit.', xPos, yPosition + 5.5);
-        xPos += 30;
-        doc.text('Total', xPos, yPosition + 5.5);
+        doc.text('Valor Unit.', colValorUnit + 25, yPosition + 5.5, { align: 'right' });
+        doc.text('Total', colTotal + 25, yPosition + 5.5, { align: 'right' });
       }
       yPosition += 8;
 
@@ -1263,21 +1261,16 @@ export default function NovoOrcamento() {
         doc.setDrawColor(200, 200, 200);
         doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
-        let xPos = 22;
-        doc.text(item.codigo || '-', xPos, yPosition + 5.5);
-        xPos += 25;
-        const desc = item.descricao.length > 35 ? item.descricao.substring(0, 32) + '...' : item.descricao;
-        doc.text(desc, xPos, yPosition + 5.5);
-        xPos += 70;
-        doc.text(item.quantidade.toString(), xPos, yPosition + 5.5);
+        doc.text(item.codigo || '-', colCodigo + 2, yPosition + 5.5);
+        const desc = item.descricao.length > 40 ? item.descricao.substring(0, 37) + '...' : item.descricao;
+        doc.text(desc, colDescricao, yPosition + 5.5);
+        doc.text(item.quantidade.toString(), colQtd, yPosition + 5.5, { align: 'center' });
         
         if (informacoesComerciais.mostrarValores !== false) {
-          xPos += 15;
-          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2)}` : '';
-          doc.text(valorUnit, xPos + 30, yPosition + 5.5, { align: 'right' });
-          xPos += 30;
-          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2)}` : '';
-          doc.text(valorTot, xPos + 30, yPosition + 5.5, { align: 'right' });
+          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
+          doc.text(valorUnit, colValorUnit + 25, yPosition + 5.5, { align: 'right' });
+          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
+          doc.text(valorTot, colTotal + 25, yPosition + 5.5, { align: 'right' });
           totalServicos += item.valorTotal;
         }
 
@@ -1299,7 +1292,7 @@ export default function NovoOrcamento() {
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
-        const totalServicosTexto = totalServicos > 0 ? `R$ ${totalServicos.toFixed(2)}` : '';
+        const totalServicosTexto = totalServicos > 0 ? `R$ ${totalServicos.toFixed(2).replace('.', ',')}` : '';
         doc.text(totalServicosTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
       }
       
@@ -1328,17 +1321,12 @@ export default function NovoOrcamento() {
       doc.setDrawColor(200, 200, 200);
       doc.rect(20, yPosition, pageWidth - 40, 8);
 
-      let xPos = 22;
-      doc.text('Código', xPos, yPosition + 5.5);
-      xPos += 25;
-      doc.text('Descrição', xPos, yPosition + 5.5);
-      xPos += 70;
-      doc.text('Qtd', xPos, yPosition + 5.5);
+      doc.text('Código', colCodigo + 2, yPosition + 5.5);
+      doc.text('Descrição', colDescricao, yPosition + 5.5);
+      doc.text('Qtd', colQtd, yPosition + 5.5, { align: 'center' });
       if (informacoesComerciais.mostrarValores !== false) {
-        xPos += 15;
-        doc.text('Valor Unit.', xPos, yPosition + 5.5);
-        xPos += 30;
-        doc.text('Total', xPos, yPosition + 5.5);
+        doc.text('Valor Unit.', colValorUnit + 25, yPosition + 5.5, { align: 'right' });
+        doc.text('Total', colTotal + 25, yPosition + 5.5, { align: 'right' });
       }
       yPosition += 8;
 
@@ -1363,21 +1351,16 @@ export default function NovoOrcamento() {
         doc.setDrawColor(200, 200, 200);
         doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
-        let xPos = 22;
-        doc.text(item.codigo || '-', xPos, yPosition + 5.5);
-        xPos += 25;
-        const desc = item.descricao.length > 35 ? item.descricao.substring(0, 32) + '...' : item.descricao;
-        doc.text(desc, xPos, yPosition + 5.5);
-        xPos += 70;
-        doc.text(item.quantidade.toString(), xPos, yPosition + 5.5);
+        doc.text(item.codigo || '-', colCodigo + 2, yPosition + 5.5);
+        const desc = item.descricao.length > 40 ? item.descricao.substring(0, 37) + '...' : item.descricao;
+        doc.text(desc, colDescricao, yPosition + 5.5);
+        doc.text(item.quantidade.toString(), colQtd, yPosition + 5.5, { align: 'center' });
         
         if (informacoesComerciais.mostrarValores !== false) {
-          xPos += 15;
-          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2)}` : '';
-          doc.text(valorUnit, xPos + 30, yPosition + 5.5, { align: 'right' });
-          xPos += 30;
-          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2)}` : '';
-          doc.text(valorTot, xPos + 30, yPosition + 5.5, { align: 'right' });
+          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
+          doc.text(valorUnit, colValorUnit + 25, yPosition + 5.5, { align: 'right' });
+          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
+          doc.text(valorTot, colTotal + 25, yPosition + 5.5, { align: 'right' });
           totalUsinagem += item.valorTotal;
         }
 
