@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, ThumbsUp, ThumbsDown, Edit, FileText } from "lucide-react";
+import { Search, Plus, ThumbsUp, ThumbsDown, Edit, FileText, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -139,6 +139,123 @@ export default function OrdensServico() {
       toast({
         title: "Erro",
         description: error?.message || "Erro ao reprovar ordem de serviço",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportPDF = async (ordem: any) => {
+    try {
+      const { default: jsPDF } = await import('jspdf');
+      
+      const EMPRESA_INFO = {
+        nome: "MEC-HIDRO MECANICA E HIDRAULICA LTDA",
+        cnpj: "03.328.334/0001-87",
+        telefone: "(19) 3026-6227",
+        email: "contato@mechidro.com.br"
+      };
+      
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      let yPosition = 10;
+      
+      // Cabeçalho
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(EMPRESA_INFO.nome, 20, yPosition + 5);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`CNPJ: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
+      doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
+      doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
+      
+      // Linha separadora
+      doc.setDrawColor(220, 38, 38);
+      doc.setLineWidth(1);
+      doc.line(20, yPosition + 28, pageWidth - 20, yPosition + 28);
+      
+      yPosition = 48;
+      
+      // Título
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(220, 38, 38);
+      doc.text("ORDEM DE SERVIÇO", pageWidth / 2, yPosition, { align: "center" });
+      doc.setTextColor(0, 0, 0);
+      
+      yPosition = 65;
+      
+      // Informações da ordem
+      const criarTabela = (titulo: string, dados: Array<{label: string, value: string}>) => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(255, 255, 255);
+        doc.setFillColor(128, 128, 128);
+        doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+        doc.text(titulo.toUpperCase(), pageWidth / 2, yPosition + 7, { align: 'center' });
+        yPosition += 10;
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        
+        dados.forEach((item, index) => {
+          if (index % 2 === 0) {
+            doc.setFillColor(245, 245, 245);
+          } else {
+            doc.setFillColor(255, 255, 255);
+          }
+          doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(20, yPosition, pageWidth - 40, 10);
+          
+          doc.setFont('helvetica', 'bold');
+          doc.text(item.label, 25, yPosition + 7);
+          doc.setFont('helvetica', 'normal');
+          doc.text(item.value, 95, yPosition + 7);
+          yPosition += 10;
+        });
+        
+        yPosition += 10;
+      };
+      
+      const dadosBasicos = [
+        { label: 'Nº Ordem:', value: ordem.numero_ordem },
+        { label: 'Cliente:', value: ordem.recebimentos?.cliente_nome || ordem.cliente_nome },
+        { label: 'Equipamento:', value: ordem.recebimentos?.tipo_equipamento || ordem.equipamento },
+        { label: 'Status:', value: ordem.status },
+        { label: 'Data Entrada:', value: new Date(ordem.data_entrada).toLocaleDateString('pt-BR') },
+        { label: 'Técnico:', value: ordem.tecnico || '-' },
+        { label: 'Prioridade:', value: ordem.prioridade || '-' }
+      ];
+      
+      criarTabela('Informações Básicas', dadosBasicos);
+      
+      if (ordem.tipo_problema) {
+        criarTabela('Problema Identificado', [
+          { label: 'Tipo:', value: ordem.tipo_problema },
+          { label: 'Descrição:', value: ordem.descricao_problema || '-' }
+        ]);
+      }
+      
+      if (ordem.observacoes_tecnicas) {
+        criarTabela('Observações Técnicas', [
+          { label: 'Observações:', value: ordem.observacoes_tecnicas }
+        ]);
+      }
+      
+      doc.save(`ordem-servico-${ordem.numero_ordem}.pdf`);
+      
+      toast({
+        title: "PDF exportado",
+        description: "O PDF foi gerado com sucesso",
+      });
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao exportar PDF",
         variant: "destructive",
       });
     }
@@ -352,34 +469,46 @@ export default function OrdensServico() {
                            <TableCell className="text-muted-foreground">
                              {new Date(ordem.data_entrada).toLocaleDateString('pt-BR')}
                            </TableCell>
-                           <TableCell className="text-right">
-                             <div className="flex items-center justify-end gap-2">
-                               <Button 
-                                 variant="ghost" 
-                                 size="sm" 
-                                 className="h-8 w-8 p-0"
-                                 onClick={() => navigate(`/analise/novo/${encodeURIComponent(ordem.numero_ordem)}`)}
-                               >
-                                 <Edit className="h-4 w-4" />
-                               </Button>
-                               <Button 
-                                 variant="ghost" 
-                                 size="sm" 
-                                 className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                 onClick={() => handleApprove(ordem.id)}
-                               >
-                                 <ThumbsUp className="h-4 w-4" />
-                               </Button>
-                               <Button 
-                                 variant="ghost" 
-                                 size="sm" 
-                                 className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                 onClick={() => handleReject(ordem.id)}
-                               >
-                                 <ThumbsDown className="h-4 w-4" />
-                               </Button>
-                             </div>
-                           </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => navigate(`/analise/novo/${encodeURIComponent(ordem.numero_ordem)}`)}
+                                  title="Editar"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 text-primary hover:text-primary/80 hover:bg-primary/10"
+                                  onClick={() => handleExportPDF(ordem)}
+                                  title="Exportar PDF"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  onClick={() => handleApprove(ordem.id)}
+                                  title="Aprovar"
+                                >
+                                  <ThumbsUp className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => handleReject(ordem.id)}
+                                  title="Rejeitar"
+                                >
+                                  <ThumbsDown className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
                          </TableRow>
                        ))
                      )}

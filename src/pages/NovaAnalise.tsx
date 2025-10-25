@@ -572,18 +572,16 @@ const NovaOrdemServico = () => {
       criarTabelaColunas('Usinagem', ['Qtd.', 'Descrição'], usinagemSelecionada, [128, 128, 128]);
     }
     
-    // Peças Utilizadas - TABELA COM COLUNAS
+    // Peças Utilizadas - TABELA COM COLUNAS (apenas Qtd e Descrição)
     if (pecasUtilizadas.length > 0) {
       const dadosPecas = pecasUtilizadas.map(peca => [
         peca.quantidade.toString(),
-        peca.peca,
-        peca.material || '-',
-        `${peca.medida1 || '-'} x ${peca.medida2 || '-'} x ${peca.medida3 || '-'}`
+        peca.peca
       ]);
       
       criarTabelaColunas(
         'Peças Utilizadas', 
-        ['Qtd.', 'Descrição', 'Material', 'Medidas'], 
+        ['Qtd.', 'Descrição'], 
         dadosPecas, 
         [128, 128, 128]
       );
