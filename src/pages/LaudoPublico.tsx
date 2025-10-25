@@ -110,21 +110,6 @@ export default function LaudoPublico() {
           return;
         }
 
-        // Verificar se já preencheu o formulário
-        const { data: registroMarketing, error: marketingError } = await supabase
-          .from("clientes_marketing")
-          .select("id")
-          .eq("ordem_servico_id", ordem.id)
-          .maybeSingle();
-
-        if (marketingError) throw marketingError;
-
-        if (!registroMarketing) {
-          // Não preencheu ainda, redirecionar para formulário
-          navigate(`/acesso-ordem/${numeroOrdem}`);
-          return;
-        }
-
         setOrdemServico(ordem);
 
         // Buscar teste do equipamento
