@@ -315,6 +315,79 @@ const NovaOrdemServico = () => {
       yPosition += 10;
     };
     
+    // Função para criar tabela com múltiplas colunas
+    const criarTabelaColunas = (
+      titulo: string, 
+      colunas: string[], 
+      dados: string[][], 
+      corTitulo: number[] = [128, 128, 128]
+    ) => {
+      if (dados.length === 0) return;
+      
+      if (yPosition > 210) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      // Título da tabela
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      doc.setFillColor(corTitulo[0], corTitulo[1], corTitulo[2]);
+      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+      doc.text(titulo.toUpperCase(), pageWidth / 2, yPosition + 7, { align: 'center' });
+      yPosition += 10;
+      
+      // Definir larguras baseadas no número de colunas
+      let colWidths: number[];
+      if (colunas.length === 2) {
+        // Qtd. | Descrição
+        colWidths = [20, pageWidth - 80];
+      } else if (colunas.length === 4) {
+        // Qtd. | Descrição | Material | Medidas
+        colWidths = [20, 60, 40, 45];
+      } else {
+        colWidths = Array(colunas.length).fill((pageWidth - 40) / colunas.length);
+      }
+      
+      // Cabeçalho das colunas
+      doc.setFillColor(200, 200, 200);
+      doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      
+      let xPos = 25;
+      colunas.forEach((col, i) => {
+        doc.text(col, xPos, yPosition + 5);
+        xPos += colWidths[i];
+      });
+      yPosition += 8;
+      
+      // Dados
+      doc.setFont('helvetica', 'normal');
+      dados.forEach((linha, index) => {
+        if (index % 2 === 0) {
+          doc.setFillColor(245, 245, 245);
+        } else {
+          doc.setFillColor(255, 255, 255);
+        }
+        doc.rect(20, yPosition, pageWidth - 40, 7, 'F');
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(20, yPosition, pageWidth - 40, 7);
+        
+        xPos = 25;
+        linha.forEach((valor, i) => {
+          const textoQuebrado = doc.splitTextToSize(valor, colWidths[i] - 5);
+          doc.text(textoQuebrado[0], xPos, yPosition + 5);
+          xPos += colWidths[i];
+        });
+        yPosition += 7;
+      });
+      
+      yPosition += 10;
+    };
+    
     // Informações Básicas - TABELA
     const dadosBasicos: Array<{label: string, value: string}> = [
       { label: 'Cliente:', value: dadosRecebimento?.cliente_nome || '' },
@@ -449,49 +522,71 @@ const NovaOrdemServico = () => {
       criarTabela('Problemas Identificados', dadosProblemas, [128, 128, 128]);
     }
     
-    // Serviços Realizados - TABELA
+    // Serviços Realizados - TABELA COM COLUNAS
     const servicosSelecionados = Object.entries(servicosPreDeterminados)
       .filter(([_, selecionado]) => selecionado)
       .map(([servico, _]) => {
         const quantidade = servicosQuantidades[servico as keyof typeof servicosQuantidades];
         const nome = servicosNomes[servico as keyof typeof servicosNomes];
-        return { label: 'Serviço:', value: `${quantidade}x ${nome}` };
+        return [quantidade.toString(), nome];
       });
     
     if (servicosPersonalizados) {
       const quantidade = servicosQuantidades.personalizado;
-      servicosSelecionados.push({ label: 'Serviço:', value: `${quantidade}x ${servicosPersonalizados}` });
+      servicosSelecionados.push([quantidade.toString(), servicosPersonalizados]);
+    }
+    
+    // Adicionar serviços adicionais (caso existam)
+    if (servicosAdicionais && servicosAdicionais.length > 0) {
+      servicosAdicionais.forEach(servico => {
+        servicosSelecionados.push([servico.quantidade.toString(), servico.nome]);
+      });
     }
     
     if (servicosSelecionados.length > 0) {
-      criarTabela('Serviços Realizados', servicosSelecionados, [128, 128, 128]);
+      criarTabelaColunas('Serviços Realizados', ['Qtd.', 'Descrição'], servicosSelecionados, [128, 128, 128]);
     }
     
-    // Usinagem - TABELA
+    // Usinagem - TABELA COM COLUNAS
     const usinagemSelecionada = Object.entries(usinagem)
       .filter(([_, selecionado]) => selecionado)
       .map(([tipo, _]) => {
         const quantidade = usinagemQuantidades[tipo as keyof typeof usinagemQuantidades];
         const nome = usinagemNomes[tipo as keyof typeof usinagemNomes];
-        return { label: 'Usinagem:', value: `${quantidade}x ${nome}` };
+        return [quantidade.toString(), nome];
       });
     
     if (usinagemPersonalizada) {
       const quantidade = usinagemQuantidades.personalizada;
-      usinagemSelecionada.push({ label: 'Usinagem:', value: `${quantidade}x ${usinagemPersonalizada}` });
+      usinagemSelecionada.push([quantidade.toString(), usinagemPersonalizada]);
+    }
+    
+    // Adicionar usinagem adicional (caso exista)
+    if (usinagemAdicional && usinagemAdicional.length > 0) {
+      usinagemAdicional.forEach(item => {
+        usinagemSelecionada.push([item.quantidade.toString(), item.nome]);
+      });
     }
     
     if (usinagemSelecionada.length > 0) {
-      criarTabela('Usinagem', usinagemSelecionada, [128, 128, 128]);
+      criarTabelaColunas('Usinagem', ['Qtd.', 'Descrição'], usinagemSelecionada, [128, 128, 128]);
     }
     
-    // Peças Utilizadas - TABELA
+    // Peças Utilizadas - TABELA COM COLUNAS
     if (pecasUtilizadas.length > 0) {
-      const dadosPecas = pecasUtilizadas.map(peca => ({
-        label: `${peca.quantidade}x ${peca.peca}:`,
-        value: `Material: ${peca.material} | Medidas: ${peca.medida1} x ${peca.medida2} x ${peca.medida3}`
-      }));
-      criarTabela('Peças Utilizadas', dadosPecas, [128, 128, 128]);
+      const dadosPecas = pecasUtilizadas.map(peca => [
+        peca.quantidade.toString(),
+        peca.peca,
+        peca.material || '-',
+        `${peca.medida1 || '-'} x ${peca.medida2 || '-'} x ${peca.medida3 || '-'}`
+      ]);
+      
+      criarTabelaColunas(
+        'Peças Utilizadas', 
+        ['Qtd.', 'Descrição', 'Material', 'Medidas'], 
+        dadosPecas, 
+        [128, 128, 128]
+      );
     }
     
     // Fotos da Análise
