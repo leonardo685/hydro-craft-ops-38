@@ -155,6 +155,13 @@ export default function OrdensServico() {
         .eq('id', ordem.recebimento_id)
         .single();
 
+      // Buscar fotos do equipamento
+      const { data: fotosData } = await supabase
+        .from('fotos_equipamentos')
+        .select('*')
+        .eq('recebimento_id', ordem.recebimento_id)
+        .order('created_at', { ascending: true });
+
       const EMPRESA_INFO = {
         nome: "MEC-HIDRO MECANICA E HIDRAULICA LTDA",
         cnpj: "03.328.334/0001-87",
@@ -290,6 +297,87 @@ export default function OrdensServico() {
         
         yPosition += 10;
       };
+
+      // Função para adicionar fotos em grade 2x2
+      const adicionarFotosGrade = async (fotos: string[], titulo: string) => {
+        if (fotos.length === 0) return;
+        
+        if (yPosition > 210) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(220, 38, 38);
+        doc.text(titulo, 20, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += 10;
+        
+        const fotosPorPagina = 4;
+        const maxFotoWidth = 80;
+        const maxFotoHeight = 55;
+        const espacoHorizontal = 12;
+        const espacoVertical = 12;
+        
+        for (let i = 0; i < fotos.length; i += fotosPorPagina) {
+          if (i > 0) {
+            doc.addPage();
+            yPosition = 20;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.setTextColor(220, 38, 38);
+            doc.text(titulo + ' (continuação)', 20, yPosition);
+            doc.setTextColor(0, 0, 0);
+            yPosition += 10;
+          }
+          
+          const fotosPagina = fotos.slice(i, i + fotosPorPagina);
+          
+          for (let j = 0; j < fotosPagina.length; j++) {
+            const col = j % 2;
+            const row = Math.floor(j / 2);
+            const xPos = 20 + col * (maxFotoWidth + espacoHorizontal);
+            const yPos = yPosition + row * (maxFotoHeight + espacoVertical);
+            
+            try {
+              await new Promise<void>((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                  const imgAspectRatio = img.width / img.height;
+                  const maxAspectRatio = maxFotoWidth / maxFotoHeight;
+                  
+                  let finalWidth = maxFotoWidth;
+                  let finalHeight = maxFotoHeight;
+                  
+                  if (imgAspectRatio > maxAspectRatio) {
+                    finalHeight = maxFotoWidth / imgAspectRatio;
+                  } else {
+                    finalWidth = maxFotoHeight * imgAspectRatio;
+                  }
+                  
+                  const xOffset = (maxFotoWidth - finalWidth) / 2;
+                  const yOffset = (maxFotoHeight - finalHeight) / 2;
+                  
+                  doc.addImage(img, 'JPEG', xPos + xOffset, yPos + yOffset, finalWidth, finalHeight);
+                  resolve();
+                };
+                img.onerror = () => resolve();
+                img.src = fotosPagina[j];
+              });
+            } catch (error) {
+              console.error('Erro ao adicionar foto:', error);
+            }
+          }
+          
+          if (i + fotosPorPagina < fotos.length) {
+            yPosition = 280;
+          } else {
+            yPosition += Math.ceil(fotosPagina.length / 2) * (maxFotoHeight + espacoVertical) + 10;
+          }
+        }
+      };
       
       // Informações Básicas
       const dadosBasicos = [
@@ -348,6 +436,12 @@ export default function OrdensServico() {
           p.peca || p.nome || ''
         ]);
         criarTabelaColunas('Peças Utilizadas', ['Qtd.', 'Descrição'], pecasData);
+      }
+
+      // Adicionar fotos do equipamento
+      if (fotosData && fotosData.length > 0) {
+        const fotosUrls = fotosData.map(foto => foto.arquivo_url);
+        await adicionarFotosGrade(fotosUrls, 'Fotos da Análise');
       }
 
       // Rodapé
