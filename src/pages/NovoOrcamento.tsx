@@ -687,16 +687,14 @@ export default function NovoOrcamento() {
     return total - desconto;
   };
 
-  // Atualizar valor total automaticamente
+  // Atualizar apenas o valor com desconto (não sobrescreve valorTotal editado manualmente)
   useEffect(() => {
-    const total = calcularTotalGeral();
     const valorComDesconto = calcularValorComDesconto();
     setInformacoesComerciais(prev => ({
       ...prev,
-      valorTotal: total,
       valorComDesconto
     }));
-  }, [itensAnalise, informacoesComerciais.desconto]);
+  }, [itensAnalise, informacoesComerciais.desconto, informacoesComerciais.valorTotal]);
   const salvarOrcamento = async () => {
     const totalItens = itensAnalise.pecas.length + itensAnalise.servicos.length + itensAnalise.usinagem.length;
     if (!dadosOrcamento.tipoOrdem || !dadosOrcamento.cliente || totalItens === 0) {
@@ -708,7 +706,8 @@ export default function NovoOrcamento() {
       return;
     }
 
-    const valorFinal = calcularValorComDesconto();
+    // Usar o valor total editado manualmente pelo usuário
+    const valorFinal = informacoesComerciais.valorTotal;
     
     try {
       // Criar dados para inserir no Supabase
@@ -1439,17 +1438,16 @@ export default function NovoOrcamento() {
       const adicionarFotosGrade = async (fotos: any[], titulo: string) => {
         if (fotos.length === 0) return;
         
-        if (yPosition > 210) {
-          doc.addPage();
-          yPosition = 20;
-        }
+        // SEMPRE começar fotos em nova página para evitar sobreposição
+        doc.addPage();
+        let yPosFotos = 20;
         
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(12);
         doc.setTextColor(220, 38, 38);
-        doc.text(titulo, 20, yPosition);
+        doc.text(titulo, 20, yPosFotos);
         doc.setTextColor(0, 0, 0);
-        yPosition += 10;
+        yPosFotos += 10;
         
         const fotosPorPagina = 4;
         const maxFotoWidth = 80;
@@ -1460,13 +1458,13 @@ export default function NovoOrcamento() {
         for (let i = 0; i < fotos.length; i += fotosPorPagina) {
           if (i > 0) {
             doc.addPage();
-            yPosition = 20;
+            yPosFotos = 20;
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(12);
             doc.setTextColor(220, 38, 38);
-            doc.text(titulo + ' (continuação)', 20, yPosition);
+            doc.text(titulo + ' (continuação)', 20, yPosFotos);
             doc.setTextColor(0, 0, 0);
-            yPosition += 10;
+            yPosFotos += 10;
           }
           
           const fotosPagina = fotos.slice(i, i + fotosPorPagina);
@@ -1475,7 +1473,7 @@ export default function NovoOrcamento() {
             const col = j % 2;
             const row = Math.floor(j / 2);
             const xPos = 20 + col * (maxFotoWidth + espacoHorizontal);
-            const yPos = yPosition + row * (maxFotoHeight + espacoVertical);
+            const yPos = yPosFotos + row * (maxFotoHeight + espacoVertical);
             
             try {
               await new Promise<void>((resolve) => {
@@ -1506,12 +1504,6 @@ export default function NovoOrcamento() {
             } catch (error) {
               console.error('Erro ao adicionar foto:', error);
             }
-          }
-          
-          if (i + fotosPorPagina < fotos.length) {
-            yPosition = 280;
-          } else {
-            yPosition += Math.ceil(fotosPagina.length / 2) * (maxFotoHeight + espacoVertical) + 10;
           }
         }
       };
@@ -2096,18 +2088,39 @@ export default function NovoOrcamento() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="valorOrcamento">Valor do Orçamento</Label>
-                <Input 
-                  id="valorOrcamento" 
-                  type="number" 
-                  min="0" 
-                  step="0.01"
-                  value={informacoesComerciais.valorTotal}
-                  onChange={e => setInformacoesComerciais(prev => ({
-                    ...prev,
-                    valorTotal: parseFloat(e.target.value) || 0
-                  }))}
-                  className="font-medium" 
-                />
+                <div className="flex gap-2">
+                  <Input 
+                    id="valorOrcamento" 
+                    type="number" 
+                    min="0" 
+                    step="0.01"
+                    value={informacoesComerciais.valorTotal}
+                    onChange={e => setInformacoesComerciais(prev => ({
+                      ...prev,
+                      valorTotal: parseFloat(e.target.value) || 0
+                    }))}
+                    className="font-medium flex-1" 
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const totalCalculado = calcularTotalGeral();
+                      setInformacoesComerciais(prev => ({
+                        ...prev,
+                        valorTotal: totalCalculado
+                      }));
+                      toast({
+                        title: "Valor recalculado",
+                        description: `Valor atualizado para R$ ${totalCalculado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                      });
+                    }}
+                    className="whitespace-nowrap"
+                  >
+                    <Calculator className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               <div>
                 <Label htmlFor="desconto">% Desconto</Label>
