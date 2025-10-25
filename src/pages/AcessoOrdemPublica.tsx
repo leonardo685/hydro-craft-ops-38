@@ -79,8 +79,8 @@ export default function AcessoOrdemPublica() {
         return;
       }
 
-      // Verificar se está finalizada
-      if (ordemServico.status !== 'finalizado') {
+      // Verificar se está finalizada ou aguardando retorno
+      if (ordemServico.status !== 'finalizado' && ordemServico.status !== 'aguardando_retorno') {
         toast.error("Esta ordem ainda não foi finalizada");
         navigate("/");
         return;

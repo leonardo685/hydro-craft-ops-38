@@ -103,8 +103,8 @@ export default function LaudoPublico() {
           return;
         }
 
-        // Verificar se está finalizada
-        if (ordem.status !== 'finalizado') {
+        // Verificar se está finalizada ou aguardando retorno
+        if (ordem.status !== 'finalizado' && ordem.status !== 'aguardando_retorno') {
           toast.error("Esta ordem ainda não foi finalizada");
           navigate("/");
           return;
