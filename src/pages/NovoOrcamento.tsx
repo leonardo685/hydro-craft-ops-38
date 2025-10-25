@@ -144,7 +144,7 @@ export default function NovoOrcamento() {
           solicitante: orcamentoParaEdicao.observacoes?.split('|')[1]?.replace('Solicitante:', '')?.trim() || '',
           dataAbertura: new Date(orcamentoParaEdicao.data_criacao).toISOString().split('T')[0],
           numeroNota: orcamentoParaEdicao.observacoes?.split('|')[2]?.replace('Nota:', '')?.trim() || '',
-          numeroSerie: orcamentoParaEdicao.observacoes?.split('|')[3]?.replace('Série:', '')?.trim() || '',
+          numeroSerie: orcamentoParaEdicao.observacoes?.split('|')[3]?.replace('Ordem Ref:', '')?.trim() || orcamentoParaEdicao.observacoes?.split('|')[3]?.replace('Série:', '')?.trim() || '',
           observacoes: orcamentoParaEdicao.descricao || '',
           status: orcamentoParaEdicao.status
         });
@@ -295,7 +295,7 @@ export default function NovoOrcamento() {
               clienteId: ordemServico.recebimentos?.cliente_id || '',
               solicitante: '',
               numeroNota: ordemServico.recebimentos?.nota_fiscal || '',
-              numeroSerie: ordemServico.recebimentos?.numero_serie || '',
+              numeroSerie: ordemServico.numero_ordem || '',
               dataAbertura: new Date().toISOString().split('T')[0],
               observacoes: ordemServico.observacoes_tecnicas || '',
               tag: ordemServico.equipamento || ''
@@ -718,7 +718,7 @@ export default function NovoOrcamento() {
         descricao: dadosOrcamento.observacoes || '',
         valor: valorFinal,
         status: 'pendente',
-        observacoes: `Tipo: ${dadosOrcamento.tipoOrdem} | Solicitante: ${dadosOrcamento.solicitante} | Nota: ${dadosOrcamento.numeroNota} | Série: ${dadosOrcamento.numeroSerie}`,
+        observacoes: `Tipo: ${dadosOrcamento.tipoOrdem} | Solicitante: ${dadosOrcamento.solicitante} | Nota: ${dadosOrcamento.numeroNota} | Ordem Ref: ${dadosOrcamento.numeroSerie}`,
         ordem_servico_id: ordemServicoId || null,
         condicao_pagamento: informacoesComerciais.condicaoPagamento || null,
         prazo_entrega: informacoesComerciais.prazoEntrega || null,
@@ -1643,11 +1643,11 @@ export default function NovoOrcamento() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="numeroSerie">Nº de Série *</Label>
+                  <Label htmlFor="numeroSerie">Ordem Referencia</Label>
                   <Input id="numeroSerie" value={dadosOrcamento.numeroSerie} onChange={e => setDadosOrcamento(prev => ({
                   ...prev,
                   numeroSerie: e.target.value
-                }))} placeholder="Número de série do equipamento" />
+                }))} placeholder="Número da ordem de serviço referência" disabled={!!ordemServicoId} className={ordemServicoId ? "bg-muted" : ""} />
                 </div>
                 <div>
                   <Label htmlFor="tag">TAG</Label>
