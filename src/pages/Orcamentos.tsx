@@ -551,7 +551,7 @@ export default function Orcamentos() {
           ['Descrição', 'Qtd', 'Valor Unit.', 'Total'],
           pecasRows,
           yPosition,
-          [90, 20, 35, 35]
+          [70, 18, 28, 28]
         );
 
         // Total de Peças em box
@@ -566,7 +566,7 @@ export default function Orcamentos() {
         yPosition += 5;
         const boxWidth = 50;
         const boxHeight = 8;
-        const boxX = pageWidth - 25 - boxWidth - 35;
+        const boxX = pageWidth - 20 - 25 - boxWidth;
         
         doc.setDrawColor(200, 200, 200);
         doc.rect(boxX, yPosition, boxWidth, boxHeight);
@@ -575,9 +575,9 @@ export default function Orcamentos() {
         doc.text('Total de Peças', boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
-        doc.rect(valorBoxX, yPosition, 35, boxHeight);
+        doc.rect(valorBoxX, yPosition, 25, boxHeight);
         const totalPecasTexto = totalPecas > 0 ? totalPecas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
-        doc.text(totalPecasTexto, valorBoxX + 33, yPosition + 5.5, { align: 'right' });
+        doc.text(totalPecasTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
         yPosition += 10;
       }
@@ -585,6 +585,15 @@ export default function Orcamentos() {
       // === SERVIÇOS A EXECUTAR ===
       if (servicos.length > 0) {
         yPosition += 10;
+        
+        // Verificar se precisa de nova página
+        if (yPosition + 30 > pageHeight - 30) {
+          adicionarRodape(currentPage);
+          doc.addPage();
+          currentPage++;
+          yPosition = 20;
+        }
+        
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(220, 38, 38);
@@ -607,7 +616,7 @@ export default function Orcamentos() {
           ['Descrição', 'Qtd', 'Valor Unit.', 'Total'],
           servicosRows,
           yPosition,
-          [90, 20, 35, 35]
+          [70, 18, 28, 28]
         );
 
         // Total de Serviços em box
@@ -622,7 +631,7 @@ export default function Orcamentos() {
         yPosition += 5;
         const boxWidth = 50;
         const boxHeight = 8;
-        const boxX = pageWidth - 25 - boxWidth - 35;
+        const boxX = pageWidth - 20 - 25 - boxWidth;
         
         doc.setDrawColor(200, 200, 200);
         doc.rect(boxX, yPosition, boxWidth, boxHeight);
@@ -631,9 +640,9 @@ export default function Orcamentos() {
         doc.text('Total de Serviços', boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
-        doc.rect(valorBoxX, yPosition, 35, boxHeight);
+        doc.rect(valorBoxX, yPosition, 25, boxHeight);
         const totalServicosTexto = totalServicos > 0 ? totalServicos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
-        doc.text(totalServicosTexto, valorBoxX + 33, yPosition + 5.5, { align: 'right' });
+        doc.text(totalServicosTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
         yPosition += 10;
       }
@@ -641,6 +650,15 @@ export default function Orcamentos() {
       // === USINAGEM NECESSÁRIA ===
       if (usinagem.length > 0) {
         yPosition += 10;
+        
+        // Verificar se precisa de nova página
+        if (yPosition + 30 > pageHeight - 30) {
+          adicionarRodape(currentPage);
+          doc.addPage();
+          currentPage++;
+          yPosition = 20;
+        }
+        
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(220, 38, 38);
@@ -663,7 +681,7 @@ export default function Orcamentos() {
           ['Descrição', 'Qtd', 'Valor Unit.', 'Total'],
           usinagemRows,
           yPosition,
-          [90, 20, 35, 35]
+          [70, 18, 28, 28]
         );
 
         // Total de Usinagem em box
@@ -678,7 +696,7 @@ export default function Orcamentos() {
         yPosition += 5;
         const boxWidth = 50;
         const boxHeight = 8;
-        const boxX = pageWidth - 25 - boxWidth - 35;
+        const boxX = pageWidth - 20 - 25 - boxWidth;
         
         doc.setDrawColor(200, 200, 200);
         doc.rect(boxX, yPosition, boxWidth, boxHeight);
@@ -687,9 +705,9 @@ export default function Orcamentos() {
         doc.text('Total de Usinagem', boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
-        doc.rect(valorBoxX, yPosition, 35, boxHeight);
+        doc.rect(valorBoxX, yPosition, 25, boxHeight);
         const totalUsinagemTexto = totalUsinagem > 0 ? totalUsinagem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
-        doc.text(totalUsinagemTexto, valorBoxX + 33, yPosition + 5.5, { align: 'right' });
+        doc.text(totalUsinagemTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
         yPosition += 10;
       }
