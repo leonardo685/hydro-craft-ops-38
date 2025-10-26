@@ -135,9 +135,9 @@ export function UploadExtratoModal({
           const transacoes: TransacaoExtrato[] = [];
           
           // Regex global para encontrar padrões de transação do Sicredi
-          // Formato: DD/MM/YYYY + espaços + descrição + espaços + valor negativo/positivo + espaços + saldo
-          // Usando regex global para encontrar todas as ocorrências no texto completo
-          const regexTransacao = /(\d{2}\/\d{2}\/\d{4})\s+([A-Z][^0-9-]+?)\s+([-]?[\d.]+,\d{2})\s+([-]?[\d.]+,\d{2})/g;
+          // Formato: DD/MM/YYYY + descrição (pode incluir documentos como PIX_DEB, CX123, etc) + valor + saldo
+          // Captura descrição de forma mais flexível para incluir todas as variações
+          const regexTransacao = /(\d{2}\/\d{2}\/\d{4})\s+([A-Z][\s\S]+?)\s+([-]?[\d.]+,\d{2})\s+([-]?[\d.]+,\d{2})/g;
           
           let match;
           let transacaoIndex = 0;
@@ -171,7 +171,8 @@ export function UploadExtratoModal({
             const descricaoLimpa = descricaoBruta
               .trim()
               .replace(/\s+/g, ' ')
-              .replace(/\s*(PIX_DEB|PIX_CRED|CX\d+)\s*$/, '') // Remove códigos de documento do final
+              .replace(/\s*(PIX_DEB|PIX_CRED|CX\d+|DOCUMENTO)\s*/g, '') // Remove códigos de documento
+              .replace(/\s+[-]?[\d.]+,\d{2}\s*$/, '') // Remove valores que possam ter sido capturados
               .substring(0, 200);
             
             if (!isNaN(valorMovimentacao) && Math.abs(valorMovimentacao) > 0 && descricaoLimpa.length > 3) {
