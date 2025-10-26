@@ -61,9 +61,9 @@ export function UploadExtratoModal({
 
     // Validar formato
     const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!['xlsx', 'xls', 'pdf'].includes(ext || '')) {
+    if (!['xlsx', 'xls'].includes(ext || '')) {
       toast.error("Formato inválido", {
-        description: "Por favor, envie um arquivo XLSX ou PDF"
+        description: "Por favor, envie um arquivo XLSX ou XLS"
       });
       return;
     }
@@ -165,18 +165,12 @@ export function UploadExtratoModal({
     try {
       const ext = arquivo.name.split('.').pop()?.toLowerCase();
       
-      if (ext === 'xlsx' || ext === 'xls') {
-        const transacoesParsed = await parseXLSX(arquivo);
-        setTransacoes(transacoesParsed);
-        setEtapa('categorizar');
-        toast.success("Extrato processado", {
-          description: `${transacoesParsed.length} transações encontradas`
-        });
-      } else if (ext === 'pdf') {
-        toast.error("PDF não suportado ainda", {
-          description: "Por favor, use arquivos XLSX no momento"
-        });
-      }
+      const transacoesParsed = await parseXLSX(arquivo);
+      setTransacoes(transacoesParsed);
+      setEtapa('categorizar');
+      toast.success("Extrato processado", {
+        description: `${transacoesParsed.length} transações encontradas`
+      });
     } catch (error) {
       console.error('Erro ao processar arquivo:', error);
       toast.error("Erro ao processar arquivo", {
@@ -273,7 +267,7 @@ export function UploadExtratoModal({
         <DialogHeader>
           <DialogTitle>Lançamento por Extrato</DialogTitle>
           <DialogDescription>
-            Importe transações de arquivos XLSX ou PDF e categorize-as
+            Importe transações de arquivos XLSX e categorize-as
           </DialogDescription>
         </DialogHeader>
 
@@ -281,13 +275,12 @@ export function UploadExtratoModal({
           <div className="flex flex-col items-center justify-center py-12 gap-6">
             <div className="flex gap-4 text-muted-foreground">
               <FileSpreadsheet className="h-16 w-16" />
-              <FileText className="h-16 w-16" />
             </div>
             
             <div className="text-center space-y-2">
               <h3 className="font-semibold text-lg">Selecione o arquivo do extrato</h3>
               <p className="text-sm text-muted-foreground">
-                Formatos aceitos: XLSX, XLS ou PDF (máx. 10MB)
+                Formatos aceitos: XLSX ou XLS (máx. 10MB)
               </p>
             </div>
 
@@ -302,7 +295,7 @@ export function UploadExtratoModal({
                 <input
                   id="file-upload"
                   type="file"
-                  accept=".xlsx,.xls,.pdf"
+                  accept=".xlsx,.xls"
                   onChange={handleFileChange}
                   className="hidden"
                 />
