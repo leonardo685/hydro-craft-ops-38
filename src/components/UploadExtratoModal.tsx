@@ -9,8 +9,7 @@ import { toast } from "sonner";
 import * as XLSX from 'xlsx';
 import { supabase } from "@/integrations/supabase/client";
 import { format, parse, isValid } from 'date-fns';
-// @ts-ignore - pdf-parse doesn't have proper types
-import pdf from 'pdf-parse/lib/pdf-parse';
+import * as pdfjsLib from 'pdfjs-dist';
 
 interface TransacaoExtrato {
   id: string;
@@ -110,12 +109,28 @@ export function UploadExtratoModal({
       reader.onload = async (e) => {
         try {
           const arrayBuffer = e.target?.result as ArrayBuffer;
-          const pdfData = await pdf(new Uint8Array(arrayBuffer));
-          const text = pdfData.text;
+          
+          // Configurar o worker do PDF.js
+          pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+          
+          // Carregar o PDF
+          const loadingTask = pdfjsLib.getDocument(arrayBuffer);
+          const pdf = await loadingTask.promise;
+          
+          let fullText = '';
+          
+          // Extrair texto de todas as páginas
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items
+              .map((item: any) => item.str)
+              .join(' ');
+            fullText += pageText + '\n';
+          }
           
           // Regex para detectar padrões comuns de extratos bancários
-          // Formato: DD/MM/YYYY ou DD/MM/YY seguido de descrição e valor
-          const linhas = text.split('\n');
+          const linhas = fullText.split('\n');
           const transacoes: TransacaoExtrato[] = [];
           
           linhas.forEach((linha, index) => {
