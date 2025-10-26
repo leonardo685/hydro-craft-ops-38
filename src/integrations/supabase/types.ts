@@ -1041,7 +1041,9 @@ export type Database = {
       }
       recebimentos: {
         Row: {
+          ambiente_trabalho: string | null
           camisa: string | null
+          categoria_equipamento: string | null
           chave_acesso_nfe: string | null
           cliente_cnpj: string | null
           cliente_id: string | null
@@ -1072,7 +1074,9 @@ export type Database = {
           urgente: boolean | null
         }
         Insert: {
+          ambiente_trabalho?: string | null
           camisa?: string | null
+          categoria_equipamento?: string | null
           chave_acesso_nfe?: string | null
           cliente_cnpj?: string | null
           cliente_id?: string | null
@@ -1103,7 +1107,9 @@ export type Database = {
           urgente?: boolean | null
         }
         Update: {
+          ambiente_trabalho?: string | null
           camisa?: string | null
+          categoria_equipamento?: string | null
           chave_acesso_nfe?: string | null
           cliente_cnpj?: string | null
           cliente_id?: string | null

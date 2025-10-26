@@ -32,15 +32,17 @@ export default function NovoRecebimento() {
   const [formData, setFormData] = useState({
     cliente: "",
     tag: "",
-    dataAbertura: new Date().toISOString().split('T')[0], // Data atual
+    dataAbertura: new Date().toISOString().split('T')[0],
     numeroNota: "",
     numeroSerie: "",
     urgencia: false,
     solicitante: "",
     manutencaoCorretiva: false,
     manutencaoPreventiva: false,
+    categoriaEquipamento: "cilindro",
     tipoEquipamento: "",
     pressaoTrabalho: "",
+    ambienteTrabalho: "",
     observacoesEntrada: "",
     camisa: "",
     hasteComprimento: "",
@@ -119,13 +121,20 @@ export default function NovoRecebimento() {
         nota_fiscal: formData.numeroNota,
         nota_fiscal_id: notaFiscal?.id || null,
         chave_acesso_nfe: notaFiscal?.chave_acesso || null,
+        categoria_equipamento: formData.categoriaEquipamento,
         tipo_equipamento: formData.tipoEquipamento,
         numero_serie: formData.numeroSerie,
         urgente: formData.urgencia,
         na_empresa: true,
         status: 'recebido',
         pressao_trabalho: formData.pressaoTrabalho,
-        observacoes: formData.observacoesEntrada
+        ambiente_trabalho: formData.ambienteTrabalho,
+        observacoes: formData.observacoesEntrada,
+        camisa: formData.categoriaEquipamento === 'cilindro' ? formData.camisa : null,
+        haste_comprimento: formData.categoriaEquipamento === 'cilindro' ? formData.hasteComprimento : null,
+        curso: formData.categoriaEquipamento === 'cilindro' ? formData.curso : null,
+        conexao_a: formData.categoriaEquipamento === 'cilindro' ? formData.conexaoA : null,
+        conexao_b: formData.categoriaEquipamento === 'cilindro' ? formData.conexaoB : null,
       };
 
       // Criar recebimento no Supabase
@@ -295,18 +304,131 @@ export default function NovoRecebimento() {
             </CardContent>
           </Card>
 
-          {/* Dados de Entrada */}
+          {/* Dados Técnicos */}
           <Card>
             <CardContent className="p-6 space-y-6">
-              <h3 className="text-lg font-semibold">Dados de Entrada</h3>
+              <h3 className="text-lg font-semibold">Dados Técnicos</h3>
               
               <div className="space-y-2">
-                <Label htmlFor="tipoEquipamento">Tipo Equipamento</Label>
-                <Input 
-                  id="tipoEquipamento"
-                  value={formData.tipoEquipamento}
-                  onChange={(e) => setFormData({...formData, tipoEquipamento: e.target.value})}
-                />
+                <Label htmlFor="categoriaEquipamento">Categoria do Equipamento*</Label>
+                <Select 
+                  value={formData.categoriaEquipamento} 
+                  onValueChange={(value) => setFormData({...formData, categoriaEquipamento: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cilindro">Cilindro</SelectItem>
+                    <SelectItem value="outros">Outros</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.categoriaEquipamento === 'cilindro' && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="camisa">Camisa</Label>
+                      <Input 
+                        id="camisa"
+                        value={formData.camisa}
+                        onChange={(e) => setFormData({...formData, camisa: e.target.value})}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="hasteComprimento">Haste - Comprimento</Label>
+                      <Input 
+                        id="hasteComprimento"
+                        value={formData.hasteComprimento}
+                        onChange={(e) => setFormData({...formData, hasteComprimento: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="curso">Curso</Label>
+                      <Input 
+                        id="curso"
+                        value={formData.curso}
+                        onChange={(e) => setFormData({...formData, curso: e.target.value})}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pressaoTrabalho">Pressão de Trabalho</Label>
+                      <Input 
+                        id="pressaoTrabalho"
+                        value={formData.pressaoTrabalho}
+                        onChange={(e) => setFormData({...formData, pressaoTrabalho: e.target.value})}
+                        placeholder="Ex: 200 bar"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="conexaoA">Conexão A</Label>
+                      <Input 
+                        id="conexaoA"
+                        value={formData.conexaoA}
+                        onChange={(e) => setFormData({...formData, conexaoA: e.target.value})}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="conexaoB">Conexão B</Label>
+                      <Input 
+                        id="conexaoB"
+                        value={formData.conexaoB}
+                        onChange={(e) => setFormData({...formData, conexaoB: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {formData.categoriaEquipamento === 'outros' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="tipoEquipamento">Tipo de Equipamento*</Label>
+                    <Input 
+                      id="tipoEquipamento"
+                      value={formData.tipoEquipamento}
+                      onChange={(e) => setFormData({...formData, tipoEquipamento: e.target.value})}
+                      placeholder="Ex: Bomba hidráulica, Motor, etc."
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="pressaoTrabalho">Pressão de Trabalho</Label>
+                    <Input 
+                      id="pressaoTrabalho"
+                      value={formData.pressaoTrabalho}
+                      onChange={(e) => setFormData({...formData, pressaoTrabalho: e.target.value})}
+                      placeholder="Ex: 150 bar"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="ambienteTrabalho">Ambiente de Trabalho*</Label>
+                <Select 
+                  value={formData.ambienteTrabalho} 
+                  onValueChange={(value) => setFormData({...formData, ambienteTrabalho: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="comum">Comum</SelectItem>
+                    <SelectItem value="quente">Quente</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

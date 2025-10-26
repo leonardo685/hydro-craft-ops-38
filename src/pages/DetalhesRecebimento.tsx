@@ -110,30 +110,54 @@ export default function DetalhesRecebimento() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <p className="text-sm font-medium text-muted-foreground">Categoria</p>
+                  <Badge variant="outline">
+                    {recebimento.categoria_equipamento === 'cilindro' ? 'Cilindro' : 'Outros'}
+                  </Badge>
+                </div>
+                
+                {recebimento.ambiente_trabalho && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Ambiente de Trabalho</p>
+                    <Badge variant={recebimento.ambiente_trabalho === 'quente' ? 'destructive' : 'default'}>
+                      {recebimento.ambiente_trabalho === 'quente' ? '🔥 Quente' : '❄️ Comum'}
+                    </Badge>
+                  </div>
+                )}
+
+                {recebimento.categoria_equipamento === 'cilindro' ? (
+                  <>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Camisa</p>
+                      <p className="font-medium">{recebimento.camisa || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Haste - Comprimento</p>
+                      <p className="font-medium">{recebimento.haste_comprimento || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Curso</p>
+                      <p className="font-medium">{recebimento.curso || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Conexão A</p>
+                      <p className="font-medium">{recebimento.conexao_a || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Conexão B</p>
+                      <p className="font-medium">{recebimento.conexao_b || '-'}</p>
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Tipo de Equipamento</p>
+                    <p className="font-medium">{recebimento.tipo_equipamento || '-'}</p>
+                  </div>
+                )}
+
+                <div>
                   <p className="text-sm font-medium text-muted-foreground">Pressão de Trabalho</p>
                   <p className="font-medium">{recebimento.pressao_trabalho || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Temperatura de Trabalho</p>
-                  <p className="font-medium">{recebimento.temperatura_trabalho || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Fluido de Trabalho</p>
-                  <p className="font-medium">{recebimento.fluido_trabalho || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Local de Instalação</p>
-                  <p className="font-medium">{recebimento.local_instalacao || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Potência</p>
-                  <p className="font-medium">{recebimento.potencia || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Na Empresa</p>
-                  <Badge variant={recebimento.na_empresa ? "default" : "secondary"}>
-                    {recebimento.na_empresa ? "Sim" : "Não"}
-                  </Badge>
                 </div>
               </div>
             </CardContent>
