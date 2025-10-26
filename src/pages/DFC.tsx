@@ -38,7 +38,7 @@ export default function DFC() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { categorias, getCategoriasForSelect, getNomeCategoriaMae } = useCategoriasFinanceiras();
-  const { lancamentos, loading, adicionarLancamento, atualizarLancamento, deletarLancamento, deletarRecorrenciaCompleta } = useLancamentosFinanceiros();
+  const { lancamentos, loading, adicionarLancamento, atualizarLancamento, deletarLancamento, deletarRecorrenciaCompleta, refetch } = useLancamentosFinanceiros();
   const { clientes } = useClientes();
   const { fornecedores: fornecedoresData } = useFornecedores();
   const { contasAtivas, getContasForSelect } = useContasBancarias();
@@ -2927,8 +2927,7 @@ export default function DFC() {
         open={isExtratoUploadOpen}
         onOpenChange={setIsExtratoUploadOpen}
         onImportComplete={() => {
-          // Refetch será feito automaticamente pelo hook
-          toast.success("Extrato importado com sucesso!");
+          refetch();
         }}
         categorias={categorias}
         contasBancarias={contasAtivas}
