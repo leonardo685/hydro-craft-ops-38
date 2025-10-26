@@ -43,8 +43,12 @@ export default function DFC() {
   const { fornecedores: fornecedoresData } = useFornecedores();
   const { contasAtivas, getContasForSelect } = useContasBancarias();
 
+  // Inicializar activeTab com base no parâmetro da URL
+  const tabParam = searchParams.get('tab');
+  const initialTab = (tabParam === 'extrato' || tabParam === 'planejamento' || tabParam === 'dfc') ? tabParam : 'dfc';
+  
   const [contaSelecionada, setContaSelecionada] = useState('todas');
-  const [activeTab, setActiveTab] = useState('dfc');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
   const [isExtratoUploadOpen, setIsExtratoUploadOpen] = useState(false);
   const [colunasVisiveisExpanded, setColunasVisiveisExpanded] = useState(true);
