@@ -207,14 +207,28 @@ export default function DFC() {
 
     // Adicionar lançamentos pagos aos saldos
     lancamentos.forEach(lancamento => {
-      if (lancamento.pago && lancamento.contaBancaria) {
-        const valor = lancamento.tipo === 'entrada' ? lancamento.valor : -lancamento.valor;
-        if (saldos.hasOwnProperty(lancamento.contaBancaria)) {
-          saldos[lancamento.contaBancaria] += valor;
+      if (lancamento.pago && lancamento.dataRealizada && lancamento.contaBancaria) {
+        // Para transferências, processar saída e entrada
+        if (lancamento.tipo === 'transferencia' && lancamento.contaDestino) {
+          // Saída da conta origem
+          if (saldos.hasOwnProperty(lancamento.contaBancaria)) {
+            saldos[lancamento.contaBancaria] -= lancamento.valor;
+          }
+          // Entrada na conta destino
+          if (saldos.hasOwnProperty(lancamento.contaDestino)) {
+            saldos[lancamento.contaDestino] += lancamento.valor;
+          }
+        } else {
+          // Lançamentos normais (entrada ou saída)
+          const valor = lancamento.tipo === 'entrada' ? lancamento.valor : -lancamento.valor;
+          if (saldos.hasOwnProperty(lancamento.contaBancaria)) {
+            saldos[lancamento.contaBancaria] += valor;
+          }
         }
       }
     });
 
+    console.log('💰 Saldos calculados:', saldos);
     return saldos;
   }, [lancamentos, contasAtivas]);
 
@@ -260,20 +274,20 @@ export default function DFC() {
   const entradasMesAtual = useMemo(() => {
     return lancamentos
       .filter(l => {
-        const data = new Date(l.dataEmissao);
-        return l.tipo === 'entrada' && l.pago && l.dataRealizada && data >= primeiroDiaMes && data <= ultimoDiaMes;
+        const data = l.dataRealizada ? new Date(l.dataRealizada) : new Date(l.dataEsperada);
+        return l.tipo === 'entrada' && l.pago && data >= primeiroDiaMes && data <= ultimoDiaMes;
       })
       .reduce((acc, l) => acc + l.valor, 0);
-  }, [lancamentos]);
+  }, [lancamentos, primeiroDiaMes, ultimoDiaMes]);
 
   const saidasMesAtual = useMemo(() => {
     return lancamentos
       .filter(l => {
-        const data = new Date(l.dataEmissao);
-        return l.tipo === 'saida' && l.pago && l.dataRealizada && data >= primeiroDiaMes && data <= ultimoDiaMes;
+        const data = l.dataRealizada ? new Date(l.dataRealizada) : new Date(l.dataEsperada);
+        return l.tipo === 'saida' && l.pago && data >= primeiroDiaMes && data <= ultimoDiaMes;
       })
       .reduce((acc, l) => acc + l.valor, 0);
-  }, [lancamentos]);
+  }, [lancamentos, primeiroDiaMes, ultimoDiaMes]);
 
   const contaAtual = contasBancariasAtualizadas.find(conta => conta.id === contaSelecionada);
   const saldoContaSelecionada = contaAtual ? contaAtual.saldo : saldoTotal;
