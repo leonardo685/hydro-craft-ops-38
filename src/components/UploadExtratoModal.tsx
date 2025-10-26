@@ -537,8 +537,8 @@ export function UploadExtratoModal({
                             </SelectTrigger>
                             <SelectContent>
                               {contasBancarias.map(conta => (
-                                <SelectItem key={conta.id} value={conta.id}>
-                                  {conta.nome}
+                                <SelectItem key={conta.id} value={conta.nome}>
+                                  {conta.banco ? `${conta.nome} - ${conta.banco}` : conta.nome}
                                 </SelectItem>
                               ))}
                             </SelectContent>
