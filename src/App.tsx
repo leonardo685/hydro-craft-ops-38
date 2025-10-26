@@ -60,6 +60,7 @@ const App = () => (
             <Route path="/financeiro/dashboard" element={<ProtectedRoute requiredPermission="financeiro_dashboard"><Dashboard /></ProtectedRoute>} />
             <Route path="/financeiro/dre" element={<ProtectedRoute requiredPermission="financeiro_dre"><DRE /></ProtectedRoute>} />
             <Route path="/financeiro/dfc" element={<ProtectedRoute requiredPermission="financeiro_dfc"><DFC /></ProtectedRoute>} />
+            <Route path="/dfc" element={<ProtectedRoute requiredPermission="financeiro_dfc"><DFC /></ProtectedRoute>} />
             <Route path="/financeiro/meta-gastos" element={<ProtectedRoute requiredPermission="financeiro_metas"><MetaGastos /></ProtectedRoute>} />
             <Route path="/admin/permissions" element={<ProtectedRoute requiredPermission="admin_permissions"><AdminPermissions /></ProtectedRoute>} />
             <Route path="/historico-lancamentos" element={<ProtectedRoute><HistoricoLancamentos /></ProtectedRoute>} />
