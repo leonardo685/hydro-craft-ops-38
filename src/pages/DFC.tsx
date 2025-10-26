@@ -30,6 +30,9 @@ import { useMemo, useEffect } from "react";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 import { useNavigate } from 'react-router-dom';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { FileSpreadsheet, Edit } from "lucide-react";
+import { UploadExtratoModal } from "@/components/UploadExtratoModal";
 
 export default function DFC() {
   const navigate = useNavigate();
@@ -41,6 +44,7 @@ export default function DFC() {
 
   const [contaSelecionada, setContaSelecionada] = useState('todas');
   const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
+  const [isExtratoUploadOpen, setIsExtratoUploadOpen] = useState(false);
   const [colunasVisiveisExpanded, setColunasVisiveisExpanded] = useState(true);
   const [filtrosExpanded, setFiltrosExpanded] = useState(true);
   const [openCategoriaCombobox, setOpenCategoriaCombobox] = useState(false);
@@ -1209,13 +1213,34 @@ export default function DFC() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Dialog open={isLancamentoDialogOpen} onOpenChange={setIsLancamentoDialogOpen}>
-                      <DialogTrigger asChild>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
                         <Button>
                           <Plus className="h-4 w-4 mr-2" />
                           Novo Lançamento
+                          <ChevronDown className="h-4 w-4 ml-2" />
                         </Button>
-                      </DialogTrigger>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64">
+                        <DropdownMenuItem onClick={() => setIsLancamentoDialogOpen(true)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          <div className="flex flex-col">
+                            <span className="font-medium">Lançamento Manual</span>
+                            <span className="text-xs text-muted-foreground">Inserir lançamento individual</span>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setIsExtratoUploadOpen(true)}>
+                          <FileSpreadsheet className="h-4 w-4 mr-2" />
+                          <div className="flex flex-col">
+                            <span className="font-medium">Lançamento por Extrato</span>
+                            <span className="text-xs text-muted-foreground">Importar PDF ou XLSX</span>
+                          </div>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Dialog open={isLancamentoDialogOpen} onOpenChange={setIsLancamentoDialogOpen}>
                       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 flex flex-col">
                         <div className={cn(
                           "h-4 w-full transition-colors duration-300 flex-shrink-0",
@@ -2883,6 +2908,19 @@ export default function DFC() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <UploadExtratoModal
+        open={isExtratoUploadOpen}
+        onOpenChange={setIsExtratoUploadOpen}
+        onImportComplete={() => {
+          // Refetch será feito automaticamente pelo hook
+          toast.success("Extrato importado com sucesso!");
+        }}
+        categorias={categorias}
+        contasBancarias={contasAtivas}
+        fornecedores={fornecedoresData}
+        clientes={clientes}
+      />
     </AppLayout>
   );
 }
