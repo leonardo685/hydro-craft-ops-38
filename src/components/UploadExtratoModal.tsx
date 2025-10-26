@@ -10,6 +10,7 @@ import * as XLSX from 'xlsx';
 import { supabase } from "@/integrations/supabase/client";
 import { format, parse, isValid } from 'date-fns';
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 interface TransacaoExtrato {
   id: string;
@@ -110,8 +111,8 @@ export function UploadExtratoModal({
         try {
           const arrayBuffer = e.target?.result as ArrayBuffer;
           
-          // Configurar o worker do PDF.js com versão fixa
-          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+          // Configurar o worker do PDF.js usando o arquivo local do pacote
+          pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
           
           // Carregar o PDF
           const loadingTask = pdfjsLib.getDocument(arrayBuffer);
