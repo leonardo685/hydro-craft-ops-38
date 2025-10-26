@@ -132,93 +132,74 @@ export function UploadExtratoModal({
           
           console.log('📄 Texto extraído do PDF (primeiras 500 chars):', fullText.substring(0, 500));
           
-          // Processar o texto linha por linha
-          const linhas = fullText.split('\n');
           const transacoes: TransacaoExtrato[] = [];
           
-          // Palavras-chave para ignorar linhas de cabeçalho/totais
-          const ignorarPalavras = [
-            'saldo anterior',
-            'saldo atual',
-            'total',
-            'extrato',
-            'data',
-            'histórico',
-            'documento',
-            'valor',
-            'conta corrente',
-            'agência',
-            'página'
-          ];
+          // Regex global para encontrar padrões de transação do Sicredi
+          // Formato: DD/MM/YYYY + espaços + descrição + espaços + valor negativo/positivo + espaços + saldo
+          // Usando regex global para encontrar todas as ocorrências no texto completo
+          const regexTransacao = /(\d{2}\/\d{2}\/\d{4})\s+([A-Z][^0-9-]+?)\s+([-]?[\d.]+,\d{2})\s+([-]?[\d.]+,\d{2})/g;
           
-          linhas.forEach((linha, index) => {
-            // Limpar e normalizar a linha
-            const linhaNormalizada = linha.trim().toLowerCase();
+          let match;
+          let transacaoIndex = 0;
+          
+          while ((match = regexTransacao.exec(fullText)) !== null) {
+            const [, dataStr, descricaoBruta, valorStr, saldoStr] = match;
             
-            // Ignorar linhas vazias ou muito curtas
-            if (linhaNormalizada.length < 10) return;
-            
-            // Ignorar linhas que contêm palavras-chave
-            if (ignorarPalavras.some(palavra => linhaNormalizada.includes(palavra))) {
-              return;
+            // Ignora se for cabeçalho ou linha de saldo anterior
+            const descricaoLower = descricaoBruta.toLowerCase();
+            if (descricaoLower.includes('saldo anterior') || 
+                descricaoLower.includes('saldo atual') ||
+                descricaoLower.includes('total') ||
+                descricaoLower.includes('extrato') ||
+                descricaoLower.includes('data descrição')) {
+              continue;
             }
             
-            // Padrão específico para Sicredi e outros bancos:
-            // Formato: DD/MM/YYYY seguido de texto e depois valores numéricos
-            // Captura: data, descrição (tudo entre a data e os valores), e valores
-            const match = linha.match(/(\d{2}\/\d{2}\/\d{4})\s+(.+?)\s+([-]?[\d.]+,\d{2})\s*([-]?[\d.]+,\d{2})?$/);
+            // Converte valores brasileiros (1.234,56) para float
+            const converterValor = (str: string): number => {
+              if (!str) return 0;
+              return parseFloat(str.replace(/\./g, '').replace(',', '.'));
+            };
             
-            if (match) {
-              const [, dataStr, descricao, valor1Str, valor2Str] = match;
-              
-              // Converte valores brasileiros (1.234,56) para float
-              const converterValor = (str: string): number => {
-                if (!str) return 0;
-                // Remove pontos de milhar e substitui vírgula por ponto
-                return parseFloat(str.replace(/\./g, '').replace(',', '.'));
+            const valorMovimentacao = converterValor(valorStr);
+            const isNegativo = valorStr.includes('-');
+            
+            // Parse da data
+            const data = parseDate(dataStr);
+            
+            // Limpar descrição - remove espaços múltiplos e documentos
+            const descricaoLimpa = descricaoBruta
+              .trim()
+              .replace(/\s+/g, ' ')
+              .replace(/\s*(PIX_DEB|PIX_CRED|CX\d+)\s*$/, '') // Remove códigos de documento do final
+              .substring(0, 200);
+            
+            if (!isNaN(valorMovimentacao) && Math.abs(valorMovimentacao) > 0 && descricaoLimpa.length > 3) {
+              const transacao: TransacaoExtrato = {
+                id: `temp_${Date.now()}_${transacaoIndex}`,
+                data,
+                descricao: descricaoLimpa,
+                valor: Math.abs(valorMovimentacao),
+                tipo: isNegativo ? 'saida' : 'entrada',
+                selecionada: true
               };
               
-              const valor1 = converterValor(valor1Str);
-              const valor2 = valor2Str ? converterValor(valor2Str) : 0;
+              transacoes.push(transacao);
+              transacaoIndex++;
               
-              // O primeiro valor geralmente é a movimentação, o segundo é o saldo
-              // Se tem sinal negativo, é saída
-              const valorMovimentacao = valor1;
-              const isNegativo = valor1Str.includes('-');
-              
-              // Parse da data
-              const data = parseDate(dataStr);
-              
-              // Limpar descrição
-              const descricaoLimpa = descricao.trim()
-                .replace(/\s+/g, ' ')  // Remove espaços múltiplos
-                .substring(0, 200);     // Limita tamanho
-              
-              if (!isNaN(valorMovimentacao) && Math.abs(valorMovimentacao) > 0 && descricaoLimpa.length > 3) {
-                const transacao: TransacaoExtrato = {
-                  id: `temp_${Date.now()}_${index}`,
-                  data,
-                  descricao: descricaoLimpa,
-                  valor: Math.abs(valorMovimentacao),
-                  tipo: isNegativo ? 'saida' : 'entrada',
-                  selecionada: true
-                };
-                
-                transacoes.push(transacao);
-                console.log(`✅ Transação ${transacoes.length}:`, {
-                  data: dataStr,
-                  desc: descricaoLimpa.substring(0, 50),
-                  valor: valorMovimentacao,
-                  tipo: isNegativo ? 'saída' : 'entrada'
-                });
-              }
+              console.log(`✅ Transação ${transacoes.length}:`, {
+                data: dataStr,
+                desc: descricaoLimpa.substring(0, 50),
+                valor: valorMovimentacao,
+                tipo: isNegativo ? 'saída' : 'entrada'
+              });
             }
-          });
+          }
           
           console.log(`📊 Total de transações encontradas: ${transacoes.length}`);
           
           if (transacoes.length === 0) {
-            console.error('❌ Nenhuma transação detectada. Primeiras 10 linhas do PDF:', linhas.slice(0, 10));
+            console.error('❌ Nenhuma transação detectada. Texto do PDF (500 chars):', fullText.substring(0, 500));
             throw new Error(
               "Nenhuma transação encontrada no PDF.\n\n" +
               "Formatos suportados:\n" +
