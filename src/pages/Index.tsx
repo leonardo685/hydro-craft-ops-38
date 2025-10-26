@@ -91,10 +91,10 @@ const Index = () => {
     icon: ClipboardList,
     path: "/recebimentos"
   }, {
-    title: "Iniciar Análise",
-    description: "Avaliar equipamento",
-    icon: Search,
-    path: "/analise"
+    title: "Fazer Lançamento",
+    description: "Registrar movimentação financeira",
+    icon: Receipt,
+    path: "/dfc?tab=extrato"
   }, {
     title: "Criar Orçamento",
     description: "Gerar proposta comercial",

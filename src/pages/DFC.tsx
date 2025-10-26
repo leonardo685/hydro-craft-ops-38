@@ -28,7 +28,7 @@ import { useContasBancarias } from '@/hooks/use-contas-bancarias';
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
 import { useMemo, useEffect } from "react";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { FileSpreadsheet, Edit } from "lucide-react";
@@ -36,6 +36,7 @@ import { UploadExtratoModal } from "@/components/UploadExtratoModal";
 
 export default function DFC() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { categorias, getCategoriasForSelect, getNomeCategoriaMae } = useCategoriasFinanceiras();
   const { lancamentos, loading, adicionarLancamento, atualizarLancamento, deletarLancamento, deletarRecorrenciaCompleta } = useLancamentosFinanceiros();
   const { clientes } = useClientes();
@@ -43,6 +44,7 @@ export default function DFC() {
   const { contasAtivas, getContasForSelect } = useContasBancarias();
 
   const [contaSelecionada, setContaSelecionada] = useState('todas');
+  const [activeTab, setActiveTab] = useState('dfc');
   const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
   const [isExtratoUploadOpen, setIsExtratoUploadOpen] = useState(false);
   const [colunasVisiveisExpanded, setColunasVisiveisExpanded] = useState(true);
@@ -120,6 +122,14 @@ export default function DFC() {
       setDatasParcelasCustom(novasDatas);
     }
   }, [lancamentoForm.numeroParcelas, lancamentoForm.frequenciaRepeticao, lancamentoForm.dataEsperada, lancamentoForm.formaPagamento]);
+
+  // Verificar parâmetro da URL para abrir tab específica
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'extrato' || tab === 'planejamento' || tab === 'dfc') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const [filtrosExtrato, setFiltrosExtrato] = useState({
     dataInicio: null as Date | null,
@@ -961,7 +971,7 @@ export default function DFC() {
           </Card>
         </div>
 
-        <Tabs defaultValue="dfc" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="dfc">DFC</TabsTrigger>
             <TabsTrigger value="extrato">Extrato</TabsTrigger>
