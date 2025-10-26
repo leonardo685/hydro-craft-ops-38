@@ -10,19 +10,26 @@ export interface MetaGasto {
   dataInicio: Date;
   dataFim: Date;
   observacoes?: string;
+  modeloGestao: 'dre' | 'esperado' | 'realizado';
 }
 
-export const useMetasGastos = () => {
+export const useMetasGastos = (modeloGestao?: 'dre' | 'esperado' | 'realizado') => {
   const [metas, setMetas] = useState<MetaGasto[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchMetas = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('metas_gastos')
         .select('*')
         .order('data_inicio', { ascending: false });
+
+      if (modeloGestao) {
+        query = query.eq('modelo_gestao', modeloGestao);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -33,7 +40,8 @@ export const useMetasGastos = () => {
         periodo: meta.periodo as 'mensal' | 'trimestral' | 'anual',
         dataInicio: new Date(meta.data_inicio),
         dataFim: new Date(meta.data_fim),
-        observacoes: meta.observacoes
+        observacoes: meta.observacoes,
+        modeloGestao: meta.modelo_gestao as 'dre' | 'esperado' | 'realizado'
       }));
 
       setMetas(metasFormatadas);
@@ -47,7 +55,7 @@ export const useMetasGastos = () => {
 
   useEffect(() => {
     fetchMetas();
-  }, []);
+  }, [modeloGestao]);
 
   const adicionarMeta = async (
     meta: Omit<MetaGasto, 'id'>
@@ -61,7 +69,8 @@ export const useMetasGastos = () => {
           periodo: meta.periodo,
           data_inicio: meta.dataInicio.toISOString(),
           data_fim: meta.dataFim.toISOString(),
-          observacoes: meta.observacoes || null
+          observacoes: meta.observacoes || null,
+          modelo_gestao: meta.modeloGestao
         });
 
       if (error) throw error;
@@ -89,6 +98,7 @@ export const useMetasGastos = () => {
       if (meta.dataInicio) updateData.data_inicio = meta.dataInicio.toISOString();
       if (meta.dataFim) updateData.data_fim = meta.dataFim.toISOString();
       if (meta.observacoes !== undefined) updateData.observacoes = meta.observacoes;
+      if (meta.modeloGestao) updateData.modelo_gestao = meta.modeloGestao;
 
       const { error } = await supabase
         .from('metas_gastos')

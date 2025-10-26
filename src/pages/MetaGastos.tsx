@@ -35,13 +35,13 @@ interface MetaGasto {
 }
 
 export default function MetaGastos() {
+  const [modeloGestao, setModeloGestao] = useState<'dre' | 'esperado' | 'realizado'>('realizado');
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
   const { lancamentos } = useLancamentosFinanceiros();
-  const { metas, loading, adicionarMeta, atualizarMeta, deletarMeta } = useMetasGastos();
+  const { metas, loading, adicionarMeta, atualizarMeta, deletarMeta } = useMetasGastos(modeloGestao);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [modeloGestao, setModeloGestao] = useState<'dre' | 'esperado' | 'realizado'>('realizado');
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
   const [filtroPeriodo, setFiltroPeriodo] = useState("todos");
   const [filtroStatus, setFiltroStatus] = useState("todos");
@@ -148,7 +148,8 @@ export default function MetaGastos() {
       periodo: metaForm.periodo,
       dataInicio: metaForm.dataInicio,
       dataFim: metaForm.dataFim,
-      observacoes: metaForm.observacoes
+      observacoes: metaForm.observacoes,
+      modeloGestao: modeloGestao
     };
     
     let sucesso = false;

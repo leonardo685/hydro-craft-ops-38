@@ -689,6 +689,7 @@ export type Database = {
           data_fim: string
           data_inicio: string
           id: string
+          modelo_gestao: string
           observacoes: string | null
           periodo: string
           updated_at: string
@@ -700,6 +701,7 @@ export type Database = {
           data_fim: string
           data_inicio: string
           id?: string
+          modelo_gestao?: string
           observacoes?: string | null
           periodo: string
           updated_at?: string
@@ -711,6 +713,7 @@ export type Database = {
           data_fim?: string
           data_inicio?: string
           id?: string
+          modelo_gestao?: string
           observacoes?: string | null
           periodo?: string
           updated_at?: string
