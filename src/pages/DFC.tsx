@@ -1234,7 +1234,7 @@ export default function DFC() {
                           <FileSpreadsheet className="h-4 w-4 mr-2" />
                           <div className="flex flex-col">
                             <span className="font-medium">Lançamento por Extrato</span>
-                            <span className="text-xs text-muted-foreground">Importar arquivo XLSX</span>
+                            <span className="text-xs text-muted-foreground">Importar PDF ou XLSX</span>
                           </div>
                         </DropdownMenuItem>
                       </DropdownMenuContent>

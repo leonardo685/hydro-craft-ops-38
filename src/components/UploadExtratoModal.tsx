@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import * as XLSX from 'xlsx';
 import { supabase } from "@/integrations/supabase/client";
 import { format, parse, isValid } from 'date-fns';
+// @ts-ignore - pdf-parse doesn't have proper types
+import pdf from 'pdf-parse/lib/pdf-parse';
 
 interface TransacaoExtrato {
   id: string;
@@ -61,9 +63,9 @@ export function UploadExtratoModal({
 
     // Validar formato
     const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!['xlsx', 'xls'].includes(ext || '')) {
+    if (!['xlsx', 'xls', 'pdf'].includes(ext || '')) {
       toast.error("Formato inválido", {
-        description: "Por favor, envie um arquivo XLSX ou XLS"
+        description: "Por favor, envie um arquivo XLSX, XLS ou PDF"
       });
       return;
     }
@@ -100,6 +102,57 @@ export function UploadExtratoModal({
     if (isValid(native)) return native;
     
     return new Date();
+  };
+
+  const parsePDF = (file: File): Promise<TransacaoExtrato[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          const pdfData = await pdf(new Uint8Array(arrayBuffer));
+          const text = pdfData.text;
+          
+          // Regex para detectar padrões comuns de extratos bancários
+          // Formato: DD/MM/YYYY ou DD/MM/YY seguido de descrição e valor
+          const linhas = text.split('\n');
+          const transacoes: TransacaoExtrato[] = [];
+          
+          linhas.forEach((linha, index) => {
+            // Padrão: data (DD/MM/YYYY ou DD/MM/YY) + descrição + valor (R$ ou apenas números)
+            const match = linha.match(/(\d{2}[\/\-]\d{2}[\/\-]\d{2,4})\s+(.+?)\s+([-+]?[\d.,]+)/);
+            
+            if (match) {
+              const [, dataStr, descricao, valorStr] = match;
+              const data = parseDate(dataStr);
+              const valorNum = parseFloat(valorStr.replace(/[^\d,-]/g, '').replace(',', '.'));
+              
+              if (!isNaN(valorNum) && Math.abs(valorNum) > 0) {
+                transacoes.push({
+                  id: `temp_${index}`,
+                  data,
+                  descricao: descricao.trim(),
+                  valor: Math.abs(valorNum),
+                  tipo: valorNum >= 0 ? 'entrada' : 'saida',
+                  selecionada: true
+                });
+              }
+            }
+          });
+          
+          if (transacoes.length === 0) {
+            throw new Error("Nenhuma transação encontrada no PDF. Verifique o formato.");
+          }
+          
+          resolve(transacoes);
+        } catch (error) {
+          console.error('Erro ao processar PDF:', error);
+          reject(error);
+        }
+      };
+      reader.onerror = () => reject(new Error("Erro ao ler arquivo"));
+      reader.readAsArrayBuffer(file);
+    });
   };
 
   const parseXLSX = (file: File): Promise<TransacaoExtrato[]> => {
@@ -165,7 +218,14 @@ export function UploadExtratoModal({
     try {
       const ext = arquivo.name.split('.').pop()?.toLowerCase();
       
-      const transacoesParsed = await parseXLSX(arquivo);
+      let transacoesParsed: TransacaoExtrato[] = [];
+      
+      if (ext === 'pdf') {
+        transacoesParsed = await parsePDF(arquivo);
+      } else {
+        transacoesParsed = await parseXLSX(arquivo);
+      }
+      
       setTransacoes(transacoesParsed);
       setEtapa('categorizar');
       toast.success("Extrato processado", {
@@ -267,7 +327,7 @@ export function UploadExtratoModal({
         <DialogHeader>
           <DialogTitle>Lançamento por Extrato</DialogTitle>
           <DialogDescription>
-            Importe transações de arquivos XLSX e categorize-as
+            Importe transações de arquivos XLSX ou PDF e categorize-as
           </DialogDescription>
         </DialogHeader>
 
@@ -275,12 +335,13 @@ export function UploadExtratoModal({
           <div className="flex flex-col items-center justify-center py-12 gap-6">
             <div className="flex gap-4 text-muted-foreground">
               <FileSpreadsheet className="h-16 w-16" />
+              <FileText className="h-16 w-16" />
             </div>
             
             <div className="text-center space-y-2">
               <h3 className="font-semibold text-lg">Selecione o arquivo do extrato</h3>
               <p className="text-sm text-muted-foreground">
-                Formatos aceitos: XLSX ou XLS (máx. 10MB)
+                Formatos aceitos: XLSX, XLS ou PDF (máx. 10MB)
               </p>
             </div>
 
@@ -295,7 +356,7 @@ export function UploadExtratoModal({
                 <input
                   id="file-upload"
                   type="file"
-                  accept=".xlsx,.xls"
+                  accept=".xlsx,.xls,.pdf"
                   onChange={handleFileChange}
                   className="hidden"
                 />
