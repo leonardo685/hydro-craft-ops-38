@@ -110,8 +110,8 @@ export function UploadExtratoModal({
         try {
           const arrayBuffer = e.target?.result as ArrayBuffer;
           
-          // Configurar o worker do PDF.js
-          pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+          // Configurar o worker do PDF.js com versão fixa
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
           
           // Carregar o PDF
           const loadingTask = pdfjsLib.getDocument(arrayBuffer);
@@ -129,39 +129,107 @@ export function UploadExtratoModal({
             fullText += pageText + '\n';
           }
           
-          // Regex para detectar padrões comuns de extratos bancários
+          console.log('📄 Texto extraído do PDF (primeiras 500 chars):', fullText.substring(0, 500));
+          
+          // Processar o texto linha por linha
           const linhas = fullText.split('\n');
           const transacoes: TransacaoExtrato[] = [];
           
+          // Palavras-chave para ignorar linhas de cabeçalho/totais
+          const ignorarPalavras = [
+            'saldo anterior',
+            'saldo atual',
+            'total',
+            'extrato',
+            'data',
+            'histórico',
+            'documento',
+            'valor',
+            'conta corrente',
+            'agência',
+            'página'
+          ];
+          
           linhas.forEach((linha, index) => {
-            // Padrão: data (DD/MM/YYYY ou DD/MM/YY) + descrição + valor (R$ ou apenas números)
-            const match = linha.match(/(\d{2}[\/\-]\d{2}[\/\-]\d{2,4})\s+(.+?)\s+([-+]?[\d.,]+)/);
+            // Limpar e normalizar a linha
+            const linhaNormalizada = linha.trim().toLowerCase();
+            
+            // Ignorar linhas vazias ou muito curtas
+            if (linhaNormalizada.length < 10) return;
+            
+            // Ignorar linhas que contêm palavras-chave
+            if (ignorarPalavras.some(palavra => linhaNormalizada.includes(palavra))) {
+              return;
+            }
+            
+            // Padrão específico para Sicredi e outros bancos:
+            // Formato: DD/MM/YYYY seguido de texto e depois valores numéricos
+            // Captura: data, descrição (tudo entre a data e os valores), e valores
+            const match = linha.match(/(\d{2}\/\d{2}\/\d{4})\s+(.+?)\s+([-]?[\d.]+,\d{2})\s*([-]?[\d.]+,\d{2})?$/);
             
             if (match) {
-              const [, dataStr, descricao, valorStr] = match;
-              const data = parseDate(dataStr);
-              const valorNum = parseFloat(valorStr.replace(/[^\d,-]/g, '').replace(',', '.'));
+              const [, dataStr, descricao, valor1Str, valor2Str] = match;
               
-              if (!isNaN(valorNum) && Math.abs(valorNum) > 0) {
-                transacoes.push({
-                  id: `temp_${index}`,
+              // Converte valores brasileiros (1.234,56) para float
+              const converterValor = (str: string): number => {
+                if (!str) return 0;
+                // Remove pontos de milhar e substitui vírgula por ponto
+                return parseFloat(str.replace(/\./g, '').replace(',', '.'));
+              };
+              
+              const valor1 = converterValor(valor1Str);
+              const valor2 = valor2Str ? converterValor(valor2Str) : 0;
+              
+              // O primeiro valor geralmente é a movimentação, o segundo é o saldo
+              // Se tem sinal negativo, é saída
+              const valorMovimentacao = valor1;
+              const isNegativo = valor1Str.includes('-');
+              
+              // Parse da data
+              const data = parseDate(dataStr);
+              
+              // Limpar descrição
+              const descricaoLimpa = descricao.trim()
+                .replace(/\s+/g, ' ')  // Remove espaços múltiplos
+                .substring(0, 200);     // Limita tamanho
+              
+              if (!isNaN(valorMovimentacao) && Math.abs(valorMovimentacao) > 0 && descricaoLimpa.length > 3) {
+                const transacao: TransacaoExtrato = {
+                  id: `temp_${Date.now()}_${index}`,
                   data,
-                  descricao: descricao.trim(),
-                  valor: Math.abs(valorNum),
-                  tipo: valorNum >= 0 ? 'entrada' : 'saida',
+                  descricao: descricaoLimpa,
+                  valor: Math.abs(valorMovimentacao),
+                  tipo: isNegativo ? 'saida' : 'entrada',
                   selecionada: true
+                };
+                
+                transacoes.push(transacao);
+                console.log(`✅ Transação ${transacoes.length}:`, {
+                  data: dataStr,
+                  desc: descricaoLimpa.substring(0, 50),
+                  valor: valorMovimentacao,
+                  tipo: isNegativo ? 'saída' : 'entrada'
                 });
               }
             }
           });
           
+          console.log(`📊 Total de transações encontradas: ${transacoes.length}`);
+          
           if (transacoes.length === 0) {
-            throw new Error("Nenhuma transação encontrada no PDF. Verifique o formato.");
+            console.error('❌ Nenhuma transação detectada. Primeiras 10 linhas do PDF:', linhas.slice(0, 10));
+            throw new Error(
+              "Nenhuma transação encontrada no PDF.\n\n" +
+              "Formatos suportados:\n" +
+              "• Sicredi: DD/MM/YYYY Descrição Valor Saldo\n" +
+              "• Outros bancos com formato similar\n\n" +
+              "Verifique se o PDF contém dados de transações."
+            );
           }
           
           resolve(transacoes);
         } catch (error) {
-          console.error('Erro ao processar PDF:', error);
+          console.error('❌ Erro ao processar PDF:', error);
           reject(error);
         }
       };
