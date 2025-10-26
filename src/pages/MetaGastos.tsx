@@ -61,7 +61,13 @@ export default function MetaGastos() {
       const dataInicio = new Date(meta.dataInicio);
       const dataFim = new Date(meta.dataFim);
       
-      console.log('Meta:', meta.categoriaId, 'Período:', dataInicio, 'até', dataFim, 'Modelo:', modeloGestao);
+      const categoriaSelecionada = getCategoriasForSelect().find(c => c.value === meta.categoriaId);
+      console.log('🎯 Processando Meta:', {
+        categoria: categoriaSelecionada?.label,
+        categoriaId: meta.categoriaId,
+        periodo: `${dataInicio.toLocaleDateString()} até ${dataFim.toLocaleDateString()}`,
+        modelo: modeloGestao
+      });
       
       const lancamentosFiltrados = lancamentos.filter(l => {
         // Definir qual data usar baseado no modelo de gestão
@@ -87,12 +93,29 @@ export default function MetaGastos() {
         const ehSaida = l.tipo === 'saida';
         
         if (mesmaCategoria) {
-          console.log('Lançamento:', l.descricao, {
+          console.log('✅ Lançamento encontrado:', {
+            descricao: l.descricao,
             valor: l.valor,
-            dataReferencia,
+            dataReferencia: dataReferencia.toLocaleDateString(),
+            dataInicio: dataInicio.toLocaleDateString(),
+            dataFim: dataFim.toLocaleDateString(),
             dentroDoPeríodo,
             deveConsiderar,
-            ehSaida
+            ehSaida,
+            pago: l.pago,
+            tipo: l.tipo
+          });
+        }
+        
+        // Debug: Log todos os lançamentos de saída para ver o que está disponível
+        if (ehSaida && l.descricao.toLowerCase().includes('aluguel')) {
+          console.log('🏠 Lançamento de Aluguel:', {
+            descricao: l.descricao,
+            categoriaLancamento: l.categoriaId,
+            categoriaMeta: meta.categoriaId,
+            mesmaCategoria,
+            dataReferencia: dataReferencia.toLocaleDateString(),
+            dentroDoPeríodo
           });
         }
         
@@ -101,9 +124,11 @@ export default function MetaGastos() {
       
       const valorGasto = lancamentosFiltrados.reduce((acc, l) => acc + l.valor, 0);
       
-      console.log('Total gasto:', valorGasto);
-
-      const categoriaSelecionada = getCategoriasForSelect().find(c => c.value === meta.categoriaId);
+      console.log('💰 Resultado:', {
+        categoria: categoriaSelecionada?.label,
+        lancamentosEncontrados: lancamentosFiltrados.length,
+        totalGasto: valorGasto
+      });
 
       return {
         id: meta.id,
