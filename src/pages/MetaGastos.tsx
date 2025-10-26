@@ -41,6 +41,7 @@ export default function MetaGastos() {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [modeloGestao, setModeloGestao] = useState<'dre' | 'esperado' | 'realizado'>('realizado');
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
   const [filtroPeriodo, setFiltroPeriodo] = useState("todos");
   const [filtroStatus, setFiltroStatus] = useState("todos");
@@ -54,34 +55,48 @@ export default function MetaGastos() {
     observacoes: ''
   });
 
-  // Calcular valor gasto para cada meta baseado nos lançamentos PAGOS (DFC)
+  // Calcular valor gasto para cada meta baseado no modelo de gestão selecionado
   const metasComGastos = useMemo(() => {
     return metas.map(meta => {
       const dataInicio = new Date(meta.dataInicio);
       const dataFim = new Date(meta.dataFim);
       
-      console.log('Meta:', meta.categoriaId, 'Período:', dataInicio, 'até', dataFim);
+      console.log('Meta:', meta.categoriaId, 'Período:', dataInicio, 'até', dataFim, 'Modelo:', modeloGestao);
       
       const lancamentosFiltrados = lancamentos.filter(l => {
-        // Usar data_realizada se existir, senão data_esperada
-        const dataPagamento = l.dataRealizada ? new Date(l.dataRealizada) : new Date(l.dataEsperada);
+        // Definir qual data usar baseado no modelo de gestão
+        let dataReferencia: Date;
+        let deveConsiderar = true;
+
+        if (modeloGestao === 'realizado') {
+          // Realizado (DFC): apenas lançamentos pagos com data_realizada
+          dataReferencia = l.dataRealizada ? new Date(l.dataRealizada) : new Date(l.dataEsperada);
+          deveConsiderar = l.pago === true;
+        } else if (modeloGestao === 'esperado') {
+          // Esperado: todos os lançamentos pela data esperada
+          dataReferencia = new Date(l.dataEsperada);
+          deveConsiderar = true;
+        } else {
+          // DRE: usar data de emissão
+          dataReferencia = new Date(l.dataEmissao);
+          deveConsiderar = true;
+        }
         
-        const dentroDoPeríodo = dataPagamento >= dataInicio && dataPagamento <= dataFim;
+        const dentroDoPeríodo = dataReferencia >= dataInicio && dataReferencia <= dataFim;
         const mesmaCategoria = l.categoriaId === meta.categoriaId;
-        const foiPago = l.pago === true;
         const ehSaida = l.tipo === 'saida';
         
         if (mesmaCategoria) {
           console.log('Lançamento:', l.descricao, {
             valor: l.valor,
-            dataPagamento,
+            dataReferencia,
             dentroDoPeríodo,
-            foiPago,
+            deveConsiderar,
             ehSaida
           });
         }
         
-        return ehSaida && foiPago && mesmaCategoria && dentroDoPeríodo;
+        return ehSaida && deveConsiderar && mesmaCategoria && dentroDoPeríodo;
       });
       
       const valorGasto = lancamentosFiltrados.reduce((acc, l) => acc + l.valor, 0);
@@ -102,7 +117,7 @@ export default function MetaGastos() {
         observacoes: meta.observacoes
       };
     });
-  }, [metas, lancamentos, getCategoriasForSelect]);
+  }, [metas, lancamentos, getCategoriasForSelect, modeloGestao]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -211,16 +226,27 @@ export default function MetaGastos() {
             <h1 className="text-3xl font-bold">Meta de Gastos</h1>
             <p className="text-muted-foreground">Gerencie suas metas de gastos por categoria</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Meta
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-3">
+            <Select value={modeloGestao} onValueChange={(value: 'dre' | 'esperado' | 'realizado') => setModeloGestao(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="realizado">Realizado (DFC)</SelectItem>
+                <SelectItem value="esperado">Esperado</SelectItem>
+                <SelectItem value="dre">DRE</SelectItem>
+              </SelectContent>
+            </Select>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Meta
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>{editandoId ? 'Editar Meta' : 'Nova Meta de Gastos'}</DialogTitle>
@@ -329,6 +355,7 @@ export default function MetaGastos() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
