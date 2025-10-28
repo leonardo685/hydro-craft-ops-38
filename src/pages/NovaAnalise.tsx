@@ -141,6 +141,31 @@ const NovaOrdemServico = () => {
     usinagemCabecoteTraseiro: "Usinagem cabeçote traseiro canal do oring"
   });
 
+  // Função para gerar descrição automática da peça
+  const gerarDescricaoPeca = (material: string, medida1: string, medida2: string, medida3: string) => {
+    const partes: string[] = [];
+    
+    // Adiciona o material se preenchido
+    if (material && material !== "-" && material.trim() !== "") {
+      partes.push(material.trim());
+    }
+    
+    // Monta as medidas se preenchidas
+    const medidas: string[] = [];
+    if (medida1 && medida1 !== "-" && medida1.trim() !== "") medidas.push(medida1.trim());
+    if (medida2 && medida2 !== "-" && medida2.trim() !== "") medidas.push(medida2.trim());
+    if (medida3 && medida3 !== "-" && medida3.trim() !== "") medidas.push(medida3.trim());
+    
+    // Se tem medidas, formata como "50mm x 100mm x 10mm"
+    if (medidas.length > 0) {
+      const medidasFormatadas = medidas.join(" x ");
+      partes.push(medidas.length === 1 ? `Ø${medidas[0]}` : medidasFormatadas);
+    }
+    
+    // Junta tudo com " - "
+    return partes.join(" - ");
+  };
+
   // Função para exportar PDF
   const exportToPDF = async (ordemData?: any, recebimentoData?: any) => {
     // Usar dados passados como parâmetros ou os dados atuais do estado
@@ -2728,30 +2753,20 @@ const NovaOrdemServico = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-8 gap-2 items-end">
                   <div>
-                    <Label>Peça</Label>
-                    <Select 
-                      value={novaPeca.peca} 
-                      onValueChange={(value) => setNovaPeca({
+                    <Label>Peça (auto-gerado ou edite)</Label>
+                    <Input
+                      placeholder="Ex: Aço - 50mm x 100mm"
+                      value={novaPeca.peca || gerarDescricaoPeca(
+                        novaPeca.material,
+                        novaPeca.medida1,
+                        novaPeca.medida2,
+                        novaPeca.medida3
+                      )}
+                      onChange={(e) => setNovaPeca({
                         ...novaPeca,
-                        peca: value
+                        peca: e.target.value
                       })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a peça" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="anel-vedacao">Anel de Vedação</SelectItem>
-                        <SelectItem value="oring">O-Ring</SelectItem>
-                        <SelectItem value="retentores">Retentores</SelectItem>
-                        <SelectItem value="haste">Haste</SelectItem>
-                        <SelectItem value="embolo">Êmbolo</SelectItem>
-                        <SelectItem value="bucha">Bucha</SelectItem>
-                        <SelectItem value="tampa">Tampa</SelectItem>
-                        <SelectItem value="parafuso">Parafuso</SelectItem>
-                        <SelectItem value="arruela">Arruela</SelectItem>
-                        <SelectItem value="porca">Porca</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    />
                   </div>
                   
                   <div>
@@ -2844,8 +2859,19 @@ const NovaOrdemServico = () => {
                       type="button"
                       className="bg-primary hover:bg-primary-hover text-primary-foreground"
                       onClick={() => {
-                        if (novaPeca.peca && novaPeca.material) {
-                          setPecasUtilizadas([...pecasUtilizadas, { ...novaPeca }]);
+                        if (novaPeca.material) {
+                          const descricaoFinal = novaPeca.peca || gerarDescricaoPeca(
+                            novaPeca.material,
+                            novaPeca.medida1,
+                            novaPeca.medida2,
+                            novaPeca.medida3
+                          );
+                          
+                          setPecasUtilizadas([...pecasUtilizadas, { 
+                            ...novaPeca,
+                            peca: descricaoFinal
+                          }]);
+                          
                           setNovaPeca({
                             quantidade: 1,
                             peca: "",

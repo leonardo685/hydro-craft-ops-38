@@ -33,9 +33,30 @@ export const QuantityInput = ({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseInt(e.target.value) || min;
+    const inputValue = e.target.value;
+    
+    // Permite campo vazio temporariamente
+    if (inputValue === '') {
+      return;
+    }
+    
+    const newValue = parseInt(inputValue);
+    
+    // Se não for um número válido, ignora
+    if (isNaN(newValue)) {
+      return;
+    }
+    
+    // Se estiver dentro dos limites, atualiza
     if (newValue >= min && (!max || newValue <= max)) {
       onChange(newValue);
+    }
+  };
+
+  const handleBlur = () => {
+    // Quando sair do campo, se estiver abaixo do mínimo, força o mínimo
+    if (value < min || isNaN(value)) {
+      onChange(min);
     }
   };
 
@@ -57,6 +78,7 @@ export const QuantityInput = ({
         max={max}
         value={value}
         onChange={handleInputChange}
+        onBlur={handleBlur}
         className="h-8 w-16 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       <Button
