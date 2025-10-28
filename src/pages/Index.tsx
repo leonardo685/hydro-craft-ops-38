@@ -33,15 +33,17 @@ const Index = () => {
   });
 
   // Buscar atividades recentes do banco de dados
-  const { data: atividadesRecentes } = useQuery({
+  const {
+    data: atividadesRecentes
+  } = useQuery({
     queryKey: ['atividades-recentes'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('atividades_sistema')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
-      
+      const {
+        data,
+        error
+      } = await supabase.from('atividades_sistema').select('*').order('created_at', {
+        ascending: false
+      }).limit(5);
       if (error) throw error;
       return data || [];
     }
@@ -55,7 +57,6 @@ const Index = () => {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHoras = Math.floor(diffMs / 3600000);
     const diffDias = Math.floor(diffMs / 86400000);
-
     if (diffMins < 60) {
       return diffMins <= 1 ? 'agora mesmo' : `${diffMins} minutos atrás`;
     } else if (diffHoras < 24) {
@@ -111,9 +112,7 @@ const Index = () => {
         {/* Header */}
         <div className="bg-gradient-primary rounded-xl p-6 text-primary-foreground shadow-medium">
           <h1 className="text-3xl font-bold mb-2">Bem-vindo ao FixZys ERP</h1>
-          <p className="text-lg opacity-90">
-            Sistema completo de gestão para reforma de equipamentos hidráulicos
-          </p>
+          <p className="text-lg opacity-90">Sistema completo de gestão para reforma de equipamentos industriais</p>
           <div className="flex items-center gap-2 mt-4 text-sm opacity-80">
             <Clock className="h-4 w-4" />
             <span>Última atualização: {new Date().toLocaleDateString('pt-BR')}</span>
@@ -171,9 +170,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {atividadesRecentes && atividadesRecentes.length > 0 ? (
-                atividadesRecentes.map((atividade) => (
-                  <div key={atividade.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+              {atividadesRecentes && atividadesRecentes.length > 0 ? atividadesRecentes.map(atividade => <div key={atividade.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
                     <div className="w-2 h-2 bg-primary rounded-full" />
                     <div className="flex-1">
                       <p className="text-sm font-medium">{atividade.descricao}</p>
@@ -181,14 +178,10 @@ const Index = () => {
                         {formatarTempoRelativo(atividade.created_at)}
                       </p>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                  </div>) : <div className="text-center py-8 text-muted-foreground">
                   <p className="text-sm">Nenhuma atividade registrada ainda</p>
                   <p className="text-xs mt-1">As atividades aparecerão aqui conforme você usar o sistema</p>
-                </div>
-              )}
+                </div>}
             </div>
           </CardContent>
         </Card>
