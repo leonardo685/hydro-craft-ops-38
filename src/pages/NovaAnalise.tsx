@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, Upload, Camera, FileText } from "lucide-react";
+import { ArrowLeft, Save, Upload, Camera, FileText, Trash2 } from "lucide-react";
+import { QuantityInput } from "@/components/QuantityInput";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
@@ -1692,8 +1693,18 @@ const NovaOrdemServico = () => {
             </CardContent>
           </Card>
 
-          {/* Upload de Fotos da Análise */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Upload de Fotos da Peritagem */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                📸 Fotos da Peritagem
+              </CardTitle>
+              <CardDescription>
+                Fotos capturadas durante a análise técnica do equipamento
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {Array.from({ length: 8 }, (_, index) => (
               <Card key={index}>
                 <CardHeader className="pb-3">
@@ -1743,7 +1754,9 @@ const NovaOrdemServico = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
@@ -1814,17 +1827,12 @@ const NovaOrdemServico = () => {
                   <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-end p-3 bg-background rounded-lg border">
                     <div>
                       <Label htmlFor="qtd-servicos-adicionais" className="text-xs text-muted-foreground">Quantidade</Label>
-                      <Input
-                        id="qtd-servicos-adicionais"
-                        type="number"
-                        min="1"
-                        className="w-20"
+                      <QuantityInput
                         value={novoServicoAdicional.quantidade}
-                        onChange={(e) => setNovoServicoAdicional({
+                        onChange={(value) => setNovoServicoAdicional({
                           ...novoServicoAdicional,
-                          quantidade: parseInt(e.target.value) || 1
+                          quantidade: value
                         })}
-                        placeholder="1"
                       />
                     </div>
                     <div>
@@ -1872,14 +1880,11 @@ const NovaOrdemServico = () => {
                         <div key={index} className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-muted/30 rounded-lg border">
                           <div>
                             <Label className="text-xs text-muted-foreground">Quantidade</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              className="w-20 h-8"
+                            <QuantityInput
                               value={servico.quantidade}
-                              onChange={(e) => {
+                              onChange={(value) => {
                                 const updated = [...servicosAdicionais];
-                                updated[index].quantidade = parseInt(e.target.value) || 1;
+                                updated[index].quantidade = value;
                                 setServicosAdicionais(updated);
                               }}
                             />
@@ -1939,18 +1944,14 @@ const NovaOrdemServico = () => {
                   </h4>
                   <div className="space-y-3">
                     {servicosPreDeterminados.desmontagem && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-desmontagem" className="text-xs text-muted-foreground">Quantidade</Label>
-                          <Input
-                            id="qtd-desmontagem"
-                            type="number"
-                            min="1"
-                            className="w-20 h-8"
+                          <QuantityInput
                             value={servicosQuantidades.desmontagem}
-                            onChange={(e) => setServicosQuantidades({
+                            onChange={(value) => setServicosQuantidades({
                               ...servicosQuantidades, 
-                              desmontagem: parseInt(e.target.value) || 1
+                              desmontagem: value
                             })}
                           />
                         </div>
@@ -1979,21 +1980,26 @@ const NovaOrdemServico = () => {
                             className="h-8"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setServicosPreDeterminados({...servicosPreDeterminados, desmontagem: false})}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                     {servicosPreDeterminados.limpeza && (
-                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-limpeza" className="text-xs text-muted-foreground">Quantidade</Label>
-                          <Input
-                            id="qtd-limpeza"
-                            type="number"
-                            min="1"
-                            className="w-20 h-8"
+                          <QuantityInput
                             value={servicosQuantidades.limpeza}
-                            onChange={(e) => setServicosQuantidades({
+                            onChange={(value) => setServicosQuantidades({
                               ...servicosQuantidades, 
-                              limpeza: parseInt(e.target.value) || 1
+                              limpeza: value
                             })}
                           />
                         </div>
@@ -2022,21 +2028,26 @@ const NovaOrdemServico = () => {
                             className="h-8"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setServicosPreDeterminados({...servicosPreDeterminados, limpeza: false})}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                     {servicosPreDeterminados.teste && (
-                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-teste" className="text-xs text-muted-foreground">Quantidade</Label>
-                          <Input
-                            id="qtd-teste"
-                            type="number"
-                            min="1"
-                            className="w-20 h-8"
+                          <QuantityInput
                             value={servicosQuantidades.teste}
-                            onChange={(e) => setServicosQuantidades({
+                            onChange={(value) => setServicosQuantidades({
                               ...servicosQuantidades, 
-                              teste: parseInt(e.target.value) || 1
+                              teste: value
                             })}
                           />
                         </div>
@@ -2065,21 +2076,26 @@ const NovaOrdemServico = () => {
                             className="h-8"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setServicosPreDeterminados({...servicosPreDeterminados, teste: false})}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                     {servicosPreDeterminados.pintura && (
-                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-pintura" className="text-xs text-muted-foreground">Quantidade</Label>
-                          <Input
-                            id="qtd-pintura"
-                            type="number"
-                            min="1"
-                            className="w-20 h-8"
+                          <QuantityInput
                             value={servicosQuantidades.pintura}
-                            onChange={(e) => setServicosQuantidades({
+                            onChange={(value) => setServicosQuantidades({
                               ...servicosQuantidades, 
-                              pintura: parseInt(e.target.value) || 1
+                              pintura: value
                             })}
                           />
                         </div>
@@ -2108,21 +2124,26 @@ const NovaOrdemServico = () => {
                             className="h-8"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setServicosPreDeterminados({...servicosPreDeterminados, pintura: false})}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                     {servicosPreDeterminados.recondicionamento && (
-                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-recondicionamento" className="text-xs text-muted-foreground">Quantidade</Label>
-                          <Input
-                            id="qtd-recondicionamento"
-                            type="number"
-                            min="1"
-                            className="w-20 h-8"
+                          <QuantityInput
                             value={servicosQuantidades.recondicionamento}
-                            onChange={(e) => setServicosQuantidades({
+                            onChange={(value) => setServicosQuantidades({
                               ...servicosQuantidades, 
-                              recondicionamento: parseInt(e.target.value) || 1
+                              recondicionamento: value
                             })}
                           />
                         </div>
@@ -2151,21 +2172,26 @@ const NovaOrdemServico = () => {
                             className="h-8"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setServicosPreDeterminados({...servicosPreDeterminados, recondicionamento: false})}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                     {servicosPersonalizados.trim() && (
-                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-personalizado" className="text-xs text-muted-foreground">Quantidade</Label>
-                          <Input
-                            id="qtd-personalizado"
-                            type="number"
-                            min="1"
-                            className="w-20 h-8"
+                          <QuantityInput
                             value={servicosQuantidades.personalizado}
-                            onChange={(e) => setServicosQuantidades({
+                            onChange={(value) => setServicosQuantidades({
                               ...servicosQuantidades, 
-                              personalizado: parseInt(e.target.value) || 1
+                              personalizado: value
                             })}
                           />
                         </div>
@@ -2191,6 +2217,15 @@ const NovaOrdemServico = () => {
                             className="h-8"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setServicosPersonalizados("")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -2326,14 +2361,11 @@ const NovaOrdemServico = () => {
                         <div key={index} className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-muted/30 rounded-lg border">
                           <div>
                             <Label className="text-xs text-muted-foreground">Quantidade</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              className="w-20 h-8"
+                            <QuantityInput
                               value={usinagem.quantidade}
-                              onChange={(e) => {
+                              onChange={(value) => {
                                 const updated = [...usinagemAdicional];
-                                updated[index].quantidade = parseInt(e.target.value) || 1;
+                                updated[index].quantidade = value;
                                 setUsinagemAdicional(updated);
                               }}
                             />
@@ -2393,18 +2425,14 @@ const NovaOrdemServico = () => {
                   </h4>
                   <div className="space-y-3">
                     {usinagem.usinagemHaste && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-usinagem-haste" className="text-xs text-muted-foreground">Quantidade</Label>
-                          <Input
-                            id="qtd-usinagem-haste"
-                            type="number"
-                            min="1"
-                            className="w-20 h-8"
+                          <QuantityInput
                             value={usinagemQuantidades.usinagemHaste}
-                            onChange={(e) => setUsinagemQuantidades({
+                            onChange={(value) => setUsinagemQuantidades({
                               ...usinagemQuantidades, 
-                              usinagemHaste: parseInt(e.target.value) || 1
+                              usinagemHaste: value
                             })}
                           />
                         </div>
@@ -2433,21 +2461,26 @@ const NovaOrdemServico = () => {
                             className="h-8"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setUsinagem({...usinagem, usinagemHaste: false})}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                     {usinagem.usinagemTampaGuia && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-usinagem-tampa" className="text-xs text-muted-foreground">Quantidade</Label>
-                          <Input
-                            id="qtd-usinagem-tampa"
-                            type="number"
-                            min="1"
-                            className="w-20 h-8"
+                          <QuantityInput
                             value={usinagemQuantidades.usinagemTampaGuia}
-                            onChange={(e) => setUsinagemQuantidades({
+                            onChange={(value) => setUsinagemQuantidades({
                               ...usinagemQuantidades, 
-                              usinagemTampaGuia: parseInt(e.target.value) || 1
+                              usinagemTampaGuia: value
                             })}
                           />
                         </div>
@@ -2476,21 +2509,26 @@ const NovaOrdemServico = () => {
                             className="h-8"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setUsinagem({...usinagem, usinagemTampaGuia: false})}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                     {usinagem.usinagemEmbolo && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-usinagem-embolo" className="text-xs text-muted-foreground">Quantidade</Label>
-                          <Input
-                            id="qtd-usinagem-embolo"
-                            type="number"
-                            min="1"
-                            className="w-20 h-8"
+                          <QuantityInput
                             value={usinagemQuantidades.usinagemEmbolo}
-                            onChange={(e) => setUsinagemQuantidades({
+                            onChange={(value) => setUsinagemQuantidades({
                               ...usinagemQuantidades, 
-                              usinagemEmbolo: parseInt(e.target.value) || 1
+                              usinagemEmbolo: value
                             })}
                           />
                         </div>
@@ -2519,21 +2557,26 @@ const NovaOrdemServico = () => {
                             className="h-8"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setUsinagem({...usinagem, usinagemEmbolo: false})}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                     {usinagem.usinagemCabecoteDianteiro && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-usinagem-dianteiro" className="text-xs text-muted-foreground">Quantidade</Label>
-                          <Input
-                            id="qtd-usinagem-dianteiro"
-                            type="number"
-                            min="1"
-                            className="w-20 h-8"
+                          <QuantityInput
                             value={usinagemQuantidades.usinagemCabecoteDianteiro}
-                            onChange={(e) => setUsinagemQuantidades({
+                            onChange={(value) => setUsinagemQuantidades({
                               ...usinagemQuantidades, 
-                              usinagemCabecoteDianteiro: parseInt(e.target.value) || 1
+                              usinagemCabecoteDianteiro: value
                             })}
                           />
                         </div>
@@ -2562,21 +2605,26 @@ const NovaOrdemServico = () => {
                             className="h-8"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setUsinagem({...usinagem, usinagemCabecoteDianteiro: false})}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                     {usinagem.usinagemCabecoteTraseiro && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-usinagem-traseiro" className="text-xs text-muted-foreground">Quantidade</Label>
-                          <Input
-                            id="qtd-usinagem-traseiro"
-                            type="number"
-                            min="1"
-                            className="w-20 h-8"
+                          <QuantityInput
                             value={usinagemQuantidades.usinagemCabecoteTraseiro}
-                            onChange={(e) => setUsinagemQuantidades({
+                            onChange={(value) => setUsinagemQuantidades({
                               ...usinagemQuantidades, 
-                              usinagemCabecoteTraseiro: parseInt(e.target.value) || 1
+                              usinagemCabecoteTraseiro: value
                             })}
                           />
                         </div>
@@ -2605,21 +2653,26 @@ const NovaOrdemServico = () => {
                             className="h-8"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setUsinagem({...usinagem, usinagemCabecoteTraseiro: false})}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                     {usinagemPersonalizada.trim() && (
-                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-2 items-center p-3 bg-background rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                         <div>
                           <Label htmlFor="qtd-usinagem-personalizada" className="text-xs text-muted-foreground">Quantidade</Label>
-                          <Input
-                            id="qtd-usinagem-personalizada"
-                            type="number"
-                            min="1"
-                            className="w-20 h-8"
+                          <QuantityInput
                             value={usinagemQuantidades.personalizada}
-                            onChange={(e) => setUsinagemQuantidades({
+                            onChange={(value) => setUsinagemQuantidades({
                               ...usinagemQuantidades, 
-                              personalizada: parseInt(e.target.value) || 1
+                              personalizada: value
                             })}
                           />
                         </div>
@@ -2645,6 +2698,15 @@ const NovaOrdemServico = () => {
                             className="h-8"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setUsinagemPersonalizada("")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -2664,7 +2726,7 @@ const NovaOrdemServico = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="grid grid-cols-7 gap-2 items-end">
+                <div className="grid grid-cols-8 gap-2 items-end">
                   <div>
                     <Label>Peça</Label>
                     <Select 
@@ -2690,6 +2752,17 @@ const NovaOrdemServico = () => {
                         <SelectItem value="porca">Porca</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  
+                  <div>
+                    <Label>Quantidade</Label>
+                    <QuantityInput
+                      value={novaPeca.quantidade}
+                      onChange={(value) => setNovaPeca({
+                        ...novaPeca,
+                        quantidade: value
+                      })}
+                    />
                   </div>
                   
                   <div>
@@ -2798,14 +2871,11 @@ const NovaOrdemServico = () => {
                   <div className="grid grid-cols-3 gap-2 items-end">
                     <div>
                       <Label>Quantidade</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        placeholder="1"
+                      <QuantityInput
                         value={novaPecaAdicional.quantidade}
-                        onChange={(e) => setNovaPecaAdicional({
+                        onChange={(value) => setNovaPecaAdicional({
                           ...novaPecaAdicional,
-                          quantidade: parseInt(e.target.value) || 1
+                          quantidade: value
                         })}
                       />
                     </div>
@@ -2858,18 +2928,14 @@ const NovaOrdemServico = () => {
                     </h4>
                     <div className="space-y-3">
                       {pecasUtilizadas.map((peca, index) => (
-                        <div key={index} className="grid grid-cols-1 md:grid-cols-7 gap-2 items-center p-3 bg-background rounded-lg border">
+                        <div key={index} className="grid grid-cols-1 md:grid-cols-[auto_auto_auto_auto_auto_auto_auto_auto] gap-2 items-center p-3 bg-background rounded-lg border">
                           <div>
                             <Label htmlFor={`qtd-peca-${index}`} className="text-xs text-muted-foreground">Quantidade</Label>
-                            <Input
-                              id={`qtd-peca-${index}`}
-                              type="number"
-                              min="1"
-                              className="w-20 h-8"
+                            <QuantityInput
                               value={peca.quantidade}
-                              onChange={(e) => {
+                              onChange={(value) => {
                                 const newPecas = [...pecasUtilizadas];
-                                newPecas[index].quantidade = parseInt(e.target.value) || 1;
+                                newPecas[index].quantidade = value;
                                 setPecasUtilizadas(newPecas);
                               }}
                             />
@@ -2956,6 +3022,17 @@ const NovaOrdemServico = () => {
                               }}
                             />
                           </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 mt-4"
+                            onClick={() => {
+                              setPecasUtilizadas(pecasUtilizadas.filter((_, i) => i !== index));
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       ))}
                     </div>
