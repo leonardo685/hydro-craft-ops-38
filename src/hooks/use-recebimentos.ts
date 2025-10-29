@@ -30,6 +30,7 @@ export interface Recebimento {
   na_empresa: boolean;
   status: string;
   data_analise?: string;
+  pdf_nota_retorno?: string;
   fotos?: FotoEquipamento[];
   clientes?: {
     id: string;
