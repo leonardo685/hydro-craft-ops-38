@@ -33,20 +33,37 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { FileSpreadsheet, Edit } from "lucide-react";
 import { UploadExtratoModal } from "@/components/UploadExtratoModal";
-
 export default function DFC() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { categorias, getCategoriasForSelect, getNomeCategoriaMae } = useCategoriasFinanceiras();
-  const { lancamentos, loading, adicionarLancamento, atualizarLancamento, deletarLancamento, deletarRecorrenciaCompleta, refetch } = useLancamentosFinanceiros();
-  const { clientes } = useClientes();
-  const { fornecedores: fornecedoresData } = useFornecedores();
-  const { contasAtivas, getContasForSelect } = useContasBancarias();
+  const {
+    categorias,
+    getCategoriasForSelect,
+    getNomeCategoriaMae
+  } = useCategoriasFinanceiras();
+  const {
+    lancamentos,
+    loading,
+    adicionarLancamento,
+    atualizarLancamento,
+    deletarLancamento,
+    deletarRecorrenciaCompleta,
+    refetch
+  } = useLancamentosFinanceiros();
+  const {
+    clientes
+  } = useClientes();
+  const {
+    fornecedores: fornecedoresData
+  } = useFornecedores();
+  const {
+    contasAtivas,
+    getContasForSelect
+  } = useContasBancarias();
 
   // Inicializar activeTab com base no parâmetro da URL
   const tabParam = searchParams.get('tab');
-  const initialTab = (tabParam === 'extrato' || tabParam === 'planejamento' || tabParam === 'dfc') ? tabParam : 'dfc';
-  
+  const initialTab = tabParam === 'extrato' || tabParam === 'planejamento' || tabParam === 'dfc' ? tabParam : 'dfc';
   const [contaSelecionada, setContaSelecionada] = useState('todas');
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
@@ -63,17 +80,21 @@ export default function DFC() {
   const [contaBancariaFiltro, setContaBancariaFiltro] = useState("todas");
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
   const [planejamentoExpanded, setPlanejamentoExpanded] = useState(true);
-  
+
   // Estados para ordenação de colunas
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
-  
+
   // Estados para confirmação de recebimento/pagamento
   const [confirmarPagamentoDialog, setConfirmarPagamentoDialog] = useState<{
     open: boolean;
     lancamentoId: string;
     tipo: 'confirmar' | 'cancelar';
-  }>({ open: false, lancamentoId: '', tipo: 'confirmar' });
+  }>({
+    open: false,
+    lancamentoId: '',
+    tipo: 'confirmar'
+  });
   const [dataRecebimento, setDataRecebimento] = useState<Date>(new Date());
 
   // Estados para edição e exclusão
@@ -83,16 +104,16 @@ export default function DFC() {
   const [confirmarExclusaoDialog, setConfirmarExclusaoDialog] = useState<{
     open: boolean;
     lancamentoId: string;
-  }>({ open: false, lancamentoId: '' });
-
+  }>({
+    open: false,
+    lancamentoId: ''
+  });
   const [valoresFinanceiros, setValoresFinanceiros] = useState({
     aReceber: 0,
     aPagar: 0,
     titulosAberto: 0,
     contasVencer: 0
   });
-
-
   const [lancamentoForm, setLancamentoForm] = useState({
     tipo: 'entrada',
     valor: '',
@@ -100,7 +121,7 @@ export default function DFC() {
     categoria: '',
     conta: 'conta_corrente',
     contaDestino: '',
-      fornecedor: '',
+    fornecedor: '',
     paga: false,
     dataEmissao: new Date(),
     dataPagamento: new Date(2024, 7, 29),
@@ -109,7 +130,7 @@ export default function DFC() {
     formaPagamento: 'a_vista' as 'a_vista' | 'parcelado' | 'recorrente',
     numeroParcelas: 2,
     frequenciaRepeticao: 'mensal' as 'semanal' | 'quinzenal' | 'mensal' | 'anual',
-    mesesRecorrencia: 12,
+    mesesRecorrencia: 12
   });
 
   // Estado para datas customizadas das parcelas
@@ -118,11 +139,7 @@ export default function DFC() {
   // Recalcula datas quando mudar parcelas ou frequência
   useEffect(() => {
     if (lancamentoForm.formaPagamento === 'parcelado' && lancamentoForm.numeroParcelas > 0) {
-      const novasDatas = gerarDatasParcelamento(
-        lancamentoForm.dataEsperada,
-        lancamentoForm.numeroParcelas,
-        lancamentoForm.frequenciaRepeticao
-      );
+      const novasDatas = gerarDatasParcelamento(lancamentoForm.dataEsperada, lancamentoForm.numeroParcelas, lancamentoForm.frequenciaRepeticao);
       setDatasParcelasCustom(novasDatas);
     }
   }, [lancamentoForm.numeroParcelas, lancamentoForm.frequenciaRepeticao, lancamentoForm.dataEsperada, lancamentoForm.formaPagamento]);
@@ -134,7 +151,6 @@ export default function DFC() {
       setActiveTab(tab);
     }
   }, [searchParams]);
-
   const [filtrosExtrato, setFiltrosExtrato] = useState({
     dataInicio: null as Date | null,
     dataFim: null as Date | null,
@@ -147,31 +163,62 @@ export default function DFC() {
     status: 'todos',
     fornecedor: 'todos'
   });
-
-  const extratoColumnOptions: Option[] = [
-    { value: 'tipo', label: 'Tipo' },
-    { value: 'descricao', label: 'Descrição' },
-    { value: 'categoria', label: 'Categoria' },
-    { value: 'conta', label: 'Conta' },
-    { value: 'valor', label: 'Valor' },
-    { value: 'dataEsperada', label: 'Data Esperada' },
-    { value: 'dataRealizada', label: 'Data Realizada' },
-    { value: 'status', label: 'Status' },
-    { value: 'fornecedor', label: 'Fornecedor' },
-  ];
-
-  const [selectedExtratoColumns, setSelectedExtratoColumns] = useState<Option[]>([
-    { value: 'tipo', label: 'Tipo' },
-    { value: 'descricao', label: 'Descrição' },
-    { value: 'categoria', label: 'Categoria' },
-    { value: 'conta', label: 'Conta' },
-    { value: 'valor', label: 'Valor' },
-    { value: 'dataEsperada', label: 'Data Esperada' },
-    { value: 'dataRealizada', label: 'Data Realizada' },
-    { value: 'status', label: 'Status' },
-    { value: 'fornecedor', label: 'Fornecedor' },
-  ]);
-
+  const extratoColumnOptions: Option[] = [{
+    value: 'tipo',
+    label: 'Tipo'
+  }, {
+    value: 'descricao',
+    label: 'Descrição'
+  }, {
+    value: 'categoria',
+    label: 'Categoria'
+  }, {
+    value: 'conta',
+    label: 'Conta'
+  }, {
+    value: 'valor',
+    label: 'Valor'
+  }, {
+    value: 'dataEsperada',
+    label: 'Data Esperada'
+  }, {
+    value: 'dataRealizada',
+    label: 'Data Realizada'
+  }, {
+    value: 'status',
+    label: 'Status'
+  }, {
+    value: 'fornecedor',
+    label: 'Fornecedor'
+  }];
+  const [selectedExtratoColumns, setSelectedExtratoColumns] = useState<Option[]>([{
+    value: 'tipo',
+    label: 'Tipo'
+  }, {
+    value: 'descricao',
+    label: 'Descrição'
+  }, {
+    value: 'categoria',
+    label: 'Categoria'
+  }, {
+    value: 'conta',
+    label: 'Conta'
+  }, {
+    value: 'valor',
+    label: 'Valor'
+  }, {
+    value: 'dataEsperada',
+    label: 'Data Esperada'
+  }, {
+    value: 'dataRealizada',
+    label: 'Data Realizada'
+  }, {
+    value: 'status',
+    label: 'Status'
+  }, {
+    value: 'fornecedor',
+    label: 'Fornecedor'
+  }]);
   const colunasVisiveis = {
     tipo: selectedExtratoColumns.some(col => col.value === 'tipo'),
     descricao: selectedExtratoColumns.some(col => col.value === 'descricao'),
@@ -181,15 +228,19 @@ export default function DFC() {
     dataEsperada: selectedExtratoColumns.some(col => col.value === 'dataEsperada'),
     dataRealizada: selectedExtratoColumns.some(col => col.value === 'dataRealizada'),
     status: selectedExtratoColumns.some(col => col.value === 'status'),
-    fornecedor: selectedExtratoColumns.some(col => col.value === 'fornecedor'),
+    fornecedor: selectedExtratoColumns.some(col => col.value === 'fornecedor')
   };
 
   // Combinar clientes e fornecedores em uma lista
-  const fornecedoresClientes = [
-    ...clientes.map(c => ({ id: c.id, nome: c.nome, tipo: 'cliente' as const })),
-    ...fornecedoresData.map(f => ({ id: f.id, nome: f.nome, tipo: 'fornecedor' as const }))
-  ];
-
+  const fornecedoresClientes = [...clientes.map(c => ({
+    id: c.id,
+    nome: c.nome,
+    tipo: 'cliente' as const
+  })), ...fornecedoresData.map(f => ({
+    id: f.id,
+    nome: f.nome,
+    tipo: 'fornecedor' as const
+  }))];
   const contasBancarias = contasAtivas.map(conta => ({
     id: conta.nome,
     nome: conta.banco ? `${conta.nome} - ${conta.banco}` : conta.nome,
@@ -199,7 +250,7 @@ export default function DFC() {
   // Calcular saldos das contas baseado nos lançamentos reais
   const saldosContas = useMemo(() => {
     const saldos: Record<string, number> = {};
-    
+
     // Inicializar saldos com saldo_inicial das contas
     contasAtivas.forEach(conta => {
       saldos[conta.nome] = conta.saldo_inicial;
@@ -227,7 +278,6 @@ export default function DFC() {
         }
       }
     });
-
     console.log('💰 Saldos calculados:', saldos);
     return saldos;
   }, [lancamentos, contasAtivas]);
@@ -237,7 +287,6 @@ export default function DFC() {
     ...conta,
     saldo: saldosContas[conta.id] || 0
   }));
-
   const extratoData = useMemo(() => {
     // FILTRAR lançamentos ANTES de mapear - excluir lançamentos PAI de parcelamento
     const lancamentosFiltrados = lancamentos.filter(lancamento => {
@@ -247,10 +296,12 @@ export default function DFC() {
       }
       return true;
     });
-
     return lancamentosFiltrados.map(lancamento => ({
       id: lancamento.id,
-      hora: new Date(lancamento.dataEsperada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      hora: new Date(lancamento.dataEsperada).toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
       tipo: lancamento.tipo,
       descricao: lancamento.descricao,
       categoria: getNomeCategoriaMae(lancamento.categoriaId || '') || 'Sem categoria',
@@ -263,72 +314,52 @@ export default function DFC() {
       fornecedor: lancamento.fornecedorCliente || ''
     }));
   }, [lancamentos, getNomeCategoriaMae]);
-
   const saldoTotal = contasBancariasAtualizadas.reduce((acc, conta) => acc + conta.saldo, 0);
-  
+
   // Calcular entradas e saídas do mês atual
   const hoje = new Date();
   const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
   const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-
   const entradasMesAtual = useMemo(() => {
-    return lancamentos
-      .filter(l => {
-        const data = l.dataRealizada ? new Date(l.dataRealizada) : new Date(l.dataEsperada);
-        return l.tipo === 'entrada' && l.pago && data >= primeiroDiaMes && data <= ultimoDiaMes;
-      })
-      .reduce((acc, l) => acc + l.valor, 0);
+    return lancamentos.filter(l => {
+      const data = l.dataRealizada ? new Date(l.dataRealizada) : new Date(l.dataEsperada);
+      return l.tipo === 'entrada' && l.pago && data >= primeiroDiaMes && data <= ultimoDiaMes;
+    }).reduce((acc, l) => acc + l.valor, 0);
   }, [lancamentos, primeiroDiaMes, ultimoDiaMes]);
-
   const saidasMesAtual = useMemo(() => {
-    return lancamentos
-      .filter(l => {
-        const data = l.dataRealizada ? new Date(l.dataRealizada) : new Date(l.dataEsperada);
-        return l.tipo === 'saida' && l.pago && data >= primeiroDiaMes && data <= ultimoDiaMes;
-      })
-      .reduce((acc, l) => acc + l.valor, 0);
+    return lancamentos.filter(l => {
+      const data = l.dataRealizada ? new Date(l.dataRealizada) : new Date(l.dataEsperada);
+      return l.tipo === 'saida' && l.pago && data >= primeiroDiaMes && data <= ultimoDiaMes;
+    }).reduce((acc, l) => acc + l.valor, 0);
   }, [lancamentos, primeiroDiaMes, ultimoDiaMes]);
 
   // Cálculo de lançamentos atrasados (não varia com filtros)
   const aReceberAtrasadas = useMemo(() => {
     const dataHoje = new Date();
     dataHoje.setHours(0, 0, 0, 0);
-    return lancamentos
-      .filter(l => {
-        const dataEsperada = new Date(l.dataEsperada);
-        dataEsperada.setHours(0, 0, 0, 0);
-        return l.tipo === 'entrada' && !l.pago && dataEsperada < dataHoje;
-      })
-      .reduce((acc, l) => acc + l.valor, 0);
+    return lancamentos.filter(l => {
+      const dataEsperada = new Date(l.dataEsperada);
+      dataEsperada.setHours(0, 0, 0, 0);
+      return l.tipo === 'entrada' && !l.pago && dataEsperada < dataHoje;
+    }).reduce((acc, l) => acc + l.valor, 0);
   }, [lancamentos]);
-
   const aPagarAtrasadas = useMemo(() => {
     const dataHoje = new Date();
     dataHoje.setHours(0, 0, 0, 0);
-    return lancamentos
-      .filter(l => {
-        const dataEsperada = new Date(l.dataEsperada);
-        dataEsperada.setHours(0, 0, 0, 0);
-        return l.tipo === 'saida' && !l.pago && dataEsperada < dataHoje;
-      })
-      .reduce((acc, l) => acc + l.valor, 0);
+    return lancamentos.filter(l => {
+      const dataEsperada = new Date(l.dataEsperada);
+      dataEsperada.setHours(0, 0, 0, 0);
+      return l.tipo === 'saida' && !l.pago && dataEsperada < dataHoje;
+    }).reduce((acc, l) => acc + l.valor, 0);
   }, [lancamentos]);
-
   const contaAtual = contasBancariasAtualizadas.find(conta => conta.id === contaSelecionada);
   const saldoContaSelecionada = contaAtual ? contaAtual.saldo : saldoTotal;
 
   // Cálculos dos cards - usando dados reais do banco
   // Apenas lançamentos PAGOS com data realizada são contabilizados
-  const totalEntradas = lancamentos
-    .filter(item => item.tipo === 'entrada' && item.pago && item.dataRealizada)
-    .reduce((acc, item) => acc + item.valor, 0);
-  
-  const totalSaidas = lancamentos
-    .filter(item => item.tipo === 'saida' && item.pago && item.dataRealizada)
-    .reduce((acc, item) => acc + item.valor, 0);
-  
+  const totalEntradas = lancamentos.filter(item => item.tipo === 'entrada' && item.pago && item.dataRealizada).reduce((acc, item) => acc + item.valor, 0);
+  const totalSaidas = lancamentos.filter(item => item.tipo === 'saida' && item.pago && item.dataRealizada).reduce((acc, item) => acc + item.valor, 0);
   const saldoDia = totalEntradas - totalSaidas;
-
   const getStatusPagamento = (dataEsperada: Date, dataRealizada: Date | null, pago: boolean) => {
     if (pago) return 'pago';
     const hoje = new Date();
@@ -337,7 +368,6 @@ export default function DFC() {
     if (dataEsperada < hoje) return 'atrasado';
     return 'no_prazo';
   };
-
   const limparFiltros = () => {
     setFiltrosExtrato({
       dataInicio: null,
@@ -352,35 +382,34 @@ export default function DFC() {
       fornecedor: 'todos'
     });
   };
-
   const extratoFiltrado = extratoData.filter(item => {
     // Filtro de tipo
     if (filtrosExtrato.tipo !== 'todos' && item.tipo !== filtrosExtrato.tipo) return false;
-    
+
     // Filtro de conta
     if (filtrosExtrato.conta !== 'todas' && item.conta !== filtrosExtrato.conta) return false;
-    
+
     // Filtro de categoria (comparando IDs)
     if (filtrosExtrato.categoria !== 'todas' && item.categoriaId !== filtrosExtrato.categoria) return false;
-    
+
     // Filtro de fornecedor
     if (filtrosExtrato.fornecedor !== 'todos' && item.fornecedor !== filtrosExtrato.fornecedor) return false;
-    
+
     // Filtro de descrição
     if (filtrosExtrato.descricao && !item.descricao.toLowerCase().includes(filtrosExtrato.descricao.toLowerCase())) return false;
-    
+
     // Filtro de valor mínimo
     if (filtrosExtrato.valorMinimo && item.valor < parseFloat(filtrosExtrato.valorMinimo)) return false;
-    
+
     // Filtro de valor máximo
     if (filtrosExtrato.valorMaximo && item.valor > parseFloat(filtrosExtrato.valorMaximo)) return false;
-    
+
     // Filtro de status
     if (filtrosExtrato.status !== 'todos') {
       const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
       if (status !== filtrosExtrato.status) return false;
     }
-    
+
     // Filtro de data início
     if (filtrosExtrato.dataInicio) {
       const dataInicio = new Date(filtrosExtrato.dataInicio);
@@ -389,7 +418,7 @@ export default function DFC() {
       dataItem.setHours(0, 0, 0, 0);
       if (dataItem < dataInicio) return false;
     }
-    
+
     // Filtro de data fim
     if (filtrosExtrato.dataFim) {
       const dataFim = new Date(filtrosExtrato.dataFim);
@@ -398,10 +427,8 @@ export default function DFC() {
       dataItem.setHours(0, 0, 0, 0);
       if (dataItem > dataFim) return false;
     }
-    
     return true;
   });
-
   const handleLancamento = async () => {
     if (!lancamentoForm.valor || !lancamentoForm.descricao) {
       toast.error("Preencha todos os campos obrigatórios");
@@ -424,18 +451,16 @@ export default function DFC() {
         return;
       }
     }
-
     const valorTotal = parseFloat(lancamentoForm.valor);
     const dataBase = lancamentoForm.dataEsperada;
-    
+
     // Lógica especial para transferências entre contas
     if (lancamentoForm.tipo === 'transferencia') {
       const contaOrigem = contasBancariasAtualizadas.find(c => c.id === lancamentoForm.conta);
       const contaDestinoObj = contasBancariasAtualizadas.find(c => c.id === lancamentoForm.contaDestino);
-      
+
       // Criar lançamento de transferência
       const descricaoBase = lancamentoForm.descricao || 'Transferência entre contas';
-      
       await adicionarLancamento({
         tipo: 'transferencia' as any,
         descricao: `${descricaoBase} - Saída de ${contaOrigem?.nome}`,
@@ -448,15 +473,13 @@ export default function DFC() {
         dataEmissao: lancamentoForm.dataEmissao,
         pago: lancamentoForm.paga,
         fornecedorCliente: lancamentoForm.fornecedor,
-        formaPagamento: 'a_vista',
+        formaPagamento: 'a_vista'
       });
-      
       toast.success("Transferência registrada com sucesso!");
       resetForm();
       setIsLancamentoDialogOpen(false);
       return;
     }
-
     if (lancamentoForm.formaPagamento === 'a_vista') {
       // Lançamento único
       const resultado = await adicionarLancamento({
@@ -470,9 +493,8 @@ export default function DFC() {
         dataEmissao: lancamentoForm.dataEmissao,
         pago: lancamentoForm.paga,
         fornecedorCliente: lancamentoForm.fornecedor,
-        formaPagamento: 'a_vista',
+        formaPagamento: 'a_vista'
       });
-      
       if (resultado.success) {
         toast.success("Lançamento adicionado com sucesso!");
         resetForm();
@@ -492,19 +514,12 @@ export default function DFC() {
         fornecedorCliente: lancamentoForm.fornecedor,
         formaPagamento: 'parcelado',
         numeroParcelas: lancamentoForm.numeroParcelas,
-        frequenciaRepeticao: lancamentoForm.frequenciaRepeticao,
+        frequenciaRepeticao: lancamentoForm.frequenciaRepeticao
       });
-      
       if (resultadoPai.success && resultadoPai.id) {
         // Usar datas customizadas das parcelas
-        const datas = datasParcelasCustom.length > 0 ? datasParcelasCustom : gerarDatasParcelamento(
-          dataBase,
-          lancamentoForm.numeroParcelas,
-          lancamentoForm.frequenciaRepeticao
-        );
-        
+        const datas = datasParcelasCustom.length > 0 ? datasParcelasCustom : gerarDatasParcelamento(dataBase, lancamentoForm.numeroParcelas, lancamentoForm.frequenciaRepeticao);
         const valorParcela = valorTotal / lancamentoForm.numeroParcelas;
-        
         for (let i = 0; i < datas.length; i++) {
           await adicionarLancamento({
             tipo: lancamentoForm.tipo as 'entrada' | 'saida',
@@ -521,22 +536,18 @@ export default function DFC() {
             numeroParcelas: lancamentoForm.numeroParcelas,
             parcelaNumero: i + 1,
             frequenciaRepeticao: lancamentoForm.frequenciaRepeticao,
-            lancamentoPaiId: resultadoPai.id,
+            lancamentoPaiId: resultadoPai.id
           });
         }
-        
         toast.success(`Lançamento parcelado criado com sucesso! ${lancamentoForm.numeroParcelas} parcelas geradas.`);
         resetForm();
       }
     } else if (lancamentoForm.formaPagamento === 'recorrente') {
       // Gerar lançamentos recorrentes
-      const { gerarDatasRecorrencia } = await import('@/lib/lancamento-utils');
-      const datas = gerarDatasRecorrencia(
-        dataBase,
-        lancamentoForm.mesesRecorrencia,
-        lancamentoForm.frequenciaRepeticao
-      );
-      
+      const {
+        gerarDatasRecorrencia
+      } = await import('@/lib/lancamento-utils');
+      const datas = gerarDatasRecorrencia(dataBase, lancamentoForm.mesesRecorrencia, lancamentoForm.frequenciaRepeticao);
       for (let i = 0; i < datas.length; i++) {
         await adicionarLancamento({
           tipo: lancamentoForm.tipo as 'entrada' | 'saida',
@@ -551,15 +562,13 @@ export default function DFC() {
           fornecedorCliente: lancamentoForm.fornecedor,
           formaPagamento: 'recorrente',
           frequenciaRepeticao: lancamentoForm.frequenciaRepeticao,
-          mesesRecorrencia: lancamentoForm.mesesRecorrencia,
+          mesesRecorrencia: lancamentoForm.mesesRecorrencia
         });
       }
-      
       toast.success(`Lançamentos recorrentes criados com sucesso! ${datas.length} lançamentos gerados.`);
       resetForm();
     }
   };
-
   const resetForm = () => {
     setLancamentoForm({
       tipo: 'entrada',
@@ -577,12 +586,11 @@ export default function DFC() {
       formaPagamento: 'a_vista',
       numeroParcelas: 2,
       frequenciaRepeticao: 'mensal',
-      mesesRecorrencia: 12,
+      mesesRecorrencia: 12
     });
     setDatasParcelasCustom([]);
     setIsLancamentoDialogOpen(false);
   };
-
   const handleBuscarMovimentacoes = () => {
     if (!periodoSelecionado && !dataInicial && !dataFinal) {
       setMovimentacoesFiltradas([]);
@@ -598,25 +606,16 @@ export default function DFC() {
       tipo: l.tipo === 'entrada' ? 'receita' : 'despesa',
       categoria: getNomeCategoriaMae(l.categoriaId || '') || 'Sem categoria',
       valor: l.valor,
-      status: l.pago ? 'pago' : (new Date(l.dataEsperada) < new Date() ? 'vencido' : 'pendente')
+      status: l.pago ? 'pago' : new Date(l.dataEsperada) < new Date() ? 'vencido' : 'pendente'
     }));
-    
     setMovimentacoesFiltradas(movimentacoes);
     calcularValoresFinanceiros(movimentacoes);
   };
-
   const calcularValoresFinanceiros = (movimentacoes: any[]) => {
-    const totalReceber = movimentacoes
-      .filter(m => m.tipo === 'receita' && m.status !== 'pago')
-      .reduce((acc, m) => acc + m.valor, 0);
-    
-    const totalPagar = movimentacoes
-      .filter(m => m.tipo === 'despesa' && m.status !== 'pago')
-      .reduce((acc, m) => acc + m.valor, 0);
-    
+    const totalReceber = movimentacoes.filter(m => m.tipo === 'receita' && m.status !== 'pago').reduce((acc, m) => acc + m.valor, 0);
+    const totalPagar = movimentacoes.filter(m => m.tipo === 'despesa' && m.status !== 'pago').reduce((acc, m) => acc + m.valor, 0);
     const titulosAberto = movimentacoes.filter(m => m.tipo === 'receita' && m.status !== 'pago').length;
     const contasVencer = movimentacoes.filter(m => m.tipo === 'despesa' && m.status !== 'pago').length;
-
     setValoresFinanceiros({
       aReceber: totalReceber,
       aPagar: totalPagar,
@@ -624,9 +623,11 @@ export default function DFC() {
       contasVencer
     });
   };
-
   const formatCurrency = (value: number) => {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return value.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
   };
 
   // Funções de ordenação
@@ -647,10 +648,8 @@ export default function DFC() {
       setSortDirection('asc');
     }
   };
-
   const sortData = (data: any[]) => {
     if (!sortColumn || !sortDirection) return data;
-
     return [...data].sort((a, b) => {
       let aVal = a[sortColumn];
       let bVal = b[sortColumn];
@@ -664,7 +663,11 @@ export default function DFC() {
         bVal = new Date(bVal).getTime();
       } else if (sortColumn === 'status') {
         // Status tem ordem: pago < pendente < atrasado
-        const statusOrder: Record<string, number> = { 'pago': 1, 'pendente': 2, 'atrasado': 3 };
+        const statusOrder: Record<string, number> = {
+          'pago': 1,
+          'pendente': 2,
+          'atrasado': 3
+        };
         aVal = statusOrder[aVal] || 999;
         bVal = statusOrder[bVal] || 999;
       } else {
@@ -672,7 +675,6 @@ export default function DFC() {
         aVal = String(aVal || '').toLowerCase();
         bVal = String(bVal || '').toLowerCase();
       }
-
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
       return 0;
@@ -680,38 +682,26 @@ export default function DFC() {
   };
 
   // Componente de cabeçalho ordenável
-  const SortableTableHead = ({ 
-    column, 
-    children, 
-    className = "" 
-  }: { 
-    column: string; 
-    children: React.ReactNode; 
+  const SortableTableHead = ({
+    column,
+    children,
+    className = ""
+  }: {
+    column: string;
+    children: React.ReactNode;
     className?: string;
   }) => {
     const isActive = sortColumn === column;
-    
-    return (
-      <TableHead className={className}>
-        <button
-          onClick={() => handleSort(column)}
-          className="flex items-center gap-1 hover:text-foreground transition-colors w-full"
-        >
+    return <TableHead className={className}>
+        <button onClick={() => handleSort(column)} className="flex items-center gap-1 hover:text-foreground transition-colors w-full">
           {children}
           <div className="flex flex-col">
-            {isActive && sortDirection === 'asc' && (
-              <ArrowUp className="h-3 w-3" />
-            )}
-            {isActive && sortDirection === 'desc' && (
-              <ArrowDown className="h-3 w-3" />
-            )}
-            {(!isActive || sortDirection === null) && (
-              <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
-            )}
+            {isActive && sortDirection === 'asc' && <ArrowUp className="h-3 w-3" />}
+            {isActive && sortDirection === 'desc' && <ArrowDown className="h-3 w-3" />}
+            {(!isActive || sortDirection === null) && <ArrowUpDown className="h-3 w-3 text-muted-foreground" />}
           </div>
         </button>
-      </TableHead>
-    );
+      </TableHead>;
   };
 
   // Funções para confirmação de recebimento/pagamento
@@ -720,24 +710,29 @@ export default function DFC() {
       pago: true,
       dataRealizada: dataRecebimento
     });
-    
     if (sucesso) {
       toast.success("Recebimento/Pagamento confirmado!");
-      setConfirmarPagamentoDialog({ open: false, lancamentoId: '', tipo: 'confirmar' });
+      setConfirmarPagamentoDialog({
+        open: false,
+        lancamentoId: '',
+        tipo: 'confirmar'
+      });
     } else {
       toast.error("Erro ao confirmar recebimento/pagamento");
     }
   };
-
   const handleCancelarPagamento = async (lancamentoId: string) => {
     const sucesso = await atualizarLancamento(lancamentoId, {
       pago: false,
       dataRealizada: null
     });
-    
     if (sucesso) {
       toast.success("Pagamento cancelado. Status atualizado.");
-      setConfirmarPagamentoDialog({ open: false, lancamentoId: '', tipo: 'cancelar' });
+      setConfirmarPagamentoDialog({
+        open: false,
+        lancamentoId: '',
+        tipo: 'cancelar'
+      });
     } else {
       toast.error("Erro ao cancelar pagamento");
     }
@@ -762,50 +757,41 @@ export default function DFC() {
     const lancamentosFiltrados = lancamentos.filter(l => {
       // Excluir transferências entre contas do DFC
       if (l.tipo === 'transferencia') return false;
-      
+
       // Excluir lançamentos PAI de parcelamento
       // (lançamentos que têm filhos, identificados por numeroParcelas > 1 e lancamentoPaiId === null)
       if (!l.lancamentoPaiId && l.numeroParcelas && l.numeroParcelas > 1) {
         return false;
       }
-      
+
       // Só incluir se estiver pago e tiver data realizada
       if (!l.pago || !l.dataRealizada) return false;
-      
       const dataRealizada = new Date(l.dataRealizada);
-      
       if (dfcDataInicio) {
         const inicio = new Date(dfcDataInicio);
         inicio.setHours(0, 0, 0, 0);
         if (dataRealizada < inicio) return false;
       }
-      
       if (dfcDataFim) {
         const fim = new Date(dfcDataFim);
         fim.setHours(23, 59, 59, 999);
         if (dataRealizada > fim) return false;
       }
-      
       return true;
     });
 
     // 2. Calcular total de receitas (base para percentuais)
-    const totalReceitas = lancamentosFiltrados
-      .filter(l => l.tipo === 'entrada')
-      .reduce((acc, l) => acc + l.valor, 0);
+    const totalReceitas = lancamentosFiltrados.filter(l => l.tipo === 'entrada').reduce((acc, l) => acc + l.valor, 0);
 
     // 3. Função auxiliar para calcular valor de categoria
     const calcularValorCategoria = (categoriaId: string): number => {
-      return lancamentosFiltrados
-        .filter(l => l.categoriaId === categoriaId)
-        .reduce((acc, l) => acc + l.valor, 0);
+      return lancamentosFiltrados.filter(l => l.categoriaId === categoriaId).reduce((acc, l) => acc + l.valor, 0);
     };
 
     // 4. Função auxiliar para adicionar categoria mãe por código
     const adicionarCategoriaPorCodigo = (codigo: string): number => {
       const categoriaMae = categorias.find(c => c.tipo === 'mae' && c.codigo === codigo);
       if (!categoriaMae) return 0;
-
       const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === categoriaMae.id);
       let totalMae = 0;
 
@@ -813,13 +799,12 @@ export default function DFC() {
       categoriasFilhas.forEach(filha => {
         const valorFilha = calcularValorCategoria(filha.id);
         totalMae += valorFilha;
-        
         if (valorFilha !== 0) {
           resultado.push({
             codigo: filha.codigo,
             conta: filha.nome,
             valor: valorFilha,
-            percentual: totalReceitas > 0 ? (valorFilha / totalReceitas) * 100 : 0,
+            percentual: totalReceitas > 0 ? valorFilha / totalReceitas * 100 : 0,
             tipo: 'categoria_filha',
             nivel: 2
           });
@@ -833,12 +818,11 @@ export default function DFC() {
           codigo: categoriaMae.codigo,
           conta: categoriaMae.nome,
           valor: totalMae,
-          percentual: totalReceitas > 0 ? (totalMae / totalReceitas) * 100 : 0,
+          percentual: totalReceitas > 0 ? totalMae / totalReceitas * 100 : 0,
           tipo: 'categoria_mae',
           nivel: 1
         });
       }
-
       return totalMae;
     };
 
@@ -853,7 +837,7 @@ export default function DFC() {
     resultado.push({
       conta: '(=) MARGEM DE CONTRIBUIÇÃO',
       valor: margemContribuicao,
-      percentual: totalReceitas > 0 ? (margemContribuicao / totalReceitas) * 100 : 0,
+      percentual: totalReceitas > 0 ? margemContribuicao / totalReceitas * 100 : 0,
       tipo: 'calculo',
       nivel: 0
     });
@@ -866,7 +850,7 @@ export default function DFC() {
     resultado.push({
       conta: '(=) LUCRO ANTES DOS INVESTIMENTOS',
       valor: lucroAntesInvestimentos,
-      percentual: totalReceitas > 0 ? (lucroAntesInvestimentos / totalReceitas) * 100 : 0,
+      percentual: totalReceitas > 0 ? lucroAntesInvestimentos / totalReceitas * 100 : 0,
       tipo: 'calculo',
       nivel: 0
     });
@@ -879,7 +863,7 @@ export default function DFC() {
     resultado.push({
       conta: '(=) LUCRO OPERACIONAL',
       valor: lucroOperacional,
-      percentual: totalReceitas > 0 ? (lucroOperacional / totalReceitas) * 100 : 0,
+      percentual: totalReceitas > 0 ? lucroOperacional / totalReceitas * 100 : 0,
       tipo: 'calculo',
       nivel: 0
     });
@@ -895,11 +879,10 @@ export default function DFC() {
     resultado.push({
       conta: '(=) LUCRO LÍQUIDO',
       valor: lucroLiquido,
-      percentual: totalReceitas > 0 ? (lucroLiquido / totalReceitas) * 100 : 0,
+      percentual: totalReceitas > 0 ? lucroLiquido / totalReceitas * 100 : 0,
       tipo: 'calculo',
       nivel: 0
     });
-
     return resultado;
   }, [lancamentos, categorias, dfcDataInicio, dfcDataFim]);
 
@@ -916,7 +899,6 @@ export default function DFC() {
         return "";
     }
   };
-
   const getDfcValueStyle = (value: number, tipo: string) => {
     if (tipo === 'calculo') return "text-primary font-bold";
     if (tipo === 'categoria_mae') return "font-semibold";
@@ -925,9 +907,7 @@ export default function DFC() {
 
   // Obter o lançamento atual para exibir informações no modal
   const lancamentoAtual = lancamentos.find(l => l.id === confirmarPagamentoDialog.lancamentoId);
-
-  return (
-    <AppLayout>
+  return <AppLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">DFC - Fluxo de Caixa</h1>
@@ -942,15 +922,8 @@ export default function DFC() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="text-sm text-muted-foreground">Carregando...</div>
-              ) : (
-                <>
-                  <div className={`text-xl font-bold ${
-                    (contaSelecionada === 'todas' ? saldoTotal : saldoContaSelecionada) >= 0 
-                      ? 'text-green-600' 
-                      : 'text-destructive'
-                  }`}>
+              {loading ? <div className="text-sm text-muted-foreground">Carregando...</div> : <>
+                  <div className={`text-xl font-bold ${(contaSelecionada === 'todas' ? saldoTotal : saldoContaSelecionada) >= 0 ? 'text-green-600' : 'text-destructive'}`}>
                     {formatCurrency(contaSelecionada === 'todas' ? saldoTotal : saldoContaSelecionada)}
                   </div>
                   <Select value={contaSelecionada} onValueChange={setContaSelecionada}>
@@ -959,15 +932,12 @@ export default function DFC() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todas">Todas as contas</SelectItem>
-                      {contasBancariasAtualizadas.map(conta => (
-                        <SelectItem key={conta.id} value={conta.id}>
+                      {contasBancariasAtualizadas.map(conta => <SelectItem key={conta.id} value={conta.id}>
                           {conta.nome}
-                        </SelectItem>
-                      ))}
+                        </SelectItem>)}
                     </SelectContent>
                   </Select>
-                </>
-              )}
+                </>}
             </CardContent>
           </Card>
 
@@ -978,7 +948,10 @@ export default function DFC() {
             <CardContent>
               <div className="text-xl font-bold text-green-600">{formatCurrency(entradasMesAtual)}</div>
               <Badge variant="outline" className="text-xs mt-1">
-                {hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                {hoje.toLocaleDateString('pt-BR', {
+                month: 'long',
+                year: 'numeric'
+              })}
               </Badge>
             </CardContent>
           </Card>
@@ -990,7 +963,10 @@ export default function DFC() {
             <CardContent>
               <div className="text-xl font-bold text-destructive">{formatCurrency(saidasMesAtual)}</div>
               <Badge variant="outline" className="text-xs mt-1">
-                {hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                {hoje.toLocaleDateString('pt-BR', {
+                month: 'long',
+                year: 'numeric'
+              })}
               </Badge>
             </CardContent>
           </Card>
@@ -1000,15 +976,11 @@ export default function DFC() {
               <CardTitle className="text-sm font-medium">Resultado do Mês</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-xl font-bold ${
-                (entradasMesAtual - saidasMesAtual) >= 0 
-                  ? 'text-green-600' 
-                  : 'text-destructive'
-              }`}>
+              <div className={`text-xl font-bold ${entradasMesAtual - saidasMesAtual >= 0 ? 'text-green-600' : 'text-destructive'}`}>
                 {formatCurrency(entradasMesAtual - saidasMesAtual)}
               </div>
               <Badge variant="outline" className="text-xs mt-1">
-                {(entradasMesAtual - saidasMesAtual) >= 0 ? 'Resultado positivo' : 'Resultado negativo'}
+                {entradasMesAtual - saidasMesAtual >= 0 ? 'Resultado positivo' : 'Resultado negativo'}
               </Badge>
             </CardContent>
           </Card>
@@ -1031,25 +1003,13 @@ export default function DFC() {
                     <Label>Data Início:</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-[200px] justify-start text-left font-normal",
-                            !dfcDataInicio && "text-muted-foreground"
-                          )}
-                        >
+                        <Button variant="outline" className={cn("w-[200px] justify-start text-left font-normal", !dfcDataInicio && "text-muted-foreground")}>
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {dfcDataInicio ? format(dfcDataInicio, "dd/MM/yyyy") : "Selecionar data"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dfcDataInicio || undefined}
-                          onSelect={(date) => setDfcDataInicio(date || null)}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
+                        <Calendar mode="single" selected={dfcDataInicio || undefined} onSelect={date => setDfcDataInicio(date || null)} initialFocus className="pointer-events-auto" />
                       </PopoverContent>
                     </Popover>
                   </div>
@@ -1058,25 +1018,13 @@ export default function DFC() {
                     <Label>Data Fim:</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-[200px] justify-start text-left font-normal",
-                            !dfcDataFim && "text-muted-foreground"
-                          )}
-                        >
+                        <Button variant="outline" className={cn("w-[200px] justify-start text-left font-normal", !dfcDataFim && "text-muted-foreground")}>
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {dfcDataFim ? format(dfcDataFim, "dd/MM/yyyy") : "Selecionar data"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dfcDataFim || undefined}
-                          onSelect={(date) => setDfcDataFim(date || null)}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
+                        <Calendar mode="single" selected={dfcDataFim || undefined} onSelect={date => setDfcDataFim(date || null)} initialFocus className="pointer-events-auto" />
                       </PopoverContent>
                     </Popover>
                   </div>
@@ -1093,15 +1041,11 @@ export default function DFC() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {dfcData.map((item, index) => (
-                      <TableRow key={`dfc-${index}`} className={getDfcRowStyle(item.tipo)}>
+                    {dfcData.map((item, index) => <TableRow key={`dfc-${index}`} className={getDfcRowStyle(item.tipo)}>
                         <TableCell className="text-sm text-muted-foreground">
                           {item.codigo || ''}
                         </TableCell>
-                        <TableCell className={cn(
-                          item.nivel === 1 && "pl-6",
-                          item.nivel === 2 && "pl-12"
-                        )}>
+                        <TableCell className={cn(item.nivel === 1 && "pl-6", item.nivel === 2 && "pl-12")}>
                           {item.conta}
                         </TableCell>
                         <TableCell className={cn("text-right", getDfcValueStyle(item.valor, item.tipo))}>
@@ -1110,94 +1054,78 @@ export default function DFC() {
                         <TableCell className="text-right text-muted-foreground">
                           {item.percentual.toFixed(1)}%
                         </TableCell>
-                      </TableRow>
-                    ))}
+                      </TableRow>)}
                   </TableBody>
                 </Table>
 
                 <div className="flex justify-end gap-2 pt-4 border-t">
                   <Button variant="outline" size="sm" onClick={() => {
-                    try {
-                      const doc = new jsPDF();
-                      const dataInicio = dfcDataInicio ? format(dfcDataInicio, "dd/MM/yyyy") : "Não definida";
-                      const dataFim = dfcDataFim ? format(dfcDataFim, "dd/MM/yyyy") : "Não definida";
-                      
-                      // Título
-                      doc.setFontSize(16);
-                      doc.text("Demonstracao Detalhada do Fluxo de Caixa", 20, 20);
-                      
-                      // Período
-                      doc.setFontSize(10);
-                      doc.text(`Periodo: ${dataInicio} a ${dataFim}`, 20, 30);
-                      
-                      // Receitas Operacionais
-                      doc.setFontSize(12);
-                      doc.text("Demonstracao Detalhada do Fluxo de Caixa", 20, 45);
-                      doc.setFontSize(10);
-                      let y = 55;
-                      
-                      dfcData.forEach(item => {
-                        const valor = formatCurrency(item.valor);
-                        const percentual = item.percentual.toFixed(1) + "%";
-                        const indent = item.nivel * 5;
-                        
-                        doc.text(`${item.codigo || ''} ${item.conta}`, 20 + indent, y);
-                        doc.text(valor, 120, y);
-                        doc.text(percentual, 170, y);
-                        y += 8;
-                        
-                        if (y > 270) {
-                          doc.addPage();
-                          y = 20;
-                        }
-                      });
-                      
-                      doc.save(`DFC_${dataInicio.replace(/\//g, "-")}_${dataFim.replace(/\//g, "-")}.pdf`);
-                      toast.success("PDF exportado com sucesso!");
-                    } catch (error) {
-                      console.error("Erro ao exportar PDF:", error);
-                      toast.error("Erro ao exportar PDF");
-                    }
-                  }}>
+                  try {
+                    const doc = new jsPDF();
+                    const dataInicio = dfcDataInicio ? format(dfcDataInicio, "dd/MM/yyyy") : "Não definida";
+                    const dataFim = dfcDataFim ? format(dfcDataFim, "dd/MM/yyyy") : "Não definida";
+
+                    // Título
+                    doc.setFontSize(16);
+                    doc.text("Demonstracao Detalhada do Fluxo de Caixa", 20, 20);
+
+                    // Período
+                    doc.setFontSize(10);
+                    doc.text(`Periodo: ${dataInicio} a ${dataFim}`, 20, 30);
+
+                    // Receitas Operacionais
+                    doc.setFontSize(12);
+                    doc.text("Demonstracao Detalhada do Fluxo de Caixa", 20, 45);
+                    doc.setFontSize(10);
+                    let y = 55;
+                    dfcData.forEach(item => {
+                      const valor = formatCurrency(item.valor);
+                      const percentual = item.percentual.toFixed(1) + "%";
+                      const indent = item.nivel * 5;
+                      doc.text(`${item.codigo || ''} ${item.conta}`, 20 + indent, y);
+                      doc.text(valor, 120, y);
+                      doc.text(percentual, 170, y);
+                      y += 8;
+                      if (y > 270) {
+                        doc.addPage();
+                        y = 20;
+                      }
+                    });
+                    doc.save(`DFC_${dataInicio.replace(/\//g, "-")}_${dataFim.replace(/\//g, "-")}.pdf`);
+                    toast.success("PDF exportado com sucesso!");
+                  } catch (error) {
+                    console.error("Erro ao exportar PDF:", error);
+                    toast.error("Erro ao exportar PDF");
+                  }
+                }}>
                     <FileDown className="h-4 w-4 mr-2" />PDF
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => {
-                    try {
-                      const dataInicio = dfcDataInicio ? format(dfcDataInicio, "dd/MM/yyyy") : "Não definida";
-                      const dataFim = dfcDataFim ? format(dfcDataFim, "dd/MM/yyyy") : "Não definida";
-                      
-                      // Preparar dados para Excel
-                      const dados: any[] = [
-                        ["Demonstração Detalhada do Fluxo de Caixa"],
-                        [`Período: ${dataInicio} a ${dataFim}`],
-                        [],
-                        ["Código", "Conta", "Valor", "% da Receita"],
-                        []
-                      ];
-                      
-                      // Adicionar todos os itens do DFC
-                      dfcData.forEach(item => {
-                        dados.push([
-                          item.codigo || '',
-                          item.conta,
-                          item.valor,
-                          item.percentual.toFixed(1) + "%"
-                        ]);
-                      });
-                      
-                      // Criar planilha
-                      const ws = XLSX.utils.aoa_to_sheet(dados);
-                      const wb = XLSX.utils.book_new();
-                      XLSX.utils.book_append_sheet(wb, ws, "DFC");
-                      
-                      // Salvar arquivo
-                      XLSX.writeFile(wb, `DFC_${dataInicio.replace(/\//g, "-")}_${dataFim.replace(/\//g, "-")}.xlsx`);
-                      toast.success("Excel exportado com sucesso!");
-                    } catch (error) {
-                      console.error("Erro ao exportar Excel:", error);
-                      toast.error("Erro ao exportar Excel");
-                    }
-                  }}>
+                  try {
+                    const dataInicio = dfcDataInicio ? format(dfcDataInicio, "dd/MM/yyyy") : "Não definida";
+                    const dataFim = dfcDataFim ? format(dfcDataFim, "dd/MM/yyyy") : "Não definida";
+
+                    // Preparar dados para Excel
+                    const dados: any[] = [["Demonstração Detalhada do Fluxo de Caixa"], [`Período: ${dataInicio} a ${dataFim}`], [], ["Código", "Conta", "Valor", "% da Receita"], []];
+
+                    // Adicionar todos os itens do DFC
+                    dfcData.forEach(item => {
+                      dados.push([item.codigo || '', item.conta, item.valor, item.percentual.toFixed(1) + "%"]);
+                    });
+
+                    // Criar planilha
+                    const ws = XLSX.utils.aoa_to_sheet(dados);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "DFC");
+
+                    // Salvar arquivo
+                    XLSX.writeFile(wb, `DFC_${dataInicio.replace(/\//g, "-")}_${dataFim.replace(/\//g, "-")}.xlsx`);
+                    toast.success("Excel exportado com sucesso!");
+                  } catch (error) {
+                    console.error("Erro ao exportar Excel:", error);
+                    toast.error("Erro ao exportar Excel");
+                  }
+                }}>
                     <FileDown className="h-4 w-4 mr-2" />Excel
                   </Button>
                 </div>
@@ -1225,21 +1153,13 @@ export default function DFC() {
                     </TableRow>
                     <TableRow className="border-t-2 bg-muted/50">
                       <TableCell className="font-bold">Variação Líquida do Caixa</TableCell>
-                      <TableCell className={`text-right font-bold ${
-                        (entradasMesAtual - saidasMesAtual) >= 0 
-                          ? 'text-green-600' 
-                          : 'text-destructive'
-                      }`}>
+                      <TableCell className={`text-right font-bold ${entradasMesAtual - saidasMesAtual >= 0 ? 'text-green-600' : 'text-destructive'}`}>
                         {formatCurrency(entradasMesAtual - saidasMesAtual)}
                       </TableCell>
                     </TableRow>
                     <TableRow className="border-t-2 bg-muted/50">
                       <TableCell className="font-bold">Saldo Final de Caixa</TableCell>
-                      <TableCell className={`text-right font-bold ${
-                        saldoTotal >= 0 
-                          ? 'text-green-600' 
-                          : 'text-destructive'
-                      }`}>
+                      <TableCell className={`text-right font-bold ${saldoTotal >= 0 ? 'text-green-600' : 'text-destructive'}`}>
                         {formatCurrency(saldoTotal)}
                       </TableCell>
                     </TableRow>
@@ -1253,7 +1173,11 @@ export default function DFC() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between mb-4">
-                  <CardTitle>Extrato do Dia - {new Date(2024, 7, 29).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</CardTitle>
+                  <CardTitle>Extrato do Dia - {new Date(2024, 7, 29).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                  })}</CardTitle>
                   <div className="flex gap-2">
                     <Select value={contaSelecionada} onValueChange={setContaSelecionada}>
                       <SelectTrigger className="w-[280px]">
@@ -1261,9 +1185,7 @@ export default function DFC() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="todas">Todas as contas</SelectItem>
-                        {contasBancarias.map(conta => (
-                          <SelectItem key={conta.id} value={conta.id}>{conta.nome}</SelectItem>
-                        ))}
+                        {contasBancarias.map(conta => <SelectItem key={conta.id} value={conta.id}>{conta.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     
@@ -1295,11 +1217,7 @@ export default function DFC() {
 
                     <Dialog open={isLancamentoDialogOpen} onOpenChange={setIsLancamentoDialogOpen}>
                       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 flex flex-col">
-                        <div className={cn(
-                          "h-4 w-full transition-colors duration-300 flex-shrink-0",
-                          lancamentoForm.tipo === 'entrada' ? "bg-green-500" : 
-                          lancamentoForm.tipo === 'transferencia' ? "bg-blue-500" : "bg-red-500"
-                        )} />
+                        <div className={cn("h-4 w-full transition-colors duration-300 flex-shrink-0", lancamentoForm.tipo === 'entrada' ? "bg-green-500" : lancamentoForm.tipo === 'transferencia' ? "bg-blue-500" : "bg-red-500")} />
                         <div className="p-6 overflow-y-auto flex-1">
                           <DialogHeader>
                             <DialogTitle>Novo Lançamento</DialogTitle>
@@ -1309,7 +1227,10 @@ export default function DFC() {
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label>Tipo de Lançamento</Label>
-                              <Select value={lancamentoForm.tipo} onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, tipo: value }))}>
+                              <Select value={lancamentoForm.tipo} onValueChange={value => setLancamentoForm(prev => ({
+                                ...prev,
+                                tipo: value
+                              }))}>
                                 <SelectTrigger>
                                   <SelectValue />
                                 </SelectTrigger>
@@ -1322,12 +1243,10 @@ export default function DFC() {
                             </div>
                             <div className="space-y-2">
                               <Label>Valor</Label>
-                              <Input
-                                type="number"
-                                placeholder="0,00"
-                                value={lancamentoForm.valor}
-                                onChange={(e) => setLancamentoForm(prev => ({ ...prev, valor: e.target.value }))}
-                              />
+                              <Input type="number" placeholder="0,00" value={lancamentoForm.valor} onChange={e => setLancamentoForm(prev => ({
+                                ...prev,
+                                valor: e.target.value
+                              }))} />
                             </div>
                           </div>
 
@@ -1341,24 +1260,20 @@ export default function DFC() {
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                  mode="single"
-                                  selected={lancamentoForm.dataEmissao}
-                                  onSelect={(date) => date && setLancamentoForm(prev => ({ ...prev, dataEmissao: date }))}
-                                  initialFocus
-                                  className={cn("p-3 pointer-events-auto")}
-                                />
+                                <Calendar mode="single" selected={lancamentoForm.dataEmissao} onSelect={date => date && setLancamentoForm(prev => ({
+                                  ...prev,
+                                  dataEmissao: date
+                                }))} initialFocus className={cn("p-3 pointer-events-auto")} />
                               </PopoverContent>
                             </Popover>
                           </div>
 
                           <div className="space-y-2">
                             <Label>Descrição</Label>
-                            <Textarea
-                              placeholder="Descrição do lançamento"
-                              value={lancamentoForm.descricao}
-                              onChange={(e) => setLancamentoForm(prev => ({ ...prev, descricao: e.target.value }))}
-                            />
+                            <Textarea placeholder="Descrição do lançamento" value={lancamentoForm.descricao} onChange={e => setLancamentoForm(prev => ({
+                              ...prev,
+                              descricao: e.target.value
+                            }))} />
                           </div>
 
                           <div className="grid grid-cols-2 gap-4">
@@ -1366,15 +1281,8 @@ export default function DFC() {
                               <Label>Categoria</Label>
                               <Popover open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
                                 <PopoverTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={openCategoriaCombobox}
-                                    className="w-full justify-between"
-                                  >
-                                    {lancamentoForm.categoria
-                                      ? getCategoriasForSelect().find((cat) => cat.value === lancamentoForm.categoria)?.label
-                                      : "Selecionar categoria"}
+                                  <Button variant="outline" role="combobox" aria-expanded={openCategoriaCombobox} className="w-full justify-between">
+                                    {lancamentoForm.categoria ? getCategoriasForSelect().find(cat => cat.value === lancamentoForm.categoria)?.label : "Selecionar categoria"}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                   </Button>
                                 </PopoverTrigger>
@@ -1384,36 +1292,26 @@ export default function DFC() {
                                     <CommandList>
                                       <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
                                       <CommandGroup>
-                                        {getCategoriasForSelect().map((categoria) => (
-                                          <CommandItem
-                                            key={categoria.value}
-                                            value={categoria.label}
-                                            onSelect={() => {
-                                              setLancamentoForm(prev => ({ ...prev, categoria: categoria.value }));
-                                              setOpenCategoriaCombobox(false);
-                                            }}
-                                          >
-                                            <Check
-                                              className={cn(
-                                                "mr-2 h-4 w-4",
-                                                lancamentoForm.categoria === categoria.value ? "opacity-100" : "opacity-0"
-                                              )}
-                                            />
+                                        {getCategoriasForSelect().map(categoria => <CommandItem key={categoria.value} value={categoria.label} onSelect={() => {
+                                          setLancamentoForm(prev => ({
+                                            ...prev,
+                                            categoria: categoria.value
+                                          }));
+                                          setOpenCategoriaCombobox(false);
+                                        }}>
+                                            <Check className={cn("mr-2 h-4 w-4", lancamentoForm.categoria === categoria.value ? "opacity-100" : "opacity-0")} />
                                             {categoria.label}
-                                          </CommandItem>
-                                        ))}
+                                          </CommandItem>)}
                                       </CommandGroup>
                                     </CommandList>
                                   </Command>
                                 </PopoverContent>
                               </Popover>
-                              <Button 
-                                type="button"
-                                variant="outline" 
-                                size="sm" 
-                                className="w-full"
-                                onClick={() => navigate('/cadastros', { state: { activeTab: 'categorias' } })}
-                              >
+                              <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => navigate('/cadastros', {
+                                state: {
+                                  activeTab: 'categorias'
+                                }
+                              })}>
                                 <Plus className="h-4 w-4 mr-2" />
                                 Cadastrar Nova Categoria
                               </Button>
@@ -1422,66 +1320,52 @@ export default function DFC() {
                               <Label>
                                 {lancamentoForm.tipo === 'transferencia' ? 'Conta Bancária de Origem' : 'Conta Bancária'}
                               </Label>
-                              <Select value={lancamentoForm.conta} onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, conta: value }))}>
+                              <Select value={lancamentoForm.conta} onValueChange={value => setLancamentoForm(prev => ({
+                                ...prev,
+                                conta: value
+                              }))}>
                                 <SelectTrigger>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {contasBancarias.map(conta => (
-                                    <SelectItem key={conta.id} value={conta.id}>{conta.nome}</SelectItem>
-                                  ))}
+                                  {contasBancarias.map(conta => <SelectItem key={conta.id} value={conta.id}>{conta.nome}</SelectItem>)}
                                 </SelectContent>
                               </Select>
                             </div>
                           </div>
 
                           {/* Campo condicional para Conta de Destino */}
-                          {lancamentoForm.tipo === 'transferencia' && (
-                            <div className="space-y-2">
+                          {lancamentoForm.tipo === 'transferencia' && <div className="space-y-2">
                               <Label>Conta Bancária de Destino</Label>
-                              <Select 
-                                value={lancamentoForm.contaDestino} 
-                                onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, contaDestino: value }))}
-                              >
+                              <Select value={lancamentoForm.contaDestino} onValueChange={value => setLancamentoForm(prev => ({
+                              ...prev,
+                              contaDestino: value
+                            }))}>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Selecione a conta de destino" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {contasBancarias
-                                    .filter(conta => conta.id !== lancamentoForm.conta)
-                                    .map((conta) => (
-                                      <SelectItem key={conta.id} value={conta.id}>
+                                  {contasBancarias.filter(conta => conta.id !== lancamentoForm.conta).map(conta => <SelectItem key={conta.id} value={conta.id}>
                                         {conta.nome}
-                                      </SelectItem>
-                                    ))}
+                                      </SelectItem>)}
                                 </SelectContent>
                               </Select>
-                            </div>
-                          )}
+                            </div>}
 
                           <div className="space-y-2">
                             <Label>Fornecedor/Cliente</Label>
                             <Popover open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
                               <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  aria-expanded={openFornecedorCombobox}
-                                  className="w-full justify-between"
-                                >
-                                  {lancamentoForm.fornecedor
-                                    ? (() => {
-                                        const item = fornecedoresClientes.find((f) => f.id === lancamentoForm.fornecedor);
-                                        return item ? (
-                                          <div className="flex items-center gap-2">
+                                <Button variant="outline" role="combobox" aria-expanded={openFornecedorCombobox} className="w-full justify-between">
+                                  {lancamentoForm.fornecedor ? (() => {
+                                    const item = fornecedoresClientes.find(f => f.id === lancamentoForm.fornecedor);
+                                    return item ? <div className="flex items-center gap-2">
                                             <Badge variant={item.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
                                               {item.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
                                             </Badge>
                                             {item.nome}
-                                          </div>
-                                        ) : "Selecione um fornecedor/cliente";
-                                      })()
-                                    : "Selecione um fornecedor/cliente"}
+                                          </div> : "Selecione um fornecedor/cliente";
+                                  })() : "Selecione um fornecedor/cliente"}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
@@ -1491,43 +1375,33 @@ export default function DFC() {
                                   <CommandList>
                                     <CommandEmpty>Nenhum fornecedor/cliente encontrado.</CommandEmpty>
                                     <CommandGroup>
-                                      {fornecedoresClientes.map((item) => (
-                                        <CommandItem
-                                          key={item.id}
-                                          value={item.nome}
-                                          onSelect={() => {
-                                            setLancamentoForm(prev => ({ ...prev, fornecedor: item.id }));
-                                            setOpenFornecedorCombobox(false);
-                                          }}
-                                        >
-                                          <Check
-                                            className={cn(
-                                              "mr-2 h-4 w-4",
-                                              lancamentoForm.fornecedor === item.id ? "opacity-100" : "opacity-0"
-                                            )}
-                                          />
+                                      {fornecedoresClientes.map(item => <CommandItem key={item.id} value={item.nome} onSelect={() => {
+                                        setLancamentoForm(prev => ({
+                                          ...prev,
+                                          fornecedor: item.id
+                                        }));
+                                        setOpenFornecedorCombobox(false);
+                                      }}>
+                                          <Check className={cn("mr-2 h-4 w-4", lancamentoForm.fornecedor === item.id ? "opacity-100" : "opacity-0")} />
                                           <div className="flex items-center gap-2">
                                             <Badge variant={item.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
                                               {item.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
                                             </Badge>
                                             {item.nome}
                                           </div>
-                                        </CommandItem>
-                                      ))}
+                                        </CommandItem>)}
                                     </CommandGroup>
                                   </CommandList>
                                 </Command>
                               </PopoverContent>
                             </Popover>
-                            <Button 
-                              type="button"
-                              variant="outline" 
-                              size="sm" 
-                              className="w-full"
-                              onClick={() => {
-                                navigate('/cadastros', { state: { activeTab: lancamentoForm.tipo === 'entrada' ? 'clientes' : 'fornecedores' } });
-                              }}
-                            >
+                            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => {
+                              navigate('/cadastros', {
+                                state: {
+                                  activeTab: lancamentoForm.tipo === 'entrada' ? 'clientes' : 'fornecedores'
+                                }
+                              });
+                            }}>
                               <Plus className="h-4 w-4 mr-2" />
                               Cadastrar Novo
                             </Button>
@@ -1536,13 +1410,10 @@ export default function DFC() {
                           {/* Forma de Pagamento */}
                           <div className="space-y-2">
                             <Label>Forma de Pagamento</Label>
-                            <Select 
-                              value={lancamentoForm.formaPagamento} 
-                              onValueChange={(value) => setLancamentoForm(prev => ({ 
-                                ...prev, 
-                                formaPagamento: value as 'a_vista' | 'parcelado' | 'recorrente'
-                              }))}
-                            >
+                            <Select value={lancamentoForm.formaPagamento} onValueChange={value => setLancamentoForm(prev => ({
+                              ...prev,
+                              formaPagamento: value as 'a_vista' | 'parcelado' | 'recorrente'
+                            }))}>
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
@@ -1555,30 +1426,21 @@ export default function DFC() {
                           </div>
 
                           {/* Campos condicionais para PARCELADO */}
-                          {lancamentoForm.formaPagamento === 'parcelado' && (
-                            <>
+                          {lancamentoForm.formaPagamento === 'parcelado' && <>
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                   <Label>Número de Parcelas</Label>
-                                  <Input
-                                    type="number"
-                                    min="2"
-                                    value={lancamentoForm.numeroParcelas}
-                                    onChange={(e) => setLancamentoForm(prev => ({ 
-                                      ...prev, 
-                                      numeroParcelas: parseInt(e.target.value) || 2 
-                                    }))}
-                                  />
+                                  <Input type="number" min="2" value={lancamentoForm.numeroParcelas} onChange={e => setLancamentoForm(prev => ({
+                                  ...prev,
+                                  numeroParcelas: parseInt(e.target.value) || 2
+                                }))} />
                                 </div>
                                 <div className="space-y-2">
                                   <Label>Frequência</Label>
-                                  <Select 
-                                    value={lancamentoForm.frequenciaRepeticao} 
-                                    onValueChange={(value) => setLancamentoForm(prev => ({ 
-                                      ...prev, 
-                                      frequenciaRepeticao: value as 'semanal' | 'quinzenal' | 'mensal' | 'anual'
-                                    }))}
-                                  >
+                                  <Select value={lancamentoForm.frequenciaRepeticao} onValueChange={value => setLancamentoForm(prev => ({
+                                  ...prev,
+                                  frequenciaRepeticao: value as 'semanal' | 'quinzenal' | 'mensal' | 'anual'
+                                }))}>
                                     <SelectTrigger>
                                       <SelectValue />
                                     </SelectTrigger>
@@ -1593,19 +1455,13 @@ export default function DFC() {
                               </div>
 
                               {/* Prévia das Parcelas */}
-                              {lancamentoForm.valor && lancamentoForm.numeroParcelas > 0 && datasParcelasCustom.length > 0 && (
-                                <div className="space-y-2 p-4 bg-muted/30 rounded-lg border">
+                              {lancamentoForm.valor && lancamentoForm.numeroParcelas > 0 && datasParcelasCustom.length > 0 && <div className="space-y-2 p-4 bg-muted/30 rounded-lg border">
                                   <Label className="text-sm font-medium">Prévia das Parcelas (clique na data para editar)</Label>
                                   <div className="space-y-2 max-h-64 overflow-y-auto">
                                     {(() => {
-                                      const valorTotal = parseFloat(lancamentoForm.valor);
-                                      const valorParcela = valorTotal / lancamentoForm.numeroParcelas;
-
-                                      return datasParcelasCustom.map((data, index) => (
-                                        <div 
-                                          key={index}
-                                          className="flex items-center justify-between p-2 bg-background rounded border text-sm gap-2"
-                                        >
+                                  const valorTotal = parseFloat(lancamentoForm.valor);
+                                  const valorParcela = valorTotal / lancamentoForm.numeroParcelas;
+                                  return datasParcelasCustom.map((data, index) => <div key={index} className="flex items-center justify-between p-2 bg-background rounded border text-sm gap-2">
                                           <span className="font-medium whitespace-nowrap">
                                             Parcela {index + 1}/{lancamentoForm.numeroParcelas}
                                           </span>
@@ -1614,64 +1470,42 @@ export default function DFC() {
                                           </span>
                                           <Popover>
                                             <PopoverTrigger asChild>
-                                              <Button 
-                                                variant="ghost" 
-                                                size="sm"
-                                                className="h-8 text-muted-foreground hover:text-foreground"
-                                              >
+                                              <Button variant="ghost" size="sm" className="h-8 text-muted-foreground hover:text-foreground">
                                                 <CalendarIcon className="mr-2 h-3 w-3" />
                                                 {format(data, "dd/MM/yyyy")}
                                               </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-auto p-0" align="end">
-                                              <Calendar
-                                                mode="single"
-                                                selected={data}
-                                                onSelect={(novaData) => {
-                                                  if (novaData) {
-                                                    const novasDatas = [...datasParcelasCustom];
-                                                    novasDatas[index] = novaData;
-                                                    setDatasParcelasCustom(novasDatas);
-                                                  }
-                                                }}
-                                                initialFocus
-                                                className={cn("p-3 pointer-events-auto")}
-                                              />
+                                              <Calendar mode="single" selected={data} onSelect={novaData => {
+                                          if (novaData) {
+                                            const novasDatas = [...datasParcelasCustom];
+                                            novasDatas[index] = novaData;
+                                            setDatasParcelasCustom(novasDatas);
+                                          }
+                                        }} initialFocus className={cn("p-3 pointer-events-auto")} />
                                             </PopoverContent>
                                           </Popover>
-                                        </div>
-                                      ));
-                                    })()}
+                                        </div>);
+                                })()}
                                   </div>
-                                </div>
-                              )}
-                            </>
-                          )}
+                                </div>}
+                            </>}
 
                           {/* Campos condicionais para RECORRENTE */}
-                          {lancamentoForm.formaPagamento === 'recorrente' && (
-                            <div className="grid grid-cols-2 gap-4">
+                          {lancamentoForm.formaPagamento === 'recorrente' && <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
                                 <Label>Meses de Recorrência</Label>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  value={lancamentoForm.mesesRecorrencia}
-                                  onChange={(e) => setLancamentoForm(prev => ({ 
-                                    ...prev, 
-                                    mesesRecorrencia: parseInt(e.target.value) || 12 
-                                  }))}
-                                />
+                                <Input type="number" min="1" value={lancamentoForm.mesesRecorrencia} onChange={e => setLancamentoForm(prev => ({
+                                ...prev,
+                                mesesRecorrencia: parseInt(e.target.value) || 12
+                              }))} />
                               </div>
                               <div className="space-y-2">
                                 <Label>Frequência</Label>
-                                <Select 
-                                  value={lancamentoForm.frequenciaRepeticao} 
-                                  onValueChange={(value) => setLancamentoForm(prev => ({ 
-                                    ...prev, 
-                                    frequenciaRepeticao: value as 'semanal' | 'quinzenal' | 'mensal' | 'anual'
-                                  }))}
-                                >
+                                <Select value={lancamentoForm.frequenciaRepeticao} onValueChange={value => setLancamentoForm(prev => ({
+                                ...prev,
+                                frequenciaRepeticao: value as 'semanal' | 'quinzenal' | 'mensal' | 'anual'
+                              }))}>
                                   <SelectTrigger>
                                     <SelectValue />
                                   </SelectTrigger>
@@ -1683,8 +1517,7 @@ export default function DFC() {
                                   </SelectContent>
                                 </Select>
                               </div>
-                            </div>
-                          )}
+                            </div>}
 
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
@@ -1697,26 +1530,22 @@ export default function DFC() {
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
-                                  <Calendar
-                                    mode="single"
-                                    selected={lancamentoForm.dataEsperada}
-                                    onSelect={(date) => date && setLancamentoForm(prev => ({ ...prev, dataEsperada: date }))}
-                                    initialFocus
-                                  />
+                                  <Calendar mode="single" selected={lancamentoForm.dataEsperada} onSelect={date => date && setLancamentoForm(prev => ({
+                                    ...prev,
+                                    dataEsperada: date
+                                  }))} initialFocus />
                                 </PopoverContent>
                               </Popover>
                             </div>
                             <div className="space-y-2">
                               <div className="flex items-center space-x-2 mb-2">
-                                <Checkbox
-                                  id="paga"
-                                  checked={lancamentoForm.paga}
-                                  onCheckedChange={(checked) => setLancamentoForm(prev => ({ ...prev, paga: checked as boolean }))}
-                                />
+                                <Checkbox id="paga" checked={lancamentoForm.paga} onCheckedChange={checked => setLancamentoForm(prev => ({
+                                  ...prev,
+                                  paga: checked as boolean
+                                }))} />
                                 <Label htmlFor="paga" className="cursor-pointer">Já foi paga/recebida?</Label>
                               </div>
-                              {lancamentoForm.paga && (
-                                <Popover>
+                              {lancamentoForm.paga && <Popover>
                                   <PopoverTrigger asChild>
                                     <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !lancamentoForm.dataRealizada && "text-muted-foreground")}>
                                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1724,15 +1553,12 @@ export default function DFC() {
                                     </Button>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                      mode="single"
-                                      selected={lancamentoForm.dataRealizada}
-                                      onSelect={(date) => date && setLancamentoForm(prev => ({ ...prev, dataRealizada: date }))}
-                                      initialFocus
-                                    />
+                                    <Calendar mode="single" selected={lancamentoForm.dataRealizada} onSelect={date => date && setLancamentoForm(prev => ({
+                                    ...prev,
+                                    dataRealizada: date
+                                  }))} initialFocus />
                                   </PopoverContent>
-                                </Popover>
-                              )}
+                                </Popover>}
                             </div>
                           </div>
                           <div className="flex justify-end gap-2 pt-4">
@@ -1751,17 +1577,7 @@ export default function DFC() {
                     <Label className="text-sm font-medium">Colunas Visíveis</Label>
                     {colunasVisiveisExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </div>
-                  {colunasVisiveisExpanded && (
-                    <MultipleSelector
-                      value={selectedExtratoColumns}
-                      onChange={setSelectedExtratoColumns}
-                      options={extratoColumnOptions}
-                      placeholder="Selecione as colunas para exibir"
-                      emptyIndicator={
-                        <p className="text-center text-sm text-muted-foreground">Nenhuma coluna encontrada.</p>
-                      }
-                    />
-                  )}
+                  {colunasVisiveisExpanded && <MultipleSelector value={selectedExtratoColumns} onChange={setSelectedExtratoColumns} options={extratoColumnOptions} placeholder="Selecione as colunas para exibir" emptyIndicator={<p className="text-center text-sm text-muted-foreground">Nenhuma coluna encontrada.</p>} />}
                 </div>
 
                 <div className="mb-4">
@@ -1769,8 +1585,7 @@ export default function DFC() {
                     <Label className="text-sm font-medium">Filtros</Label>
                     {filtrosExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </div>
-                  {filtrosExpanded && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-muted/30">
+                  {filtrosExpanded && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-muted/30">
                       <div className="space-y-2">
                         <Label className="text-xs">Data Início</Label>
                         <Popover>
@@ -1781,12 +1596,10 @@ export default function DFC() {
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={filtrosExtrato.dataInicio || undefined}
-                              onSelect={(date) => setFiltrosExtrato(prev => ({ ...prev, dataInicio: date || null }))}
-                              initialFocus
-                            />
+                            <Calendar mode="single" selected={filtrosExtrato.dataInicio || undefined} onSelect={date => setFiltrosExtrato(prev => ({
+                          ...prev,
+                          dataInicio: date || null
+                        }))} initialFocus />
                           </PopoverContent>
                         </Popover>
                       </div>
@@ -1801,19 +1614,20 @@ export default function DFC() {
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={filtrosExtrato.dataFim || undefined}
-                              onSelect={(date) => setFiltrosExtrato(prev => ({ ...prev, dataFim: date || null }))}
-                              initialFocus
-                            />
+                            <Calendar mode="single" selected={filtrosExtrato.dataFim || undefined} onSelect={date => setFiltrosExtrato(prev => ({
+                          ...prev,
+                          dataFim: date || null
+                        }))} initialFocus />
                           </PopoverContent>
                         </Popover>
                       </div>
 
                       <div className="space-y-2">
                         <Label className="text-xs">Tipo</Label>
-                        <Select value={filtrosExtrato.tipo} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, tipo: value }))}>
+                        <Select value={filtrosExtrato.tipo} onValueChange={value => setFiltrosExtrato(prev => ({
+                      ...prev,
+                      tipo: value
+                    }))}>
                           <SelectTrigger className="h-9">
                             <SelectValue />
                           </SelectTrigger>
@@ -1828,52 +1642,58 @@ export default function DFC() {
 
                       <div className="space-y-2">
                         <Label className="text-xs">Conta</Label>
-                        <Select value={filtrosExtrato.conta} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, conta: value }))}>
+                        <Select value={filtrosExtrato.conta} onValueChange={value => setFiltrosExtrato(prev => ({
+                      ...prev,
+                      conta: value
+                    }))}>
                           <SelectTrigger className="h-9">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="todas">Todas</SelectItem>
-                            {contasBancarias.map(conta => (
-                              <SelectItem key={conta.id} value={conta.id}>{conta.nome.split(' - ')[1]}</SelectItem>
-                            ))}
+                            {contasBancarias.map(conta => <SelectItem key={conta.id} value={conta.id}>{conta.nome.split(' - ')[1]}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="space-y-2">
                         <Label className="text-xs">Categoria</Label>
-                        <Select value={filtrosExtrato.categoria} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, categoria: value }))}>
+                        <Select value={filtrosExtrato.categoria} onValueChange={value => setFiltrosExtrato(prev => ({
+                      ...prev,
+                      categoria: value
+                    }))}>
                           <SelectTrigger className="h-9">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="todas">Todas</SelectItem>
-                            {getCategoriasForSelect().map(cat => (
-                              <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                            ))}
+                            {getCategoriasForSelect().map(cat => <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="space-y-2">
                         <Label className="text-xs">Fornecedor/Cliente</Label>
-                        <Select value={filtrosExtrato.fornecedor} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, fornecedor: value }))}>
+                        <Select value={filtrosExtrato.fornecedor} onValueChange={value => setFiltrosExtrato(prev => ({
+                      ...prev,
+                      fornecedor: value
+                    }))}>
                           <SelectTrigger className="h-9">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="todos">Todos</SelectItem>
-                            {fornecedoresClientes.map(f => (
-                              <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
-                            ))}
+                            {fornecedoresClientes.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="space-y-2">
                         <Label className="text-xs">Status</Label>
-                        <Select value={filtrosExtrato.status} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, status: value }))}>
+                        <Select value={filtrosExtrato.status} onValueChange={value => setFiltrosExtrato(prev => ({
+                      ...prev,
+                      status: value
+                    }))}>
                           <SelectTrigger className="h-9">
                             <SelectValue />
                           </SelectTrigger>
@@ -1888,34 +1708,26 @@ export default function DFC() {
 
                       <div className="space-y-2">
                         <Label className="text-xs">Descrição</Label>
-                        <Input
-                          placeholder="Buscar por descrição"
-                          value={filtrosExtrato.descricao}
-                          onChange={(e) => setFiltrosExtrato(prev => ({ ...prev, descricao: e.target.value }))}
-                          className="h-9"
-                        />
+                        <Input placeholder="Buscar por descrição" value={filtrosExtrato.descricao} onChange={e => setFiltrosExtrato(prev => ({
+                      ...prev,
+                      descricao: e.target.value
+                    }))} className="h-9" />
                       </div>
 
                       <div className="space-y-2">
                         <Label className="text-xs">Valor Mínimo</Label>
-                        <Input
-                          type="number"
-                          placeholder="R$ 0,00"
-                          value={filtrosExtrato.valorMinimo}
-                          onChange={(e) => setFiltrosExtrato(prev => ({ ...prev, valorMinimo: e.target.value }))}
-                          className="h-9"
-                        />
+                        <Input type="number" placeholder="R$ 0,00" value={filtrosExtrato.valorMinimo} onChange={e => setFiltrosExtrato(prev => ({
+                      ...prev,
+                      valorMinimo: e.target.value
+                    }))} className="h-9" />
                       </div>
 
                       <div className="space-y-2">
                         <Label className="text-xs">Valor Máximo</Label>
-                        <Input
-                          type="number"
-                          placeholder="R$ 0,00"
-                          value={filtrosExtrato.valorMaximo}
-                          onChange={(e) => setFiltrosExtrato(prev => ({ ...prev, valorMaximo: e.target.value }))}
-                          className="h-9"
-                        />
+                        <Input type="number" placeholder="R$ 0,00" value={filtrosExtrato.valorMaximo} onChange={e => setFiltrosExtrato(prev => ({
+                      ...prev,
+                      valorMaximo: e.target.value
+                    }))} className="h-9" />
                       </div>
 
                        <div className="col-span-full flex gap-2">
@@ -1924,138 +1736,122 @@ export default function DFC() {
                           Limpar Filtros
                         </Button>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </CardHeader>
 
               <CardContent>
                 <div className="flex justify-end gap-2 mb-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const doc = new jsPDF();
-                      
-                      doc.setFontSize(18);
-                      doc.text('Extrato Bancário', 14, 20);
-                      
-                      doc.setFontSize(10);
-                      let y = 30;
-                      
-                      // Informações dos filtros aplicados
-                      if (filtrosExtrato.dataInicio || filtrosExtrato.dataFim) {
-                        doc.text(`Período: ${filtrosExtrato.dataInicio ? format(filtrosExtrato.dataInicio, "dd/MM/yyyy") : "Início"} até ${filtrosExtrato.dataFim ? format(filtrosExtrato.dataFim, "dd/MM/yyyy") : "Atual"}`, 14, y);
-                        y += 6;
-                      }
-                      if (filtrosExtrato.tipo !== 'todos') {
-                        doc.text(`Tipo: ${filtrosExtrato.tipo === 'entrada' ? 'Entrada' : 'Saída'}`, 14, y);
-                        y += 6;
-                      }
-                      if (filtrosExtrato.conta !== 'todas') {
-                        const conta = contasBancarias.find(c => c.id === filtrosExtrato.conta);
-                        doc.text(`Conta: ${conta?.nome || ''}`, 14, y);
-                        y += 6;
-                      }
-                      
-                      y += 5;
-                      
-                      // Cabeçalhos
-                      doc.setFontSize(9);
-                      doc.text('Data', 14, y);
-                      doc.text('Descrição', 40, y);
-                      doc.text('Categoria', 90, y);
-                      doc.text('Valor', 140, y);
-                      doc.text('Status', 170, y);
-                      
-                      y += 5;
-                      doc.line(14, y, 196, y);
-                      y += 5;
-                      
-                      // Dados
-                      extratoFiltrado.forEach((item, index) => {
-                        if (y > 270) {
-                          doc.addPage();
-                          y = 20;
-                        }
-                        
-                        const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
-                        
-                        doc.text(format(item.dataEsperada, "dd/MM/yyyy"), 14, y);
-                        doc.text(item.descricao.substring(0, 25), 40, y);
-                        doc.text(item.categoria.substring(0, 20), 90, y);
-                        doc.text(formatCurrency(item.valor), 140, y);
-                        doc.text(status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo', 170, y);
-                        
-                        y += 6;
-                      });
-                      
-                      // Totais
-                      y += 5;
-                      doc.line(14, y, 196, y);
-                      y += 5;
-                      
-                      const totalEntradas = extratoFiltrado.filter(i => i.tipo === 'entrada').reduce((acc, i) => acc + i.valor, 0);
-                      const totalSaidas = extratoFiltrado.filter(i => i.tipo === 'saida').reduce((acc, i) => acc + i.valor, 0);
-                      
-                      doc.setFontSize(10);
-                      doc.text('Total Entradas:', 14, y);
-                      doc.text(formatCurrency(totalEntradas), 140, y);
-                      y += 6;
-                      doc.text('Total Saídas:', 14, y);
-                      doc.text(formatCurrency(totalSaidas), 140, y);
-                      y += 6;
-                      doc.text('Saldo:', 14, y);
-                      doc.text(formatCurrency(totalEntradas - totalSaidas), 140, y);
-                      
-                      doc.save(`extrato-${format(new Date(), "dd-MM-yyyy")}.pdf`);
-                      toast.success("PDF exportado com sucesso!");
-                    }}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => {
+                  const doc = new jsPDF();
+                  doc.setFontSize(18);
+                  doc.text('Extrato Bancário', 14, 20);
+                  doc.setFontSize(10);
+                  let y = 30;
+
+                  // Informações dos filtros aplicados
+                  if (filtrosExtrato.dataInicio || filtrosExtrato.dataFim) {
+                    doc.text(`Período: ${filtrosExtrato.dataInicio ? format(filtrosExtrato.dataInicio, "dd/MM/yyyy") : "Início"} até ${filtrosExtrato.dataFim ? format(filtrosExtrato.dataFim, "dd/MM/yyyy") : "Atual"}`, 14, y);
+                    y += 6;
+                  }
+                  if (filtrosExtrato.tipo !== 'todos') {
+                    doc.text(`Tipo: ${filtrosExtrato.tipo === 'entrada' ? 'Entrada' : 'Saída'}`, 14, y);
+                    y += 6;
+                  }
+                  if (filtrosExtrato.conta !== 'todas') {
+                    const conta = contasBancarias.find(c => c.id === filtrosExtrato.conta);
+                    doc.text(`Conta: ${conta?.nome || ''}`, 14, y);
+                    y += 6;
+                  }
+                  y += 5;
+
+                  // Cabeçalhos
+                  doc.setFontSize(9);
+                  doc.text('Data', 14, y);
+                  doc.text('Descrição', 40, y);
+                  doc.text('Categoria', 90, y);
+                  doc.text('Valor', 140, y);
+                  doc.text('Status', 170, y);
+                  y += 5;
+                  doc.line(14, y, 196, y);
+                  y += 5;
+
+                  // Dados
+                  extratoFiltrado.forEach((item, index) => {
+                    if (y > 270) {
+                      doc.addPage();
+                      y = 20;
+                    }
+                    const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
+                    doc.text(format(item.dataEsperada, "dd/MM/yyyy"), 14, y);
+                    doc.text(item.descricao.substring(0, 25), 40, y);
+                    doc.text(item.categoria.substring(0, 20), 90, y);
+                    doc.text(formatCurrency(item.valor), 140, y);
+                    doc.text(status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo', 170, y);
+                    y += 6;
+                  });
+
+                  // Totais
+                  y += 5;
+                  doc.line(14, y, 196, y);
+                  y += 5;
+                  const totalEntradas = extratoFiltrado.filter(i => i.tipo === 'entrada').reduce((acc, i) => acc + i.valor, 0);
+                  const totalSaidas = extratoFiltrado.filter(i => i.tipo === 'saida').reduce((acc, i) => acc + i.valor, 0);
+                  doc.setFontSize(10);
+                  doc.text('Total Entradas:', 14, y);
+                  doc.text(formatCurrency(totalEntradas), 140, y);
+                  y += 6;
+                  doc.text('Total Saídas:', 14, y);
+                  doc.text(formatCurrency(totalSaidas), 140, y);
+                  y += 6;
+                  doc.text('Saldo:', 14, y);
+                  doc.text(formatCurrency(totalEntradas - totalSaidas), 140, y);
+                  doc.save(`extrato-${format(new Date(), "dd-MM-yyyy")}.pdf`);
+                  toast.success("PDF exportado com sucesso!");
+                }}>
                     <FileDown className="h-4 w-4 mr-2" />
                     Exportar PDF
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const dadosExcel = extratoFiltrado.map(item => {
-                        const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
-                        const conta = contasBancarias.find(c => c.id === item.conta);
-                        const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor);
-                        
-                        return {
-                          'Data Esperada': format(item.dataEsperada, "dd/MM/yyyy"),
-                          'Data Realizada': item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-',
-                          'Tipo': item.tipo === 'transferencia' ? 'Transferência' : 
-                                  item.tipo === 'entrada' ? 'Entrada' : 'Saída',
-                          'Descrição': item.descricao,
-                          'Categoria': item.categoria,
-                          'Conta': conta?.nome || '-',
-                          'Fornecedor/Cliente': fornecedor?.nome || '-',
-                          'Valor': item.valor,
-                          'Status': status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo'
-                        };
-                      });
-                      
-                      const ws = XLSX.utils.json_to_sheet(dadosExcel);
-                      const wb = XLSX.utils.book_new();
-                      XLSX.utils.book_append_sheet(wb, ws, "Extrato");
-                      
-                      // Adicionar totais
-                      const totalEntradas = extratoFiltrado.filter(i => i.tipo === 'entrada').reduce((acc, i) => acc + i.valor, 0);
-                      const totalSaidas = extratoFiltrado.filter(i => i.tipo === 'saida').reduce((acc, i) => acc + i.valor, 0);
-                      
-                      XLSX.utils.sheet_add_json(ws, [
-                        { 'Descrição': 'Total Entradas', 'Valor': totalEntradas },
-                        { 'Descrição': 'Total Saídas', 'Valor': totalSaidas },
-                        { 'Descrição': 'Saldo', 'Valor': totalEntradas - totalSaidas }
-                      ], { skipHeader: true, origin: -1 });
-                      
-                      XLSX.writeFile(wb, `extrato-${format(new Date(), "dd-MM-yyyy")}.xlsx`);
-                      toast.success("Excel exportado com sucesso!");
-                    }}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => {
+                  const dadosExcel = extratoFiltrado.map(item => {
+                    const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
+                    const conta = contasBancarias.find(c => c.id === item.conta);
+                    const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor);
+                    return {
+                      'Data Esperada': format(item.dataEsperada, "dd/MM/yyyy"),
+                      'Data Realizada': item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-',
+                      'Tipo': item.tipo === 'transferencia' ? 'Transferência' : item.tipo === 'entrada' ? 'Entrada' : 'Saída',
+                      'Descrição': item.descricao,
+                      'Categoria': item.categoria,
+                      'Conta': conta?.nome || '-',
+                      'Fornecedor/Cliente': fornecedor?.nome || '-',
+                      'Valor': item.valor,
+                      'Status': status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo'
+                    };
+                  });
+                  const ws = XLSX.utils.json_to_sheet(dadosExcel);
+                  const wb = XLSX.utils.book_new();
+                  XLSX.utils.book_append_sheet(wb, ws, "Extrato");
+
+                  // Adicionar totais
+                  const totalEntradas = extratoFiltrado.filter(i => i.tipo === 'entrada').reduce((acc, i) => acc + i.valor, 0);
+                  const totalSaidas = extratoFiltrado.filter(i => i.tipo === 'saida').reduce((acc, i) => acc + i.valor, 0);
+                  XLSX.utils.sheet_add_json(ws, [{
+                    'Descrição': 'Total Entradas',
+                    'Valor': totalEntradas
+                  }, {
+                    'Descrição': 'Total Saídas',
+                    'Valor': totalSaidas
+                  }, {
+                    'Descrição': 'Saldo',
+                    'Valor': totalEntradas - totalSaidas
+                  }], {
+                    skipHeader: true,
+                    origin: -1
+                  });
+                  XLSX.writeFile(wb, `extrato-${format(new Date(), "dd-MM-yyyy")}.xlsx`);
+                  toast.success("Excel exportado com sucesso!");
+                }}>
                     <FileDown className="h-4 w-4 mr-2" />
                     Exportar Excel
                   </Button>
@@ -2123,161 +1919,80 @@ export default function DFC() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sortData(extratoFiltrado).map((item) => {
-                        const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
-                        const conta = contasBancarias.find(c => c.id === item.conta);
-                        const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor);
-                        
-                        return (
-                          <TableRow key={item.id}>
-                            {colunasVisiveis.tipo && (
-                              <TableCell>
-                                <Badge 
-                                  className="gap-1"
-                                  style={{
-                                    backgroundColor: item.tipo === 'transferencia'
-                                      ? 'hsl(280 80% 50%)'
-                                      : item.tipo === 'entrada' 
-                                      ? 'hsl(142 76% 36%)' 
-                                      : 'hsl(0 84% 60%)',
-                                    color: 'white',
-                                    borderColor: item.tipo === 'transferencia'
-                                      ? 'hsl(280 80% 50%)'
-                                      : item.tipo === 'entrada' 
-                                      ? 'hsl(142 76% 36%)' 
-                                      : 'hsl(0 84% 60%)'
-                                  }}
-                                >
-                                  {item.tipo === 'transferencia' ? (
-                                    <ArrowRightLeft className="h-3 w-3" />
-                                  ) : item.tipo === 'entrada' ? (
-                                    <ArrowDownLeft className="h-3 w-3" />
-                                  ) : (
-                                    <ArrowUpRight className="h-3 w-3" />
-                                  )}
-                                  {item.tipo === 'transferencia' ? 'Transferência' : 
-                                   item.tipo === 'entrada' ? 'Entrada' : 'Saída'}
+                      {sortData(extratoFiltrado).map(item => {
+                      const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
+                      const conta = contasBancarias.find(c => c.id === item.conta);
+                      const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor);
+                      return <TableRow key={item.id}>
+                            {colunasVisiveis.tipo && <TableCell>
+                                <Badge className="gap-1" style={{
+                            backgroundColor: item.tipo === 'transferencia' ? 'hsl(280 80% 50%)' : item.tipo === 'entrada' ? 'hsl(142 76% 36%)' : 'hsl(0 84% 60%)',
+                            color: 'white',
+                            borderColor: item.tipo === 'transferencia' ? 'hsl(280 80% 50%)' : item.tipo === 'entrada' ? 'hsl(142 76% 36%)' : 'hsl(0 84% 60%)'
+                          }}>
+                                  {item.tipo === 'transferencia' ? <ArrowRightLeft className="h-3 w-3" /> : item.tipo === 'entrada' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
+                                  {item.tipo === 'transferencia' ? 'Transferência' : item.tipo === 'entrada' ? 'Entrada' : 'Saída'}
                                 </Badge>
-                              </TableCell>
-                            )}
-                            {colunasVisiveis.descricao && (
-                              <TableCell>
-                                {editandoLancamento === item.id ? (
-                                  <Input
-                                    value={lancamentoEditado?.descricao || ''}
-                                    onChange={(e) => setLancamentoEditado({
-                                      ...lancamentoEditado,
-                                      descricao: e.target.value
-                                    })}
-                                  />
-                                ) : (
-                                  item.descricao
-                                )}
-                              </TableCell>
-                            )}
-                            {colunasVisiveis.categoria && (
-                              <TableCell>
-                                {editandoLancamento === item.id ? (
-                                  <Select
-                                    value={lancamentoEditado?.categoriaId || ''}
-                                    onValueChange={(value) => setLancamentoEditado({
-                                      ...lancamentoEditado,
-                                      categoriaId: value
-                                    })}
-                                  >
+                              </TableCell>}
+                            {colunasVisiveis.descricao && <TableCell>
+                                {editandoLancamento === item.id ? <Input value={lancamentoEditado?.descricao || ''} onChange={e => setLancamentoEditado({
+                            ...lancamentoEditado,
+                            descricao: e.target.value
+                          })} /> : item.descricao}
+                              </TableCell>}
+                            {colunasVisiveis.categoria && <TableCell>
+                                {editandoLancamento === item.id ? <Select value={lancamentoEditado?.categoriaId || ''} onValueChange={value => setLancamentoEditado({
+                            ...lancamentoEditado,
+                            categoriaId: value
+                          })}>
                                     <SelectTrigger>
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {getCategoriasForSelect().map(cat => (
-                                        <SelectItem key={cat.value} value={cat.value}>
+                                      {getCategoriasForSelect().map(cat => <SelectItem key={cat.value} value={cat.value}>
                                           {cat.label}
-                                        </SelectItem>
-                                      ))}
+                                        </SelectItem>)}
                                     </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <Badge variant="outline">{item.categoria}</Badge>
-                                )}
-                              </TableCell>
-                            )}
-                            {colunasVisiveis.conta && (
-                              <TableCell>
-                                {editandoLancamento === item.id ? (
-                                  <Select
-                                    value={lancamentoEditado?.contaBancaria || ''}
-                                    onValueChange={(value) => setLancamentoEditado({
-                                      ...lancamentoEditado,
-                                      contaBancaria: value
-                                    })}
-                                  >
+                                  </Select> : <Badge variant="outline">{item.categoria}</Badge>}
+                              </TableCell>}
+                            {colunasVisiveis.conta && <TableCell>
+                                {editandoLancamento === item.id ? <Select value={lancamentoEditado?.contaBancaria || ''} onValueChange={value => setLancamentoEditado({
+                            ...lancamentoEditado,
+                            contaBancaria: value
+                          })}>
                                     <SelectTrigger>
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {contasBancarias.map(conta => (
-                                        <SelectItem key={conta.id} value={conta.id}>
+                                      {contasBancarias.map(conta => <SelectItem key={conta.id} value={conta.id}>
                                           {conta.nome}
-                                        </SelectItem>
-                                      ))}
+                                        </SelectItem>)}
                                     </SelectContent>
-                                  </Select>
-                                ) : (
-                                  conta?.nome.split(' - ')[1] || '-'
-                                )}
-                              </TableCell>
-                            )}
-                            {colunasVisiveis.fornecedor && (
-                              <TableCell>
-                                {editandoLancamento === item.id ? (
-                                  <Select
-                                    value={lancamentoEditado?.fornecedorCliente || ''}
-                                    onValueChange={(value) => setLancamentoEditado({
-                                      ...lancamentoEditado,
-                                      fornecedorCliente: value
-                                    })}
-                                  >
+                                  </Select> : conta?.nome.split(' - ')[1] || '-'}
+                              </TableCell>}
+                            {colunasVisiveis.fornecedor && <TableCell>
+                                {editandoLancamento === item.id ? <Select value={lancamentoEditado?.fornecedorCliente || ''} onValueChange={value => setLancamentoEditado({
+                            ...lancamentoEditado,
+                            fornecedorCliente: value
+                          })}>
                                     <SelectTrigger>
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {fornecedoresClientes.map(f => (
-                                        <SelectItem key={f.id} value={f.id}>
+                                      {fornecedoresClientes.map(f => <SelectItem key={f.id} value={f.id}>
                                           {f.nome}
-                                        </SelectItem>
-                                      ))}
+                                        </SelectItem>)}
                                     </SelectContent>
-                                  </Select>
-                                ) : (
-                                  fornecedor?.nome || '-'
-                                )}
-                              </TableCell>
-                            )}
-                            {colunasVisiveis.valor && (
-                              <TableCell className={`text-right font-medium ${
-                                item.tipo === 'transferencia' ? 'text-purple-600' :
-                                item.tipo === 'entrada' ? 'text-green-600' : 'text-destructive'
-                              }`}>
-                                {editandoLancamento === item.id ? (
-                                  <Input
-                                    type="number"
-                                    value={lancamentoEditado?.valor || 0}
-                                    onChange={(e) => setLancamentoEditado({
-                                      ...lancamentoEditado,
-                                      valor: parseFloat(e.target.value)
-                                    })}
-                                    className="text-right"
-                                  />
-                                ) : (
-                                  `${item.tipo === 'transferencia' ? '↔' : 
-                                      item.tipo === 'entrada' ? '+' : '-'} ${formatCurrency(item.valor)}`
-                                )}
-                              </TableCell>
-                            )}
-                            {colunasVisiveis.dataEsperada && (
-                              <TableCell>
-                                {editandoLancamento === item.id ? (
-                                  <Popover>
+                                  </Select> : fornecedor?.nome || '-'}
+                              </TableCell>}
+                            {colunasVisiveis.valor && <TableCell className={`text-right font-medium ${item.tipo === 'transferencia' ? 'text-purple-600' : item.tipo === 'entrada' ? 'text-green-600' : 'text-destructive'}`}>
+                                {editandoLancamento === item.id ? <Input type="number" value={lancamentoEditado?.valor || 0} onChange={e => setLancamentoEditado({
+                            ...lancamentoEditado,
+                            valor: parseFloat(e.target.value)
+                          })} className="text-right" /> : `${item.tipo === 'transferencia' ? '↔' : item.tipo === 'entrada' ? '+' : '-'} ${formatCurrency(item.valor)}`}
+                              </TableCell>}
+                            {colunasVisiveis.dataEsperada && <TableCell>
+                                {editandoLancamento === item.id ? <Popover>
                                     <PopoverTrigger asChild>
                                       <Button variant="outline" className="w-full justify-start text-left font-normal">
                                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -2285,26 +2000,15 @@ export default function DFC() {
                                       </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">
-                                      <Calendar
-                                        mode="single"
-                                        selected={lancamentoEditado?.dataEsperada}
-                                        onSelect={(date) => date && setLancamentoEditado({
-                                          ...lancamentoEditado,
-                                          dataEsperada: date
-                                        })}
-                                        initialFocus
-                                      />
+                                      <Calendar mode="single" selected={lancamentoEditado?.dataEsperada} onSelect={date => date && setLancamentoEditado({
+                                ...lancamentoEditado,
+                                dataEsperada: date
+                              })} initialFocus />
                                     </PopoverContent>
-                                  </Popover>
-                                ) : (
-                                  format(item.dataEsperada, "dd/MM/yyyy")
-                                )}
-                              </TableCell>
-                            )}
-                            {colunasVisiveis.dataRealizada && (
-                              <TableCell>
-                                {editandoLancamento === item.id ? (
-                                  <Popover>
+                                  </Popover> : format(item.dataEsperada, "dd/MM/yyyy")}
+                              </TableCell>}
+                            {colunasVisiveis.dataRealizada && <TableCell>
+                                {editandoLancamento === item.id ? <Popover>
                                     <PopoverTrigger asChild>
                                       <Button variant="outline" className="w-full justify-start text-left font-normal">
                                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -2312,33 +2016,19 @@ export default function DFC() {
                                       </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">
-                                      <Calendar
-                                        mode="single"
-                                        selected={lancamentoEditado?.dataRealizada}
-                                        onSelect={(date) => setLancamentoEditado({
-                                          ...lancamentoEditado,
-                                          dataRealizada: date || null
-                                        })}
-                                        initialFocus
-                                      />
+                                      <Calendar mode="single" selected={lancamentoEditado?.dataRealizada} onSelect={date => setLancamentoEditado({
+                                ...lancamentoEditado,
+                                dataRealizada: date || null
+                              })} initialFocus />
                                     </PopoverContent>
-                                  </Popover>
-                                ) : (
-                                  item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-'
-                                )}
-                              </TableCell>
-                            )}
-                            {colunasVisiveis.status && (
-                              <TableCell>
-                                {editandoLancamento === item.id ? (
-                                  <Select 
-                                    value={lancamentoEditado?.pago ? 'pago' : 'nao_pago'}
-                                    onValueChange={(value) => setLancamentoEditado({
-                                      ...lancamentoEditado,
-                                      pago: value === 'pago',
-                                      dataRealizada: value === 'pago' ? (lancamentoEditado?.dataRealizada || new Date()) : null
-                                    })}
-                                  >
+                                  </Popover> : item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-'}
+                              </TableCell>}
+                            {colunasVisiveis.status && <TableCell>
+                                {editandoLancamento === item.id ? <Select value={lancamentoEditado?.pago ? 'pago' : 'nao_pago'} onValueChange={value => setLancamentoEditado({
+                            ...lancamentoEditado,
+                            pago: value === 'pago',
+                            dataRealizada: value === 'pago' ? lancamentoEditado?.dataRealizada || new Date() : null
+                          })}>
                                     <SelectTrigger className="w-full">
                                       <SelectValue />
                                     </SelectTrigger>
@@ -2346,126 +2036,81 @@ export default function DFC() {
                                       <SelectItem value="pago">Pago</SelectItem>
                                       <SelectItem value="nao_pago">Não Pago</SelectItem>
                                     </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <Badge variant={
-                                    status === 'pago' ? 'default' : 
-                                    status === 'atrasado' ? 'destructive' : 
-                                    'outline'
-                                  }>
+                                  </Select> : <Badge variant={status === 'pago' ? 'default' : status === 'atrasado' ? 'destructive' : 'outline'}>
                                     {status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo'}
-                                  </Badge>
-                                )}
-                              </TableCell>
-                            )}
+                                  </Badge>}
+                              </TableCell>}
                             <TableCell className="text-center">
-                              {editandoLancamento === item.id ? (
-                                <div className="flex items-center justify-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    onClick={() => setConfirmarEdicaoDialog(true)}
-                                  >
+                              {editandoLancamento === item.id ? <div className="flex items-center justify-center gap-2">
+                                  <Button size="sm" variant="default" onClick={() => setConfirmarEdicaoDialog(true)}>
                                     Salvar
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      setEditandoLancamento(null);
-                                      setLancamentoEditado(null);
-                                    }}
-                                  >
+                                  <Button size="sm" variant="outline" onClick={() => {
+                              setEditandoLancamento(null);
+                              setLancamentoEditado(null);
+                            }}>
                                     Cancelar
                                   </Button>
-                                </div>
-                              ) : (
-                                <Popover>
+                                </div> : <Popover>
                                   <PopoverTrigger asChild>
-                                    <Button
-                                      size="icon"
-                                      variant="outline"
-                                      className="h-8 w-8"
-                                    >
+                                    <Button size="icon" variant="outline" className="h-8 w-8">
                                       <Settings className="h-4 w-4" />
                                     </Button>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-48 p-2">
                                     <div className="flex flex-col gap-2">
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="justify-start text-green-600 hover:text-green-700 hover:bg-green-50"
-                                        onClick={async () => {
-                                          await atualizarLancamento(item.id, {
-                                            pago: true,
-                                            dataRealizada: new Date()
-                                          });
-                                          toast.success("Lançamento marcado como pago!");
-                                        }}
-                                      >
+                                      <Button size="sm" variant="ghost" className="justify-start text-green-600 hover:text-green-700 hover:bg-green-50" onClick={async () => {
+                                  await atualizarLancamento(item.id, {
+                                    pago: true,
+                                    dataRealizada: new Date()
+                                  });
+                                  toast.success("Lançamento marcado como pago!");
+                                }}>
                                         <Check className="h-4 w-4 mr-2" />
                                         Marcar como Pago
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        onClick={async () => {
-                                          await atualizarLancamento(item.id, {
-                                            pago: false,
-                                            dataRealizada: null
-                                          });
-                                          toast.success("Lançamento marcado como não pago!");
-                                        }}
-                                      >
+                                      <Button size="sm" variant="ghost" className="justify-start text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
+                                  await atualizarLancamento(item.id, {
+                                    pago: false,
+                                    dataRealizada: null
+                                  });
+                                  toast.success("Lançamento marcado como não pago!");
+                                }}>
                                         <X className="h-4 w-4 mr-2" />
                                         Marcar como Não Pago
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                        onClick={() => {
-                                          setEditandoLancamento(item.id);
-                                          setLancamentoEditado({
-                                            tipo: item.tipo,
-                                            descricao: item.descricao,
-                                            categoriaId: item.categoriaId,
-                                            valor: item.valor,
-                                            contaBancaria: item.conta,
-                                            dataEsperada: item.dataEsperada,
-                                            dataRealizada: item.dataRealizada,
-                                            pago: item.pago,
-                                            fornecedorCliente: item.fornecedor
-                                          });
-                                        }}
-                                      >
+                                      <Button size="sm" variant="ghost" className="justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => {
+                                  setEditandoLancamento(item.id);
+                                  setLancamentoEditado({
+                                    tipo: item.tipo,
+                                    descricao: item.descricao,
+                                    categoriaId: item.categoriaId,
+                                    valor: item.valor,
+                                    contaBancaria: item.conta,
+                                    dataEsperada: item.dataEsperada,
+                                    dataRealizada: item.dataRealizada,
+                                    pago: item.pago,
+                                    fornecedorCliente: item.fornecedor
+                                  });
+                                }}>
                                         <Pencil className="h-4 w-4 mr-2" />
                                         Editar
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="justify-start text-destructive hover:bg-destructive/10"
-                                        onClick={() => {
-                                          setConfirmarExclusaoDialog({
-                                            open: true,
-                                            lancamentoId: item.id
-                                          });
-                                        }}
-                                      >
+                                      <Button size="sm" variant="ghost" className="justify-start text-destructive hover:bg-destructive/10" onClick={() => {
+                                  setConfirmarExclusaoDialog({
+                                    open: true,
+                                    lancamentoId: item.id
+                                  });
+                                }}>
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Excluir
                                       </Button>
                                     </div>
                                   </PopoverContent>
-                                </Popover>
-                              )}
+                                </Popover>}
                             </TableCell>
-                          </TableRow>
-                        );
-                      })}
+                          </TableRow>;
+                    })}
                     </TableBody>
                   </Table>
                 </div>
@@ -2478,7 +2123,7 @@ export default function DFC() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="border-l-4 border-l-green-500 border-2 shadow-lg">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 text-green-600">
+                  <div className="flex items-center gap-2 text-green-600 rounded-lg">
                     <ArrowDownLeft className="h-5 w-5" />
                     <CardTitle className="text-base font-medium">A Receber</CardTitle>
                   </div>
@@ -2512,7 +2157,7 @@ export default function DFC() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2 text-blue-600">
                     <DollarSign className="h-5 w-5" />
-                    <CardTitle className="text-base font-medium">Saldo Previsto</CardTitle>
+                    <CardTitle className="text-base font-medium">Saldo das Operações</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -2521,7 +2166,7 @@ export default function DFC() {
                   </div>
                   <p className="text-sm text-muted-foreground">Saldo final projetado</p>
                   <p className="text-xs text-muted-foreground">
-                    {(((valoresFinanceiros.aReceber - valoresFinanceiros.aPagar) / valoresFinanceiros.aPagar) * 100).toFixed(1)}% de crescimento
+                    {((valoresFinanceiros.aReceber - valoresFinanceiros.aPagar) / valoresFinanceiros.aPagar * 100).toFixed(1)}% de crescimento
                   </p>
                 </CardContent>
               </Card>
@@ -2583,21 +2228,12 @@ export default function DFC() {
                     <CardTitle>Planejamento de Fluxo de Caixa</CardTitle>
                     <p className="text-sm text-muted-foreground">Busque e visualize movimentações financeiras por período</p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setPlanejamentoExpanded(!planejamentoExpanded)}
-                  >
-                    {planejamentoExpanded ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
+                  <Button variant="ghost" size="sm" onClick={() => setPlanejamentoExpanded(!planejamentoExpanded)}>
+                    {planejamentoExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </Button>
                 </div>
               </CardHeader>
-              {planejamentoExpanded && (
-                <CardContent className="space-y-6">
+              {planejamentoExpanded && <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Período Pré-definido</Label>
@@ -2618,22 +2254,12 @@ export default function DFC() {
 
                   <div className="space-y-2">
                     <Label>Data Inicial</Label>
-                    <Input
-                      type="date"
-                      value={dataInicial}
-                      onChange={(e) => setDataInicial(e.target.value)}
-                      disabled={periodoSelecionado !== ''}
-                    />
+                    <Input type="date" value={dataInicial} onChange={e => setDataInicial(e.target.value)} disabled={periodoSelecionado !== ''} />
                   </div>
 
                   <div className="space-y-2">
                     <Label>Data Final</Label>
-                    <Input
-                      type="date"
-                      value={dataFinal}
-                      onChange={(e) => setDataFinal(e.target.value)}
-                      disabled={periodoSelecionado !== ''}
-                    />
+                    <Input type="date" value={dataFinal} onChange={e => setDataFinal(e.target.value)} disabled={periodoSelecionado !== ''} />
                   </div>
                 </div>
 
@@ -2645,9 +2271,7 @@ export default function DFC() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todas">Todas as contas</SelectItem>
-                      {contasBancarias.map(conta => (
-                        <SelectItem key={conta.id} value={conta.id}>{conta.nome}</SelectItem>
-                      ))}
+                      {contasBancarias.map(conta => <SelectItem key={conta.id} value={conta.id}>{conta.nome}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -2656,8 +2280,7 @@ export default function DFC() {
                   Buscar Movimentações
                 </Button>
 
-                {movimentacoesFiltradas.length > 0 && (
-                  <div className="space-y-4 mt-6">
+                {movimentacoesFiltradas.length > 0 && <div className="space-y-4 mt-6">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold">Resultados da Busca</h3>
                       <div className="flex gap-2">
@@ -2685,23 +2308,15 @@ export default function DFC() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {movimentacoesFiltradas.map((mov) => (
-                            <TableRow key={mov.id}>
+                          {movimentacoesFiltradas.map(mov => <TableRow key={mov.id}>
                               <TableCell>{new Date(mov.data).toLocaleDateString('pt-BR')}</TableCell>
                               <TableCell>{mov.descricao}</TableCell>
                               <TableCell>
-                                <Badge 
-                                  className="gap-1"
-                                  style={{
-                                    backgroundColor: mov.tipo === 'receita' 
-                                      ? 'hsl(142 76% 36%)' 
-                                      : 'hsl(0 84% 60%)',
-                                    color: 'white',
-                                    borderColor: mov.tipo === 'receita' 
-                                      ? 'hsl(142 76% 36%)' 
-                                      : 'hsl(0 84% 60%)'
-                                  }}
-                                >
+                                <Badge className="gap-1" style={{
+                            backgroundColor: mov.tipo === 'receita' ? 'hsl(142 76% 36%)' : 'hsl(0 84% 60%)',
+                            color: 'white',
+                            borderColor: mov.tipo === 'receita' ? 'hsl(142 76% 36%)' : 'hsl(0 84% 60%)'
+                          }}>
                                   {mov.tipo === 'receita' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
                                   {mov.tipo === 'receita' ? 'Receita' : 'Despesa'}
                                 </Badge>
@@ -2713,16 +2328,11 @@ export default function DFC() {
                                 {formatCurrency(mov.valor)}
                               </TableCell>
                               <TableCell>
-                                <Badge variant={
-                                  mov.status === 'pago' ? 'default' : 
-                                  mov.status === 'vencido' ? 'destructive' : 
-                                  'outline'
-                                }>
+                                <Badge variant={mov.status === 'pago' ? 'default' : mov.status === 'vencido' ? 'destructive' : 'outline'}>
                                   {mov.status === 'pago' ? 'Pago' : mov.status === 'vencido' ? 'Vencido' : 'Pendente'}
                                 </Badge>
                               </TableCell>
-                            </TableRow>
-                          ))}
+                            </TableRow>)}
                         </TableBody>
                       </Table>
                     </div>
@@ -2742,32 +2352,24 @@ export default function DFC() {
                       </div>
                       <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">Saldo Líquido</p>
-                        <p className={`text-2xl font-bold ${
-                          (movimentacoesFiltradas.filter(m => m.tipo === 'receita').reduce((acc, m) => acc + m.valor, 0) -
-                          movimentacoesFiltradas.filter(m => m.tipo === 'despesa').reduce((acc, m) => acc + m.valor, 0)) >= 0
-                          ? 'text-blue-600' : 'text-amber-600'
-                        }`}>
-                          {formatCurrency(
-                            movimentacoesFiltradas.filter(m => m.tipo === 'receita').reduce((acc, m) => acc + m.valor, 0) -
-                            movimentacoesFiltradas.filter(m => m.tipo === 'despesa').reduce((acc, m) => acc + m.valor, 0)
-                          )}
+                        <p className={`text-2xl font-bold ${movimentacoesFiltradas.filter(m => m.tipo === 'receita').reduce((acc, m) => acc + m.valor, 0) - movimentacoesFiltradas.filter(m => m.tipo === 'despesa').reduce((acc, m) => acc + m.valor, 0) >= 0 ? 'text-blue-600' : 'text-amber-600'}`}>
+                          {formatCurrency(movimentacoesFiltradas.filter(m => m.tipo === 'receita').reduce((acc, m) => acc + m.valor, 0) - movimentacoesFiltradas.filter(m => m.tipo === 'despesa').reduce((acc, m) => acc + m.valor, 0))}
                         </p>
                       </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-              )}
+                  </div>}
+              </CardContent>}
             </Card>
           </TabsContent>
         </Tabs>
       </div>
 
       {/* Modal de Confirmação de Recebimento/Pagamento */}
-      <Dialog 
-        open={confirmarPagamentoDialog.open && confirmarPagamentoDialog.tipo === 'confirmar'} 
-        onOpenChange={(open) => !open && setConfirmarPagamentoDialog({ open: false, lancamentoId: '', tipo: 'confirmar' })}
-      >
+      <Dialog open={confirmarPagamentoDialog.open && confirmarPagamentoDialog.tipo === 'confirmar'} onOpenChange={open => !open && setConfirmarPagamentoDialog({
+      open: false,
+      lancamentoId: '',
+      tipo: 'confirmar'
+    })}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -2796,27 +2398,20 @@ export default function DFC() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dataRecebimento}
-                    onSelect={(date) => date && setDataRecebimento(date)}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
+                  <Calendar mode="single" selected={dataRecebimento} onSelect={date => date && setDataRecebimento(date)} initialFocus className="pointer-events-auto" />
                 </PopoverContent>
               </Popover>
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setConfirmarPagamentoDialog({ open: false, lancamentoId: '', tipo: 'confirmar' })}
-            >
+            <Button variant="outline" onClick={() => setConfirmarPagamentoDialog({
+            open: false,
+            lancamentoId: '',
+            tipo: 'confirmar'
+          })}>
               Cancelar
             </Button>
-            <Button 
-              onClick={() => handleConfirmarRecebimento(confirmarPagamentoDialog.lancamentoId, dataRecebimento)}
-            >
+            <Button onClick={() => handleConfirmarRecebimento(confirmarPagamentoDialog.lancamentoId, dataRecebimento)}>
               Confirmar
             </Button>
           </div>
@@ -2824,10 +2419,11 @@ export default function DFC() {
       </Dialog>
 
       {/* Modal de Cancelamento de Pagamento */}
-      <AlertDialog 
-        open={confirmarPagamentoDialog.open && confirmarPagamentoDialog.tipo === 'cancelar'}
-        onOpenChange={(open) => !open && setConfirmarPagamentoDialog({ open: false, lancamentoId: '', tipo: 'cancelar' })}
-      >
+      <AlertDialog open={confirmarPagamentoDialog.open && confirmarPagamentoDialog.tipo === 'cancelar'} onOpenChange={open => !open && setConfirmarPagamentoDialog({
+      open: false,
+      lancamentoId: '',
+      tipo: 'cancelar'
+    })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Pagamento Não Efetuado?</AlertDialogTitle>
@@ -2861,24 +2457,24 @@ export default function DFC() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={async () => {
-              if (editandoLancamento && lancamentoEditado) {
-                await atualizarLancamento(editandoLancamento, {
-                  tipo: lancamentoEditado.tipo,
-                  descricao: lancamentoEditado.descricao,
-                  categoriaId: lancamentoEditado.categoriaId,
-                  valor: lancamentoEditado.valor,
-                  contaBancaria: lancamentoEditado.contaBancaria,
-                  dataEsperada: lancamentoEditado.dataEsperada,
-                  dataRealizada: lancamentoEditado.dataRealizada,
-                  pago: lancamentoEditado.pago,
-                  fornecedorCliente: lancamentoEditado.fornecedorCliente
-                });
-                toast.success("Lançamento atualizado com sucesso!");
-                setEditandoLancamento(null);
-                setLancamentoEditado(null);
-                setConfirmarEdicaoDialog(false);
-              }
-            }}>
+            if (editandoLancamento && lancamentoEditado) {
+              await atualizarLancamento(editandoLancamento, {
+                tipo: lancamentoEditado.tipo,
+                descricao: lancamentoEditado.descricao,
+                categoriaId: lancamentoEditado.categoriaId,
+                valor: lancamentoEditado.valor,
+                contaBancaria: lancamentoEditado.contaBancaria,
+                dataEsperada: lancamentoEditado.dataEsperada,
+                dataRealizada: lancamentoEditado.dataRealizada,
+                pago: lancamentoEditado.pago,
+                fornecedorCliente: lancamentoEditado.fornecedorCliente
+              });
+              toast.success("Lançamento atualizado com sucesso!");
+              setEditandoLancamento(null);
+              setLancamentoEditado(null);
+              setConfirmarEdicaoDialog(false);
+            }
+          }}>
               Confirmar Edição
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -2886,41 +2482,30 @@ export default function DFC() {
       </AlertDialog>
 
       {/* Modal de Confirmação de Exclusão */}
-      <AlertDialog 
-        open={confirmarExclusaoDialog.open} 
-        onOpenChange={(open) => !open && setConfirmarExclusaoDialog({ open: false, lancamentoId: '' })}
-      >
+      <AlertDialog open={confirmarExclusaoDialog.open} onOpenChange={open => !open && setConfirmarExclusaoDialog({
+      open: false,
+      lancamentoId: ''
+    })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão do Lançamento?</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               {(() => {
-                const lancamento = lancamentos.find(l => l.id === confirmarExclusaoDialog.lancamentoId);
-                
-                // Debug: Log para verificar os dados do lançamento
-                console.log('🔍 Verificando recorrência:', {
-                  lancamento,
-                  formaPagamento: lancamento?.formaPagamento,
-                  lancamentoPaiId: lancamento?.lancamentoPaiId,
-                  frequenciaRepeticao: lancamento?.frequenciaRepeticao,
-                  mesesRecorrencia: lancamento?.mesesRecorrencia,
-                  numeroParcelas: lancamento?.numeroParcelas,
-                  temFilhos: lancamentos.some(l => l.lancamentoPaiId === lancamento?.id)
-                });
-                
-                const ehRecorrencia = lancamento && (
-                  lancamento.formaPagamento === 'recorrente' ||
-                  lancamento.formaPagamento === 'parcelado' ||
-                  !!lancamento.lancamentoPaiId || 
-                  lancamentos.some(l => l.lancamentoPaiId === lancamento.id) ||
-                  !!lancamento.frequenciaRepeticao ||
-                  (lancamento.mesesRecorrencia && lancamento.mesesRecorrencia > 0) ||
-                  (lancamento.numeroParcelas && lancamento.numeroParcelas > 1)
-                );
-                
-                if (ehRecorrencia) {
-                  return (
-                    <>
+              const lancamento = lancamentos.find(l => l.id === confirmarExclusaoDialog.lancamentoId);
+
+              // Debug: Log para verificar os dados do lançamento
+              console.log('🔍 Verificando recorrência:', {
+                lancamento,
+                formaPagamento: lancamento?.formaPagamento,
+                lancamentoPaiId: lancamento?.lancamentoPaiId,
+                frequenciaRepeticao: lancamento?.frequenciaRepeticao,
+                mesesRecorrencia: lancamento?.mesesRecorrencia,
+                numeroParcelas: lancamento?.numeroParcelas,
+                temFilhos: lancamentos.some(l => l.lancamentoPaiId === lancamento?.id)
+              });
+              const ehRecorrencia = lancamento && (lancamento.formaPagamento === 'recorrente' || lancamento.formaPagamento === 'parcelado' || !!lancamento.lancamentoPaiId || lancamentos.some(l => l.lancamentoPaiId === lancamento.id) || !!lancamento.frequenciaRepeticao || lancamento.mesesRecorrencia && lancamento.mesesRecorrencia > 0 || lancamento.numeroParcelas && lancamento.numeroParcelas > 1);
+              if (ehRecorrencia) {
+                return <>
                       <p>Este lançamento faz parte de uma série de recorrência.</p>
                       <p className="font-semibold text-primary">
                         💡 Escolha uma das opções abaixo:
@@ -2932,96 +2517,69 @@ export default function DFC() {
                       <p className="font-semibold text-destructive">
                         ⚠️ ATENÇÃO: A exclusão afetará os cálculos do DRE e DFC.
                       </p>
-                    </>
-                  );
-                }
-                
-                return (
-                  <>
+                    </>;
+              }
+              return <>
                     <p>Você está prestes a excluir este lançamento permanentemente.</p>
                     <p className="font-semibold text-destructive">
                       ⚠️ ATENÇÃO: Ao excluir este lançamento, ele também será removido do DRE (Demonstrativo de Resultado do Exercício) e DFC (Demonstração do Fluxo de Caixa).
                     </p>
                     <p>Esta ação não pode ser desfeita. Deseja continuar?</p>
-                  </>
-                );
-              })()}
+                  </>;
+            })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             {(() => {
-              const lancamento = lancamentos.find(l => l.id === confirmarExclusaoDialog.lancamentoId);
-              const ehRecorrencia = lancamento && (
-                lancamento.formaPagamento === 'recorrente' ||
-                lancamento.formaPagamento === 'parcelado' ||
-                !!lancamento.lancamentoPaiId || 
-                lancamentos.some(l => l.lancamentoPaiId === lancamento.id) ||
-                !!lancamento.frequenciaRepeticao ||
-                (lancamento.mesesRecorrencia && lancamento.mesesRecorrencia > 0) ||
-                (lancamento.numeroParcelas && lancamento.numeroParcelas > 1)
-              );
-              
-              if (ehRecorrencia) {
-                return (
-                  <>
-                    <AlertDialogAction 
-                      className="bg-orange-600 hover:bg-orange-700"
-                      onClick={async () => {
-                        if (confirmarExclusaoDialog.lancamentoId) {
-                          await deletarLancamento(confirmarExclusaoDialog.lancamentoId);
-                          toast.success("Lançamento excluído com sucesso!");
-                          setConfirmarExclusaoDialog({ open: false, lancamentoId: '' });
-                        }
-                      }}
-                    >
+            const lancamento = lancamentos.find(l => l.id === confirmarExclusaoDialog.lancamentoId);
+            const ehRecorrencia = lancamento && (lancamento.formaPagamento === 'recorrente' || lancamento.formaPagamento === 'parcelado' || !!lancamento.lancamentoPaiId || lancamentos.some(l => l.lancamentoPaiId === lancamento.id) || !!lancamento.frequenciaRepeticao || lancamento.mesesRecorrencia && lancamento.mesesRecorrencia > 0 || lancamento.numeroParcelas && lancamento.numeroParcelas > 1);
+            if (ehRecorrencia) {
+              return <>
+                    <AlertDialogAction className="bg-orange-600 hover:bg-orange-700" onClick={async () => {
+                  if (confirmarExclusaoDialog.lancamentoId) {
+                    await deletarLancamento(confirmarExclusaoDialog.lancamentoId);
+                    toast.success("Lançamento excluído com sucesso!");
+                    setConfirmarExclusaoDialog({
+                      open: false,
+                      lancamentoId: ''
+                    });
+                  }
+                }}>
                       Deletar Apenas Este
                     </AlertDialogAction>
-                    <AlertDialogAction 
-                      className="bg-destructive hover:bg-destructive/90"
-                      onClick={async () => {
-                        if (confirmarExclusaoDialog.lancamentoId) {
-                          await deletarRecorrenciaCompleta(confirmarExclusaoDialog.lancamentoId);
-                          setConfirmarExclusaoDialog({ open: false, lancamentoId: '' });
-                        }
-                      }}
-                    >
+                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={async () => {
+                  if (confirmarExclusaoDialog.lancamentoId) {
+                    await deletarRecorrenciaCompleta(confirmarExclusaoDialog.lancamentoId);
+                    setConfirmarExclusaoDialog({
+                      open: false,
+                      lancamentoId: ''
+                    });
+                  }
+                }}>
                       Deletar Toda a Série
                     </AlertDialogAction>
-                  </>
-                );
+                  </>;
+            }
+            return <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={async () => {
+              if (confirmarExclusaoDialog.lancamentoId) {
+                await deletarLancamento(confirmarExclusaoDialog.lancamentoId);
+                toast.success("Lançamento excluído com sucesso!");
+                setConfirmarExclusaoDialog({
+                  open: false,
+                  lancamentoId: ''
+                });
               }
-              
-              return (
-                <AlertDialogAction 
-                  className="bg-destructive hover:bg-destructive/90"
-                  onClick={async () => {
-                    if (confirmarExclusaoDialog.lancamentoId) {
-                      await deletarLancamento(confirmarExclusaoDialog.lancamentoId);
-                      toast.success("Lançamento excluído com sucesso!");
-                      setConfirmarExclusaoDialog({ open: false, lancamentoId: '' });
-                    }
-                  }}
-                >
+            }}>
                   Excluir Permanentemente
-                </AlertDialogAction>
-              );
-            })()}
+                </AlertDialogAction>;
+          })()}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <UploadExtratoModal
-        open={isExtratoUploadOpen}
-        onOpenChange={setIsExtratoUploadOpen}
-        onImportComplete={() => {
-          refetch();
-        }}
-        categorias={categorias}
-        contasBancarias={contasAtivas}
-        fornecedores={fornecedoresData}
-        clientes={clientes}
-      />
-    </AppLayout>
-  );
+      <UploadExtratoModal open={isExtratoUploadOpen} onOpenChange={setIsExtratoUploadOpen} onImportComplete={() => {
+      refetch();
+    }} categorias={categorias} contasBancarias={contasAtivas} fornecedores={fornecedoresData} clientes={clientes} />
+    </AppLayout>;
 }
