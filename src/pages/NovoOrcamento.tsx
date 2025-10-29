@@ -152,6 +152,7 @@ export default function NovoOrcamento() {
         // Carregar informações comerciais
         setInformacoesComerciais(prev => ({
           ...prev,
+          valorTotal: Number(orcamentoParaEdicao.valor) || 0,
           condicaoPagamento: orcamentoParaEdicao.condicao_pagamento || '',
           prazoEntrega: orcamentoParaEdicao.prazo_entrega || '',
           assuntoProposta: orcamentoParaEdicao.assunto_proposta || '',
@@ -694,7 +695,17 @@ export default function NovoOrcamento() {
       ...prev,
       valorComDesconto
     }));
-  }, [itensAnalise, informacoesComerciais.desconto, informacoesComerciais.valorTotal]);
+  }, [itensAnalise, informacoesComerciais.desconto]);
+
+  // Auto-preencher assunto da proposta com o equipamento
+  useEffect(() => {
+    if (dadosOrcamento.tag && !informacoesComerciais.assuntoProposta) {
+      setInformacoesComerciais(prev => ({
+        ...prev,
+        assuntoProposta: dadosOrcamento.tag
+      }));
+    }
+  }, [dadosOrcamento.tag]);
   const salvarOrcamento = async () => {
     const totalItens = itensAnalise.pecas.length + itensAnalise.servicos.length + itensAnalise.usinagem.length;
     if (!dadosOrcamento.tipoOrdem || !dadosOrcamento.cliente || totalItens === 0) {
