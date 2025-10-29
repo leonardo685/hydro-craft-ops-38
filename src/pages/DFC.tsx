@@ -289,6 +289,31 @@ export default function DFC() {
       .reduce((acc, l) => acc + l.valor, 0);
   }, [lancamentos, primeiroDiaMes, ultimoDiaMes]);
 
+  // Cálculo de lançamentos atrasados (não varia com filtros)
+  const aReceberAtrasadas = useMemo(() => {
+    const dataHoje = new Date();
+    dataHoje.setHours(0, 0, 0, 0);
+    return lancamentos
+      .filter(l => {
+        const dataEsperada = new Date(l.dataEsperada);
+        dataEsperada.setHours(0, 0, 0, 0);
+        return l.tipo === 'entrada' && !l.pago && dataEsperada < dataHoje;
+      })
+      .reduce((acc, l) => acc + l.valor, 0);
+  }, [lancamentos]);
+
+  const aPagarAtrasadas = useMemo(() => {
+    const dataHoje = new Date();
+    dataHoje.setHours(0, 0, 0, 0);
+    return lancamentos
+      .filter(l => {
+        const dataEsperada = new Date(l.dataEsperada);
+        dataEsperada.setHours(0, 0, 0, 0);
+        return l.tipo === 'saida' && !l.pago && dataEsperada < dataHoje;
+      })
+      .reduce((acc, l) => acc + l.valor, 0);
+  }, [lancamentos]);
+
   const contaAtual = contasBancariasAtualizadas.find(conta => conta.id === contaSelecionada);
   const saldoContaSelecionada = contaAtual ? contaAtual.saldo : saldoTotal;
 
@@ -2498,6 +2523,55 @@ export default function DFC() {
                   <p className="text-xs text-muted-foreground">
                     {(((valoresFinanceiros.aReceber - valoresFinanceiros.aPagar) / valoresFinanceiros.aPagar) * 100).toFixed(1)}% de crescimento
                   </p>
+                </CardContent>
+              </Card>
+
+              {/* Segunda linha de cards */}
+              <Card className="border-l-4 border-l-orange-500 border-2 shadow-lg">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 text-orange-600">
+                    <ArrowDownLeft className="h-5 w-5" />
+                    <CardTitle className="text-base font-medium">A Receber Atrasadas</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="text-3xl font-bold text-orange-600">
+                    {formatCurrency(aReceberAtrasadas)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Total atrasado</p>
+                  <p className="text-xs text-muted-foreground">Não varia com filtros</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-purple-500 border-2 shadow-lg">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 text-purple-600">
+                    <ArrowUpRight className="h-5 w-5" />
+                    <CardTitle className="text-base font-medium">A Pagar Atrasadas</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="text-3xl font-bold text-purple-600">
+                    {formatCurrency(aPagarAtrasadas)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Total atrasado</p>
+                  <p className="text-xs text-muted-foreground">Não varia com filtros</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-cyan-500 border-2 shadow-lg">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 text-cyan-600">
+                    <DollarSign className="h-5 w-5" />
+                    <CardTitle className="text-base font-medium">Saldo Previsto Total</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="text-3xl font-bold text-cyan-600">
+                    {formatCurrency(saldoTotal + (valoresFinanceiros.aReceber - valoresFinanceiros.aPagar))}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Saldo atual + previsto</p>
+                  <p className="text-xs text-muted-foreground">Varia com filtros</p>
                 </CardContent>
               </Card>
             </div>
