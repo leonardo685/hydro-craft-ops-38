@@ -48,8 +48,8 @@ const TableRow = ({ children, className = "" }: { children: React.ReactNode; cla
   return <tr className={`[&_td:first-child]:rounded-l-[4px] [&_td:last-child]:rounded-r-[4px] transition-colors ${className}`}>{children}</tr>;
 };
 
-const TableHead = ({ children, className = "" }: { children?: React.ReactNode; className?: string }) => {
-  return <th className={`h-10 px-2 align-middle font-medium text-left last:text-right ${className}`}>{children}</th>;
+const TableHead = ({ children, className = "", ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) => {
+  return <th className={`h-10 px-2 align-middle font-medium text-left last:text-right ${className}`} {...props}>{children}</th>;
 };
 
 const TableCell = ({ children, className, colSpan }: { children: React.ReactNode; className?: string; colSpan?: number }) => {

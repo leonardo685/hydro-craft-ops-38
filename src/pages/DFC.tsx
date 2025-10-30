@@ -696,6 +696,45 @@ export default function DFC() {
     calcularValoresFinanceiros([]);
     setBuscaAtiva(false);
   };
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else if (sortDirection === 'desc') {
+        setSortColumn(null);
+        setSortDirection(null);
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const movimentacoesOrdenadas = useMemo(() => {
+    if (!sortColumn || !sortDirection) return movimentacoesFiltradas;
+
+    return [...movimentacoesFiltradas].sort((a, b) => {
+      let aValue: any = a[sortColumn as keyof typeof a];
+      let bValue: any = b[sortColumn as keyof typeof b];
+
+      if (sortColumn === 'data') {
+        const [diaA, mesA, anoA] = a.data.split('/');
+        const [diaB, mesB, anoB] = b.data.split('/');
+        aValue = new Date(`${anoA}-${mesA}-${diaA}`);
+        bValue = new Date(`${anoB}-${mesB}-${diaB}`);
+      }
+
+      if (sortColumn === 'valor') {
+        aValue = a.valor;
+        bValue = b.valor;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [movimentacoesFiltradas, sortColumn, sortDirection]);
   const calcularValoresFinanceiros = (movimentacoes: any[]) => {
     const totalReceber = movimentacoes.filter(m => m.tipo === 'receita' && m.status !== 'pago').reduce((acc, m) => acc + m.valor, 0);
     const totalPagar = movimentacoes.filter(m => m.tipo === 'despesa' && m.status !== 'pago').reduce((acc, m) => acc + m.valor, 0);
@@ -713,25 +752,6 @@ export default function DFC() {
       style: 'currency',
       currency: 'BRL'
     });
-  };
-
-  // Funções de ordenação
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      // Mesma coluna: ciclar através dos estados
-      if (sortDirection === null) {
-        setSortDirection('asc');
-      } else if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else {
-        setSortDirection(null);
-        setSortColumn(null);
-      }
-    } else {
-      // Nova coluna: começar com ascendente
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
   };
   const sortData = (data: any[]) => {
     if (!sortColumn || !sortDirection) return data;
@@ -2238,23 +2258,29 @@ export default function DFC() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-blue-500 border-2 shadow-lg">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 text-blue-600">
-                    <DollarSign className="h-5 w-5" />
-                    <CardTitle className="text-base font-medium">Saldo das Operações</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="text-3xl font-bold text-blue-600">
-                    {formatCurrency(valoresFinanceiros.aReceber - valoresFinanceiros.aPagar)}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Saldo final projetado</p>
-                  <p className="text-xs text-muted-foreground">
-                    {((valoresFinanceiros.aReceber - valoresFinanceiros.aPagar) / valoresFinanceiros.aPagar * 100).toFixed(1)}% de crescimento
-                  </p>
-                </CardContent>
-              </Card>
+              {(() => {
+                const saldoOperacoes = valoresFinanceiros.aReceber - valoresFinanceiros.aPagar;
+                const isNegative = saldoOperacoes < 0;
+                return (
+                  <Card className={`border-l-4 ${isNegative ? 'border-l-red-500' : 'border-l-green-500'} border-2 shadow-lg`}>
+                    <CardHeader className="pb-3">
+                      <div className={`flex items-center gap-2 ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
+                        <DollarSign className="h-5 w-5" />
+                        <CardTitle className="text-base font-medium">Saldo das Operações</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className={`text-3xl font-bold ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
+                        {formatCurrency(saldoOperacoes)}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Saldo final projetado</p>
+                      <p className="text-xs text-muted-foreground">
+                        {valoresFinanceiros.aPagar !== 0 ? ((saldoOperacoes / valoresFinanceiros.aPagar * 100).toFixed(1)) : '0.0'}% de crescimento
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* Segunda linha de cards */}
               <Card className="border-l-4 border-l-orange-500 border-2 shadow-lg">
@@ -2289,21 +2315,27 @@ export default function DFC() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-cyan-500 border-2 shadow-lg">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 text-cyan-600">
-                    <DollarSign className="h-5 w-5" />
-                    <CardTitle className="text-base font-medium">Saldo Previsto Total</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="text-3xl font-bold text-cyan-600">
-                    {formatCurrency(saldoTotal + (valoresFinanceiros.aReceber - valoresFinanceiros.aPagar))}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Saldo atual + previsto</p>
-                  <p className="text-xs text-muted-foreground">Varia com filtros</p>
-                </CardContent>
-              </Card>
+              {(() => {
+                const saldoPrevistoTotal = saldoTotal + (valoresFinanceiros.aReceber - valoresFinanceiros.aPagar);
+                const isNegative = saldoPrevistoTotal < 0;
+                return (
+                  <Card className={`border-l-4 ${isNegative ? 'border-l-red-500' : 'border-l-green-500'} border-2 shadow-lg`}>
+                    <CardHeader className="pb-3">
+                      <div className={`flex items-center gap-2 ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
+                        <DollarSign className="h-5 w-5" />
+                        <CardTitle className="text-base font-medium">Saldo Previsto Total</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className={`text-3xl font-bold ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
+                        {formatCurrency(saldoPrevistoTotal)}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Saldo atual + previsto</p>
+                      <p className="text-xs text-muted-foreground">Varia com filtros</p>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
             </div>
 
             <Card>
@@ -2388,19 +2420,85 @@ export default function DFC() {
 
                     <div className="rounded-md border">
                       <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Data</TableHead>
-                            <TableHead>Descrição</TableHead>
-                            <TableHead>Tipo</TableHead>
-                            <TableHead>Categoria</TableHead>
-                            <TableHead className="text-right">Valor</TableHead>
-                            <TableHead>Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('data')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Data
+                        {sortColumn === 'data' && (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        )}
+                        {sortColumn !== 'data' && <ArrowUpDown className="h-4 w-4 opacity-30" />}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('descricao')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Descrição
+                        {sortColumn === 'descricao' && (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        )}
+                        {sortColumn !== 'descricao' && <ArrowUpDown className="h-4 w-4 opacity-30" />}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('tipo')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Tipo
+                        {sortColumn === 'tipo' && (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        )}
+                        {sortColumn !== 'tipo' && <ArrowUpDown className="h-4 w-4 opacity-30" />}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('categoria')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Categoria
+                        {sortColumn === 'categoria' && (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        )}
+                        {sortColumn !== 'categoria' && <ArrowUpDown className="h-4 w-4 opacity-30" />}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('valor')}
+                    >
+                      <div className="flex items-center justify-end gap-1">
+                        Valor
+                        {sortColumn === 'valor' && (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        )}
+                        {sortColumn !== 'valor' && <ArrowUpDown className="h-4 w-4 opacity-30" />}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('status')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Status
+                        {sortColumn === 'status' && (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        )}
+                        {sortColumn !== 'status' && <ArrowUpDown className="h-4 w-4 opacity-30" />}
+                      </div>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
                         <TableBody>
-                          {movimentacoesFiltradas.map(mov => <TableRow key={mov.id}>
-                              <TableCell>{new Date(mov.data).toLocaleDateString('pt-BR')}</TableCell>
+                          {movimentacoesOrdenadas.map(mov => <TableRow key={mov.id}>
+                              <TableCell>{mov.data}</TableCell>
                               <TableCell>{mov.descricao}</TableCell>
                               <TableCell>
                                 <Badge className="gap-1" style={{
