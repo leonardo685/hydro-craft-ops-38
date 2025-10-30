@@ -43,8 +43,10 @@ export default function DRE() {
       // Excluir parcelas (lançamentos com lancamentoPaiId preenchido)
       if (l.lancamentoPaiId) return false;
       
-      // DRE usa data esperada (competência do lançamento)
-      const data = new Date(l.dataEsperada);
+      // DRE usa APENAS data de emissão (regime de competência)
+      if (!l.dataEmissao) return false;
+      
+      const data = new Date(l.dataEmissao);
       const ano = data.getFullYear().toString();
       const mes = (data.getMonth() + 1).toString().padStart(2, '0');
       return ano === filtrosDRE.ano && mes === filtrosDRE.mes;
@@ -172,7 +174,8 @@ export default function DRE() {
 
   const totalReceitas = useMemo(() => {
     const lancamentosFiltrados = lancamentos.filter(l => {
-      const data = new Date(l.dataEsperada);
+      if (!l.dataEmissao) return false;
+      const data = new Date(l.dataEmissao);
       const ano = data.getFullYear().toString();
       const mes = (data.getMonth() + 1).toString().padStart(2, '0');
       return ano === filtrosDRE.ano && mes === filtrosDRE.mes && l.tipo === 'entrada';
