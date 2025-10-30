@@ -34,8 +34,9 @@ export default function DRE() {
     console.log('🔍 DRE Debug - Filtros:', filtrosDRE);
     console.log('🔍 DRE Debug - Categorias disponíveis:', categorias);
 
-    // Filtrar lançamentos por data de emissão (independente se foi pago)
-    // EXCLUIR parcelas (lançamentos filhos) - apenas mostrar lançamento PAI ou lançamentos simples
+    // Filtrar lançamentos usando lógica híbrida de competência:
+    // - Recorrências: usa data_esperada (quando a despesa/receita deve ser reconhecida)
+    // - Lançamentos simples: usa data_emissao (quando foi efetivamente registrada)
     const lancamentosFiltrados = lancamentos.filter(l => {
       // Excluir transferências entre contas do DRE
       if (l.tipo === 'transferencia') return false;
@@ -43,10 +44,14 @@ export default function DRE() {
       // Excluir parcelas (lançamentos com lancamentoPaiId preenchido)
       if (l.lancamentoPaiId) return false;
       
-      // DRE usa APENAS data de emissão (regime de competência)
-      if (!l.dataEmissao) return false;
+      // Determinar qual data usar baseado se é recorrência
+      const ehRecorrencia = !!l.frequenciaRepeticao;
+      const dataReferencia = ehRecorrencia ? l.dataEsperada : l.dataEmissao;
       
-      const data = new Date(l.dataEmissao);
+      // Validar se a data de referência existe
+      if (!dataReferencia) return false;
+      
+      const data = new Date(dataReferencia);
       const ano = data.getFullYear().toString();
       const mes = (data.getMonth() + 1).toString().padStart(2, '0');
       return ano === filtrosDRE.ano && mes === filtrosDRE.mes;
@@ -174,8 +179,13 @@ export default function DRE() {
 
   const totalReceitas = useMemo(() => {
     const lancamentosFiltrados = lancamentos.filter(l => {
-      if (!l.dataEmissao) return false;
-      const data = new Date(l.dataEmissao);
+      // Lógica híbrida: recorrências usam data_esperada, simples usam data_emissao
+      const ehRecorrencia = !!l.frequenciaRepeticao;
+      const dataReferencia = ehRecorrencia ? l.dataEsperada : l.dataEmissao;
+      
+      if (!dataReferencia) return false;
+      
+      const data = new Date(dataReferencia);
       const ano = data.getFullYear().toString();
       const mes = (data.getMonth() + 1).toString().padStart(2, '0');
       return ano === filtrosDRE.ano && mes === filtrosDRE.mes && l.tipo === 'entrada';
