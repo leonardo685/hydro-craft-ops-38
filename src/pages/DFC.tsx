@@ -80,6 +80,7 @@ export default function DFC() {
   const [contaBancariaFiltro, setContaBancariaFiltro] = useState("todas");
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
   const [planejamentoExpanded, setPlanejamentoExpanded] = useState(true);
+  const [buscaAtiva, setBuscaAtiva] = useState(false);
 
   // Estados para ordenação de colunas
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -151,6 +152,57 @@ export default function DFC() {
       setActiveTab(tab);
     }
   }, [searchParams]);
+
+  // useEffect para atualizar datas baseado no período pré-definido
+  useEffect(() => {
+    if (!periodoSelecionado || periodoSelecionado === 'personalizado') {
+      return;
+    }
+
+    const hoje = new Date();
+    let inicio: Date;
+    let fim: Date;
+
+    switch (periodoSelecionado) {
+      case 'hoje':
+        inicio = new Date(hoje);
+        fim = new Date(hoje);
+        break;
+      
+      case 'semana':
+        // Esta semana = segunda a domingo
+        const diaSemana = hoje.getDay(); // 0 = domingo, 1 = segunda, etc
+        const diasAteSegunda = diaSemana === 0 ? -6 : 1 - diaSemana; // Se domingo, volta 6 dias
+        inicio = new Date(hoje);
+        inicio.setDate(hoje.getDate() + diasAteSegunda);
+        fim = new Date(inicio);
+        fim.setDate(inicio.getDate() + 6); // Domingo
+        break;
+      
+      case 'mes':
+        inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+        break;
+      
+      case 'trimestre':
+        const trimestreAtual = Math.floor(hoje.getMonth() / 3);
+        inicio = new Date(hoje.getFullYear(), trimestreAtual * 3, 1);
+        fim = new Date(hoje.getFullYear(), (trimestreAtual + 1) * 3, 0);
+        break;
+      
+      case 'ano':
+        inicio = new Date(hoje.getFullYear(), 0, 1);
+        fim = new Date(hoje.getFullYear(), 11, 31);
+        break;
+      
+      default:
+        return;
+    }
+
+    // Converter para formato YYYY-MM-DD
+    setDataInicial(inicio.toISOString().split('T')[0]);
+    setDataFinal(fim.toISOString().split('T')[0]);
+  }, [periodoSelecionado]);
   const [filtrosExtrato, setFiltrosExtrato] = useState({
     dataInicio: null as Date | null,
     dataFim: null as Date | null,
@@ -592,24 +644,57 @@ export default function DFC() {
     setIsLancamentoDialogOpen(false);
   };
   const handleBuscarMovimentacoes = () => {
+    // Se não há filtro ativo, limpa resultados
     if (!periodoSelecionado && !dataInicial && !dataFinal) {
       setMovimentacoesFiltradas([]);
       calcularValoresFinanceiros([]);
+      setBuscaAtiva(false);
       return;
     }
 
-    // Filtrar lançamentos por período
-    const movimentacoes = lancamentos.map(l => ({
-      id: l.id,
-      data: new Date(l.dataEsperada).toLocaleDateString('pt-BR'),
-      descricao: l.descricao,
-      tipo: l.tipo === 'entrada' ? 'receita' : 'despesa',
-      categoria: getNomeCategoriaMae(l.categoriaId || '') || 'Sem categoria',
-      valor: l.valor,
-      status: l.pago ? 'pago' : new Date(l.dataEsperada) < new Date() ? 'vencido' : 'pendente'
-    }));
+    // Converter datas string para objetos Date
+    const dataInicioFiltro = dataInicial ? new Date(dataInicial + 'T00:00:00') : null;
+    const dataFimFiltro = dataFinal ? new Date(dataFinal + 'T23:59:59') : null;
+
+    // Filtrar lançamentos por período e conta
+    const movimentacoes = lancamentos
+      .filter(l => {
+        // Filtrar por data
+        const dataLancamento = new Date(l.dataEsperada);
+        
+        if (dataInicioFiltro && dataLancamento < dataInicioFiltro) return false;
+        if (dataFimFiltro && dataLancamento > dataFimFiltro) return false;
+        
+        // Filtrar por conta bancária
+        if (contaBancariaFiltro !== 'todas' && l.contaBancaria !== contaBancariaFiltro) {
+          return false;
+        }
+        
+        return true;
+      })
+      .map(l => ({
+        id: l.id,
+        data: new Date(l.dataEsperada).toLocaleDateString('pt-BR'),
+        descricao: l.descricao,
+        tipo: l.tipo === 'entrada' ? 'receita' : 'despesa',
+        categoria: getNomeCategoriaMae(l.categoriaId || '') || 'Sem categoria',
+        valor: l.valor,
+        status: l.pago ? 'pago' : new Date(l.dataEsperada) < new Date() ? 'vencido' : 'pendente'
+      }));
+
     setMovimentacoesFiltradas(movimentacoes);
     calcularValoresFinanceiros(movimentacoes);
+    setBuscaAtiva(true);
+  };
+
+  const limparFiltrosPlanejamento = () => {
+    setPeriodoSelecionado('');
+    setDataInicial('');
+    setDataFinal('');
+    setContaBancariaFiltro('todas');
+    setMovimentacoesFiltradas([]);
+    calcularValoresFinanceiros([]);
+    setBuscaAtiva(false);
   };
   const calcularValoresFinanceiros = (movimentacoes: any[]) => {
     const totalReceber = movimentacoes.filter(m => m.tipo === 'receita' && m.status !== 'pago').reduce((acc, m) => acc + m.valor, 0);
@@ -2276,9 +2361,15 @@ export default function DFC() {
                   </Select>
                 </div>
 
-                <Button onClick={handleBuscarMovimentacoes} className="w-full">
-                  Buscar Movimentações
-                </Button>
+                {!buscaAtiva ? (
+                  <Button onClick={handleBuscarMovimentacoes} className="w-full">
+                    Buscar Movimentações
+                  </Button>
+                ) : (
+                  <Button onClick={limparFiltrosPlanejamento} variant="outline" className="w-full">
+                    Limpar Filtros
+                  </Button>
+                )}
 
                 {movimentacoesFiltradas.length > 0 && <div className="space-y-4 mt-6">
                     <div className="flex items-center justify-between">
