@@ -2283,15 +2283,15 @@ export default function DFC() {
               })()}
 
               {/* Segunda linha de cards */}
-              <Card className="border-l-4 border-l-orange-500 border-2 shadow-lg">
+              <Card className="border-l-4 border-l-green-500 border-2 shadow-lg">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 text-orange-600">
+                  <div className="flex items-center gap-2 text-green-600">
                     <ArrowDownLeft className="h-5 w-5" />
                     <CardTitle className="text-base font-medium">A Receber Atrasadas</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <div className="text-3xl font-bold text-orange-600">
+                  <div className="text-3xl font-bold text-green-600">
                     {formatCurrency(aReceberAtrasadas)}
                   </div>
                   <p className="text-sm text-muted-foreground">Total atrasado</p>
@@ -2299,15 +2299,15 @@ export default function DFC() {
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-purple-500 border-2 shadow-lg">
+              <Card className="border-l-4 border-l-red-500 border-2 shadow-lg">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 text-purple-600">
+                  <div className="flex items-center gap-2 text-red-600">
                     <ArrowUpRight className="h-5 w-5" />
                     <CardTitle className="text-base font-medium">A Pagar Atrasadas</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <div className="text-3xl font-bold text-purple-600">
+                  <div className="text-3xl font-bold text-red-600">
                     {formatCurrency(aPagarAtrasadas)}
                   </div>
                   <p className="text-sm text-muted-foreground">Total atrasado</p>
