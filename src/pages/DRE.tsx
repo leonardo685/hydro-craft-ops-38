@@ -75,7 +75,7 @@ export default function DRE() {
         .reduce((acc, l) => acc + l.valor, 0);
     };
 
-    // Função auxiliar para adicionar categoria mãe por código
+    // Função auxiliar para adicionar categoria mãe por código (SEMPRE adiciona, mesmo com valor zero)
     const adicionarCategoriaPorCodigo = (codigo: string): number => {
       const categoriaMae = categorias.find(c => c.tipo === 'mae' && c.codigo === codigo);
       if (!categoriaMae) return 0;
@@ -83,35 +83,35 @@ export default function DRE() {
       const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === categoriaMae.id);
       let totalMae = 0;
 
-      // Adicionar filhas primeiro
+      // Sempre adicionar a categoria mãe primeiro
+      const indexMae = resultado.length;
+      resultado.push({
+        codigo: categoriaMae.codigo,
+        conta: categoriaMae.nome,
+        valor: 0, // Será atualizado depois
+        percentual: 0,
+        tipo: 'categoria_mae',
+        nivel: 1
+      });
+
+      // Adicionar todas as filhas (mesmo com valor zero)
       categoriasFilhas.forEach(filha => {
         const valorFilha = calcularValorCategoria(filha.id);
         totalMae += valorFilha;
         
-        if (valorFilha !== 0) {
-          resultado.push({
-            codigo: filha.codigo,
-            conta: filha.nome,
-            valor: valorFilha,
-            percentual: totalReceitas > 0 ? (valorFilha / totalReceitas) * 100 : 0,
-            tipo: 'categoria_filha',
-            nivel: 2
-          });
-        }
+        resultado.push({
+          codigo: filha.codigo,
+          conta: filha.nome,
+          valor: valorFilha,
+          percentual: totalReceitas > 0 ? (valorFilha / totalReceitas) * 100 : 0,
+          tipo: 'categoria_filha',
+          nivel: 2
+        });
       });
 
-      // Adicionar mãe se tiver valor
-      if (totalMae !== 0) {
-        const indexInsert = resultado.length - categoriasFilhas.filter(f => calcularValorCategoria(f.id) !== 0).length;
-        resultado.splice(indexInsert, 0, {
-          codigo: categoriaMae.codigo,
-          conta: categoriaMae.nome,
-          valor: totalMae,
-          percentual: totalReceitas > 0 ? (totalMae / totalReceitas) * 100 : 0,
-          tipo: 'categoria_mae',
-          nivel: 1
-        });
-      }
+      // Atualizar valor da categoria mãe
+      resultado[indexMae].valor = totalMae;
+      resultado[indexMae].percentual = totalReceitas > 0 ? (totalMae / totalReceitas) * 100 : 0;
 
       return totalMae;
     };
@@ -359,12 +359,6 @@ export default function DRE() {
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground">
                       Carregando dados...
-                    </TableCell>
-                  </TableRow>
-                ) : dreData.length === 0 || totalReceitas === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
-                      Nenhum dado financeiro para o período selecionado. Comece adicionando lançamentos financeiros.
                     </TableCell>
                   </TableRow>
                 ) : (
