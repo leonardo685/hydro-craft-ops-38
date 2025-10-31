@@ -244,7 +244,7 @@ export default function LaudoPublico() {
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
               <img 
-                src="/src/assets/mec-hidro-logo.png" 
+                src="/src/assets/mec-hidro-logo-novo.jpg" 
                 alt="MEC-HIDRO Logo" 
                 className="h-16 object-contain"
               />

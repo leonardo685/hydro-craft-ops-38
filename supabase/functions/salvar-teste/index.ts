@@ -40,7 +40,7 @@ serve(async (req) => {
         data_hora_teste: dadosTeste.dataHoraTeste,
         video_url: dadosTeste.videoUrl,
         tipo_teste: 'Teste Final',
-        resultado_teste: 'Em andamento'
+        resultado_teste: dadosTeste.resultadoTeste
       })
 
     if (insertError) {

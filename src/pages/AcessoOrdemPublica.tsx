@@ -107,20 +107,49 @@ export default function AcessoOrdemPublica() {
 
       const userAgent = navigator.userAgent;
 
-      // Salvar dados de marketing
-      const { error: insertError } = await supabase
-        .from("clientes_marketing")
-        .insert({
-          ordem_servico_id: ordemServico.id,
-          numero_ordem: numeroOrdem,
-          nome: data.nome,
-          empresa: data.empresa,
-          telefone: data.telefone,
-          ip_acesso: ipAcesso,
-          user_agent: userAgent,
-        });
+      // Formatar telefone com +55
+      const telefoneFormatado = data.telefone.startsWith('+55') 
+        ? data.telefone 
+        : `+55${data.telefone.replace(/\D/g, '')}`;
 
-      if (insertError) throw insertError;
+      // Verificar se já existe cliente com este telefone
+      const { data: clienteExistente } = await supabase
+        .from("clientes_marketing")
+        .select("id")
+        .eq("telefone", telefoneFormatado)
+        .maybeSingle();
+
+      // Atualizar ou inserir dados de marketing
+      if (clienteExistente) {
+        const { error: updateError } = await supabase
+          .from("clientes_marketing")
+          .update({
+            nome: data.nome,
+            empresa: data.empresa,
+            numero_ordem: numeroOrdem,
+            ordem_servico_id: ordemServico.id,
+            data_acesso: new Date().toISOString(),
+            ip_acesso: ipAcesso,
+            user_agent: userAgent,
+          })
+          .eq("id", clienteExistente.id);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("clientes_marketing")
+          .insert({
+            ordem_servico_id: ordemServico.id,
+            numero_ordem: numeroOrdem,
+            nome: data.nome,
+            empresa: data.empresa,
+            telefone: telefoneFormatado,
+            ip_acesso: ipAcesso,
+            user_agent: userAgent,
+          });
+
+        if (insertError) throw insertError;
+      }
 
       toast.success("Dados registrados com sucesso!");
       
