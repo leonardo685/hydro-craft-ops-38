@@ -83,7 +83,7 @@ export default function LaudoPublico() {
         // Buscar recebimento
         const { data: recebimento, error: recebimentoError } = await supabase
           .from("recebimentos")
-          .select("id")
+          .select("id, pdf_nota_retorno")
           .eq("numero_ordem", numeroOrdem)
           .maybeSingle();
 
@@ -110,8 +110,17 @@ export default function LaudoPublico() {
           return;
         }
 
-        // Verificar se está finalizada ou aguardando retorno
-        if (ordem.status !== 'finalizado' && ordem.status !== 'aguardando_retorno') {
+        // Verificar se existe laudo técnico criado (teste) para a ordem
+        const { data: testeCheck, error: testeCheckError } = await supabase
+          .from("testes_equipamentos")
+          .select("id")
+          .eq("ordem_servico_id", ordem.id)
+          .maybeSingle();
+
+        if (testeCheckError) throw testeCheckError;
+
+        // Se não existe laudo técnico nem nota de retorno, ordem não está pronta
+        if (!testeCheck && !recebimento?.pdf_nota_retorno) {
           toast.error("Esta ordem ainda não foi finalizada");
           navigate("/");
           return;
