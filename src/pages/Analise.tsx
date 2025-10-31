@@ -17,6 +17,10 @@ export default function OrdensServico() {
   const [searchTerm, setSearchTerm] = useState("");
   const [ordensServico, setOrdensServico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
 
   useEffect(() => {
     loadOrdensServico();
@@ -32,6 +36,10 @@ export default function OrdensServico() {
             numero_ordem,
             cliente_nome,
             tipo_equipamento
+          ),
+          orcamentos (
+            id,
+            status
           )
         `)
         .neq('status', 'aprovada')
@@ -50,6 +58,73 @@ export default function OrdensServico() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getStatusDinamico = (ordem: any) => {
+    // Se já foi aprovada/reprovada/faturado, mantém o status atual
+    if (ordem.status === 'aprovada' || ordem.status === 'reprovada' || ordem.status === 'faturado') {
+      return ordem.status;
+    }
+    
+    // Verifica se tem orçamentos vinculados
+    const temOrcamentos = ordem.orcamentos && ordem.orcamentos.length > 0;
+    
+    if (!temOrcamentos) {
+      return 'aguardando_orcamento';
+    } else {
+      return 'aguardando_aprovacao';
+    }
+  };
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    
+    setSortConfig({ key, direction });
+  };
+
+  const getSortedOrdens = (ordens: any[]) => {
+    if (!sortConfig) return ordens;
+    
+    return [...ordens].sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortConfig.key) {
+        case 'numero_ordem':
+          aValue = a.recebimentos?.numero_ordem || a.numero_ordem || '';
+          bValue = b.recebimentos?.numero_ordem || b.numero_ordem || '';
+          break;
+        case 'cliente':
+          aValue = a.recebimentos?.cliente_nome || a.cliente_nome || '';
+          bValue = b.recebimentos?.cliente_nome || b.cliente_nome || '';
+          break;
+        case 'equipamento':
+          aValue = a.recebimentos?.tipo_equipamento || a.equipamento || '';
+          bValue = b.recebimentos?.tipo_equipamento || b.equipamento || '';
+          break;
+        case 'status':
+          aValue = getStatusDinamico(a);
+          bValue = getStatusDinamico(b);
+          break;
+        case 'data_entrada':
+          aValue = new Date(a.data_entrada).getTime();
+          bValue = new Date(b.data_entrada).getTime();
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
   };
 
   const handleApprove = async (ordemId: string) => {
@@ -470,27 +545,54 @@ export default function OrdensServico() {
     }
   };
 
-  const filteredOrdensServico = ordensServico.filter(ordem => {
-    const clienteNome = ordem.recebimentos?.cliente_nome || ordem.cliente_nome || '';
-    const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem || '';
-    const equipamento = ordem.recebimentos?.tipo_equipamento || ordem.equipamento || '';
-    
-    return clienteNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           numeroOrdem.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           equipamento.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  const filteredOrdensServico = getSortedOrdens(
+    ordensServico.filter(ordem => {
+      const clienteNome = ordem.recebimentos?.cliente_nome || ordem.cliente_nome || '';
+      const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem || '';
+      const equipamento = ordem.recebimentos?.tipo_equipamento || ordem.equipamento || '';
+      
+      return clienteNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             numeroOrdem.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             equipamento.toLowerCase().includes(searchTerm.toLowerCase());
+    })
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "aguardando_orcamento":
+        return "bg-blue-100 text-blue-800 border-blue-300";
+      case "aguardando_aprovacao":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
       case "em_andamento":
         return "bg-warning text-warning-foreground";
       case "concluida":
         return "bg-accent text-accent-foreground";
       case "aguardando_pecas":
         return "bg-destructive text-destructive-foreground";
+      case "aprovada":
+        return "bg-green-100 text-green-800 border-green-300";
+      case "reprovada":
+        return "bg-red-100 text-red-800 border-red-300";
+      case "faturado":
+        return "bg-purple-100 text-purple-800 border-purple-300";
       default:
         return "bg-secondary text-secondary-foreground";
     }
+  };
+
+  const getStatusTexto = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'aguardando_orcamento': 'Aguardando Orçamento',
+      'aguardando_aprovacao': 'Aguardando Aprovação',
+      'em_andamento': 'Em Andamento',
+      'concluida': 'Concluída',
+      'aguardando_pecas': 'Aguardando Peças',
+      'aprovada': 'Aprovada',
+      'reprovada': 'Reprovada',
+      'faturado': 'Faturado'
+    };
+    
+    return statusMap[status] || status;
   };
 
   const getPrioridadeColor = (prioridade: string) => {
@@ -632,11 +734,61 @@ export default function OrdensServico() {
                 <Table>
                    <TableHeader>
                      <TableRow className="bg-muted/50">
-                       <TableHead className="font-semibold text-foreground">Nº da Ordem</TableHead>
-                       <TableHead className="font-semibold text-foreground">Cliente</TableHead>
-                       <TableHead className="font-semibold text-foreground">Equipamento</TableHead>
-                       <TableHead className="font-semibold text-foreground">Status</TableHead>
-                       <TableHead className="font-semibold text-foreground">Data de Entrada</TableHead>
+                       <TableHead 
+                         className="font-semibold text-foreground cursor-pointer hover:bg-muted transition-colors"
+                         onClick={() => handleSort('numero_ordem')}
+                       >
+                         <div className="flex items-center gap-2">
+                           Nº da Ordem
+                           {sortConfig?.key === 'numero_ordem' && (
+                             sortConfig.direction === 'asc' ? '↑' : '↓'
+                           )}
+                         </div>
+                       </TableHead>
+                       <TableHead 
+                         className="font-semibold text-foreground cursor-pointer hover:bg-muted transition-colors"
+                         onClick={() => handleSort('cliente')}
+                       >
+                         <div className="flex items-center gap-2">
+                           Cliente
+                           {sortConfig?.key === 'cliente' && (
+                             sortConfig.direction === 'asc' ? '↑' : '↓'
+                           )}
+                         </div>
+                       </TableHead>
+                       <TableHead 
+                         className="font-semibold text-foreground cursor-pointer hover:bg-muted transition-colors"
+                         onClick={() => handleSort('equipamento')}
+                       >
+                         <div className="flex items-center gap-2">
+                           Equipamento
+                           {sortConfig?.key === 'equipamento' && (
+                             sortConfig.direction === 'asc' ? '↑' : '↓'
+                           )}
+                         </div>
+                       </TableHead>
+                       <TableHead 
+                         className="font-semibold text-foreground cursor-pointer hover:bg-muted transition-colors"
+                         onClick={() => handleSort('status')}
+                       >
+                         <div className="flex items-center gap-2">
+                           Status
+                           {sortConfig?.key === 'status' && (
+                             sortConfig.direction === 'asc' ? '↑' : '↓'
+                           )}
+                         </div>
+                       </TableHead>
+                       <TableHead 
+                         className="font-semibold text-foreground cursor-pointer hover:bg-muted transition-colors"
+                         onClick={() => handleSort('data_entrada')}
+                       >
+                         <div className="flex items-center gap-2">
+                           Data de Entrada
+                           {sortConfig?.key === 'data_entrada' && (
+                             sortConfig.direction === 'asc' ? '↑' : '↓'
+                           )}
+                         </div>
+                       </TableHead>
                        <TableHead className="font-semibold text-foreground text-right">Ações</TableHead>
                      </TableRow>
                    </TableHeader>
@@ -667,12 +819,8 @@ export default function OrdensServico() {
                              {ordem.recebimentos?.tipo_equipamento || ordem.equipamento}
                            </TableCell>
                            <TableCell>
-                             <Badge className={getStatusColor(ordem.status)}>
-                               {ordem.status === 'em_andamento' ? 'Em Andamento' : 
-                                ordem.status === 'concluida' ? 'Concluída' : 
-                                ordem.status === 'aguardando_pecas' ? 'Aguardando Peças' :
-                                ordem.status === 'aprovada' ? 'Aprovada' :
-                                ordem.status === 'reprovada' ? 'Reprovada' : ordem.status}
+                             <Badge className={getStatusColor(getStatusDinamico(ordem))}>
+                               {getStatusTexto(getStatusDinamico(ordem))}
                              </Badge>
                            </TableCell>
                            <TableCell className="text-muted-foreground">
