@@ -54,23 +54,8 @@ const NovaOrdemServico = () => {
   const [pecasUtilizadas, setPecasUtilizadas] = useState<Array<{
     quantidade: number;
     peca: string;
-    material: string;
-    medida1: string;
-    medida2: string;
-    medida3: string;
-    codigo?: string;
   }>>([]);
   
-  // Estados para controlar os campos de entrada de peças
-  const [novaPeca, setNovaPeca] = useState({
-    quantidade: 1,
-    peca: "",
-    material: "",
-    medida1: "",
-    medida2: "",
-    medida3: "",
-    codigo: ""
-  });
   
   // Estado separado para peças adicionais (sem medidas)
   const [novaPecaAdicional, setNovaPecaAdicional] = useState({
@@ -141,30 +126,6 @@ const NovaOrdemServico = () => {
     usinagemCabecoteTraseiro: "Usinagem cabeçote traseiro canal do oring"
   });
 
-  // Função para gerar descrição automática da peça
-  const gerarDescricaoPeca = (material: string, medida1: string, medida2: string, medida3: string) => {
-    const partes: string[] = [];
-    
-    // Adiciona o material se preenchido
-    if (material && material !== "-" && material.trim() !== "") {
-      partes.push(material.trim());
-    }
-    
-    // Monta as medidas se preenchidas
-    const medidas: string[] = [];
-    if (medida1 && medida1 !== "-" && medida1.trim() !== "") medidas.push(medida1.trim());
-    if (medida2 && medida2 !== "-" && medida2.trim() !== "") medidas.push(medida2.trim());
-    if (medida3 && medida3 !== "-" && medida3.trim() !== "") medidas.push(medida3.trim());
-    
-    // Se tem medidas, formata como "50mm x 100mm x 10mm"
-    if (medidas.length > 0) {
-      const medidasFormatadas = medidas.join(" x ");
-      partes.push(medidas.length === 1 ? `Ø${medidas[0]}` : medidasFormatadas);
-    }
-    
-    // Junta tudo com " - "
-    return partes.join(" - ");
-  };
 
   // Função para exportar PDF
   const exportToPDF = async (ordemData?: any, recebimentoData?: any) => {
@@ -2751,105 +2712,26 @@ const NovaOrdemServico = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="grid grid-cols-8 gap-2 items-end">
-                  <div>
-                    <Label>Peça (auto-gerado ou edite)</Label>
-                    <Input
-                      placeholder="Ex: Aço - 50mm x 100mm"
-                      value={novaPeca.peca || gerarDescricaoPeca(
-                        novaPeca.material,
-                        novaPeca.medida1,
-                        novaPeca.medida2,
-                        novaPeca.medida3
-                      )}
-                      onChange={(e) => setNovaPeca({
-                        ...novaPeca,
-                        peca: e.target.value
-                      })}
-                    />
-                  </div>
-                  
+                <div className="grid grid-cols-3 gap-2 items-end">
                   <div>
                     <Label>Quantidade</Label>
                     <QuantityInput
-                      value={novaPeca.quantidade}
-                      onChange={(value) => setNovaPeca({
-                        ...novaPeca,
+                      value={novaPecaAdicional.quantidade}
+                      onChange={(value) => setNovaPecaAdicional({
+                        ...novaPecaAdicional,
                         quantidade: value
                       })}
                     />
                   </div>
                   
                   <div>
-                    <Label>Código</Label>
+                    <Label>Nome da Peça</Label>
                     <Input
-                      placeholder="Código"
-                      value={novaPeca.codigo}
-                      onChange={(e) => setNovaPeca({
-                        ...novaPeca,
-                        codigo: e.target.value
-                      })}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Material</Label>
-                    <Select 
-                      value={novaPeca.material} 
-                      onValueChange={(value) => setNovaPeca({
-                        ...novaPeca,
-                        material: value
-                      })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o material" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="borracha">Borracha</SelectItem>
-                        <SelectItem value="viton">Viton</SelectItem>
-                        <SelectItem value="nbr">NBR</SelectItem>
-                        <SelectItem value="teflon">Teflon</SelectItem>
-                        <SelectItem value="aco-inox">Aço Inox</SelectItem>
-                        <SelectItem value="aco-carbono">Aço Carbono</SelectItem>
-                        <SelectItem value="bronze">Bronze</SelectItem>
-                        <SelectItem value="lata">Lata</SelectItem>
-                        <SelectItem value="plastico">Plástico</SelectItem>
-                      </SelectContent>
-                    </Select>  
-                  </div>
-                  
-                  <div>
-                    <Label>Medida 1</Label>
-                    <Input
-                      placeholder="Ø"
-                      value={novaPeca.medida1}
-                      onChange={(e) => setNovaPeca({
-                        ...novaPeca,
-                        medida1: e.target.value
-                      })}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Medida 2</Label>
-                    <Input
-                      placeholder="Altura"
-                      value={novaPeca.medida2}
-                      onChange={(e) => setNovaPeca({
-                        ...novaPeca,
-                        medida2: e.target.value
-                      })}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Medida 3</Label>
-                    <Input
-                      placeholder="Espessura"
-                      value={novaPeca.medida3}
-                      onChange={(e) => setNovaPeca({
-                        ...novaPeca,
-                        medida3: e.target.value
+                      placeholder="Descreva a peça..."
+                      value={novaPecaAdicional.peca}
+                      onChange={(e) => setNovaPecaAdicional({
+                        ...novaPecaAdicional,
+                        peca: e.target.value
                       })}
                     />
                   </div>
@@ -2859,90 +2741,20 @@ const NovaOrdemServico = () => {
                       type="button"
                       className="bg-primary hover:bg-primary-hover text-primary-foreground"
                       onClick={() => {
-                        if (novaPeca.material) {
-                          const descricaoFinal = novaPeca.peca || gerarDescricaoPeca(
-                            novaPeca.material,
-                            novaPeca.medida1,
-                            novaPeca.medida2,
-                            novaPeca.medida3
-                          );
-                          
+                        if (novaPecaAdicional.peca && novaPecaAdicional.quantidade) {
                           setPecasUtilizadas([...pecasUtilizadas, { 
-                            ...novaPeca,
-                            peca: descricaoFinal
+                            quantidade: novaPecaAdicional.quantidade,
+                            peca: novaPecaAdicional.peca
                           }]);
-                          
-                          setNovaPeca({
+                          setNovaPecaAdicional({
                             quantidade: 1,
-                            peca: "",
-                            material: "",
-                            medida1: "",
-                            medida2: "",
-                            medida3: "",
-                            codigo: ""
+                            peca: ""
                           });
                         }
                       }}
                     >
                       Adicionar Peça
                     </Button>
-                  </div>
-                </div>
-
-                {/* Seção de Peças Adicionais - sem medidas */}
-                <div className="mt-6 space-y-4">
-                  <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                    🔧 Peças Adicionais
-                  </h4>
-                  <div className="grid grid-cols-3 gap-2 items-end">
-                    <div>
-                      <Label>Quantidade</Label>
-                      <QuantityInput
-                        value={novaPecaAdicional.quantidade}
-                        onChange={(value) => setNovaPecaAdicional({
-                          ...novaPecaAdicional,
-                          quantidade: value
-                        })}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label>Nome da Peça</Label>
-                      <Input
-                        placeholder="Descreva a peça adicional..."
-                        value={novaPecaAdicional.peca}
-                        onChange={(e) => setNovaPecaAdicional({
-                          ...novaPecaAdicional,
-                          peca: e.target.value
-                        })}
-                      />
-                    </div>
-                    
-                    <div className="flex items-end">
-                      <Button
-                        type="button"
-                        className="bg-primary hover:bg-primary-hover text-primary-foreground"
-                        onClick={() => {
-                          if (novaPecaAdicional.peca && novaPecaAdicional.quantidade) {
-                            setPecasUtilizadas([...pecasUtilizadas, { 
-                              quantidade: novaPecaAdicional.quantidade,
-                              peca: novaPecaAdicional.peca,
-                              material: "-", 
-                              medida1: "-", 
-                              medida2: "-", 
-                              medida3: "-",
-                              codigo: ""
-                            }]);
-                            setNovaPecaAdicional({
-                              quantidade: 1,
-                              peca: ""
-                            });
-                          }
-                        }}
-                      >
-                        Adicionar Peça
-                      </Button>
-                    </div>
                   </div>
                 </div>
 
@@ -2954,7 +2766,7 @@ const NovaOrdemServico = () => {
                     </h4>
                     <div className="space-y-3">
                       {pecasUtilizadas.map((peca, index) => (
-                        <div key={index} className="grid grid-cols-1 md:grid-cols-[auto_auto_auto_auto_auto_auto_auto_auto] gap-2 items-center p-3 bg-background rounded-lg border">
+                        <div key={index} className="grid grid-cols-[auto_1fr_auto] gap-4 items-center p-3 bg-background rounded-lg border">
                           <div>
                             <Label htmlFor={`qtd-peca-${index}`} className="text-xs text-muted-foreground">Quantidade</Label>
                             <QuantityInput
@@ -2967,7 +2779,7 @@ const NovaOrdemServico = () => {
                             />
                           </div>
                           <div>
-                            <Label htmlFor={`nome-peca-${index}`} className="text-xs text-muted-foreground">Peça</Label>
+                            <Label htmlFor={`nome-peca-${index}`} className="text-xs text-muted-foreground">Nome da Peça</Label>
                             <Input
                               id={`nome-peca-${index}`}
                               className="h-8"
@@ -2975,75 +2787,6 @@ const NovaOrdemServico = () => {
                               onChange={(e) => {
                                 const newPecas = [...pecasUtilizadas];
                                 newPecas[index].peca = e.target.value;
-                                setPecasUtilizadas(newPecas);
-                              }}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor={`codigo-peca-${index}`} className="text-xs text-muted-foreground">Código</Label>
-                            <Input
-                              id={`codigo-peca-${index}`}
-                              placeholder="Código"
-                              className="h-8"
-                              value={peca.codigo || ""}
-                              onChange={(e) => {
-                                const newPecas = [...pecasUtilizadas];
-                                newPecas[index].codigo = e.target.value;
-                                setPecasUtilizadas(newPecas);
-                              }}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor={`material-peca-${index}`} className="text-xs text-muted-foreground">Material</Label>
-                            <Input
-                              id={`material-peca-${index}`}
-                              className="h-8"
-                              value={peca.material}
-                              onChange={(e) => {
-                                const newPecas = [...pecasUtilizadas];
-                                newPecas[index].material = e.target.value;
-                                setPecasUtilizadas(newPecas);
-                              }}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor={`medida1-peca-${index}`} className="text-xs text-muted-foreground">Medida 1</Label>
-                            <Input
-                              id={`medida1-peca-${index}`}
-                              placeholder="Ø"
-                              className="h-8"
-                              value={peca.medida1}
-                              onChange={(e) => {
-                                const newPecas = [...pecasUtilizadas];
-                                newPecas[index].medida1 = e.target.value;
-                                setPecasUtilizadas(newPecas);
-                              }}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor={`medida2-peca-${index}`} className="text-xs text-muted-foreground">Medida 2</Label>
-                            <Input
-                              id={`medida2-peca-${index}`}
-                              placeholder="Altura"
-                              className="h-8"
-                              value={peca.medida2}
-                              onChange={(e) => {
-                                const newPecas = [...pecasUtilizadas];
-                                newPecas[index].medida2 = e.target.value;
-                                setPecasUtilizadas(newPecas);
-                              }}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor={`medida3-peca-${index}`} className="text-xs text-muted-foreground">Medida 3</Label>
-                            <Input
-                              id={`medida3-peca-${index}`}
-                              placeholder="Espessura"
-                              className="h-8"
-                              value={peca.medida3}
-                              onChange={(e) => {
-                                const newPecas = [...pecasUtilizadas];
-                                newPecas[index].medida3 = e.target.value;
                                 setPecasUtilizadas(newPecas);
                               }}
                             />
