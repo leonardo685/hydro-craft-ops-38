@@ -30,21 +30,11 @@ const NovaOrdemDireta = () => {
   const [pecasUtilizadas, setPecasUtilizadas] = useState<Array<{
     quantidade: number;
     peca: string;
-    material: string;
-    medida1: string;
-    medida2: string;
-    medida3: string;
-    codigo?: string;
   }>>([]);
   
   const [novaPeca, setNovaPeca] = useState({
     quantidade: 1,
-    peca: "",
-    material: "",
-    medida1: "",
-    medida2: "",
-    medida3: "",
-    codigo: ""
+    peca: ""
   });
 
   const [servicosPreDeterminados, setServicosPreDeterminados] = useState({
@@ -149,12 +139,7 @@ const NovaOrdemDireta = () => {
     setPecasUtilizadas([...pecasUtilizadas, { ...novaPeca }]);
     setNovaPeca({
       quantidade: 1,
-      peca: "",
-      material: "",
-      medida1: "",
-      medida2: "",
-      medida3: "",
-      codigo: ""
+      peca: ""
     });
   };
 
@@ -423,9 +408,9 @@ const NovaOrdemDireta = () => {
             <CardDescription>Adicione as peças que serão utilizadas</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
-              <div>
-                <Label>Qtd</Label>
+            <div className="flex gap-2">
+              <div className="w-24">
+                <Label>Quantidade</Label>
                 <Input
                   type="number"
                   min="1"
@@ -433,49 +418,18 @@ const NovaOrdemDireta = () => {
                   onChange={(e) => setNovaPeca({...novaPeca, quantidade: parseInt(e.target.value) || 1})}
                 />
               </div>
-              <div>
-                <Label>Peça</Label>
+              <div className="flex-1">
+                <Label>Nome da Peça</Label>
                 <Input
                   value={novaPeca.peca}
                   onChange={(e) => setNovaPeca({...novaPeca, peca: e.target.value})}
-                  placeholder="Nome"
-                />
-              </div>
-              <div>
-                <Label>Material</Label>
-                <Input
-                  value={novaPeca.material}
-                  onChange={(e) => setNovaPeca({...novaPeca, material: e.target.value})}
-                  placeholder="Material"
-                />
-              </div>
-              <div>
-                <Label>Medida 1</Label>
-                <Input
-                  value={novaPeca.medida1}
-                  onChange={(e) => setNovaPeca({...novaPeca, medida1: e.target.value})}
-                  placeholder="mm"
-                />
-              </div>
-              <div>
-                <Label>Medida 2</Label>
-                <Input
-                  value={novaPeca.medida2}
-                  onChange={(e) => setNovaPeca({...novaPeca, medida2: e.target.value})}
-                  placeholder="mm"
-                />
-              </div>
-              <div>
-                <Label>Medida 3</Label>
-                <Input
-                  value={novaPeca.medida3}
-                  onChange={(e) => setNovaPeca({...novaPeca, medida3: e.target.value})}
-                  placeholder="mm"
+                  placeholder="Digite o nome da peça..."
                 />
               </div>
               <div className="flex items-end">
-                <Button onClick={adicionarPeca} className="w-full">
+                <Button onClick={adicionarPeca} className="gap-2">
                   <Plus className="h-4 w-4" />
+                  Adicionar
                 </Button>
               </div>
             </div>
@@ -483,18 +437,13 @@ const NovaOrdemDireta = () => {
             {pecasUtilizadas.length > 0 && (
               <div className="space-y-2">
                 {pecasUtilizadas.map((peca, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
-                    <span className="font-semibold">{peca.quantidade}x</span>
-                    <span>{peca.peca}</span>
-                    {peca.material && <span className="text-muted-foreground">({peca.material})</span>}
-                    {peca.medida1 && <span className="text-sm">{peca.medida1}</span>}
-                    {peca.medida2 && <span className="text-sm">x {peca.medida2}</span>}
-                    {peca.medida3 && <span className="text-sm">x {peca.medida3}</span>}
+                  <div key={index} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                    <span className="font-semibold text-lg min-w-[3rem]">{peca.quantidade}x</span>
+                    <span className="flex-1">{peca.peca}</span>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => removerPeca(index)}
-                      className="ml-auto"
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
