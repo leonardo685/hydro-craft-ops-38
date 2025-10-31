@@ -7,6 +7,7 @@ import { useState, useMemo } from "react";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { cn } from "@/lib/utils";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface DREItem {
   codigo?: string;
@@ -15,6 +16,7 @@ interface DREItem {
   percentual: number;
   tipo: 'categoria_mae' | 'categoria_filha' | 'calculo';
   nivel: number;
+  codigoMae?: string;
 }
 
 export default function DRE() {
@@ -25,6 +27,20 @@ export default function DRE() {
     ano: new Date().getFullYear().toString(),
     mes: (new Date().getMonth() + 1).toString().padStart(2, '0')
   });
+
+  const [categoriasExpandidas, setCategoriasExpandidas] = useState<Set<string>>(new Set());
+
+  const toggleCategoria = (codigo: string) => {
+    setCategoriasExpandidas(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(codigo)) {
+        newSet.delete(codigo);
+      } else {
+        newSet.add(codigo);
+      }
+      return newSet;
+    });
+  };
 
   // Calcular DRE hierárquico baseado nas categorias cadastradas
   const dreData = useMemo(() => {
@@ -105,7 +121,8 @@ export default function DRE() {
           valor: valorFilha,
           percentual: totalReceitas > 0 ? (valorFilha / totalReceitas) * 100 : 0,
           tipo: 'categoria_filha',
-          nivel: 2
+          nivel: 2,
+          codigoMae: categoriaMae.codigo
         });
       });
 
@@ -176,6 +193,22 @@ export default function DRE() {
 
     return resultado;
   }, [lancamentos, filtrosDRE, categorias]);
+
+  const dreDataFiltrado = useMemo(() => {
+    return dreData.filter(item => {
+      // Sempre mostrar cálculos e categorias mães
+      if (item.tipo === 'calculo' || item.tipo === 'categoria_mae') {
+        return true;
+      }
+      
+      // Mostrar filhas apenas se a mãe estiver expandida
+      if (item.tipo === 'categoria_filha' && item.codigoMae) {
+        return categoriasExpandidas.has(item.codigoMae);
+      }
+      
+      return true;
+    });
+  }, [dreData, categoriasExpandidas]);
 
   const totalReceitas = useMemo(() => {
     const lancamentosFiltrados = lancamentos.filter(l => {
@@ -362,19 +395,28 @@ export default function DRE() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  dreData.map((item, index) => (
+                  dreDataFiltrado.map((item, index) => (
                     <TableRow key={index} className={getDreRowStyle(item.tipo)}>
                       <TableCell className="font-mono text-sm">
                         {item.codigo || ''}
                       </TableCell>
-                      <TableCell 
-                        className={cn(
-                          item.nivel === 0 && "font-bold",
-                          item.nivel === 1 && "pl-6 font-semibold",
-                          item.nivel === 2 && "pl-12"
-                        )}
-                      >
-                        {item.conta}
+                      <TableCell>
+                        <div 
+                          className={cn(
+                            "flex items-center gap-2",
+                            item.nivel === 0 && "font-bold",
+                            item.nivel === 1 && "pl-6 font-semibold cursor-pointer hover:opacity-70",
+                            item.nivel === 2 && "pl-12"
+                          )}
+                          onClick={() => item.tipo === 'categoria_mae' && item.codigo && toggleCategoria(item.codigo)}
+                        >
+                          {item.tipo === 'categoria_mae' && item.codigo && (
+                            categoriasExpandidas.has(item.codigo) 
+                              ? <ChevronDown className="h-4 w-4" />
+                              : <ChevronRight className="h-4 w-4" />
+                          )}
+                          <span>{item.conta}</span>
+                        </div>
                       </TableCell>
                       <TableCell 
                         className={`text-right ${getDreValueStyle(item.valor, item.tipo)}`}

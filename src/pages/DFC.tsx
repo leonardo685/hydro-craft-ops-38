@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign, Check, Minus, ChevronsUpDown, Settings, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown, ArrowRightLeft } from "lucide-react";
+import { FileDown, Plus, ArrowDownLeft, ArrowUpRight, CalendarIcon, ChevronDown, ChevronUp, X, DollarSign, Check, Minus, ChevronsUpDown, Settings, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown, ArrowRightLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
@@ -85,6 +85,21 @@ export default function DFC() {
   // Estados para ordenação de colunas
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
+
+  // Estado para expandir/colapsar categorias do DFC
+  const [categoriasExpandidasDFC, setCategoriasExpandidasDFC] = useState<Set<string>>(new Set());
+
+  const toggleCategoriaDFC = (codigo: string) => {
+    setCategoriasExpandidasDFC(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(codigo)) {
+        newSet.delete(codigo);
+      } else {
+        newSet.add(codigo);
+      }
+      return newSet;
+    });
+  };
 
   // Estados para confirmação de recebimento/pagamento
   const [confirmarPagamentoDialog, setConfirmarPagamentoDialog] = useState<{
@@ -851,6 +866,7 @@ export default function DFC() {
     percentual: number;
     tipo: 'categoria_mae' | 'categoria_filha' | 'calculo';
     nivel: number;
+    codigoMae?: string;
   }
 
   // Calcular DFC hierárquico baseado nas categorias (apenas lançamentos PAGOS)
@@ -900,34 +916,36 @@ export default function DFC() {
       const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === categoriaMae.id);
       let totalMae = 0;
 
-      // Adicionar filhas primeiro
+      // Sempre adicionar a categoria mãe primeiro
+      const indexMae = resultado.length;
+      resultado.push({
+        codigo: categoriaMae.codigo,
+        conta: categoriaMae.nome,
+        valor: 0, // Será atualizado depois
+        percentual: 0,
+        tipo: 'categoria_mae',
+        nivel: 1
+      });
+
+      // Adicionar todas as filhas (mesmo com valor zero)
       categoriasFilhas.forEach(filha => {
         const valorFilha = calcularValorCategoria(filha.id);
         totalMae += valorFilha;
-        if (valorFilha !== 0) {
-          resultado.push({
-            codigo: filha.codigo,
-            conta: filha.nome,
-            valor: valorFilha,
-            percentual: totalReceitas > 0 ? valorFilha / totalReceitas * 100 : 0,
-            tipo: 'categoria_filha',
-            nivel: 2
-          });
-        }
+        
+        resultado.push({
+          codigo: filha.codigo,
+          conta: filha.nome,
+          valor: valorFilha,
+          percentual: totalReceitas > 0 ? valorFilha / totalReceitas * 100 : 0,
+          tipo: 'categoria_filha',
+          nivel: 2,
+          codigoMae: categoriaMae.codigo
+        });
       });
 
-      // Adicionar mãe se tiver valor
-      if (totalMae !== 0) {
-        const indexInsert = resultado.length - categoriasFilhas.filter(f => calcularValorCategoria(f.id) !== 0).length;
-        resultado.splice(indexInsert, 0, {
-          codigo: categoriaMae.codigo,
-          conta: categoriaMae.nome,
-          valor: totalMae,
-          percentual: totalReceitas > 0 ? totalMae / totalReceitas * 100 : 0,
-          tipo: 'categoria_mae',
-          nivel: 1
-        });
-      }
+      // Atualizar valor da categoria mãe
+      resultado[indexMae].valor = totalMae;
+      resultado[indexMae].percentual = totalReceitas > 0 ? totalMae / totalReceitas * 100 : 0;
       return totalMae;
     };
 
@@ -990,6 +1008,22 @@ export default function DFC() {
     });
     return resultado;
   }, [lancamentos, categorias, dfcDataInicio, dfcDataFim]);
+
+  const dfcDataFiltrado = useMemo(() => {
+    return dfcData.filter(item => {
+      // Sempre mostrar cálculos e categorias mães
+      if (item.tipo === 'calculo' || item.tipo === 'categoria_mae') {
+        return true;
+      }
+      
+      // Mostrar filhas apenas se a mãe estiver expandida
+      if (item.tipo === 'categoria_filha' && item.codigoMae) {
+        return categoriasExpandidasDFC.has(item.codigoMae);
+      }
+      
+      return true;
+    });
+  }, [dfcData, categoriasExpandidasDFC]);
 
   // Helper para estilo de linhas do DFC
   const getDfcRowStyle = (tipo: string) => {
@@ -1146,12 +1180,26 @@ export default function DFC() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {dfcData.map((item, index) => <TableRow key={`dfc-${index}`} className={getDfcRowStyle(item.tipo)}>
+                    {dfcDataFiltrado.map((item, index) => <TableRow key={`dfc-${index}`} className={getDfcRowStyle(item.tipo)}>
                         <TableCell className="text-sm text-muted-foreground">
                           {item.codigo || ''}
                         </TableCell>
-                        <TableCell className={cn(item.nivel === 1 && "pl-6", item.nivel === 2 && "pl-12")}>
-                          {item.conta}
+                        <TableCell>
+                          <div 
+                            className={cn(
+                              "flex items-center gap-2",
+                              item.nivel === 1 && "pl-6 cursor-pointer hover:opacity-70",
+                              item.nivel === 2 && "pl-12"
+                            )}
+                            onClick={() => item.tipo === 'categoria_mae' && item.codigo && toggleCategoriaDFC(item.codigo)}
+                          >
+                            {item.tipo === 'categoria_mae' && item.codigo && (
+                              categoriasExpandidasDFC.has(item.codigo) 
+                                ? <ChevronDown className="h-4 w-4" />
+                                : <ChevronRight className="h-4 w-4" />
+                            )}
+                            <span>{item.conta}</span>
+                          </div>
                         </TableCell>
                         <TableCell className={cn("text-right", getDfcValueStyle(item.valor, item.tipo))}>
                           {formatCurrency(item.valor)}
