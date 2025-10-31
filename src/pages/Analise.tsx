@@ -44,6 +44,9 @@ export default function OrdensServico() {
         `)
         .neq('status', 'aprovada')
         .neq('status', 'reprovada')
+        .neq('status', 'faturado')
+        .neq('status', 'em_producao')
+        .neq('status', 'em_teste')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
