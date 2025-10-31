@@ -43,8 +43,17 @@ export default function OrdemPorQRCode() {
         if (ordemError) throw ordemError;
 
         if (ordemServico) {
-          // Verificar se a ordem está finalizada, aguardando retorno, faturada, OU se tem nota de retorno emitida
-          if (ordemServico.status === 'finalizado' || ordemServico.status === 'aguardando_retorno' || ordemServico.status === 'faturado' || recebimento.pdf_nota_retorno) {
+          // Verificar se existe laudo técnico criado (teste) para a ordem
+          const { data: teste, error: testeError } = await supabase
+            .from("testes_equipamentos")
+            .select("id")
+            .eq("ordem_servico_id", ordemServico.id)
+            .maybeSingle();
+
+          if (testeError) throw testeError;
+
+          // Se existe laudo técnico OU nota de retorno, permite acesso público
+          if (teste || recebimento.pdf_nota_retorno) {
             // Verificar se já existe registro de acesso no marketing
             const { data: registroMarketing, error: marketingError } = await supabase
               .from("clientes_marketing")

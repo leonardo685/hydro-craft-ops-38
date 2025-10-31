@@ -79,11 +79,17 @@ export default function AcessoOrdemPublica() {
         return;
       }
 
-      // Verificar se está finalizada, aguardando retorno, faturada OU tem nota de retorno emitida
-      const statusValidos = ['finalizado', 'aguardando_retorno', 'faturado'];
-      const temNotaRetorno = recebimento?.pdf_nota_retorno;
+      // Verificar se existe laudo técnico criado (teste) para a ordem
+      const { data: teste, error: testeError } = await supabase
+        .from("testes_equipamentos")
+        .select("id")
+        .eq("ordem_servico_id", ordemServico.id)
+        .maybeSingle();
 
-      if (!statusValidos.includes(ordemServico.status) && !temNotaRetorno) {
+      if (testeError) throw testeError;
+
+      // Se não existe laudo técnico nem nota de retorno, ordem não está pronta
+      if (!teste && !recebimento?.pdf_nota_retorno) {
         toast.error("Esta ordem ainda não foi finalizada");
         navigate("/");
         return;
