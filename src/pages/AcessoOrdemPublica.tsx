@@ -53,7 +53,7 @@ export default function AcessoOrdemPublica() {
       // Buscar recebimento e ordem de serviço
       const { data: recebimento, error: recebimentoError } = await supabase
         .from("recebimentos")
-        .select("id")
+        .select("id, pdf_nota_retorno")
         .eq("numero_ordem", numeroOrdem)
         .maybeSingle();
 
@@ -79,8 +79,11 @@ export default function AcessoOrdemPublica() {
         return;
       }
 
-      // Verificar se está finalizada ou aguardando retorno
-      if (ordemServico.status !== 'finalizado' && ordemServico.status !== 'aguardando_retorno') {
+      // Verificar se está finalizada, aguardando retorno, faturada OU tem nota de retorno emitida
+      const statusValidos = ['finalizado', 'aguardando_retorno', 'faturado'];
+      const temNotaRetorno = recebimento?.pdf_nota_retorno;
+
+      if (!statusValidos.includes(ordemServico.status) && !temNotaRetorno) {
         toast.error("Esta ordem ainda não foi finalizada");
         navigate("/");
         return;

@@ -43,8 +43,8 @@ export default function OrdemPorQRCode() {
         if (ordemError) throw ordemError;
 
         if (ordemServico) {
-          // Verificar se a ordem está finalizada, aguardando retorno, OU se tem nota de retorno emitida
-          if (ordemServico.status === 'finalizado' || ordemServico.status === 'aguardando_retorno' || recebimento.pdf_nota_retorno) {
+          // Verificar se a ordem está finalizada, aguardando retorno, faturada, OU se tem nota de retorno emitida
+          if (ordemServico.status === 'finalizado' || ordemServico.status === 'aguardando_retorno' || ordemServico.status === 'faturado' || recebimento.pdf_nota_retorno) {
             // Verificar se já existe registro de acesso no marketing
             const { data: registroMarketing, error: marketingError } = await supabase
               .from("clientes_marketing")
