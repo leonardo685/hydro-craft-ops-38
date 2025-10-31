@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +72,7 @@ export default function LaudoPublico() {
   const [ordemServico, setOrdemServico] = useState<OrdemServico | null>(null);
   const [teste, setTeste] = useState<TesteEquipamento | null>(null);
   const [fotos, setFotos] = useState<FotoEquipamento[]>([]);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const verificarAcessoECarregarDados = async () => {
@@ -162,6 +165,55 @@ export default function LaudoPublico() {
     verificarAcessoECarregarDados();
   }, [numeroOrdem, navigate]);
 
+  const handleExportPDF = async () => {
+    if (!contentRef.current || !ordemServico) return;
+    
+    try {
+      toast.loading("Gerando PDF...");
+      
+      const canvas = await html2canvas(contentRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      let heightLeft = imgHeight;
+      let position = 10;
+      
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight + 10;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      pdf.save(`Laudo_${ordemServico.numero_ordem}.pdf`);
+      
+      toast.dismiss();
+      toast.success("PDF exportado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.dismiss();
+      toast.error("Erro ao gerar PDF");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -185,7 +237,7 @@ export default function LaudoPublico() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 md:p-8">
+    <div ref={contentRef} className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Cabeçalho */}
         <Card className="border-2 border-primary/20">
@@ -202,6 +254,14 @@ export default function LaudoPublico() {
               <p className="text-muted-foreground text-lg mt-2">
                 Ordem de Serviço <span className="font-semibold text-primary">#{ordemServico.numero_ordem}</span>
               </p>
+              <Button
+                onClick={handleExportPDF}
+                className="mt-4"
+                variant="outline"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Exportar Laudo em PDF
+              </Button>
             </div>
           </CardHeader>
         </Card>
