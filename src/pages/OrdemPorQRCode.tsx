@@ -71,28 +71,14 @@ export default function OrdemPorQRCode() {
               navigate(`/laudo-publico/${numeroOrdem}`);
             }
           } else {
-            // Ordem não finalizada, requer autenticação
-            if (loading) return;
-            
-            if (!user) {
-              navigate("/auth", { 
-                state: { from: `/ordem/${numeroOrdem}` } 
-              });
-              return;
-            }
-            navigate(`/visualizar-ordem-servico/${ordemServico.id}`);
+            // Ordem não finalizada, bloquear acesso público
+            toast.error("Esta ordem ainda não possui laudo disponível");
+            navigate("/");
           }
         } else {
-          // Se não existe ordem de serviço, redireciona para detalhes do recebimento
-          if (loading) return;
-          
-          if (!user) {
-            navigate("/auth", { 
-              state: { from: `/ordem/${numeroOrdem}` } 
-            });
-            return;
-          }
-          navigate(`/detalhes-recebimento/${recebimento.id}`);
+          // Se não existe ordem de serviço, ordem ainda não foi analisada
+          toast.error("Esta ordem ainda não foi analisada");
+          navigate("/");
         }
       } catch (error) {
         console.error("Erro ao buscar ordem:", error);
@@ -102,7 +88,7 @@ export default function OrdemPorQRCode() {
     };
 
     buscarOrdem();
-  }, [numeroOrdem, navigate, user, loading]);
+  }, [numeroOrdem, navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
