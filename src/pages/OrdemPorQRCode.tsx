@@ -88,7 +88,7 @@ export default function OrdemPorQRCode() {
     };
 
     buscarOrdem();
-  }, [numeroOrdem, navigate]);
+  }, [numeroOrdem]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
