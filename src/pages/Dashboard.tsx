@@ -11,47 +11,83 @@ import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
+import { useContasBancarias } from "@/hooks/use-contas-bancarias";
+import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { Label } from "@/components/ui/label";
 
 export default function Dashboard() {
   const { lancamentos, loading } = useLancamentosFinanceiros();
+  const { contas, loading: loadingContas } = useContasBancarias();
+  const { categorias } = useCategoriasFinanceiras();
   
   const [dashboardPeriodType, setDashboardPeriodType] = useState<'mes' | 'trimestre' | 'ano'>('mes');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [selectedQuarter, setSelectedQuarter] = useState<string>('Q1');
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
 
-  // Calcular dados mensais a partir dos lançamentos reais
+  // Calcular dados mensais a partir dos lançamentos reais - últimos 12 meses
   const monthlyData = useMemo(() => {
-    const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    const anoAtual = new Date().getFullYear();
+    const hoje = new Date();
+    const dados = [];
     
-    return meses.map((mes, index) => {
+    for (let i = 11; i >= 0; i--) {
+      const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+      const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+      const ano = data.getFullYear();
+      const mesIndex = data.getMonth();
+      
       const lancamentosMes = lancamentos.filter(l => {
-        const data = new Date(l.dataEsperada);
-        return data.getMonth() === index && data.getFullYear() === anoAtual;
+        const dataLanc = new Date(l.dataEsperada);
+        return dataLanc.getMonth() === mesIndex && dataLanc.getFullYear() === ano;
       });
 
-      const faturamento = lancamentosMes
-        .filter(l => l.tipo === 'entrada')
+      // Receitas Operacionais (categoria 1)
+      const receitasOperacionais = lancamentosMes
+        .filter(l => l.tipo === 'entrada' && l.categoriaId && categorias.find(c => c.id === l.categoriaId)?.codigo?.startsWith('1'))
         .reduce((acc, l) => acc + l.valor, 0);
 
-      const despesasTotais = lancamentosMes
-        .filter(l => l.tipo === 'saida')
+      // Custos Variáveis (categoria 2)
+      const custosVariaveis = lancamentosMes
+        .filter(l => l.tipo === 'saida' && l.categoriaId && categorias.find(c => c.id === l.categoriaId)?.codigo?.startsWith('2'))
         .reduce((acc, l) => acc + l.valor, 0);
 
-      const margemContribuicao = faturamento * 0.45; // 45% do faturamento
-      const lucroLiquido = faturamento - despesasTotais;
+      // Despesas Fixas (categoria 3)
+      const despesasFixas = lancamentosMes
+        .filter(l => l.tipo === 'saida' && l.categoriaId && categorias.find(c => c.id === l.categoriaId)?.codigo?.startsWith('3'))
+        .reduce((acc, l) => acc + l.valor, 0);
 
-      return {
-        mes,
-        faturamento,
+      // Investimentos (categoria 4)
+      const investimentos = lancamentosMes
+        .filter(l => l.tipo === 'saida' && l.categoriaId && categorias.find(c => c.id === l.categoriaId)?.codigo?.startsWith('4'))
+        .reduce((acc, l) => acc + l.valor, 0);
+
+      // Receitas Não Operacionais (categoria 5)
+      const receitasNaoOperacionais = lancamentosMes
+        .filter(l => l.tipo === 'entrada' && l.categoriaId && categorias.find(c => c.id === l.categoriaId)?.codigo?.startsWith('5'))
+        .reduce((acc, l) => acc + l.valor, 0);
+
+      // Saídas Não Operacionais (categoria 6)
+      const saidasNaoOperacionais = lancamentosMes
+        .filter(l => l.tipo === 'saida' && l.categoriaId && categorias.find(c => c.id === l.categoriaId)?.codigo?.startsWith('6'))
+        .reduce((acc, l) => acc + l.valor, 0);
+
+      const totalReceitas = receitasOperacionais + receitasNaoOperacionais;
+      const margemContribuicao = totalReceitas - custosVariaveis;
+      const lucroLiquido = margemContribuicao - despesasFixas - investimentos - saidasNaoOperacionais;
+
+      dados.push({
+        mes: `${mes}/${ano.toString().slice(2)}`,
+        faturamento: receitasOperacionais,
+        custosVariaveis,
+        despesasFixas,
+        investimentos,
         margemContribuicao,
         lucroLiquido,
-        despesasTotais
-      };
-    });
-  }, [lancamentos]);
+      });
+    }
+    
+    return dados;
+  }, [lancamentos, categorias]);
 
   const columnOptions: Option[] = [
     { value: 'faturamento', label: 'Faturamento' },
@@ -73,13 +109,69 @@ export default function Dashboard() {
     despesasTotais: selectedColumns.some(col => col.value === 'despesasTotais'),
   };
 
+  // Calcular saldo atual somando todas as contas bancárias
+  const saldoAtual = useMemo(() => {
+    return contas.reduce((acc, conta) => {
+      // Somar saldo inicial
+      let saldo = conta.saldo_inicial;
+      
+      // Somar/subtrair lançamentos da conta
+      lancamentos.forEach(lanc => {
+        if (lanc.contaBancaria === conta.nome && lanc.pago) {
+          if (lanc.tipo === 'entrada') {
+            saldo += lanc.valor;
+          } else {
+            saldo -= lanc.valor;
+          }
+        }
+      });
+      
+      return acc + saldo;
+    }, 0);
+  }, [contas, lancamentos]);
+
+  // Calcular impostos pagos do mês atual
+  const impostosPagosMes = useMemo(() => {
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    
+    return lancamentos
+      .filter(l => {
+        const data = new Date(l.dataEsperada);
+        return data.getMonth() === mesAtual 
+          && data.getFullYear() === anoAtual
+          && l.tipo === 'saida'
+          && l.pago
+          && l.descricao?.toLowerCase().includes('imposto');
+      })
+      .reduce((acc, l) => acc + l.valor, 0);
+  }, [lancamentos]);
+
+  // Calcular investimentos do mês atual (categoria 4)
+  const investimentosMes = useMemo(() => {
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    
+    return lancamentos
+      .filter(l => {
+        const data = new Date(l.dataEsperada);
+        return data.getMonth() === mesAtual 
+          && data.getFullYear() === anoAtual
+          && l.tipo === 'saida'
+          && l.categoriaId 
+          && categorias.find(c => c.id === l.categoriaId)?.codigo?.startsWith('4');
+      })
+      .reduce((acc, l) => acc + l.valor, 0);
+  }, [lancamentos, categorias]);
+
   // Calcular cards do dashboard com base no período selecionado
   const dashboardCards = useMemo(() => {
-    const mesAtual = new Date().getMonth();
-    const dadosMesAtual = monthlyData[mesAtual];
-    const dadosMesAnterior = monthlyData[mesAtual > 0 ? mesAtual - 1 : 11];
+    const dadosMesAtual = monthlyData[monthlyData.length - 1];
+    const dadosMesAnterior = monthlyData[monthlyData.length - 2];
 
-    const variacaoFaturamento = dadosMesAnterior.faturamento > 0
+    const variacaoFaturamento = dadosMesAnterior?.faturamento > 0
       ? ((dadosMesAtual.faturamento - dadosMesAnterior.faturamento) / dadosMesAnterior.faturamento) * 100
       : 0;
 
@@ -87,17 +179,27 @@ export default function Dashboard() {
       ? (dadosMesAtual.margemContribuicao / dadosMesAtual.faturamento) * 100
       : 0;
 
-    const variacaoLucro = dadosMesAnterior.lucroLiquido > 0
+    const variacaoLucro = dadosMesAnterior?.lucroLiquido > 0
       ? ((dadosMesAtual.lucroLiquido - dadosMesAnterior.lucroLiquido) / dadosMesAnterior.lucroLiquido) * 100
       : 0;
 
+    const variacaoImpostos = impostosPagosMes > 0 ? 0 : 0; // Sem comparação por enquanto
+    const variacaoInvestimentos = investimentosMes > 0 ? 0 : 0; // Sem comparação por enquanto
+
     return [
+      {
+        title: "Saldo Atual",
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoAtual),
+        change: "",
+        changeValue: 0,
+        icon: DollarSign
+      },
       {
         title: "Faturamento Total",
         value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(dadosMesAtual.faturamento),
         change: `${variacaoFaturamento >= 0 ? '+' : ''}${variacaoFaturamento.toFixed(1)}%`,
         changeValue: variacaoFaturamento,
-        icon: DollarSign
+        icon: TrendingUp
       },
       {
         title: "Margem de Contribuição",
@@ -112,12 +214,27 @@ export default function Dashboard() {
         change: `${variacaoLucro >= 0 ? '+' : ''}${variacaoLucro.toFixed(1)}%`,
         changeValue: variacaoLucro,
         icon: TrendingUp
+      },
+      {
+        title: "Impostos Pagos (Mês)",
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(impostosPagosMes),
+        change: "",
+        changeValue: variacaoImpostos,
+        icon: Activity
+      },
+      {
+        title: "Investimentos (Mês)",
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(investimentosMes),
+        change: "",
+        changeValue: variacaoInvestimentos,
+        icon: Activity
       }
     ];
-  }, [monthlyData]);
+  }, [monthlyData, saldoAtual, impostosPagosMes, investimentosMes]);
 
   const colors = {
     faturamento: 'hsl(var(--primary))',
+    custosVariaveis: 'hsl(var(--destructive))',
     margemContribuicao: 'hsl(var(--accent))',
     lucroLiquido: '#10b981',
     despesasTotais: 'hsl(var(--destructive))'
@@ -221,7 +338,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {dashboardCards.map((card, index) => (
             <Card key={index}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -229,7 +346,7 @@ export default function Dashboard() {
                 <card.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {loading ? (
+                {loading || loadingContas ? (
                   <div className="text-sm text-muted-foreground">Carregando...</div>
                 ) : (
                   <>
@@ -256,22 +373,9 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Desempenho Mensal</CardTitle>
+            <CardTitle>Faturamento - Últimos 12 Meses</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="mb-4">
-              <Label>Selecionar Indicadores</Label>
-              <MultipleSelector
-                value={selectedColumns}
-                onChange={setSelectedColumns}
-                options={columnOptions}
-                placeholder="Selecione os indicadores"
-                emptyIndicator={
-                  <p className="text-center text-sm text-muted-foreground">Nenhum resultado encontrado.</p>
-                }
-              />
-            </div>
-            
             <div className="h-96">
               {loading ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -284,30 +388,56 @@ export default function Dashboard() {
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis />
-                  <Tooltip 
-                    formatter={(value: number) => 
-                      new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      }).format(value)
-                    }
-                  />
-                  <Legend />
-                  {visibleData.faturamento && (
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="mes" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value: number) => 
+                        new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format(value)
+                      }
+                    />
+                    <Legend />
                     <Bar dataKey="faturamento" name="Faturamento" fill={colors.faturamento} />
-                  )}
-                  {visibleData.margemContribuicao && (
-                    <Bar dataKey="margemContribuicao" name="Margem de Contribuição" fill={colors.margemContribuicao} />
-                  )}
-                  {visibleData.lucroLiquido && (
-                    <Bar dataKey="lucroLiquido" name="Lucro Líquido" fill={colors.lucroLiquido} />
-                  )}
-                  {visibleData.despesasTotais && (
-                    <Bar dataKey="despesasTotais" name="Despesas Totais" fill={colors.despesasTotais} />
-                  )}
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Custos Variáveis - Últimos 12 Meses</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              {loading ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  Carregando dados...
+                </div>
+              ) : monthlyData.every(m => m.custosVariaveis === 0) ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  Nenhum dado disponível. Comece adicionando lançamentos financeiros.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="mes" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value: number) => 
+                        new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format(value)
+                      }
+                    />
+                    <Legend />
+                    <Bar dataKey="custosVariaveis" name="Custos Variáveis" fill={colors.custosVariaveis} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
