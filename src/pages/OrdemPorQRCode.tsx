@@ -34,13 +34,18 @@ export default function OrdemPorQRCode() {
         }
 
         // Buscar ordem de serviço pelo recebimento_id
+        console.log("🔍 Buscando ordem com recebimento_id:", recebimento.id);
         const { data: ordemServico, error: ordemError } = await supabase
           .from("ordens_servico")
           .select("id, status")
           .eq("recebimento_id", recebimento.id)
           .maybeSingle();
 
-        if (ordemError) throw ordemError;
+        console.log("📦 Ordem encontrada:", ordemServico);
+        if (ordemError) {
+          console.error("❌ Erro na query ordens_servico:", ordemError);
+          throw ordemError;
+        }
 
         if (ordemServico) {
           // Verificar se existe laudo técnico criado (teste) para a ordem
@@ -88,7 +93,7 @@ export default function OrdemPorQRCode() {
     };
 
     buscarOrdem();
-  }, [numeroOrdem]);
+  }, [numeroOrdem, navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
