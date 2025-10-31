@@ -1809,9 +1809,6 @@ export default function NovoOrcamento() {
                   <TableHeader>
                       <TableRow>
                       <TableHead>Peça</TableHead>
-                      <TableHead>Código</TableHead>
-                      <TableHead>Material</TableHead>
-                      <TableHead>Medidas</TableHead>
                       <TableHead className="text-center">Qtd</TableHead>
                       <TableHead className="text-right">Valor Unit. (R$)</TableHead>
                       <TableHead className="text-right">Total</TableHead>
@@ -1822,39 +1819,6 @@ export default function NovoOrcamento() {
                     {itensAnalise.pecas.map(peca => <TableRow key={peca.id}>
                         <TableCell>
                           <Input value={peca.descricao} onChange={e => atualizarDescricaoItem('pecas', peca.id, e.target.value)} placeholder="Descrição da peça" className="min-w-[200px]" />
-                        </TableCell>
-                        <TableCell>
-                          <Input value={peca.codigo || ''} onChange={e => setItensAnalise(prev => ({
-                      ...prev,
-                      pecas: prev.pecas.map(p => p.id === peca.id ? {
-                        ...p,
-                        codigo: e.target.value
-                      } : p)
-                    }))} placeholder="Código" className="min-w-[100px]" />
-                        </TableCell>
-                        <TableCell>
-                          <Input value={peca.detalhes?.material || ''} onChange={e => setItensAnalise(prev => ({
-                      ...prev,
-                      pecas: prev.pecas.map(p => p.id === peca.id ? {
-                        ...p,
-                        detalhes: {
-                          ...p.detalhes,
-                          material: e.target.value
-                        }
-                      } : p)
-                    }))} placeholder="Material" className="min-w-[120px]" />
-                        </TableCell>
-                        <TableCell>
-                          <Input value={peca.detalhes?.medidas || ''} onChange={e => setItensAnalise(prev => ({
-                      ...prev,
-                      pecas: prev.pecas.map(p => p.id === peca.id ? {
-                        ...p,
-                        detalhes: {
-                          ...p.detalhes,
-                          medidas: e.target.value
-                        }
-                      } : p)
-                    }))} placeholder="Medidas" className="min-w-[120px]" />
                         </TableCell>
                         <TableCell className="text-center">
                           <Input type="number" min="1" value={peca.quantidade} onChange={e => atualizarQuantidadeItem('pecas', peca.id, parseInt(e.target.value) || 1)} className="w-16 text-center" />
