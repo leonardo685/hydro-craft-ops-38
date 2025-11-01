@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText } from "lucide-react";
+import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
 import { ChaveAcessoModal } from "@/components/ChaveAcessoModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,6 +39,7 @@ export default function Recebimentos() {
   const [filtroNotaEntrada, setFiltroNotaEntrada] = useState("");
   const [filtroNotaFiscal, setFiltroNotaFiscal] = useState("");
   const [aplicandoFiltros, setAplicandoFiltros] = useState(false);
+  const [filtrosExpanded, setFiltrosExpanded] = useState(false);
 
   // Limpar localStorage antigo na inicialização
   useEffect(() => {
@@ -57,15 +59,9 @@ export default function Recebimentos() {
       
       const dataItem = new Date(item.data_entrada);
       
-      // Se não há filtros de data, mostrar apenas do mês atual
-      if (!dataInicio && !dataFim) {
-        const matchMesAtual = dataItem.getMonth() === mesAtual && dataItem.getFullYear() === anoAtual;
-        if (!matchMesAtual) return false;
-      } else {
-        // Se há filtros de data, aplicar os filtros
-        if (dataInicio && dataItem < dataInicio) return false;
-        if (dataFim && dataItem > dataFim) return false;
-      }
+      // Aplicar filtros de data apenas se estiverem definidos
+      if (dataInicio && dataItem < dataInicio) return false;
+      if (dataFim && dataItem > dataFim) return false;
       
       const nomeCliente = item.clientes?.nome || item.cliente_nome || '';
       const matchCliente = !filtroCliente || nomeCliente.toLowerCase().includes(filtroCliente.toLowerCase());
@@ -88,15 +84,9 @@ export default function Recebimentos() {
       
       const dataItem = new Date(item.data_entrada);
       
-      // Se não há filtros de data, mostrar apenas do mês atual
-      if (!dataInicio && !dataFim) {
-        const matchMesAtual = dataItem.getMonth() === mesAtual && dataItem.getFullYear() === anoAtual;
-        if (!matchMesAtual) return false;
-      } else {
-        // Se há filtros de data, aplicar os filtros
-        if (dataInicio && dataItem < dataInicio) return false;
-        if (dataFim && dataItem > dataFim) return false;
-      }
+      // Aplicar filtros de data apenas se estiverem definidos
+      if (dataInicio && dataItem < dataInicio) return false;
+      if (dataFim && dataItem > dataFim) return false;
       
       const nomeCliente = item.clientes?.nome || item.cliente_nome || '';
       const matchCliente = !filtroCliente || nomeCliente.toLowerCase().includes(filtroCliente.toLowerCase());
@@ -115,12 +105,15 @@ export default function Recebimentos() {
   };
 
   // Função para limpar filtros
-  const handleLimparFiltros = () => {
+  const handleLimparFiltros = async () => {
     setDataInicio(undefined);
     setDataFim(undefined);
     setFiltroCliente("");
     setFiltroNotaEntrada("");
     setFiltroNotaFiscal("");
+    setAplicandoFiltros(true);
+    await recarregar();
+    setAplicandoFiltros(false);
   };
 
   // Agrupar recebimentos por nota fiscal
@@ -181,12 +174,20 @@ export default function Recebimentos() {
         </div>
 
         {/* Filtros */}
-        <div className="bg-card rounded-lg shadow-soft border border-border p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Filtros</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Collapsible open={filtrosExpanded} onOpenChange={setFiltrosExpanded}>
+          <div className="bg-card rounded-lg shadow-soft border border-border p-4">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full flex items-center justify-between gap-2 mb-4 hover:bg-muted">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Filtros</span>
+                </div>
+                <ChevronDown className={cn("h-4 w-4 transition-transform", filtrosExpanded && "rotate-180")} />
+              </Button>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Data Início</label>
               <Popover>
@@ -289,7 +290,9 @@ export default function Recebimentos() {
               Limpar Filtros
             </Button>
           </div>
-        </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
 
         <Tabs defaultValue="ordens" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
