@@ -134,9 +134,15 @@ export default function Faturamento() {
       
       // Processar ordens de serviço para notas de retorno (vão para "Notas Fiscais Emitidas")
       ordensData?.forEach(ordem => {
+        const recebimento = Array.isArray(ordem.recebimentos) ? ordem.recebimentos[0] : ordem.recebimentos;
         notasRetorno.push({
-          ...ordem,
-          numero_ordem: ordem.recebimentos?.numero_ordem,
+          id: ordem.id,
+          numero_ordem: recebimento?.numero_ordem || 'N/A',
+          cliente_nome: ordem.cliente_nome,
+          equipamento: ordem.equipamento,
+          data_entrada: ordem.data_entrada,
+          pdf_nota_fiscal: ordem.pdf_nota_fiscal,
+          pdf_nota_retorno: recebimento?.pdf_nota_retorno,
           tipo: 'nota_retorno'
         });
       });
@@ -594,14 +600,37 @@ export default function Faturamento() {
                       </div>
 
                       <div className="flex gap-2 pt-2">
-                        <Button variant="outline" size="sm">
-                          <Download className="h-4 w-4 mr-1" />
-                          Download PDF
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-1" />
-                          Visualizar PDF
-                        </Button>
+                        {(nota.pdf_nota_fiscal || nota.pdf_nota_retorno) && (
+                          <>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                const pdfUrl = nota.tipo === 'nota_retorno' ? nota.pdf_nota_retorno : nota.pdf_nota_fiscal;
+                                if (pdfUrl) handleDownloadPdf(pdfUrl, `${nota.numero_ordem}.pdf`);
+                              }}
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Download PDF
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                const pdfUrl = nota.tipo === 'nota_retorno' ? nota.pdf_nota_retorno : nota.pdf_nota_fiscal;
+                                if (pdfUrl) window.open(pdfUrl, '_blank');
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Visualizar PDF
+                            </Button>
+                          </>
+                        )}
+                        {!nota.pdf_nota_fiscal && !nota.pdf_nota_retorno && (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            PDF não disponível
+                          </Badge>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
