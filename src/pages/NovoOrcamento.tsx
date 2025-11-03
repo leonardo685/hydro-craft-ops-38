@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X, Minus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useClientes } from "@/hooks/use-clientes";
@@ -38,7 +39,8 @@ export default function NovoOrcamento() {
   const ordemServicoId = searchParams.get('ordemServicoId');
   const orcamentoParaEdicao = location.state?.orcamento;
   const {
-    clientes
+    clientes,
+    criarCliente
   } = useClientes();
   
   const [dadosOrcamento, setDadosOrcamento] = useState({
@@ -86,6 +88,19 @@ export default function NovoOrcamento() {
   const [analiseData, setAnaliseData] = useState<any>(null);
   const [fotos, setFotos] = useState<Array<FotoEquipamento & { apresentar_orcamento?: boolean }>>([]);
   const [uploadingFoto, setUploadingFoto] = useState(false);
+  
+  // Estados para cadastro de novo cliente
+  const [modalNovoCliente, setModalNovoCliente] = useState(false);
+  const [novoClienteData, setNovoClienteData] = useState({
+    nome: '',
+    cnpj_cpf: '',
+    email: '',
+    telefone: '',
+    endereco: '',
+    cidade: '',
+    estado: '',
+    cep: ''
+  });
 
   // Função para gerar próximo número de orçamento
   const gerarProximoNumero = async () => {
@@ -126,12 +141,21 @@ export default function NovoOrcamento() {
 
   useEffect(() => {
     const carregarDados = async () => {
+      // Aguardar clientes serem carregados antes de processar edição
+      if (orcamentoParaEdicao && clientes.length === 0) {
+        return; // Aguardar próximo render com clientes carregados
+      }
+
       // Se é edição, carregar dados do orçamento
       if (orcamentoParaEdicao) {
         console.log('Carregando orçamento para edição:', orcamentoParaEdicao);
         
-        // Buscar cliente para preencher clienteId
-        const clienteEncontrado = clientes.find(c => c.nome === orcamentoParaEdicao.cliente_nome);
+        // Buscar cliente para preencher clienteId com busca mais robusta
+        const clienteEncontrado = clientes.find(c => 
+          c.nome.toLowerCase().trim() === orcamentoParaEdicao.cliente_nome?.toLowerCase().trim()
+        );
+        
+        console.log('Cliente encontrado:', clienteEncontrado);
         
         setDadosOrcamento({
           id: orcamentoParaEdicao.id,
@@ -606,6 +630,50 @@ export default function NovoOrcamento() {
         ? { ...foto, apresentar_orcamento: !foto.apresentar_orcamento }
         : foto
     ));
+  };
+
+  const handleSalvarNovoCliente = async () => {
+    if (!novoClienteData.nome.trim()) {
+      toast({
+        title: "Erro",
+        description: "O nome do cliente é obrigatório",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const novoCliente = await criarCliente(novoClienteData);
+      
+      if (novoCliente) {
+        // Selecionar automaticamente o cliente recém-criado
+        setDadosOrcamento(prev => ({
+          ...prev,
+          clienteId: novoCliente.id,
+          cliente: novoCliente.nome
+        }));
+        
+        // Limpar formulário e fechar modal
+        setNovoClienteData({
+          nome: '',
+          cnpj_cpf: '',
+          email: '',
+          telefone: '',
+          endereco: '',
+          cidade: '',
+          estado: '',
+          cep: ''
+        });
+        setModalNovoCliente(false);
+        
+        toast({
+          title: "Sucesso",
+          description: "Cliente cadastrado e selecionado com sucesso"
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao criar cliente:', error);
+    }
   };
   const atualizarValorItem = (categoria: 'pecas' | 'servicos' | 'usinagem', id: string, valorUnitario: number) => {
     setItensAnalise(prev => {
@@ -1581,23 +1649,35 @@ export default function NovoOrcamento() {
                       className="bg-muted"
                     />
                   ) : (
-                    <Select value={dadosOrcamento.clienteId} onValueChange={value => {
-                      const clienteSelecionado = clientes.find(c => c.id === value);
-                      setDadosOrcamento(prev => ({
-                        ...prev,
-                        clienteId: value,
-                        cliente: clienteSelecionado?.nome || ''
-                      }));
-                    }}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clientes.map(cliente => <SelectItem key={cliente.id} value={cliente.id}>
-                            {cliente.nome}
-                          </SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <>
+                      <Select value={dadosOrcamento.clienteId} onValueChange={value => {
+                        const clienteSelecionado = clientes.find(c => c.id === value);
+                        setDadosOrcamento(prev => ({
+                          ...prev,
+                          clienteId: value,
+                          cliente: clienteSelecionado?.nome || ''
+                        }));
+                      }}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clientes.map(cliente => <SelectItem key={cliente.id} value={cliente.id}>
+                              {cliente.nome}
+                            </SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setModalNovoCliente(true)}
+                        className="w-full mt-2"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Cadastrar Novo Cliente
+                      </Button>
+                    </>
                   )}
                 </div>
                 <div>
@@ -2178,5 +2258,104 @@ export default function NovoOrcamento() {
           </Button>
         </div>
       </div>
+
+      {/* Modal de Cadastro de Novo Cliente */}
+      <Dialog open={modalNovoCliente} onOpenChange={setModalNovoCliente}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
+            <DialogDescription>
+              Preencha os dados do novo cliente
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4">
+            <div>
+              <Label>Nome / Razão Social *</Label>
+              <Input 
+                value={novoClienteData.nome}
+                onChange={(e) => setNovoClienteData(prev => ({ ...prev, nome: e.target.value }))}
+                placeholder="Digite o nome do cliente"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>CNPJ / CPF</Label>
+                <Input 
+                  value={novoClienteData.cnpj_cpf}
+                  onChange={(e) => setNovoClienteData(prev => ({ ...prev, cnpj_cpf: e.target.value }))}
+                  placeholder="00.000.000/0000-00"
+                />
+              </div>
+              <div>
+                <Label>Telefone</Label>
+                <Input 
+                  value={novoClienteData.telefone}
+                  onChange={(e) => setNovoClienteData(prev => ({ ...prev, telefone: e.target.value }))}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label>E-mail</Label>
+              <Input 
+                type="email"
+                value={novoClienteData.email}
+                onChange={(e) => setNovoClienteData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="cliente@exemplo.com"
+              />
+            </div>
+            
+            <div>
+              <Label>Endereço</Label>
+              <Input 
+                value={novoClienteData.endereco}
+                onChange={(e) => setNovoClienteData(prev => ({ ...prev, endereco: e.target.value }))}
+                placeholder="Rua, número, complemento"
+              />
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label>Cidade</Label>
+                <Input 
+                  value={novoClienteData.cidade}
+                  onChange={(e) => setNovoClienteData(prev => ({ ...prev, cidade: e.target.value }))}
+                  placeholder="São Paulo"
+                />
+              </div>
+              <div>
+                <Label>Estado</Label>
+                <Input 
+                  value={novoClienteData.estado}
+                  onChange={(e) => setNovoClienteData(prev => ({ ...prev, estado: e.target.value.toUpperCase() }))}
+                  maxLength={2}
+                  placeholder="SP"
+                />
+              </div>
+              <div>
+                <Label>CEP</Label>
+                <Input 
+                  value={novoClienteData.cep}
+                  onChange={(e) => setNovoClienteData(prev => ({ ...prev, cep: e.target.value }))}
+                  placeholder="00000-000"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalNovoCliente(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSalvarNovoCliente}>
+              <Plus className="h-4 w-4 mr-2" />
+              Salvar Cliente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>;
 }
