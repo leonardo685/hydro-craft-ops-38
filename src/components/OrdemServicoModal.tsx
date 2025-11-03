@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { User, Calendar, Package, Settings, Wrench, FileText, Camera, MapPin, Thermometer, Gauge } from "lucide-react";
+import { User, Calendar, Package, Settings, Wrench, FileText, Camera, MapPin, Thermometer, Gauge, Ruler } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface OrdemServicoModalProps {
@@ -186,6 +186,41 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
                       <span>{recebimento.numero_serie}</span>
                     </div>
                   )}
+                  {recebimento.curso && (
+                    <div className="flex items-center gap-2">
+                      <Ruler className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Curso:</span>
+                      <span>{recebimento.curso}</span>
+                    </div>
+                  )}
+                  {recebimento.camisa && (
+                    <div className="flex items-center gap-2">
+                      <Ruler className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Camisa:</span>
+                      <span>{recebimento.camisa}</span>
+                    </div>
+                  )}
+                  {recebimento.haste_comprimento && (
+                    <div className="flex items-center gap-2">
+                      <Ruler className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Comprimento da Haste:</span>
+                      <span>{recebimento.haste_comprimento}</span>
+                    </div>
+                  )}
+                  {recebimento.conexao_a && (
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Conexão A:</span>
+                      <span>{recebimento.conexao_a}</span>
+                    </div>
+                  )}
+                  {recebimento.conexao_b && (
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Conexão B:</span>
+                      <span>{recebimento.conexao_b}</span>
+                    </div>
+                  )}
                   {recebimento.potencia && (
                     <div className="flex items-center gap-2">
                       <Gauge className="h-4 w-4 text-muted-foreground" />
@@ -212,6 +247,13 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
                       <Package className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">Fluido de Trabalho:</span>
                       <span>{recebimento.fluido_trabalho}</span>
+                    </div>
+                  )}
+                  {recebimento.ambiente_trabalho && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Ambiente de Trabalho:</span>
+                      <span>{recebimento.ambiente_trabalho}</span>
                     </div>
                   )}
                   {recebimento.local_instalacao && (
