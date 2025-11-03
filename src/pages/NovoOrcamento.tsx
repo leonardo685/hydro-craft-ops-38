@@ -191,7 +191,7 @@ export default function NovoOrcamento() {
           numeroOrdem: orcamentoParaEdicao.numero,
           urgencia: false,
           cliente: orcamentoParaEdicao.cliente_nome,
-          clienteId: clienteEncontrado?.id || '',
+          clienteId: orcamentoParaEdicao.cliente_id || clienteEncontrado?.id || '',
           tag: orcamentoParaEdicao.equipamento,
           solicitante: orcamentoParaEdicao.observacoes?.split('|')[1]?.replace('Solicitante:', '')?.trim() || '',
           dataAbertura: new Date(orcamentoParaEdicao.data_criacao).toISOString().split('T')[0],
@@ -821,10 +821,11 @@ export default function NovoOrcamento() {
     
     try {
       // Criar dados para inserir no Supabase
-      const orcamentoData = {
-        numero: dadosOrcamento.numeroOrdem,
-        cliente_nome: dadosOrcamento.cliente,
-        equipamento: dadosOrcamento.tag || 'Equipamento não especificado',
+    const orcamentoData = {
+      numero: dadosOrcamento.numeroOrdem,
+      cliente_nome: dadosOrcamento.cliente,
+      cliente_id: dadosOrcamento.clienteId || null,
+      equipamento: dadosOrcamento.tag || 'Equipamento não especificado',
         descricao: dadosOrcamento.observacoes || '',
         valor: valorFinal,
         status: 'pendente',
@@ -1121,6 +1122,17 @@ export default function NovoOrcamento() {
         .from('clientes')
         .select('cnpj_cpf')
         .eq('id', dadosOrcamento.clienteId)
+        .maybeSingle();
+      
+      if (clienteData) {
+        cnpjCliente = clienteData.cnpj_cpf || '';
+      }
+    } else if (dadosOrcamento.cliente) {
+      // Buscar por nome como fallback (para orçamentos antigos sem cliente_id)
+      const { data: clienteData } = await supabase
+        .from('clientes')
+        .select('cnpj_cpf')
+        .eq('nome', dadosOrcamento.cliente)
         .maybeSingle();
       
       if (clienteData) {

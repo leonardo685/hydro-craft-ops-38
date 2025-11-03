@@ -784,6 +784,7 @@ export type Database = {
         Row: {
           aprovado_por_gestor: boolean | null
           assunto_proposta: string | null
+          cliente_id: string | null
           cliente_nome: string
           comissao_percentual: number | null
           comissao_valor: number | null
@@ -824,6 +825,7 @@ export type Database = {
         Insert: {
           aprovado_por_gestor?: boolean | null
           assunto_proposta?: string | null
+          cliente_id?: string | null
           cliente_nome: string
           comissao_percentual?: number | null
           comissao_valor?: number | null
@@ -864,6 +866,7 @@ export type Database = {
         Update: {
           aprovado_por_gestor?: boolean | null
           assunto_proposta?: string | null
+          cliente_id?: string | null
           cliente_nome?: string
           comissao_percentual?: number | null
           comissao_valor?: number | null
@@ -902,6 +905,13 @@ export type Database = {
           valor?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "orcamentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orcamentos_ordem_servico_id_fkey"
             columns: ["ordem_servico_id"]
