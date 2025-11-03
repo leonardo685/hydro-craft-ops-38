@@ -288,9 +288,10 @@ export default function Orcamentos() {
         columnWidths: number[]
       ): number => {
         let y = startY;
-        const rowHeight = 8;
+        const minRowHeight = 8;
         const headerHeight = 10;
         const cellPadding = 2;
+        const lineHeight = 4;
 
         // Verificar se precisa de nova página para o cabeçalho
         if (y + headerHeight > pageHeight - 30) {
@@ -320,6 +321,17 @@ export default function Orcamentos() {
 
         // Desenhar linhas
         rows.forEach((row, rowIndex) => {
+          // Calcular altura necessária para esta linha
+          let maxLines = 1;
+          row.forEach((cell, cellIndex) => {
+            const text = String(cell);
+            const maxWidth = columnWidths[cellIndex] - cellPadding * 2;
+            const textLines = doc.splitTextToSize(text, maxWidth);
+            maxLines = Math.max(maxLines, textLines.length);
+          });
+          
+          const rowHeight = Math.max(minRowHeight, maxLines * lineHeight + cellPadding * 2);
+          
           // Verificar se precisa de nova página
           if (y + rowHeight > pageHeight - 30) {
             adicionarRodape(currentPage);
@@ -348,18 +360,23 @@ export default function Orcamentos() {
             doc.rect(20, y, pageWidth - 40, rowHeight, 'F');
           }
 
-          // Desenhar células
+          // Desenhar células com quebra de linha
           xPos = 20;
           row.forEach((cell, cellIndex) => {
             const align = cellIndex >= row.length - 2 ? 'right' : 'left';
             const text = String(cell);
             const maxWidth = columnWidths[cellIndex] - cellPadding * 2;
+            const textLines = doc.splitTextToSize(text, maxWidth);
             
-            if (align === 'right') {
-              doc.text(text, xPos + columnWidths[cellIndex] - cellPadding, y + 6, { align: 'right' });
-            } else {
-              doc.text(text, xPos + cellPadding, y + 6, { maxWidth });
-            }
+            textLines.forEach((line: string, lineIndex: number) => {
+              const textY = y + 5 + (lineIndex * lineHeight);
+              if (align === 'right') {
+                doc.text(line, xPos + columnWidths[cellIndex] - cellPadding, textY, { align: 'right' });
+              } else {
+                doc.text(line, xPos + cellPadding, textY);
+              }
+            });
+            
             xPos += columnWidths[cellIndex];
           });
 
@@ -551,7 +568,7 @@ export default function Orcamentos() {
           ['Descrição', 'Qtd', 'Valor Unit.', 'Total'],
           pecasRows,
           yPosition,
-          [70, 18, 28, 28]
+          [85, 15, 25, 25]
         );
 
         // Total de Peças em box
@@ -616,7 +633,7 @@ export default function Orcamentos() {
           ['Descrição', 'Qtd', 'Valor Unit.', 'Total'],
           servicosRows,
           yPosition,
-          [70, 18, 28, 28]
+          [85, 15, 25, 25]
         );
 
         // Total de Serviços em box
@@ -681,7 +698,7 @@ export default function Orcamentos() {
           ['Descrição', 'Qtd', 'Valor Unit.', 'Total'],
           usinagemRows,
           yPosition,
-          [70, 18, 28, 28]
+          [85, 15, 25, 25]
         );
 
         // Total de Usinagem em box
