@@ -34,8 +34,25 @@ serve(async (req) => {
 
     if (testeError) throw testeError
 
-    // Fazer upload do vídeo
-    const fileName = `teste_${teste.ordem_servico_id}_${Date.now()}_${videoFile.name}`
+    // Sanitizar nome do arquivo (remover caracteres especiais)
+    const sanitizeFileName = (name: string) => {
+      const extension = name.split('.').pop() || 'mp4'
+      const nameWithoutExt = name.substring(0, name.lastIndexOf('.')) || name
+      
+      // Remove acentos e caracteres especiais
+      const sanitized = nameWithoutExt
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+        .replace(/[^a-zA-Z0-9]/g, '_')    // Substitui caracteres especiais por _
+        .replace(/_+/g, '_')              // Remove underscores duplicados
+        .toLowerCase()
+      
+      return `${sanitized}.${extension}`
+    }
+
+    const sanitizedName = sanitizeFileName(videoFile.name)
+    const fileName = `teste_${teste.ordem_servico_id}_${Date.now()}_${sanitizedName}`
+    
     const { data: uploadData, error: uploadError } = await supabaseClient.storage
       .from('videos-teste')
       .upload(fileName, videoFile, {
