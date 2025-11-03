@@ -10,8 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X, Minus } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useClientes } from "@/hooks/use-clientes";
+import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +43,13 @@ export default function NovoOrcamento() {
     clientes,
     criarCliente
   } = useClientes();
+
+  const { categorias, loading: loadingCategorias } = useCategoriasFinanceiras();
+
+  // Filtrar apenas categorias de receita operacional (entrada)
+  const receitasOperacionais = useMemo(() => {
+    return categorias.filter(cat => cat.classificacao === 'entrada');
+  }, [categorias]);
   
   const [dadosOrcamento, setDadosOrcamento] = useState({
     id: '', // Add id for editing
@@ -1608,32 +1616,49 @@ export default function NovoOrcamento() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="numeroOrdem">Nº do Orçamento *</Label>
-                  <div className="relative">
-                    <Input id="numeroOrdem" value={dadosOrcamento.numeroOrdem} onChange={e => setDadosOrcamento(prev => ({
-                    ...prev,
-                    numeroOrdem: e.target.value
-                  }))} className="bg-muted" />
-                    <span className="absolute bottom-1 left-3 text-xs text-muted-foreground">
-                      Número gerado automaticamente
-                    </span>
-                  </div>
+                  <Input 
+                    id="numeroOrdem" 
+                    value={dadosOrcamento.numeroOrdem} 
+                    onChange={e => setDadosOrcamento(prev => ({
+                      ...prev,
+                      numeroOrdem: e.target.value
+                    }))} 
+                    className="bg-muted" 
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Número gerado automaticamente
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="tipoOrdem">Tipo Ordem *</Label>
-                  <Select value={dadosOrcamento.tipoOrdem} onValueChange={value => setDadosOrcamento(prev => ({
-                  ...prev,
-                  tipoOrdem: value
-                }))}>
+                  <Select 
+                    value={dadosOrcamento.tipoOrdem} 
+                    onValueChange={value => setDadosOrcamento(prev => ({
+                      ...prev,
+                      tipoOrdem: value
+                    }))}
+                    disabled={loadingCategorias}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="manutencao">Manutenção</SelectItem>
-                      <SelectItem value="reforma">Reforma</SelectItem>
-                      <SelectItem value="instalacao">Instalação</SelectItem>
-                      <SelectItem value="reparo">Reparo</SelectItem>
+                      {receitasOperacionais.length === 0 ? (
+                        <SelectItem value="sem_categoria" disabled>
+                          Nenhuma receita cadastrada
+                        </SelectItem>
+                      ) : (
+                        receitasOperacionais.map(categoria => (
+                          <SelectItem key={categoria.id} value={categoria.id}>
+                            {categoria.codigo} - {categoria.nome}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Categorias de receita operacional
+                  </p>
                 </div>
                 
               </div>
