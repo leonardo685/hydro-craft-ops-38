@@ -73,7 +73,10 @@ export default function Orcamentos() {
     try {
       const { data, error } = await supabase
         .from('orcamentos')
-        .select('*')
+        .select(`
+          *,
+          itens_orcamento(*)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -161,6 +164,14 @@ export default function Orcamentos() {
   };
 
   const editarOrcamento = (orcamento: any) => {
+    console.log('🔧 Editando orçamento - Dados enviados:', {
+      id: orcamento.id,
+      numero: orcamento.numero,
+      cliente_id: orcamento.cliente_id,
+      cliente_nome: orcamento.cliente_nome,
+      status: orcamento.status,
+      objetoCompleto: orcamento
+    });
     navigate('/orcamentos/novo', { state: { orcamento } });
   };
 

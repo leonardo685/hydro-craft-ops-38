@@ -176,7 +176,27 @@ export default function NovoOrcamento() {
 
       // Se é edição, carregar dados do orçamento
       if (orcamentoParaEdicao) {
-        console.log('Carregando orçamento para edição:', orcamentoParaEdicao);
+        console.log('📥 Orçamento recebido para edição:', {
+          id: orcamentoParaEdicao.id,
+          numero: orcamentoParaEdicao.numero,
+          cliente_id: orcamentoParaEdicao.cliente_id,
+          cliente_nome: orcamentoParaEdicao.cliente_nome,
+          objetoCompleto: orcamentoParaEdicao
+        });
+        
+        // VALIDAÇÃO CRÍTICA: Verificar se o ID existe
+        if (!orcamentoParaEdicao.id) {
+          console.error('❌ ERRO CRÍTICO: Orçamento sem ID!', orcamentoParaEdicao);
+          toast({
+            title: "Erro ao carregar orçamento",
+            description: "O orçamento não possui um ID válido. Não é possível editar.",
+            variant: "destructive"
+          });
+          navigate('/orcamentos');
+          return;
+        }
+        
+        console.log('✅ ID validado, carregando orçamento:', orcamentoParaEdicao.id);
         
         // Buscar cliente com normalização de strings para maior robustez
         const normalizarString = (str: string) => {
@@ -199,18 +219,25 @@ export default function NovoOrcamento() {
         });
         
         setDadosOrcamento({
-          id: orcamentoParaEdicao.id,
+          id: orcamentoParaEdicao.id || '', // Garantir que sempre tenha o ID
           tipoOrdem: orcamentoParaEdicao.observacoes?.split('|')[0]?.replace('Tipo:', '')?.trim() || 'reforma',
-          numeroOrdem: orcamentoParaEdicao.numero,
+          numeroOrdem: orcamentoParaEdicao.numero || '',
           urgencia: false,
-          cliente: orcamentoParaEdicao.cliente_nome,
+          cliente: orcamentoParaEdicao.cliente_nome || '',
           clienteId: orcamentoParaEdicao.cliente_id || clienteEncontrado?.id || '',
-          tag: orcamentoParaEdicao.equipamento,
+          tag: orcamentoParaEdicao.equipamento || '',
           solicitante: orcamentoParaEdicao.observacoes?.split('|')[1]?.replace('Solicitante:', '')?.trim() || '',
-          dataAbertura: new Date(orcamentoParaEdicao.data_criacao).toISOString().split('T')[0],
+          dataAbertura: orcamentoParaEdicao.data_criacao ? new Date(orcamentoParaEdicao.data_criacao).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           numeroNota: orcamentoParaEdicao.observacoes?.split('|')[2]?.replace('Nota:', '')?.trim() || '',
           numeroSerie: orcamentoParaEdicao.observacoes?.split('|')[3]?.replace('Ordem Ref:', '')?.trim() || orcamentoParaEdicao.observacoes?.split('|')[3]?.replace('Série:', '')?.trim() || '',
           observacoes: orcamentoParaEdicao.descricao || '',
+          status: orcamentoParaEdicao.status || 'pendente'
+        });
+        
+        console.log('✅ Dados do orçamento configurados:', {
+          id: orcamentoParaEdicao.id,
+          numeroOrdem: orcamentoParaEdicao.numero,
+          clienteId: orcamentoParaEdicao.cliente_id || clienteEncontrado?.id,
           status: orcamentoParaEdicao.status
         });
 
@@ -852,6 +879,12 @@ export default function NovoOrcamento() {
 
       let response;
       if (dadosOrcamento.id) {
+        console.log('🔄 ATUALIZANDO orçamento existente:', {
+          id: dadosOrcamento.id,
+          numero: dadosOrcamento.numeroOrdem,
+          cliente: dadosOrcamento.cliente
+        });
+        
         // Atualizar orçamento existente
         response = await supabase
           .from('orcamentos')
@@ -859,13 +892,22 @@ export default function NovoOrcamento() {
           .eq('id', dadosOrcamento.id)
           .select()
           .single();
+          
+        console.log('✅ Orçamento atualizado:', response);
       } else {
+        console.log('➕ CRIANDO novo orçamento:', {
+          numero: dadosOrcamento.numeroOrdem,
+          cliente: dadosOrcamento.cliente
+        });
+        
         // Criar novo orçamento
         response = await supabase
           .from('orcamentos')
           .insert(orcamentoData)
           .select()
           .single();
+          
+        console.log('✅ Novo orçamento criado:', response);
       }
 
       const { data, error } = response;
