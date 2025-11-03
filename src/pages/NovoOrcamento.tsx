@@ -1663,7 +1663,7 @@ export default function NovoOrcamento() {
                         </SelectTrigger>
                         <SelectContent>
                           {clientes.map(cliente => <SelectItem key={cliente.id} value={cliente.id}>
-                              {cliente.nome}
+                              {cliente.nome}{cliente.cnpj_cpf ? ` - ${cliente.cnpj_cpf.slice(-4)}` : ''}
                             </SelectItem>)}
                         </SelectContent>
                       </Select>
