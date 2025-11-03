@@ -14,6 +14,101 @@ import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 import { useContasBancarias } from "@/hooks/use-contas-bancarias";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { Label } from "@/components/ui/label";
+import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
+
+// Custom Tooltip for mini charts
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border border-border bg-background/95 p-2 text-sm shadow-md backdrop-blur-sm">
+        <p className="text-foreground">{`Valor: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(payload[0].value)}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+// StatCard Component
+interface StatCardProps {
+  title: string;
+  value: string;
+  change?: string;
+  changeValue?: number;
+  icon: React.ElementType;
+  chartData: Array<{ month: string; value: number }>;
+  loading?: boolean;
+}
+
+function StatCard({ title, value, change, changeValue = 0, icon: Icon, chartData, loading }: StatCardProps) {
+  const chartColor = changeValue >= 0 ? 'hsl(var(--primary))' : 'hsl(var(--destructive))';
+
+  return (
+    <div
+      className="group rounded-2xl border border-border/50
+                 bg-card/40 p-5 shadow-lg
+                 transition-all duration-300 ease-in-out
+                 hover:border-border hover:bg-card/60
+                 hover:-translate-y-1 cursor-pointer"
+    >
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="mt-4 flex items-end justify-between">
+        {loading ? (
+          <div className="text-sm text-muted-foreground">Carregando...</div>
+        ) : (
+          <>
+            <div className="flex flex-col">
+              <p className="text-2xl font-bold tracking-tighter text-foreground">{value}</p>
+              {change && (
+                <div className="flex items-center gap-1 mt-1">
+                  {changeValue >= 0 ? (
+                    <TrendingUp className="h-3 w-3 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3 text-destructive" />
+                  )}
+                  <span className={`text-xs ${changeValue >= 0 ? "text-green-600" : "text-destructive"}`}>
+                    {change}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="h-12 w-28">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id={`gradient-${title}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={chartColor} stopOpacity={0.4} />
+                      <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    cursor={{
+                      stroke: 'hsl(var(--border))',
+                      strokeWidth: 1,
+                      strokeDasharray: '3 3',
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke={chartColor}
+                    strokeWidth={2}
+                    dot={false}
+                    fillOpacity={1}
+                    fill={`url(#gradient-${title})`}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { lancamentos, loading } = useLancamentosFinanceiros();
@@ -183,51 +278,60 @@ export default function Dashboard() {
       ? ((dadosMesAtual.lucroLiquido - dadosMesAnterior.lucroLiquido) / dadosMesAnterior.lucroLiquido) * 100
       : 0;
 
-    const variacaoImpostos = impostosPagosMes > 0 ? 0 : 0; // Sem comparação por enquanto
-    const variacaoInvestimentos = investimentosMes > 0 ? 0 : 0; // Sem comparação por enquanto
+    const variacaoImpostos = impostosPagosMes > 0 ? 0 : 0;
+    const variacaoInvestimentos = investimentosMes > 0 ? 0 : 0;
 
+    // Preparar dados dos mini gráficos (últimos 7 meses)
+    const last7Months = monthlyData.slice(-7);
+    
     return [
       {
         title: "Saldo Atual",
         value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoAtual),
         change: "",
         changeValue: 0,
-        icon: DollarSign
+        icon: DollarSign,
+        chartData: last7Months.map(m => ({ month: m.mes, value: saldoAtual })) // Simplificado
       },
       {
         title: "Faturamento Total",
         value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(dadosMesAtual.faturamento),
         change: `${variacaoFaturamento >= 0 ? '+' : ''}${variacaoFaturamento.toFixed(1)}%`,
         changeValue: variacaoFaturamento,
-        icon: TrendingUp
+        icon: TrendingUp,
+        chartData: last7Months.map(m => ({ month: m.mes, value: m.faturamento }))
       },
       {
         title: "Margem de Contribuição",
         value: `${margemPercentual.toFixed(1)}%`,
         change: "",
         changeValue: 0,
-        icon: Activity
+        icon: Activity,
+        chartData: last7Months.map(m => ({ month: m.mes, value: m.margemContribuicao }))
       },
       {
         title: "Lucro Líquido",
         value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(dadosMesAtual.lucroLiquido),
         change: `${variacaoLucro >= 0 ? '+' : ''}${variacaoLucro.toFixed(1)}%`,
         changeValue: variacaoLucro,
-        icon: TrendingUp
+        icon: TrendingUp,
+        chartData: last7Months.map(m => ({ month: m.mes, value: m.lucroLiquido }))
       },
       {
         title: "Impostos Pagos (Mês)",
         value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(impostosPagosMes),
         change: "",
         changeValue: variacaoImpostos,
-        icon: Activity
+        icon: Activity,
+        chartData: last7Months.map(m => ({ month: m.mes, value: impostosPagosMes })) // Simplificado
       },
       {
         title: "Investimentos (Mês)",
         value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(investimentosMes),
         change: "",
         changeValue: variacaoInvestimentos,
-        icon: Activity
+        icon: Activity,
+        chartData: last7Months.map(m => ({ month: m.mes, value: m.investimentos }))
       }
     ];
   }, [monthlyData, saldoAtual, impostosPagosMes, investimentosMes]);
@@ -340,34 +444,16 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {dashboardCards.map((card, index) => (
-            <Card key={index}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                <card.icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {loading || loadingContas ? (
-                  <div className="text-sm text-muted-foreground">Carregando...</div>
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{card.value}</div>
-                    {card.change && (
-                      <div className="flex items-center gap-1 text-sm">
-                        {card.changeValue >= 0 ? (
-                          <TrendingUp className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <TrendingDown className="h-4 w-4 text-destructive" />
-                        )}
-                        <span className={card.changeValue >= 0 ? "text-green-600" : "text-destructive"}>
-                          {card.change}
-                        </span>
-                        <span className="text-muted-foreground">vs período anterior</span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
+            <StatCard
+              key={index}
+              title={card.title}
+              value={card.value}
+              change={card.change}
+              changeValue={card.changeValue}
+              icon={card.icon}
+              chartData={card.chartData}
+              loading={loading || loadingContas}
+            />
           ))}
         </div>
 
