@@ -31,6 +31,7 @@ import OrdemPorQRCode from "./pages/OrdemPorQRCode";
 import AdminPermissions from "./pages/AdminPermissions";
 import AcessoOrdemPublica from "./pages/AcessoOrdemPublica";
 import LaudoPublico from "./pages/LaudoPublico";
+import UploadVideoTeste from "./pages/UploadVideoTeste";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => (
             <Route path="/ordem/:numeroOrdem" element={<OrdemPorQRCode />} />
             <Route path="/acesso-ordem/:numeroOrdem" element={<AcessoOrdemPublica />} />
             <Route path="/laudo-publico/:numeroOrdem" element={<LaudoPublico />} />
+            <Route path="/upload-video-teste" element={<ProtectedRoute><UploadVideoTeste /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
