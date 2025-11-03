@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X, Minus } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useClientes } from "@/hooks/use-clientes";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
@@ -39,6 +39,17 @@ export default function NovoOrcamento() {
   const analiseId = searchParams.get('analiseId');
   const ordemServicoId = searchParams.get('ordemServicoId');
   const orcamentoParaEdicao = location.state?.orcamento;
+  
+  // Usar ref para persistir o orçamento e evitar perda de dados em re-renders
+  const orcamentoRef = useRef(orcamentoParaEdicao);
+  
+  // Atualizar ref apenas quando receber novo orçamento
+  useEffect(() => {
+    if (orcamentoParaEdicao) {
+      orcamentoRef.current = orcamentoParaEdicao;
+    }
+  }, [orcamentoParaEdicao]);
+  
   const {
     clientes,
     criarCliente
@@ -169,24 +180,27 @@ export default function NovoOrcamento() {
 
   useEffect(() => {
     const carregarDados = async () => {
+      // Usar ref para evitar perda de dados em re-renders
+      const orcamentoEdicao = orcamentoRef.current;
+      
       // Aguardar clientes serem carregados antes de processar edição
-      if (orcamentoParaEdicao && clientes.length === 0) {
+      if (orcamentoEdicao && clientes.length === 0) {
         return; // Aguardar próximo render com clientes carregados
       }
 
       // Se é edição, carregar dados do orçamento
-      if (orcamentoParaEdicao) {
+      if (orcamentoEdicao) {
         console.log('📥 Orçamento recebido para edição:', {
-          id: orcamentoParaEdicao.id,
-          numero: orcamentoParaEdicao.numero,
-          cliente_id: orcamentoParaEdicao.cliente_id,
-          cliente_nome: orcamentoParaEdicao.cliente_nome,
-          objetoCompleto: orcamentoParaEdicao
+          id: orcamentoEdicao.id,
+          numero: orcamentoEdicao.numero,
+          cliente_id: orcamentoEdicao.cliente_id,
+          cliente_nome: orcamentoEdicao.cliente_nome,
+          objetoCompleto: orcamentoEdicao
         });
         
         // VALIDAÇÃO CRÍTICA: Verificar se o ID existe
-        if (!orcamentoParaEdicao.id) {
-          console.error('❌ ERRO CRÍTICO: Orçamento sem ID!', orcamentoParaEdicao);
+        if (!orcamentoEdicao.id) {
+          console.error('❌ ERRO CRÍTICO: Orçamento sem ID!', orcamentoEdicao);
           toast({
             title: "Erro ao carregar orçamento",
             description: "O orçamento não possui um ID válido. Não é possível editar.",
@@ -196,7 +210,7 @@ export default function NovoOrcamento() {
           return;
         }
         
-        console.log('✅ ID validado, carregando orçamento:', orcamentoParaEdicao.id);
+        console.log('✅ ID validado, carregando orçamento:', orcamentoEdicao.id);
         
         // Buscar cliente com normalização de strings para maior robustez
         const normalizarString = (str: string) => {
@@ -205,57 +219,57 @@ export default function NovoOrcamento() {
         
         const clienteEncontrado = clientes.find(c => {
           const nomeCliente = normalizarString(c.nome || '');
-          const nomeOrcamento = normalizarString(orcamentoParaEdicao.cliente_nome || '');
+          const nomeOrcamento = normalizarString(orcamentoEdicao.cliente_nome || '');
           return nomeCliente === nomeOrcamento;
         });
         
         console.log('🔍 Debug - Edição de Orçamento:', {
-          orcamentoId: orcamentoParaEdicao.id,
-          clienteNomeBanco: orcamentoParaEdicao.cliente_nome,
-          clienteIdBanco: orcamentoParaEdicao.cliente_id,
+          orcamentoId: orcamentoEdicao.id,
+          clienteNomeBanco: orcamentoEdicao.cliente_nome,
+          clienteIdBanco: orcamentoEdicao.cliente_id,
           clienteEncontrado: clienteEncontrado?.nome,
           clienteIdEncontrado: clienteEncontrado?.id,
-          clienteIdFinal: orcamentoParaEdicao.cliente_id || clienteEncontrado?.id || ''
+          clienteIdFinal: orcamentoEdicao.cliente_id || clienteEncontrado?.id || ''
         });
         
         setDadosOrcamento({
-          id: orcamentoParaEdicao.id || '', // Garantir que sempre tenha o ID
-          tipoOrdem: orcamentoParaEdicao.observacoes?.split('|')[0]?.replace('Tipo:', '')?.trim() || 'reforma',
-          numeroOrdem: orcamentoParaEdicao.numero || '',
+          id: orcamentoEdicao.id || '', // Garantir que sempre tenha o ID
+          tipoOrdem: orcamentoEdicao.observacoes?.split('|')[0]?.replace('Tipo:', '')?.trim() || 'reforma',
+          numeroOrdem: orcamentoEdicao.numero || '',
           urgencia: false,
-          cliente: orcamentoParaEdicao.cliente_nome || '',
-          clienteId: orcamentoParaEdicao.cliente_id || clienteEncontrado?.id || '',
-          tag: orcamentoParaEdicao.equipamento || '',
-          solicitante: orcamentoParaEdicao.observacoes?.split('|')[1]?.replace('Solicitante:', '')?.trim() || '',
-          dataAbertura: orcamentoParaEdicao.data_criacao ? new Date(orcamentoParaEdicao.data_criacao).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          numeroNota: orcamentoParaEdicao.observacoes?.split('|')[2]?.replace('Nota:', '')?.trim() || '',
-          numeroSerie: orcamentoParaEdicao.observacoes?.split('|')[3]?.replace('Ordem Ref:', '')?.trim() || orcamentoParaEdicao.observacoes?.split('|')[3]?.replace('Série:', '')?.trim() || '',
-          observacoes: orcamentoParaEdicao.descricao || '',
-          status: orcamentoParaEdicao.status || 'pendente'
+          cliente: orcamentoEdicao.cliente_nome || '',
+          clienteId: orcamentoEdicao.cliente_id || clienteEncontrado?.id || '',
+          tag: orcamentoEdicao.equipamento || '',
+          solicitante: orcamentoEdicao.observacoes?.split('|')[1]?.replace('Solicitante:', '')?.trim() || '',
+          dataAbertura: orcamentoEdicao.data_criacao ? new Date(orcamentoEdicao.data_criacao).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          numeroNota: orcamentoEdicao.observacoes?.split('|')[2]?.replace('Nota:', '')?.trim() || '',
+          numeroSerie: orcamentoEdicao.observacoes?.split('|')[3]?.replace('Ordem Ref:', '')?.trim() || orcamentoEdicao.observacoes?.split('|')[3]?.replace('Série:', '')?.trim() || '',
+          observacoes: orcamentoEdicao.descricao || '',
+          status: orcamentoEdicao.status || 'pendente'
         });
         
         console.log('✅ Dados do orçamento configurados:', {
-          id: orcamentoParaEdicao.id,
-          numeroOrdem: orcamentoParaEdicao.numero,
-          clienteId: orcamentoParaEdicao.cliente_id || clienteEncontrado?.id,
-          status: orcamentoParaEdicao.status
+          id: orcamentoEdicao.id,
+          numeroOrdem: orcamentoEdicao.numero,
+          clienteId: orcamentoEdicao.cliente_id || clienteEncontrado?.id,
+          status: orcamentoEdicao.status
         });
 
         // Carregar informações comerciais
         setInformacoesComerciais(prev => ({
           ...prev,
-          valorTotal: Number(orcamentoParaEdicao.valor) || 0,
-          condicaoPagamento: orcamentoParaEdicao.condicao_pagamento || '',
-          prazoEntrega: orcamentoParaEdicao.prazo_entrega || '',
-          assuntoProposta: orcamentoParaEdicao.assunto_proposta || '',
-          frete: orcamentoParaEdicao.frete || 'CIF'
+          valorTotal: Number(orcamentoEdicao.valor) || 0,
+          condicaoPagamento: orcamentoEdicao.condicao_pagamento || '',
+          prazoEntrega: orcamentoEdicao.prazo_entrega || '',
+          assuntoProposta: orcamentoEdicao.assunto_proposta || '',
+          frete: orcamentoEdicao.frete || 'CIF'
         }));
 
         // Carregar itens do orçamento
         const { data: itensData, error: itensError } = await supabase
           .from('itens_orcamento')
           .select('*')
-          .eq('orcamento_id', orcamentoParaEdicao.id);
+          .eq('orcamento_id', orcamentoEdicao.id);
 
         if (!itensError && itensData) {
           const pecas = itensData.filter(i => i.tipo === 'peca').map(i => ({
@@ -295,12 +309,12 @@ export default function NovoOrcamento() {
         }
 
         // Carregar fotos do orçamento (se não tem ordem de serviço associada) ou de ordem de serviço
-        if (orcamentoParaEdicao.ordem_servico_id) {
+        if (orcamentoEdicao.ordem_servico_id) {
           // Buscar fotos de equipamentos através da ordem de serviço
           const { data: osData } = await supabase
             .from('ordens_servico')
             .select('recebimento_id')
-            .eq('id', orcamentoParaEdicao.ordem_servico_id)
+            .eq('id', orcamentoEdicao.ordem_servico_id)
             .single();
 
           if (osData?.recebimento_id) {
@@ -324,7 +338,7 @@ export default function NovoOrcamento() {
           const { data: fotosData } = await supabase
             .from('fotos_orcamento')
             .select('*')
-            .eq('orcamento_id', orcamentoParaEdicao.id);
+            .eq('orcamento_id', orcamentoEdicao.id);
 
           if (fotosData) {
             setFotos(fotosData.map(f => ({
@@ -601,15 +615,18 @@ export default function NovoOrcamento() {
           }
         }
       } else {
-        setDadosOrcamento(prev => ({
-          ...prev,
-          dataAbertura: new Date().toISOString().split('T')[0]
-        }));
+        // PROTEÇÃO: Só atualizar data se não estiver editando
+        if (!dadosOrcamento.id && !orcamentoRef.current) {
+          setDadosOrcamento(prev => ({
+            ...prev,
+            dataAbertura: new Date().toISOString().split('T')[0]
+          }));
+        }
       }
     };
 
     carregarDados();
-  }, [analiseId, ordemServicoId, orcamentoParaEdicao]);
+  }, [analiseId, ordemServicoId, clientes]); // Removido orcamentoParaEdicao das dependências
 
   const handleUploadFoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
