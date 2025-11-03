@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ItemSelectionModal } from "@/components/ItemSelectionModal";
 import { TesteModal } from "@/components/TesteModal";
 import { UploadProdutoProntoModal } from "@/components/UploadProdutoProntoModal";
+import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 export default function Aprovados() {
@@ -177,16 +178,11 @@ export default function Aprovados() {
                           </div>
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
-                              <button className="text-primary hover:underline cursor-pointer" onClick={() => {
-                        const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
-                        if (numeroOrdem) {
-                          navigate(`/ordem/${numeroOrdem}`);
-                        } else {
-                          navigate(`/visualizar-ordem/${ordem.id}`);
-                        }
-                      }}>
-                                {ordem.recebimentos?.numero_ordem || ordem.numero_ordem || 'Sem número'}
-                              </button> - {ordem.equipamento || ordem.recebimentos?.tipo_equipamento}
+                              <OrdemServicoModal ordem={ordem}>
+                                <button className="text-primary hover:underline cursor-pointer">
+                                  {ordem.recebimentos?.numero_ordem || ordem.numero_ordem || 'Sem número'}
+                                </button>
+                              </OrdemServicoModal> - {ordem.equipamento || ordem.recebimentos?.tipo_equipamento}
                             </CardTitle>
                             <CardDescription className="mt-1 flex items-center gap-4">
                               <span className="flex items-center gap-1">
