@@ -493,7 +493,7 @@ export default function LaudoPublico() {
         )}
 
         {/* Vídeo do Teste */}
-        {teste?.video_url && (
+        {teste && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -502,27 +502,38 @@ export default function LaudoPublico() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                <video 
-                  controls 
-                  className="w-full h-full"
-                  src={teste.video_url}
-                >
-                  Seu navegador não suporta a reprodução de vídeos.
-                </video>
-              </div>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  if (teste.video_url) {
-                    window.open(teste.video_url, '_blank');
-                  }
-                }}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Baixar Vídeo
-              </Button>
+              {teste.video_url ? (
+                <>
+                  <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                    <video 
+                      controls 
+                      className="w-full h-full"
+                      src={teste.video_url}
+                    >
+                      Seu navegador não suporta a reprodução de vídeos.
+                    </video>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      if (teste.video_url) {
+                        window.open(teste.video_url, '_blank');
+                      }
+                    }}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Baixar Vídeo
+                  </Button>
+                </>
+              ) : (
+                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <Video className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>Nenhum vídeo foi anexado a este teste</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
