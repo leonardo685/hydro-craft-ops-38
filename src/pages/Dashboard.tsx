@@ -40,7 +40,20 @@ interface StatCardProps {
 }
 
 function StatCard({ title, value, change, changeValue = 0, icon: Icon, chartData, loading }: StatCardProps) {
-  const chartColor = changeValue >= 0 ? 'hsl(var(--primary))' : 'hsl(var(--destructive))';
+  // Detectar se o valor principal é negativo verificando a string
+  const isNegativeValue = value.includes('-');
+  
+  // Determinar cor baseado no valor negativo OU na variação
+  const isNegative = isNegativeValue || changeValue < 0;
+  const isPositive = !isNegativeValue && changeValue >= 0;
+  
+  // Cores neon para positivo/negativo
+  const chartColor = isNegative ? '#ef4444' : '#10b981'; // vermelho/verde neon
+  const valueColor = isNegativeValue 
+    ? 'text-red-500' 
+    : isPositive && changeValue > 0 
+      ? 'text-green-500' 
+      : 'text-foreground';
 
   return (
     <div
@@ -60,15 +73,15 @@ function StatCard({ title, value, change, changeValue = 0, icon: Icon, chartData
         ) : (
           <>
             <div className="flex flex-col">
-              <p className="text-2xl font-bold tracking-tighter text-foreground">{value}</p>
+              <p className={`text-2xl font-bold tracking-tighter ${valueColor}`}>{value}</p>
               {change && (
                 <div className="flex items-center gap-1 mt-1">
                   {changeValue >= 0 ? (
-                    <TrendingUp className="h-3 w-3 text-green-600" />
+                    <TrendingUp className="h-3 w-3 text-green-500" />
                   ) : (
-                    <TrendingDown className="h-3 w-3 text-destructive" />
+                    <TrendingDown className="h-3 w-3 text-red-500" />
                   )}
-                  <span className={`text-xs ${changeValue >= 0 ? "text-green-600" : "text-destructive"}`}>
+                  <span className={`text-xs ${changeValue >= 0 ? "text-green-500" : "text-red-500"}`}>
                     {change}
                   </span>
                 </div>
@@ -78,7 +91,7 @@ function StatCard({ title, value, change, changeValue = 0, icon: Icon, chartData
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                   <defs>
-                    <linearGradient id={`gradient-${title}`} x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id={`gradient-${title.replace(/\s/g, '-')}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor={chartColor} stopOpacity={0.4} />
                       <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
                     </linearGradient>
@@ -98,7 +111,7 @@ function StatCard({ title, value, change, changeValue = 0, icon: Icon, chartData
                     strokeWidth={2}
                     dot={false}
                     fillOpacity={1}
-                    fill={`url(#gradient-${title})`}
+                    fill={`url(#gradient-${title.replace(/\s/g, '-')})`}
                   />
                 </LineChart>
               </ResponsiveContainer>
