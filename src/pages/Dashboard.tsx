@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DollarSign, Activity, TrendingUp, TrendingDown, CalendarIcon } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart } from "@/components/ui/area-chart";
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
@@ -376,35 +376,23 @@ export default function Dashboard() {
             <CardTitle>Faturamento - Últimos 12 Meses</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-96">
-              {loading ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  Carregando dados...
-                </div>
-              ) : monthlyData.every(m => m.faturamento === 0) ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  Nenhum dado disponível. Comece adicionando lançamentos financeiros.
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="mes" />
-                    <YAxis />
-                    <Tooltip 
-                      formatter={(value: number) => 
-                        new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL'
-                        }).format(value)
-                      }
-                    />
-                    <Legend />
-                    <Bar dataKey="faturamento" name="Faturamento" fill={colors.faturamento} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center h-80 text-muted-foreground">
+                Carregando dados...
+              </div>
+            ) : monthlyData.every(m => m.faturamento === 0) ? (
+              <div className="flex items-center justify-center h-80 text-muted-foreground">
+                Nenhum dado disponível. Comece adicionando lançamentos financeiros.
+              </div>
+            ) : (
+              <AreaChart
+                data={monthlyData}
+                categories={["faturamento"]}
+                index="mes"
+                colors={[colors.faturamento]}
+                className="h-80"
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -413,35 +401,23 @@ export default function Dashboard() {
             <CardTitle>Custos Variáveis - Últimos 12 Meses</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-96">
-              {loading ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  Carregando dados...
-                </div>
-              ) : monthlyData.every(m => m.custosVariaveis === 0) ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  Nenhum dado disponível. Comece adicionando lançamentos financeiros.
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="mes" />
-                    <YAxis />
-                    <Tooltip 
-                      formatter={(value: number) => 
-                        new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL'
-                        }).format(value)
-                      }
-                    />
-                    <Legend />
-                    <Bar dataKey="custosVariaveis" name="Custos Variáveis" fill={colors.custosVariaveis} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center h-80 text-muted-foreground">
+                Carregando dados...
+              </div>
+            ) : monthlyData.every(m => m.custosVariaveis === 0) ? (
+              <div className="flex items-center justify-center h-80 text-muted-foreground">
+                Nenhum dado disponível. Comece adicionando lançamentos financeiros.
+              </div>
+            ) : (
+              <AreaChart
+                data={monthlyData}
+                categories={["custosVariaveis"]}
+                index="mes"
+                colors={[colors.custosVariaveis]}
+                className="h-80"
+              />
+            )}
           </CardContent>
         </Card>
 
