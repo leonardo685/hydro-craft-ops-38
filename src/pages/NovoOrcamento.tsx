@@ -222,6 +222,7 @@ export default function NovoOrcamento() {
             id: `peca-${i.id}`,
             tipo: 'peca' as const,
             descricao: i.descricao,
+            codigo: i.codigo || '',
             quantidade: Number(i.quantidade),
             valorUnitario: Number(i.valor_unitario),
             valorTotal: Number(i.valor_total),
@@ -232,6 +233,7 @@ export default function NovoOrcamento() {
             id: `servico-${i.id}`,
             tipo: 'servico' as const,
             descricao: i.descricao,
+            codigo: i.codigo || '',
             quantidade: Number(i.quantidade),
             valorUnitario: Number(i.valor_unitario),
             valorTotal: Number(i.valor_total),
@@ -242,6 +244,7 @@ export default function NovoOrcamento() {
             id: `usinagem-${i.id}`,
             tipo: 'usinagem' as const,
             descricao: i.descricao,
+            codigo: i.codigo || '',
             quantidade: Number(i.quantidade),
             valorUnitario: Number(i.valor_unitario),
             valorTotal: Number(i.valor_total),
@@ -885,6 +888,7 @@ export default function NovoOrcamento() {
         orcamento_id: orcamentoId,
         tipo: item.tipo,
         descricao: item.descricao,
+        codigo: item.codigo || null,
         quantidade: item.quantidade,
         valor_unitario: item.valorUnitario,
         valor_total: item.valorTotal,
@@ -1934,6 +1938,7 @@ export default function NovoOrcamento() {
                   <TableHeader>
                       <TableRow>
                       <TableHead>Peça</TableHead>
+                      <TableHead>Código</TableHead>
                       <TableHead className="text-center">Qtd</TableHead>
                       <TableHead className="text-right">Valor Unit. (R$)</TableHead>
                       <TableHead className="text-right">Total</TableHead>
@@ -1944,6 +1949,21 @@ export default function NovoOrcamento() {
                     {itensAnalise.pecas.map(peca => <TableRow key={peca.id}>
                         <TableCell>
                           <Input value={peca.descricao} onChange={e => atualizarDescricaoItem('pecas', peca.id, e.target.value)} placeholder="Descrição da peça" className="min-w-[200px]" />
+                        </TableCell>
+                        <TableCell>
+                          <Input 
+                            value={peca.codigo || ''} 
+                            onChange={e => setItensAnalise(prev => ({
+                              ...prev,
+                              pecas: prev.pecas.map(p => 
+                                p.id === peca.id 
+                                  ? { ...p, codigo: e.target.value } 
+                                  : p
+                              )
+                            }))} 
+                            placeholder="Código" 
+                            className="min-w-[100px]" 
+                          />
                         </TableCell>
                         <TableCell className="text-center">
                           <Input type="number" min="1" value={peca.quantidade} onChange={e => atualizarQuantidadeItem('pecas', peca.id, parseInt(e.target.value) || 1)} className="w-16 text-center" />

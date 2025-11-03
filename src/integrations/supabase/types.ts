@@ -532,6 +532,7 @@ export type Database = {
       }
       itens_orcamento: {
         Row: {
+          codigo: string | null
           created_at: string
           descricao: string
           detalhes: Json | null
@@ -543,6 +544,7 @@ export type Database = {
           valor_unitario: number
         }
         Insert: {
+          codigo?: string | null
           created_at?: string
           descricao: string
           detalhes?: Json | null
@@ -554,6 +556,7 @@ export type Database = {
           valor_unitario?: number
         }
         Update: {
+          codigo?: string | null
           created_at?: string
           descricao?: string
           detalhes?: Json | null
