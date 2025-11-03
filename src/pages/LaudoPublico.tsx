@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import mecHidroLogo from "@/assets/mec-hidro-logo-novo.jpg";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,9 @@ interface OrdemServico {
   data_entrada: string;
   data_analise: string | null;
   status: string;
+  recebimentos?: {
+    numero_ordem: string;
+  };
 }
 
 interface TesteEquipamento {
@@ -101,7 +105,10 @@ export default function LaudoPublico() {
         // Buscar ordem de serviço
         const { data: ordem, error: ordemError } = await supabase
           .from("ordens_servico")
-          .select("*")
+          .select(`
+            *,
+            recebimentos!inner(numero_ordem)
+          `)
           .eq("recebimento_id", recebimento.id)
           .maybeSingle();
 
@@ -203,7 +210,8 @@ export default function LaudoPublico() {
         heightLeft -= pageHeight;
       }
       
-      pdf.save(`Laudo_${ordemServico.numero_ordem}.pdf`);
+      const numeroOrdemCorreto = ordemServico.recebimentos?.numero_ordem || ordemServico.numero_ordem;
+      pdf.save(`Laudo_${numeroOrdemCorreto}.pdf`);
       
       toast.dismiss();
       toast.success("PDF exportado com sucesso!");
@@ -244,7 +252,7 @@ export default function LaudoPublico() {
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
               <img 
-                src="/src/assets/mec-hidro-logo-novo.jpg" 
+                src={mecHidroLogo} 
                 alt="MEC-HIDRO Logo" 
                 className="h-16 object-contain"
               />
@@ -252,7 +260,7 @@ export default function LaudoPublico() {
             <div>
               <CardTitle className="text-3xl font-bold">Laudo Técnico</CardTitle>
               <p className="text-muted-foreground text-lg mt-2">
-                Ordem de Serviço <span className="font-semibold text-primary">#{ordemServico.numero_ordem}</span>
+                Ordem de Serviço <span className="font-semibold text-primary">#{ordemServico.recebimentos?.numero_ordem || ordemServico.numero_ordem}</span>
               </p>
               <Button
                 onClick={handleExportPDF}
