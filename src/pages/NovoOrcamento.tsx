@@ -46,9 +46,29 @@ export default function NovoOrcamento() {
 
   const { categorias, loading: loadingCategorias } = useCategoriasFinanceiras();
 
-  // Filtrar apenas categorias de receita operacional (entrada)
+  // Filtrar apenas categorias de receita operacional (entrada), excluindo não operacionais
   const receitasOperacionais = useMemo(() => {
-    return categorias.filter(cat => cat.classificacao === 'entrada');
+    // Encontrar a categoria mãe "Receitas Não Operacionais" para excluir suas filhas
+    const categoriaNaoOperacional = categorias.find(cat => 
+      cat.tipo === 'mae' && 
+      cat.classificacao === 'entrada' && 
+      cat.nome.toLowerCase().includes('não operacion')
+    );
+
+    return categorias.filter(cat => {
+      // Incluir apenas categorias de entrada (receita)
+      if (cat.classificacao !== 'entrada') return false;
+      
+      // Excluir categorias mãe (queremos apenas as filhas para seleção)
+      if (cat.tipo === 'mae') return false;
+      
+      // Excluir filhas de "Receitas Não Operacionais"
+      if (categoriaNaoOperacional && cat.categoriaMaeId === categoriaNaoOperacional.id) {
+        return false;
+      }
+      
+      return true;
+    });
   }, [categorias]);
   
   const [dadosOrcamento, setDadosOrcamento] = useState({
