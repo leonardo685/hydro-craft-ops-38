@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Video, ArrowLeft } from "lucide-react";
+import { Upload, Video, ArrowLeft, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,7 +13,25 @@ export default function UploadVideoTeste() {
   const [testeId, setTesteId] = useState("b461d197-208e-4a0f-98c6-0110d42689b6");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Buscar URL do vídeo atual
+    const fetchCurrentVideo = async () => {
+      const { data, error } = await supabase
+        .from('testes_equipamentos')
+        .select('video_url')
+        .eq('id', testeId)
+        .single();
+      
+      if (!error && data?.video_url) {
+        setVideoUrl(data.video_url);
+      }
+    };
+    
+    fetchCurrentVideo();
+  }, [testeId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,6 +85,12 @@ export default function UploadVideoTeste() {
       });
 
       setVideoFile(null);
+      setVideoUrl(data.videoUrl);
+      
+      // Atualizar a página após 2 segundos
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     } catch (error) {
       console.error('Erro ao enviar vídeo:', error);
       toast({
@@ -111,6 +135,20 @@ export default function UploadVideoTeste() {
             </p>
           </div>
 
+          {videoUrl && (
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="text-sm font-medium mb-2">Vídeo Atual:</p>
+              <a 
+                href={videoUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline flex items-center gap-2"
+              >
+                Ver vídeo <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          )}
+
           <div>
             <Label htmlFor="videoFile">Vídeo (máx. 100MB)</Label>
             <div className="mt-2 space-y-2">
@@ -131,6 +169,9 @@ export default function UploadVideoTeste() {
                   <span>({(videoFile.size / 1024 / 1024).toFixed(2)} MB)</span>
                 </div>
               )}
+              <p className="text-xs text-muted-foreground">
+                Selecione o arquivo de vídeo que deseja fazer upload (ex: Vídeo_do_WhatsApp_de_2025-11-02_à_s_11.32.33_a5f8d660.mp4)
+              </p>
             </div>
           </div>
 
@@ -141,6 +182,19 @@ export default function UploadVideoTeste() {
           >
             {uploading ? "Enviando..." : "Enviar Vídeo"}
           </Button>
+
+          <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+              Instruções:
+            </p>
+            <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
+              <li>Clique em "Escolher arquivo" acima</li>
+              <li>Selecione o vídeo que você quer fazer upload</li>
+              <li>Clique em "Enviar Vídeo"</li>
+              <li>Aguarde o upload completar</li>
+              <li>Acesse o laudo público em /laudo-publico/MH-013-25 para ver o vídeo</li>
+            </ol>
+          </div>
         </CardContent>
       </Card>
     </div>
