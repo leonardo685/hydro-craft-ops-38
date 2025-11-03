@@ -427,22 +427,28 @@ export default function Orcamentos() {
       // === INFORMAÇÕES DO CLIENTE ===
       yPosition = 55;
       
-      // Buscar CNPJ do cliente
+      // Buscar CNPJ do cliente usando cliente_id
       let cnpjCliente = '';
-      if (orcamento.ordem_servico_id) {
-        const { data: osData } = await supabase
-          .from('ordens_servico')
-          .select('recebimento_id')
-          .eq('id', orcamento.ordem_servico_id)
+      if (orcamento.cliente_id) {
+        const { data: clienteData } = await supabase
+          .from('clientes')
+          .select('cnpj_cpf')
+          .eq('id', orcamento.cliente_id)
           .maybeSingle();
         
-        if (osData?.recebimento_id) {
-          const { data: recData } = await supabase
-            .from('recebimentos')
-            .select('cliente_cnpj')
-            .eq('id', osData.recebimento_id)
-            .maybeSingle();
-          cnpjCliente = recData?.cliente_cnpj || '';
+        if (clienteData) {
+          cnpjCliente = clienteData.cnpj_cpf || '';
+        }
+      } else if (orcamento.cliente_nome) {
+        // Fallback: buscar por nome (para orçamentos antigos)
+        const { data: clienteData } = await supabase
+          .from('clientes')
+          .select('cnpj_cpf')
+          .eq('nome', orcamento.cliente_nome)
+          .maybeSingle();
+        
+        if (clienteData) {
+          cnpjCliente = clienteData.cnpj_cpf || '';
         }
       }
       
@@ -557,6 +563,7 @@ export default function Orcamentos() {
           const valorUnit = Number(item.valor_unitario || 0);
           const valorTot = Number(item.valor_total || 0);
           return [
+            item.codigo || '-',
             item.descricao || '-',
             Number(item.quantidade || 0).toFixed(0),
             valorUnit > 0 ? valorUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
@@ -565,10 +572,10 @@ export default function Orcamentos() {
         });
 
         yPosition = criarTabela(
-          ['Descrição', 'Qtd', 'Valor Unit.', 'Total'],
+          ['Código', 'Descrição', 'Qtd', 'Valor Unit.', 'Total'],
           pecasRows,
           yPosition,
-          [85, 15, 25, 25]
+          [20, 60, 15, 25, 25]
         );
 
         // Total de Peças em box
@@ -622,6 +629,7 @@ export default function Orcamentos() {
           const valorUnit = Number(item.valor_unitario || 0);
           const valorTot = Number(item.valor_total || 0);
           return [
+            item.codigo || '-',
             item.descricao || '-',
             Number(item.quantidade || 0).toFixed(0),
             valorUnit > 0 ? valorUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
@@ -630,10 +638,10 @@ export default function Orcamentos() {
         });
 
         yPosition = criarTabela(
-          ['Descrição', 'Qtd', 'Valor Unit.', 'Total'],
+          ['Código', 'Descrição', 'Qtd', 'Valor Unit.', 'Total'],
           servicosRows,
           yPosition,
-          [85, 15, 25, 25]
+          [20, 60, 15, 25, 25]
         );
 
         // Total de Serviços em box
@@ -687,6 +695,7 @@ export default function Orcamentos() {
           const valorUnit = Number(item.valor_unitario || 0);
           const valorTot = Number(item.valor_total || 0);
           return [
+            item.codigo || '-',
             item.descricao || '-',
             Number(item.quantidade || 0).toFixed(0),
             valorUnit > 0 ? valorUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
@@ -695,10 +704,10 @@ export default function Orcamentos() {
         });
 
         yPosition = criarTabela(
-          ['Descrição', 'Qtd', 'Valor Unit.', 'Total'],
+          ['Código', 'Descrição', 'Qtd', 'Valor Unit.', 'Total'],
           usinagemRows,
           yPosition,
-          [85, 15, 25, 25]
+          [20, 60, 15, 25, 25]
         );
 
         // Total de Usinagem em box

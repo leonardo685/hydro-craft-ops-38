@@ -178,12 +178,25 @@ export default function NovoOrcamento() {
       if (orcamentoParaEdicao) {
         console.log('Carregando orçamento para edição:', orcamentoParaEdicao);
         
-        // Buscar cliente para preencher clienteId com busca mais robusta
-        const clienteEncontrado = clientes.find(c => 
-          c.nome.toLowerCase().trim() === orcamentoParaEdicao.cliente_nome?.toLowerCase().trim()
-        );
+        // Buscar cliente com normalização de strings para maior robustez
+        const normalizarString = (str: string) => {
+          return str.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        };
         
-        console.log('Cliente encontrado:', clienteEncontrado);
+        const clienteEncontrado = clientes.find(c => {
+          const nomeCliente = normalizarString(c.nome || '');
+          const nomeOrcamento = normalizarString(orcamentoParaEdicao.cliente_nome || '');
+          return nomeCliente === nomeOrcamento;
+        });
+        
+        console.log('🔍 Debug - Edição de Orçamento:', {
+          orcamentoId: orcamentoParaEdicao.id,
+          clienteNomeBanco: orcamentoParaEdicao.cliente_nome,
+          clienteIdBanco: orcamentoParaEdicao.cliente_id,
+          clienteEncontrado: clienteEncontrado?.nome,
+          clienteIdEncontrado: clienteEncontrado?.id,
+          clienteIdFinal: orcamentoParaEdicao.cliente_id || clienteEncontrado?.id || ''
+        });
         
         setDadosOrcamento({
           id: orcamentoParaEdicao.id,
