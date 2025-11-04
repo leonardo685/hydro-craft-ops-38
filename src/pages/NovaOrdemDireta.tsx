@@ -102,18 +102,31 @@ const NovaOrdemDireta = () => {
       try {
         const ano = new Date().getFullYear().toString().slice(-2);
         
-        // Buscar todas as ordens do ano atual
-        const { data, error } = await supabase
-          .from('ordens_servico')
-          .select('numero_ordem')
-          .ilike('numero_ordem', `MH-%-${ano}`);
+        // Buscar todas as ordens do ano atual em AMBAS as tabelas
+        const [ordensData, recebimentosData] = await Promise.all([
+          supabase
+            .from('ordens_servico')
+            .select('numero_ordem')
+            .ilike('numero_ordem', `MH-%-${ano}`),
+          supabase
+            .from('recebimentos')
+            .select('numero_ordem')
+            .ilike('numero_ordem', `MH-%-${ano}`)
+        ]);
 
-        if (error) throw error;
+        if (ordensData.error) throw ordensData.error;
+        if (recebimentosData.error) throw recebimentosData.error;
+
+        // Combinar os resultados de ambas as tabelas
+        const todasOrdens = [
+          ...(ordensData.data || []),
+          ...(recebimentosData.data || [])
+        ];
 
         let proximoNumero = 1;
-        if (data && data.length > 0) {
+        if (todasOrdens.length > 0) {
           // Extrair todos os números e encontrar o maior
-          const numeros = data
+          const numeros = todasOrdens
             .map(ordem => {
               const match = ordem.numero_ordem.match(/MH-(\d+)-/);
               return match ? parseInt(match[1]) : 0;
