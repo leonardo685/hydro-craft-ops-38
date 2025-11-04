@@ -2409,7 +2409,7 @@ export default function Financeiro() {
                                     <Calendar
                                       mode="single"
                                       selected={lancamentoForm.dataPagamento}
-                                      onSelect={(date) => setLancamentoForm(prev => ({ ...prev, dataPagamento: date || new Date(2024, 7, 29) }))}
+                                      onSelect={(date) => setLancamentoForm(prev => ({ ...prev, dataPagamento: date || new Date() }))}
                                       initialFocus
                                       className={cn("p-3 pointer-events-auto")}
                                     />
@@ -2439,7 +2439,7 @@ export default function Financeiro() {
                                       <Calendar
                                         mode="single"
                                         selected={lancamentoForm.dataRealizada}
-                                        onSelect={(date) => setLancamentoForm(prev => ({ ...prev, dataRealizada: date || new Date(2024, 7, 29) }))}
+                                        onSelect={(date) => setLancamentoForm(prev => ({ ...prev, dataRealizada: date || new Date() }))}
                                         initialFocus
                                         className={cn("p-3 pointer-events-auto")}
                                       />
@@ -2472,7 +2472,7 @@ export default function Financeiro() {
                                     <Calendar
                                       mode="single"
                                       selected={lancamentoForm.dataEsperada}
-                                      onSelect={(date) => setLancamentoForm(prev => ({ ...prev, dataEsperada: date || new Date(2024, 7, 29) }))}
+                                      onSelect={(date) => setLancamentoForm(prev => ({ ...prev, dataEsperada: date || new Date() }))}
                                       initialFocus
                                       className={cn("p-3 pointer-events-auto")}
                                     />
