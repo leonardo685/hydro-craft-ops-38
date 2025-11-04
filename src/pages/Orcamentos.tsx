@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon } from "lucide-react";
+import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
@@ -1012,6 +1012,108 @@ export default function Orcamentos() {
               </div>
             </SheetContent>
           </Sheet>
+        </div>
+
+        {/* Cards de Métricas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Valor Total Aguardando Aprovação */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Aguardando Aprovação
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-warning" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-warning">
+                {useMemo(() => {
+                  const total = orcamentos
+                    .filter(o => o.status === 'pendente')
+                    .reduce((acc, o) => acc + Number(o.valor || 0), 0);
+                  return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                }, [orcamentos])}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {useMemo(() => {
+                  return orcamentos.filter(o => o.status === 'pendente').length;
+                }, [orcamentos])} orçamento(s)
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Valor Total Aprovados */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Aprovados
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-success" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success">
+                {useMemo(() => {
+                  const total = orcamentos
+                    .filter(o => o.status === 'aprovado' || o.status === 'faturamento')
+                    .reduce((acc, o) => acc + Number(o.valor || 0), 0);
+                  return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                }, [orcamentos])}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {useMemo(() => {
+                  return orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').length;
+                }, [orcamentos])} orçamento(s)
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Valor Total Reprovados */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Reprovados
+              </CardTitle>
+              <XCircle className="h-4 w-4 text-destructive" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-destructive">
+                {useMemo(() => {
+                  const total = orcamentos
+                    .filter(o => o.status === 'rejeitado')
+                    .reduce((acc, o) => acc + Number(o.valor || 0), 0);
+                  return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                }, [orcamentos])}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {useMemo(() => {
+                  return orcamentos.filter(o => o.status === 'rejeitado').length;
+                }, [orcamentos])} orçamento(s)
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Contagem Total Anual */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total do Ano
+              </CardTitle>
+              <FileCheck className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-primary">
+                {useMemo(() => {
+                  const anoAtual = new Date().getFullYear();
+                  return orcamentos.filter(o => {
+                    const dataOrcamento = new Date(o.created_at || o.data_criacao);
+                    return dataOrcamento.getFullYear() === anoAtual;
+                  }).length;
+                }, [orcamentos])}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                orçamentos criados em {new Date().getFullYear()}
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Card de Filtros */}
