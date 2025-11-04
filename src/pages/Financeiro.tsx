@@ -157,8 +157,13 @@ export default function Financeiro() {
   // Resetar estados dos Popovers quando tipo mudar para transferência
   useEffect(() => {
     if (lancamentoForm.tipo === 'transferencia') {
+      // Primeiro fechar os popovers
       setOpenCategoriaCombobox(false);
       setOpenFornecedorCombobox(false);
+      // Depois esconder os campos com um pequeno delay para garantir desmontagem
+      setTimeout(() => setMostrarCamposEntradaSaida(false), 0);
+    } else {
+      setMostrarCamposEntradaSaida(true);
     }
   }, [lancamentoForm.tipo]);
 
@@ -218,6 +223,7 @@ export default function Financeiro() {
   const [filtrosExpanded, setFiltrosExpanded] = useState(true);
   const [openCategoriaCombobox, setOpenCategoriaCombobox] = useState(false);
   const [openFornecedorCombobox, setOpenFornecedorCombobox] = useState(false);
+  const [mostrarCamposEntradaSaida, setMostrarCamposEntradaSaida] = useState(true);
 
   const colunasVisiveis = {
     tipo: selectedExtratoColumns.some(col => col.value === 'tipo'),
@@ -1984,6 +1990,10 @@ export default function Financeiro() {
                         open={isLancamentoDialogOpen} 
                         onOpenChange={(open) => {
                           setIsLancamentoDialogOpen(open);
+                          if (open) {
+                            // Ao ABRIR, resetar para mostrar campos (já que começa em 'entrada')
+                            setMostrarCamposEntradaSaida(true);
+                          }
                           if (!open) {
                             // Resetar formulário ao fechar
                             setLancamentoForm({
@@ -2006,6 +2016,7 @@ export default function Financeiro() {
                             });
                             setOpenCategoriaCombobox(false);
                             setOpenFornecedorCombobox(false);
+                            setMostrarCamposEntradaSaida(true);
                           }
                         }}
                       >
@@ -2059,13 +2070,23 @@ export default function Financeiro() {
                               <Select 
                                 value={lancamentoForm.tipo} 
                                 onValueChange={(value) => {
-                                  console.log('Mudando tipo para:', value);
-                                  setLancamentoForm(prev => ({ 
-                                    ...prev, 
-                                    tipo: value,
-                                    categoria: value === 'transferencia' ? '' : prev.categoria,
-                                    fornecedor: value === 'transferencia' ? '' : prev.fornecedor
-                                  }));
+                                  console.log('🔄 Mudando tipo de', lancamentoForm.tipo, 'para', value);
+                                  console.log('📊 Estado antes:', { 
+                                    categoria: lancamentoForm.categoria, 
+                                    fornecedor: lancamentoForm.fornecedor,
+                                    mostrarCampos: mostrarCamposEntradaSaida
+                                  });
+                                  
+                                  setLancamentoForm(prev => {
+                                    const novoEstado = {
+                                      ...prev,
+                                      tipo: value,
+                                      categoria: value === 'transferencia' ? '' : prev.categoria,
+                                      fornecedor: value === 'transferencia' ? '' : prev.fornecedor
+                                    };
+                                    console.log('📊 Estado depois:', novoEstado);
+                                    return novoEstado;
+                                  });
                                 }}
                               >
                                 <SelectTrigger>
@@ -2144,7 +2165,7 @@ export default function Financeiro() {
                             )}
                             
                             {/* Categoria - só aparece para entrada ou saída */}
-                            {(lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
+                            {mostrarCamposEntradaSaida && (lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
                               <div key="categoria-field">
                                 <Label htmlFor="categoria">Categoria</Label>
                                 <Popover open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
@@ -2363,7 +2384,7 @@ export default function Financeiro() {
                             )}
                             
                             {/* Fornecedor/Cliente - só aparece para entrada ou saída */}
-                            {(lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
+                            {mostrarCamposEntradaSaida && (lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
                               <div key="fornecedor-field">
                                 <Label htmlFor="fornecedor">Fornecedor/Cliente</Label>
                                 <Popover open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
