@@ -100,24 +100,31 @@ const NovaOrdemDireta = () => {
   useEffect(() => {
     const gerarNumeroOrdem = async () => {
       try {
+        const ano = new Date().getFullYear().toString().slice(-2);
+        
+        // Buscar todas as ordens do ano atual
         const { data, error } = await supabase
           .from('ordens_servico')
           .select('numero_ordem')
-          .order('created_at', { ascending: false })
-          .limit(1);
+          .ilike('numero_ordem', `MH-%-${ano}`);
 
         if (error) throw error;
 
         let proximoNumero = 1;
-        if (data && data.length > 0 && data[0].numero_ordem) {
-          const ultimoNumero = data[0].numero_ordem;
-          const match = ultimoNumero.match(/MH-(\d+)-/);
-          if (match) {
-            proximoNumero = parseInt(match[1]) + 1;
+        if (data && data.length > 0) {
+          // Extrair todos os números e encontrar o maior
+          const numeros = data
+            .map(ordem => {
+              const match = ordem.numero_ordem.match(/MH-(\d+)-/);
+              return match ? parseInt(match[1]) : 0;
+            })
+            .filter(num => num > 0);
+          
+          if (numeros.length > 0) {
+            proximoNumero = Math.max(...numeros) + 1;
           }
         }
 
-        const ano = new Date().getFullYear().toString().slice(-2);
         const numeroFormatado = `MH-${proximoNumero.toString().padStart(3, '0')}-${ano}`;
         
         setFormData(prev => ({ ...prev, numeroOrdem: numeroFormatado }));
