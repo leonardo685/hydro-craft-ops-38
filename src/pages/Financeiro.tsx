@@ -1120,6 +1120,12 @@ export default function Financeiro() {
         toast.error("Selecione uma categoria");
         return;
       }
+      
+      // Só valida fornecedor se NÃO for transferência
+      if (!lancamentoForm.fornecedor) {
+        toast.error("Selecione um fornecedor/cliente");
+        return;
+      }
     }
     
     const valorTotal = parseFloat(lancamentoForm.valor);
@@ -2016,7 +2022,8 @@ export default function Financeiro() {
                                 onValueChange={(value) => setLancamentoForm(prev => ({ 
                                   ...prev, 
                                   tipo: value,
-                                  categoria: value === 'transferencia' ? '' : prev.categoria
+                                  categoria: value === 'transferencia' ? '' : prev.categoria,
+                                  fornecedor: value === 'transferencia' ? '' : prev.fornecedor
                                 }))}
                               >
                                 <SelectTrigger>
@@ -2313,79 +2320,82 @@ export default function Financeiro() {
                               </>
                             )}
                             
-                            <div>
-                              <Label htmlFor="fornecedor">Fornecedor/Cliente</Label>
-                              <Popover open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={openFornecedorCombobox}
-                                    className="w-full justify-between"
-                                  >
-                                    {lancamentoForm.fornecedor
-                                      ? (() => {
-                                          const item = fornecedoresClientes.find((f) => f.id === lancamentoForm.fornecedor);
-                                          return item ? (
-                                            <div className="flex items-center gap-2">
-                                              <Badge variant={item.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
-                                                {item.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
-                                              </Badge>
-                                              {item.nome}
-                                            </div>
-                                          ) : "Selecione um fornecedor/cliente";
-                                        })()
-                                      : "Selecione um fornecedor/cliente"}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-full p-0">
-                                  <Command>
-                                    <CommandInput placeholder="Buscar fornecedor/cliente..." />
-                                    <CommandList>
-                                      <CommandEmpty>Nenhum fornecedor/cliente encontrado.</CommandEmpty>
-                                      <CommandGroup>
-                                        {fornecedoresClientes.map((item) => (
-                                          <CommandItem
-                                            key={item.id}
-                                            value={item.nome}
-                                            onSelect={() => {
-                                              setLancamentoForm(prev => ({ ...prev, fornecedor: item.id }));
-                                              setOpenFornecedorCombobox(false);
-                                            }}
-                                          >
-                                            <Check
-                                              className={cn(
-                                                "mr-2 h-4 w-4",
-                                                lancamentoForm.fornecedor === item.id ? "opacity-100" : "opacity-0"
-                                              )}
-                                            />
-                                            <div className="flex items-center gap-2">
-                                              <Badge variant={item.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
-                                                {item.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
-                                              </Badge>
-                                              {item.nome}
-                                            </div>
-                                          </CommandItem>
-                                        ))}
-                                      </CommandGroup>
-                                    </CommandList>
-                                  </Command>
-                                </PopoverContent>
-                              </Popover>
-                              <Button 
-                                type="button"
-                                variant="outline" 
-                                size="sm" 
-                                className="w-full mt-2"
-                                onClick={() => {
-                                  navigate('/cadastros', { state: { activeTab: lancamentoForm.tipo === 'entrada' ? 'clientes' : 'fornecedores' } });
-                                }}
-                              >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Cadastrar Novo
-                              </Button>
-                            </div>
+                            {/* Fornecedor/Cliente - só aparece para entrada ou saída */}
+                            {(lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
+                              <div>
+                                <Label htmlFor="fornecedor">Fornecedor/Cliente</Label>
+                                <Popover open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      aria-expanded={openFornecedorCombobox}
+                                      className="w-full justify-between"
+                                    >
+                                      {lancamentoForm.fornecedor
+                                        ? (() => {
+                                            const item = fornecedoresClientes.find((f) => f.id === lancamentoForm.fornecedor);
+                                            return item ? (
+                                              <div className="flex items-center gap-2">
+                                                <Badge variant={item.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
+                                                  {item.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
+                                                </Badge>
+                                                {item.nome}
+                                              </div>
+                                            ) : "Selecione um fornecedor/cliente";
+                                          })()
+                                        : "Selecione um fornecedor/cliente"}
+                                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-full p-0">
+                                    <Command>
+                                      <CommandInput placeholder="Buscar fornecedor/cliente..." />
+                                      <CommandList>
+                                        <CommandEmpty>Nenhum fornecedor/cliente encontrado.</CommandEmpty>
+                                        <CommandGroup>
+                                          {fornecedoresClientes.map((item) => (
+                                            <CommandItem
+                                              key={item.id}
+                                              value={item.nome}
+                                              onSelect={() => {
+                                                setLancamentoForm(prev => ({ ...prev, fornecedor: item.id }));
+                                                setOpenFornecedorCombobox(false);
+                                              }}
+                                            >
+                                              <Check
+                                                className={cn(
+                                                  "mr-2 h-4 w-4",
+                                                  lancamentoForm.fornecedor === item.id ? "opacity-100" : "opacity-0"
+                                                )}
+                                              />
+                                              <div className="flex items-center gap-2">
+                                                <Badge variant={item.tipo === 'cliente' ? 'default' : 'secondary'} className="text-xs">
+                                                  {item.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
+                                                </Badge>
+                                                {item.nome}
+                                              </div>
+                                            </CommandItem>
+                                          ))}
+                                        </CommandGroup>
+                                      </CommandList>
+                                    </Command>
+                                  </PopoverContent>
+                                </Popover>
+                                <Button 
+                                  type="button"
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="w-full mt-2"
+                                  onClick={() => {
+                                    navigate('/cadastros', { state: { activeTab: lancamentoForm.tipo === 'entrada' ? 'clientes' : 'fornecedores' } });
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Cadastrar Novo
+                                </Button>
+                              </div>
+                            )}
                             
                             <div>
                               <Label htmlFor="paga">Status do Pagamento</Label>
