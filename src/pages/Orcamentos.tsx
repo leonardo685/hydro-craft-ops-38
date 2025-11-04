@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck } from "lucide-react";
+import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
@@ -21,6 +22,18 @@ import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
+// Custom Tooltip for mini charts
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border border-border bg-background/95 p-2 text-sm shadow-md backdrop-blur-sm">
+        <p className="text-foreground">{`Valor: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(payload[0].value)}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function Orcamentos() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -1017,103 +1030,336 @@ export default function Orcamentos() {
         {/* Cards de Métricas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Valor Total Aguardando Aprovação */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Aguardando Aprovação
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-success" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-success">
-                {useMemo(() => {
-                  const total = orcamentos
-                    .filter(o => o.status === 'pendente')
-                    .reduce((acc, o) => acc + Number(o.valor || 0), 0);
-                  return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                }, [orcamentos])}
+          <div
+            className="group rounded-2xl border border-border/50
+                       bg-card/40 p-5 shadow-lg
+                       transition-all duration-300 ease-in-out
+                       hover:border-border hover:bg-card/60
+                       hover:-translate-y-1 cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground">Aguardando Aprovação</h3>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="mt-4 flex items-end justify-between">
+              <div className="flex flex-col">
+                <p className="text-2xl font-bold tracking-tighter text-success">
+                  {useMemo(() => {
+                    const total = orcamentos
+                      .filter(o => o.status === 'pendente')
+                      .reduce((acc, o) => acc + Number(o.valor || 0), 0);
+                    return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                  }, [orcamentos])}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {useMemo(() => {
+                    return orcamentos.filter(o => o.status === 'pendente').length;
+                  }, [orcamentos])} orçamento(s)
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {useMemo(() => {
-                  return orcamentos.filter(o => o.status === 'pendente').length;
-                }, [orcamentos])} orçamento(s)
-              </p>
-            </CardContent>
-          </Card>
+              <div className="h-12 w-28">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart 
+                    data={useMemo(() => {
+                      const hoje = new Date();
+                      const dados = [];
+                      for (let i = 5; i >= 0; i--) {
+                        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+                        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+                        const mesIndex = data.getMonth();
+                        const ano = data.getFullYear();
+                        
+                        const valor = orcamentos
+                          .filter(o => {
+                            const dataOrc = new Date(o.created_at || o.data_criacao);
+                            return o.status === 'pendente' && 
+                                   dataOrc.getMonth() === mesIndex && 
+                                   dataOrc.getFullYear() === ano;
+                          })
+                          .reduce((acc, o) => acc + Number(o.valor || 0), 0);
+                        
+                        dados.push({ mes, value: valor });
+                      }
+                      return dados;
+                    }, [orcamentos])}
+                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                  >
+                    <defs>
+                      <linearGradient id="gradient-aguardando" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <Tooltip
+                      content={<CustomTooltip />}
+                      cursor={{
+                        stroke: 'hsl(var(--border))',
+                        strokeWidth: 1,
+                        strokeDasharray: '3 3',
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={false}
+                      fillOpacity={1}
+                      fill="url(#gradient-aguardando)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
 
           {/* Valor Total Aprovados */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Aprovados
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-success" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-success">
-                {useMemo(() => {
-                  const total = orcamentos
-                    .filter(o => o.status === 'aprovado' || o.status === 'faturamento')
-                    .reduce((acc, o) => acc + Number(o.valor || 0), 0);
-                  return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                }, [orcamentos])}
+          <div
+            className="group rounded-2xl border border-border/50
+                       bg-card/40 p-5 shadow-lg
+                       transition-all duration-300 ease-in-out
+                       hover:border-border hover:bg-card/60
+                       hover:-translate-y-1 cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground">Aprovados</h3>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="mt-4 flex items-end justify-between">
+              <div className="flex flex-col">
+                <p className="text-2xl font-bold tracking-tighter text-success">
+                  {useMemo(() => {
+                    const total = orcamentos
+                      .filter(o => o.status === 'aprovado' || o.status === 'faturamento')
+                      .reduce((acc, o) => acc + Number(o.valor || 0), 0);
+                    return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                  }, [orcamentos])}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {useMemo(() => {
+                    return orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').length;
+                  }, [orcamentos])} orçamento(s)
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {useMemo(() => {
-                  return orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').length;
-                }, [orcamentos])} orçamento(s)
-              </p>
-            </CardContent>
-          </Card>
+              <div className="h-12 w-28">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart 
+                    data={useMemo(() => {
+                      const hoje = new Date();
+                      const dados = [];
+                      for (let i = 5; i >= 0; i--) {
+                        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+                        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+                        const mesIndex = data.getMonth();
+                        const ano = data.getFullYear();
+                        
+                        const valor = orcamentos
+                          .filter(o => {
+                            const dataOrc = new Date(o.created_at || o.data_criacao);
+                            return (o.status === 'aprovado' || o.status === 'faturamento') && 
+                                   dataOrc.getMonth() === mesIndex && 
+                                   dataOrc.getFullYear() === ano;
+                          })
+                          .reduce((acc, o) => acc + Number(o.valor || 0), 0);
+                        
+                        dados.push({ mes, value: valor });
+                      }
+                      return dados;
+                    }, [orcamentos])}
+                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                  >
+                    <defs>
+                      <linearGradient id="gradient-aprovados" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <Tooltip
+                      content={<CustomTooltip />}
+                      cursor={{
+                        stroke: 'hsl(var(--border))',
+                        strokeWidth: 1,
+                        strokeDasharray: '3 3',
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={false}
+                      fillOpacity={1}
+                      fill="url(#gradient-aprovados)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
 
           {/* Valor Total Reprovados */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Reprovados
-              </CardTitle>
-              <XCircle className="h-4 w-4 text-destructive" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-destructive">
-                {useMemo(() => {
-                  const total = orcamentos
-                    .filter(o => o.status === 'rejeitado')
-                    .reduce((acc, o) => acc + Number(o.valor || 0), 0);
-                  return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                }, [orcamentos])}
+          <div
+            className="group rounded-2xl border border-border/50
+                       bg-card/40 p-5 shadow-lg
+                       transition-all duration-300 ease-in-out
+                       hover:border-border hover:bg-card/60
+                       hover:-translate-y-1 cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground">Reprovados</h3>
+              <XCircle className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="mt-4 flex items-end justify-between">
+              <div className="flex flex-col">
+                <p className="text-2xl font-bold tracking-tighter text-destructive">
+                  {useMemo(() => {
+                    const total = orcamentos
+                      .filter(o => o.status === 'rejeitado')
+                      .reduce((acc, o) => acc + Number(o.valor || 0), 0);
+                    return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                  }, [orcamentos])}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {useMemo(() => {
+                    return orcamentos.filter(o => o.status === 'rejeitado').length;
+                  }, [orcamentos])} orçamento(s)
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {useMemo(() => {
-                  return orcamentos.filter(o => o.status === 'rejeitado').length;
-                }, [orcamentos])} orçamento(s)
-              </p>
-            </CardContent>
-          </Card>
+              <div className="h-12 w-28">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart 
+                    data={useMemo(() => {
+                      const hoje = new Date();
+                      const dados = [];
+                      for (let i = 5; i >= 0; i--) {
+                        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+                        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+                        const mesIndex = data.getMonth();
+                        const ano = data.getFullYear();
+                        
+                        const valor = orcamentos
+                          .filter(o => {
+                            const dataOrc = new Date(o.created_at || o.data_criacao);
+                            return o.status === 'rejeitado' && 
+                                   dataOrc.getMonth() === mesIndex && 
+                                   dataOrc.getFullYear() === ano;
+                          })
+                          .reduce((acc, o) => acc + Number(o.valor || 0), 0);
+                        
+                        dados.push({ mes, value: valor });
+                      }
+                      return dados;
+                    }, [orcamentos])}
+                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                  >
+                    <defs>
+                      <linearGradient id="gradient-reprovados" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <Tooltip
+                      content={<CustomTooltip />}
+                      cursor={{
+                        stroke: 'hsl(var(--border))',
+                        strokeWidth: 1,
+                        strokeDasharray: '3 3',
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                      dot={false}
+                      fillOpacity={1}
+                      fill="url(#gradient-reprovados)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
 
           {/* Contagem Total Anual */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total do Ano
-              </CardTitle>
-              <FileCheck className="h-4 w-4 text-warning" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-warning">
-                {useMemo(() => {
-                  const anoAtual = new Date().getFullYear();
-                  return orcamentos.filter(o => {
-                    const dataOrcamento = new Date(o.created_at || o.data_criacao);
-                    return dataOrcamento.getFullYear() === anoAtual;
-                  }).length;
-                }, [orcamentos])}
+          <div
+            className="group rounded-2xl border border-border/50
+                       bg-card/40 p-5 shadow-lg
+                       transition-all duration-300 ease-in-out
+                       hover:border-border hover:bg-card/60
+                       hover:-translate-y-1 cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground">Total do Ano</h3>
+              <FileCheck className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="mt-4 flex items-end justify-between">
+              <div className="flex flex-col">
+                <p className="text-2xl font-bold tracking-tighter text-warning">
+                  {useMemo(() => {
+                    const anoAtual = new Date().getFullYear();
+                    return orcamentos.filter(o => {
+                      const dataOrcamento = new Date(o.created_at || o.data_criacao);
+                      return dataOrcamento.getFullYear() === anoAtual;
+                    }).length;
+                  }, [orcamentos])}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  orçamentos em {new Date().getFullYear()}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                orçamentos criados em {new Date().getFullYear()}
-              </p>
-            </CardContent>
-          </Card>
+              <div className="h-12 w-28">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart 
+                    data={useMemo(() => {
+                      const hoje = new Date();
+                      const dados = [];
+                      for (let i = 5; i >= 0; i--) {
+                        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+                        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+                        const mesIndex = data.getMonth();
+                        const ano = data.getFullYear();
+                        
+                        const count = orcamentos.filter(o => {
+                          const dataOrc = new Date(o.created_at || o.data_criacao);
+                          return dataOrc.getMonth() === mesIndex && 
+                                 dataOrc.getFullYear() === ano;
+                        }).length;
+                        
+                        dados.push({ mes, value: count });
+                      }
+                      return dados;
+                    }, [orcamentos])}
+                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                  >
+                    <defs>
+                      <linearGradient id="gradient-total" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--warning))" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="hsl(var(--warning))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <Tooltip
+                      content={<CustomTooltip />}
+                      cursor={{
+                        stroke: 'hsl(var(--border))',
+                        strokeWidth: 1,
+                        strokeDasharray: '3 3',
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="hsl(var(--warning))"
+                      strokeWidth={2}
+                      dot={false}
+                      fillOpacity={1}
+                      fill="url(#gradient-total)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Card de Filtros */}
