@@ -1211,7 +1211,7 @@ export default function Orcamentos() {
             </div>
             <div className="mt-4 flex items-end justify-between">
               <div className="flex flex-col">
-                <p className="text-2xl font-bold tracking-tighter text-destructive">
+                <p className="text-2xl font-bold tracking-tighter text-success">
                   {useMemo(() => {
                     const total = orcamentos
                       .filter(o => o.status === 'rejeitado')
@@ -1295,7 +1295,7 @@ export default function Orcamentos() {
             </div>
             <div className="mt-4 flex items-end justify-between">
               <div className="flex flex-col">
-                <p className="text-2xl font-bold tracking-tighter text-warning">
+                <p className="text-2xl font-bold tracking-tighter text-success">
                   {useMemo(() => {
                     const anoAtual = new Date().getFullYear();
                     return orcamentos.filter(o => {
