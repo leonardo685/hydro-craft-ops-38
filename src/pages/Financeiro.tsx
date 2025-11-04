@@ -154,6 +154,13 @@ export default function Financeiro() {
     }
   }, [lancamentoForm.numeroParcelas, lancamentoForm.frequenciaRepeticao, lancamentoForm.dataEsperada, lancamentoForm.formaPagamento]);
 
+  // Fechar popovers imediatamente ao mudar para transferência
+  useEffect(() => {
+    if (lancamentoForm.tipo === 'transferencia') {
+      setOpenCategoriaCombobox(false);
+      setOpenFornecedorCombobox(false);
+    }
+  }, [lancamentoForm.tipo]);
 
   // Estados para os filtros do extrato
   const [filtrosExtrato, setFiltrosExtrato] = useState({
@@ -2136,10 +2143,10 @@ export default function Financeiro() {
                             )}
                             
                             {/* Categoria - só aparece para entrada ou saída */}
-                            {(lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
+                            {lancamentoForm.tipo === 'transferencia' ? null : (lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') ? (
                               <div key="categoria-field">
                                 <Label htmlFor="categoria">Categoria</Label>
-                                <Popover key={lancamentoForm.tipo} open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
+                                <Popover open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
                                   <PopoverTrigger asChild>
                                     <Button
                                       variant="outline"
@@ -2195,7 +2202,7 @@ export default function Financeiro() {
                                   Cadastrar Nova Categoria
                                 </Button>
                               </div>
-                            )}
+                            ) : null}
                             
                             {/* Forma de Pagamento */}
                             <div>
@@ -2355,10 +2362,10 @@ export default function Financeiro() {
                             )}
                             
                             {/* Fornecedor/Cliente - só aparece para entrada ou saída */}
-                            {(lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
+                            {lancamentoForm.tipo === 'transferencia' ? null : (lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') ? (
                               <div key="fornecedor-field">
                                 <Label htmlFor="fornecedor">Fornecedor/Cliente</Label>
-                                <Popover key={lancamentoForm.tipo} open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
+                                <Popover open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
                                   <PopoverTrigger asChild>
                                     <Button
                                       variant="outline"
@@ -2429,7 +2436,7 @@ export default function Financeiro() {
                                   Cadastrar Novo
                                 </Button>
                               </div>
-                            )}
+                            ) : null}
                             
                             <div>
                               <Label htmlFor="paga">Status do Pagamento</Label>
