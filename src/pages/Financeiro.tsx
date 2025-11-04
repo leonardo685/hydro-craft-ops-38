@@ -1129,17 +1129,32 @@ export default function Financeiro() {
       const contaOrigem = contasBancarias.find(c => c.id === lancamentoForm.conta);
       const contaDestinoObj = contasBancarias.find(c => c.id === lancamentoForm.contaDestino);
       
-      // Criar dois lançamentos vinculados (saída da origem e entrada no destino)
       const descricaoBase = lancamentoForm.descricao || 'Transferência entre contas';
       
-      // Lançamento 1: Saída da conta origem
+      // Lançamento 1: SAÍDA da conta origem
       await adicionarLancamento({
-        tipo: 'transferencia' as any,
-        descricao: `${descricaoBase} - Saída de ${contaOrigem?.nome}`,
-        categoriaId: lancamentoForm.categoria || undefined,
+        tipo: 'saida',
+        descricao: `${descricaoBase} - Origem: ${contaOrigem?.nome} → Destino: ${contaDestinoObj?.nome}`,
+        categoriaId: undefined,
         valor: valorTotal,
         contaBancaria: lancamentoForm.conta,
         contaDestino: lancamentoForm.contaDestino,
+        dataEsperada: dataBase,
+        dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : null,
+        dataEmissao: lancamentoForm.dataEmissao,
+        pago: lancamentoForm.paga,
+        fornecedorCliente: lancamentoForm.fornecedor,
+        formaPagamento: 'a_vista',
+      });
+      
+      // Lançamento 2: ENTRADA na conta destino
+      await adicionarLancamento({
+        tipo: 'entrada',
+        descricao: `${descricaoBase} - Origem: ${contaOrigem?.nome} → Destino: ${contaDestinoObj?.nome}`,
+        categoriaId: undefined,
+        valor: valorTotal,
+        contaBancaria: lancamentoForm.contaDestino,
+        contaDestino: lancamentoForm.conta,
         dataEsperada: dataBase,
         dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : null,
         dataEmissao: lancamentoForm.dataEmissao,
@@ -2804,22 +2819,22 @@ export default function Financeiro() {
                               <TableCell>
                                 <Badge 
                                   variant={
-                                    item.tipo === 'transferencia' ? 'outline' : 
+                                    item.contaDestino ? 'outline' : 
                                     item.tipo === 'entrada' ? 'secondary' : 'destructive'
                                   }
                                   className={`flex items-center gap-1 w-fit ${
-                                    item.tipo === 'transferencia' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                                    item.contaDestino ? 'bg-blue-100 text-blue-700 border-blue-200' :
                                     item.tipo === 'entrada' ? 'bg-green-100 text-green-700 border-green-200' : ''
                                   }`}
                                 >
-                                  {item.tipo === 'transferencia' ? (
+                                  {item.contaDestino ? (
                                     <ArrowRightLeft className="h-3 w-3" />
                                   ) : item.tipo === 'entrada' ? (
                                     <ArrowUpRight className="h-3 w-3" />
                                   ) : (
                                     <ArrowDownLeft className="h-3 w-3" />
                                   )}
-                                  {item.tipo === 'transferencia' ? 'Transferência' : 
+                                  {item.contaDestino ? 'Transferência' : 
                                    item.tipo === 'entrada' ? 'Entrada' : 'Saída'}
                                 </Badge>
                               </TableCell>
@@ -2844,11 +2859,11 @@ export default function Financeiro() {
                             {colunasVisiveis.valor && (
                               <TableCell 
                                 className={`text-right font-semibold ${
-                                  item.tipo === 'transferencia' ? 'text-purple-600' :
+                                  item.contaDestino ? 'text-blue-600' :
                                   item.tipo === 'entrada' ? 'text-green-600' : 'text-destructive'
                                 }`}
                               >
-                                {item.tipo === 'transferencia' ? '↔' : 
+                                {item.contaDestino ? '↔' : 
                                  item.tipo === 'entrada' ? '+' : '-'} {formatCurrency(item.valor)}
                               </TableCell>
                             )}

@@ -40,11 +40,12 @@ export const useLancamentosFinanceiros = () => {
 
       const lancamentosFormatados = (data || []).map(lanc => ({
         id: lanc.id,
-        tipo: lanc.tipo as 'entrada' | 'saida',
+        tipo: lanc.tipo as 'entrada' | 'saida' | 'transferencia',
         descricao: lanc.descricao,
         categoriaId: lanc.categoria_id,
         valor: Number(lanc.valor),
         contaBancaria: lanc.conta_bancaria,
+        contaDestino: lanc.conta_destino,
         fornecedorCliente: lanc.fornecedor_cliente,
         dataEsperada: new Date(lanc.data_esperada),
         dataRealizada: lanc.data_realizada ? new Date(lanc.data_realizada) : null,
@@ -84,6 +85,7 @@ export const useLancamentosFinanceiros = () => {
           categoria_id: lancamento.categoriaId || null,
           valor: lancamento.valor,
           conta_bancaria: lancamento.contaBancaria,
+          conta_destino: lancamento.contaDestino || null,
           fornecedor_cliente: lancamento.fornecedorCliente || null,
           data_esperada: lancamento.dataEsperada.toISOString(),
           data_realizada: lancamento.dataRealizada?.toISOString() || null,
