@@ -534,12 +534,13 @@ export default function DFC() {
       const contaOrigem = contasBancariasAtualizadas.find(c => c.id === lancamentoForm.conta);
       const contaDestinoObj = contasBancariasAtualizadas.find(c => c.id === lancamentoForm.contaDestino);
 
-      // Criar lançamento de transferência
       const descricaoBase = lancamentoForm.descricao || 'Transferência entre contas';
+
+      // Criar lançamento de SAÍDA da conta origem
       await adicionarLancamento({
         tipo: 'transferencia' as any,
-        descricao: `${descricaoBase} - Saída de ${contaOrigem?.nome}`,
-        categoriaId: lancamentoForm.categoria || undefined,
+        descricao: `${descricaoBase} - Saída de ${contaOrigem?.nome} → ${contaDestinoObj?.nome}`,
+        categoriaId: undefined,
         valor: valorTotal,
         contaBancaria: lancamentoForm.conta,
         contaDestino: lancamentoForm.contaDestino,
@@ -547,10 +548,27 @@ export default function DFC() {
         dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : null,
         dataEmissao: lancamentoForm.dataEmissao,
         pago: lancamentoForm.paga,
-        fornecedorCliente: lancamentoForm.fornecedor,
+        fornecedorCliente: undefined,
         formaPagamento: 'a_vista'
       });
-      toast.success("Transferência registrada com sucesso!");
+
+      // Criar lançamento de ENTRADA na conta destino
+      await adicionarLancamento({
+        tipo: 'transferencia' as any,
+        descricao: `${descricaoBase} - Entrada em ${contaDestinoObj?.nome} ← ${contaOrigem?.nome}`,
+        categoriaId: undefined,
+        valor: valorTotal,
+        contaBancaria: lancamentoForm.contaDestino,
+        contaDestino: lancamentoForm.conta,
+        dataEsperada: dataBase,
+        dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : null,
+        dataEmissao: lancamentoForm.dataEmissao,
+        pago: lancamentoForm.paga,
+        fornecedorCliente: undefined,
+        formaPagamento: 'a_vista'
+      });
+
+      toast.success("Transferência registrada com sucesso! (2 lançamentos criados)");
       resetForm();
       setIsLancamentoDialogOpen(false);
       return;
@@ -2151,11 +2169,11 @@ export default function DFC() {
                                     </SelectContent>
                                   </Select> : fornecedor?.nome || '-'}
                               </TableCell>}
-                            {colunasVisiveis.valor && <TableCell className={`text-right font-medium ${item.tipo === 'transferencia' ? 'text-purple-600' : item.tipo === 'entrada' ? 'text-green-600' : 'text-destructive'}`}>
+                            {colunasVisiveis.valor && <TableCell className={`text-right font-medium ${item.tipo === 'transferencia' ? (item.descricao.includes('Entrada') ? 'text-green-600' : 'text-destructive') : item.tipo === 'entrada' ? 'text-green-600' : 'text-destructive'}`}>
                                 {editandoLancamento === item.id ? <Input type="number" value={lancamentoEditado?.valor || 0} onChange={e => setLancamentoEditado({
                             ...lancamentoEditado,
                             valor: parseFloat(e.target.value)
-                          })} className="text-right" /> : `${item.tipo === 'transferencia' ? '↔' : item.tipo === 'entrada' ? '+' : '-'} ${formatCurrency(item.valor)}`}
+                          })} className="text-right" /> : `${item.tipo === 'transferencia' ? (item.descricao.includes('Entrada') ? '+' : '-') : item.tipo === 'entrada' ? '+' : '-'} ${formatCurrency(item.valor)}`}
                               </TableCell>}
                             {colunasVisiveis.dataEsperada && <TableCell>
                                 {editandoLancamento === item.id ? <Popover>
