@@ -534,12 +534,10 @@ export default function DFC() {
       const contaOrigem = contasBancariasAtualizadas.find(c => c.id === lancamentoForm.conta);
       const contaDestinoObj = contasBancariasAtualizadas.find(c => c.id === lancamentoForm.contaDestino);
 
-      const descricaoBase = lancamentoForm.descricao || 'Transferência entre contas';
-
       // Criar lançamento de SAÍDA da conta origem
       await adicionarLancamento({
         tipo: 'transferencia' as any,
-        descricao: `${descricaoBase} - Saída de ${contaOrigem?.nome} → ${contaDestinoObj?.nome}`,
+        descricao: `Saída de ${contaOrigem?.nome} → ${contaDestinoObj?.nome}`,
         categoriaId: undefined,
         valor: valorTotal,
         contaBancaria: lancamentoForm.conta,
@@ -555,7 +553,7 @@ export default function DFC() {
       // Criar lançamento de ENTRADA na conta destino
       await adicionarLancamento({
         tipo: 'transferencia' as any,
-        descricao: `${descricaoBase} - Entrada em ${contaDestinoObj?.nome} ← ${contaOrigem?.nome}`,
+        descricao: `Entrada em ${contaDestinoObj?.nome} ← ${contaOrigem?.nome}`,
         categoriaId: undefined,
         valor: valorTotal,
         contaBancaria: lancamentoForm.contaDestino,
