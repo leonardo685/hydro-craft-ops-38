@@ -112,6 +112,41 @@ export const CategoriasFinanceiras = () => {
     return categorias.filter(cat => cat.tipo === 'filha' && cat.categoriaMaeId === categoriaMaeId);
   };
 
+  const calcularNovoCodigoEdicao = (categoria: any, novaCategoriaMaeId: string): string => {
+    // Se não mudou a categoria mãe, retorna o código atual
+    if (categoria.categoriaMaeId === novaCategoriaMaeId) {
+      return categoria.codigo;
+    }
+    
+    // Se é conta mãe, não calcula novo código
+    if (categoria.tipo === 'mae') {
+      return categoria.codigo;
+    }
+    
+    // Buscar a nova categoria mãe
+    const novaMae = categorias.find(c => c.id === novaCategoriaMaeId);
+    if (!novaMae) {
+      return categoria.codigo;
+    }
+    
+    // Buscar todas as filhas da nova mãe (exceto a que está sendo editada)
+    const filhasDaNovaMae = categorias.filter(
+      c => c.tipo === 'filha' && c.categoriaMaeId === novaCategoriaMaeId && c.id !== categoria.id
+    );
+    
+    // Calcular o próximo número sequencial
+    let proximoNumero = 1;
+    if (filhasDaNovaMae.length > 0) {
+      const numerosExistentes = filhasDaNovaMae.map(c => {
+        const partes = c.codigo.split('.');
+        return parseInt(partes[1] || '0') || 0;
+      });
+      proximoNumero = Math.max(...numerosExistentes) + 1;
+    }
+    
+    return `${novaMae.codigo}.${proximoNumero}`;
+  };
+
   const handleEditarCategoria = (categoriaId: string) => {
     const categoria = categorias.find(c => c.id === categoriaId);
     if (!categoria) return;
@@ -408,7 +443,7 @@ export const CategoriasFinanceiras = () => {
                       <div className="grid gap-2">
                         <Label>Código</Label>
                         <Input
-                          value={categoria.codigo}
+                          value={calcularNovoCodigoEdicao(categoria, formEdicao.categoriaMaeId)}
                           disabled
                           className="bg-muted"
                         />
