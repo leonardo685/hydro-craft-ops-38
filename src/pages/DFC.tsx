@@ -81,6 +81,19 @@ export default function DFC() {
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
   const [planejamentoExpanded, setPlanejamentoExpanded] = useState(true);
   const [buscaAtiva, setBuscaAtiva] = useState(false);
+  const [lancamentosOcultosTemporarios, setLancamentosOcultosTemporarios] = useState<Set<string>>(new Set());
+
+  const toggleOcultarLancamento = (lancamentoId: string) => {
+    setLancamentosOcultosTemporarios(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(lancamentoId)) {
+        newSet.delete(lancamentoId);
+      } else {
+        newSet.add(lancamentoId);
+      }
+      return newSet;
+    });
+  };
 
   // Estados para ordenação de colunas
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -740,6 +753,7 @@ export default function DFC() {
     setMovimentacoesFiltradas([]);
     calcularValoresFinanceiros([]);
     setBuscaAtiva(false);
+    setLancamentosOcultosTemporarios(new Set());
   };
 
   const handleSort = (column: string) => {
@@ -781,10 +795,14 @@ export default function DFC() {
     });
   }, [movimentacoesFiltradas, sortColumn, sortDirection]);
   const calcularValoresFinanceiros = (movimentacoes: any[]) => {
-    const totalReceber = movimentacoes.filter(m => m.tipo === 'receita' && m.status !== 'pago').reduce((acc, m) => acc + m.valor, 0);
-    const totalPagar = movimentacoes.filter(m => m.tipo === 'despesa' && m.status !== 'pago').reduce((acc, m) => acc + m.valor, 0);
-    const titulosAberto = movimentacoes.filter(m => m.tipo === 'receita' && m.status !== 'pago').length;
-    const contasVencer = movimentacoes.filter(m => m.tipo === 'despesa' && m.status !== 'pago').length;
+    // Filtrar lançamentos não ocultados
+    const movimentacoesVisiveis = movimentacoes.filter(m => !lancamentosOcultosTemporarios.has(m.id));
+    
+    const totalReceber = movimentacoesVisiveis.filter(m => m.tipo === 'receita' && m.status !== 'pago').reduce((acc, m) => acc + m.valor, 0);
+    const totalPagar = movimentacoesVisiveis.filter(m => m.tipo === 'despesa' && m.status !== 'pago').reduce((acc, m) => acc + m.valor, 0);
+    const titulosAberto = movimentacoesVisiveis.filter(m => m.tipo === 'receita' && m.status !== 'pago').length;
+    const contasVencer = movimentacoesVisiveis.filter(m => m.tipo === 'despesa' && m.status !== 'pago').length;
+    
     setValoresFinanceiros({
       aReceber: totalReceber,
       aPagar: totalPagar,
@@ -2577,10 +2595,14 @@ export default function DFC() {
                         {sortColumn !== 'status' && <ArrowUpDown className="h-4 w-4 opacity-30" />}
                       </div>
                     </TableHead>
+                    <TableHead className="text-center">Ocultar</TableHead>
                   </TableRow>
                 </TableHeader>
                         <TableBody>
-                          {movimentacoesOrdenadas.map(mov => <TableRow key={mov.id}>
+                          {movimentacoesOrdenadas.map(mov => <TableRow 
+                              key={mov.id}
+                              className={lancamentosOcultosTemporarios.has(mov.id) ? 'opacity-40' : ''}
+                            >
                               <TableCell>{mov.data}</TableCell>
                               <TableCell>{mov.descricao}</TableCell>
                               <TableCell>
@@ -2604,6 +2626,13 @@ export default function DFC() {
                                   {mov.status === 'pago' ? 'Pago' : mov.status === 'vencido' ? 'Vencido' : 'Pendente'}
                                 </Badge>
                               </TableCell>
+                              <TableCell className="text-center">
+                                <Checkbox 
+                                  checked={lancamentosOcultosTemporarios.has(mov.id)}
+                                  onCheckedChange={() => toggleOcultarLancamento(mov.id)}
+                                  title="Ocultar temporariamente do planejamento"
+                                />
+                              </TableCell>
                             </TableRow>)}
                         </TableBody>
                       </Table>
@@ -2613,19 +2642,43 @@ export default function DFC() {
                       <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">Total de Receitas</p>
                         <p className="text-2xl font-bold text-green-600">
-                          {formatCurrency(movimentacoesFiltradas.filter(m => m.tipo === 'receita').reduce((acc, m) => acc + m.valor, 0))}
+                          {formatCurrency(
+                            movimentacoesFiltradas
+                              .filter(m => m.tipo === 'receita' && !lancamentosOcultosTemporarios.has(m.id))
+                              .reduce((acc, m) => acc + m.valor, 0)
+                          )}
                         </p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">Total de Despesas</p>
                         <p className="text-2xl font-bold text-destructive">
-                          {formatCurrency(movimentacoesFiltradas.filter(m => m.tipo === 'despesa').reduce((acc, m) => acc + m.valor, 0))}
+                          {formatCurrency(
+                            movimentacoesFiltradas
+                              .filter(m => m.tipo === 'despesa' && !lancamentosOcultosTemporarios.has(m.id))
+                              .reduce((acc, m) => acc + m.valor, 0)
+                          )}
                         </p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">Saldo Líquido</p>
-                        <p className={`text-2xl font-bold ${movimentacoesFiltradas.filter(m => m.tipo === 'receita').reduce((acc, m) => acc + m.valor, 0) - movimentacoesFiltradas.filter(m => m.tipo === 'despesa').reduce((acc, m) => acc + m.valor, 0) >= 0 ? 'text-blue-600' : 'text-amber-600'}`}>
-                          {formatCurrency(movimentacoesFiltradas.filter(m => m.tipo === 'receita').reduce((acc, m) => acc + m.valor, 0) - movimentacoesFiltradas.filter(m => m.tipo === 'despesa').reduce((acc, m) => acc + m.valor, 0))}
+                        <p className={`text-2xl font-bold ${(() => {
+                          const receitasVisiveis = movimentacoesFiltradas
+                            .filter(m => m.tipo === 'receita' && !lancamentosOcultosTemporarios.has(m.id))
+                            .reduce((acc, m) => acc + m.valor, 0);
+                          const despesasVisiveis = movimentacoesFiltradas
+                            .filter(m => m.tipo === 'despesa' && !lancamentosOcultosTemporarios.has(m.id))
+                            .reduce((acc, m) => acc + m.valor, 0);
+                          return (receitasVisiveis - despesasVisiveis >= 0 ? 'text-blue-600' : 'text-amber-600');
+                        })()}`}>
+                          {formatCurrency((() => {
+                            const receitasVisiveis = movimentacoesFiltradas
+                              .filter(m => m.tipo === 'receita' && !lancamentosOcultosTemporarios.has(m.id))
+                              .reduce((acc, m) => acc + m.valor, 0);
+                            const despesasVisiveis = movimentacoesFiltradas
+                              .filter(m => m.tipo === 'despesa' && !lancamentosOcultosTemporarios.has(m.id))
+                              .reduce((acc, m) => acc + m.valor, 0);
+                            return receitasVisiveis - despesasVisiveis;
+                          })())}
                         </p>
                       </div>
                     </div>
