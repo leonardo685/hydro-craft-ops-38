@@ -174,16 +174,6 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
       doc.text(`Nº Ordem: ${ordemData.numero_ordem || 'N/A'}`, 22, yPosition + 5.5);
       doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 22 + colWidth, yPosition + 5.5);
       yPosition += 8;
-      
-      // Segunda linha: Cliente
-      doc.rect(20, yPosition, pageWidth - 40, 8);
-      doc.text(`Cliente: ${ordemData.cliente_nome || 'N/A'}`, 22, yPosition + 5.5);
-      yPosition += 8;
-
-      // Terceira linha: Equipamento
-      doc.rect(20, yPosition, pageWidth - 40, 8);
-      doc.text(`Equipamento: ${ordemData.equipamento || 'N/A'}`, 22, yPosition + 5.5);
-      yPosition += 8;
 
       yPosition += 10;
     }
