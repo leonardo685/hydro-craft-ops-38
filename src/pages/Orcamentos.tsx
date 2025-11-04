@@ -1022,10 +1022,10 @@ export default function Orcamentos() {
               <CardTitle className="text-sm font-medium">
                 Aguardando Aprovação
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-warning" />
+              <DollarSign className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-warning">
+              <div className="text-2xl font-bold text-success">
                 {useMemo(() => {
                   const total = orcamentos
                     .filter(o => o.status === 'pendente')
@@ -1097,10 +1097,10 @@ export default function Orcamentos() {
               <CardTitle className="text-sm font-medium">
                 Total do Ano
               </CardTitle>
-              <FileCheck className="h-4 w-4 text-primary" />
+              <FileCheck className="h-4 w-4 text-warning" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-2xl font-bold text-warning">
                 {useMemo(() => {
                   const anoAtual = new Date().getFullYear();
                   return orcamentos.filter(o => {
