@@ -160,6 +160,14 @@ export default function DFC() {
     }
   }, [lancamentoForm.numeroParcelas, lancamentoForm.frequenciaRepeticao, lancamentoForm.dataEsperada, lancamentoForm.formaPagamento]);
 
+  // Fechar popovers imediatamente ao mudar para transferência
+  useEffect(() => {
+    if (lancamentoForm.tipo === 'transferencia') {
+      setOpenCategoriaCombobox(false);
+      setOpenFornecedorCombobox(false);
+    }
+  }, [lancamentoForm.tipo]);
+
   // Verificar parâmetro da URL para abrir tab específica
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -1429,7 +1437,8 @@ export default function DFC() {
                             }))} />
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4">
+                          {/* Categoria - só aparece para entrada ou saída */}
+                          {lancamentoForm.tipo === 'transferencia' ? null : (lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') ? (
                             <div className="space-y-2">
                               <Label>Categoria</Label>
                               <Popover open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
@@ -1469,7 +1478,9 @@ export default function DFC() {
                                 Cadastrar Nova Categoria
                               </Button>
                             </div>
-                            <div className="space-y-2">
+                          ) : null}
+
+                          <div className="space-y-2">
                               <Label>
                                 {lancamentoForm.tipo === 'transferencia' ? 'Conta Bancária de Origem' : 'Conta Bancária'}
                               </Label>
@@ -1485,7 +1496,6 @@ export default function DFC() {
                                 </SelectContent>
                               </Select>
                             </div>
-                          </div>
 
                           {/* Campo condicional para Conta de Destino */}
                           {lancamentoForm.tipo === 'transferencia' && <div className="space-y-2">
@@ -1505,9 +1515,11 @@ export default function DFC() {
                               </Select>
                             </div>}
 
-                          <div className="space-y-2">
-                            <Label>Fornecedor/Cliente</Label>
-                            <Popover open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
+                          {/* Fornecedor/Cliente - só aparece para entrada ou saída */}
+                          {lancamentoForm.tipo === 'transferencia' ? null : (lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') ? (
+                            <div className="space-y-2">
+                              <Label>Fornecedor/Cliente</Label>
+                              <Popover open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
                               <PopoverTrigger asChild>
                                 <Button variant="outline" role="combobox" aria-expanded={openFornecedorCombobox} className="w-full justify-between">
                                   {lancamentoForm.fornecedor ? (() => {
@@ -1559,6 +1571,7 @@ export default function DFC() {
                               Cadastrar Novo
                             </Button>
                           </div>
+                          ) : null}
 
                           {/* Forma de Pagamento */}
                           <div className="space-y-2">
