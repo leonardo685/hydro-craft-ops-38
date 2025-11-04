@@ -146,6 +146,95 @@ export const useCategoriasFinanceiras = () => {
     }
   };
 
+  const atualizarCategoria = async (
+    id: string,
+    updates: {
+      nome?: string;
+      categoriaMaeId?: string;
+    }
+  ): Promise<boolean> => {
+    try {
+      const categoriaAtual = categorias.find(c => c.id === id);
+      if (!categoriaAtual) {
+        toast.error('Categoria não encontrada');
+        return false;
+      }
+
+      // Validação: nome não pode ser vazio
+      if (updates.nome !== undefined && !updates.nome.trim()) {
+        toast.error('Nome da categoria não pode ser vazio');
+        return false;
+      }
+
+      // Se for conta filha e estiver mudando a categoria mãe
+      if (updates.categoriaMaeId !== undefined && categoriaAtual.tipo === 'filha') {
+        const novaMae = categorias.find(c => c.id === updates.categoriaMaeId);
+        if (!novaMae || novaMae.tipo !== 'mae') {
+          toast.error('Categoria mãe inválida');
+          return false;
+        }
+
+        // Verificar se as classificações são compatíveis
+        if (novaMae.classificacao !== categoriaAtual.classificacao) {
+          toast.error('A categoria mãe deve ter a mesma classificação (entrada/saída)');
+          return false;
+        }
+      }
+
+      const updateData: any = {};
+      if (updates.nome !== undefined) {
+        updateData.nome = updates.nome.trim();
+      }
+      if (updates.categoriaMaeId !== undefined) {
+        updateData.categoria_mae_id = updates.categoriaMaeId;
+      }
+
+      // Se mudou a categoria mãe, recalcular o código
+      if (updates.categoriaMaeId !== undefined && categoriaAtual.tipo === 'filha') {
+        const novaMae = categorias.find(c => c.id === updates.categoriaMaeId);
+        const outrasFilhasDaNovaMae = categorias.filter(
+          c => c.tipo === 'filha' && c.categoriaMaeId === updates.categoriaMaeId && c.id !== id
+        );
+        
+        const proximoNumero = outrasFilhasDaNovaMae.length > 0
+          ? Math.max(...outrasFilhasDaNovaMae.map(c => {
+              const partes = c.codigo.split('.');
+              return parseInt(partes[1] || '0') || 0;
+            })) + 1
+          : 1;
+        
+        updateData.codigo = `${novaMae?.codigo}.${proximoNumero}`;
+      }
+
+      const { data, error } = await supabase
+        .from('categorias_financeiras')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const categoriaAtualizada: CategoriaFinanceira = {
+        id: data.id,
+        codigo: data.codigo,
+        nome: data.nome,
+        tipo: data.tipo as 'mae' | 'filha',
+        categoriaMaeId: data.categoria_mae_id,
+        cor: data.cor,
+        classificacao: data.classificacao as 'entrada' | 'saida'
+      };
+
+      setCategorias(prev => prev.map(cat => cat.id === id ? categoriaAtualizada : cat));
+      toast.success('Categoria atualizada com sucesso!');
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar categoria:', error);
+      toast.error('Erro ao atualizar categoria');
+      return false;
+    }
+  };
+
   const deletarCategoria = async (id: string): Promise<boolean> => {
     try {
       const { error } = await supabase
@@ -206,6 +295,7 @@ export const useCategoriasFinanceiras = () => {
     loading,
     gerarProximoCodigo,
     adicionarCategoria,
+    atualizarCategoria,
     deletarCategoria,
     getNomeCategoriaMae,
     getCategoriasForSelect,

@@ -18,20 +18,27 @@ export const CategoriasFinanceiras = () => {
     categorias,
     categoriasMae, 
     gerarProximoCodigo, 
-    adicionarCategoria, 
+    adicionarCategoria,
+    atualizarCategoria, 
     deletarCategoria,
     getNomeCategoriaMae 
   } = useCategoriasFinanceiras();
   
   const [expandedCategorias, setExpandedCategorias] = useState<Set<string>>(new Set());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [editandoCategoria, setEditandoCategoria] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     codigo: '',
     nome: '',
     tipo: 'mae' as 'mae' | 'filha',
     categoriaMaeId: '',
     classificacao: 'entrada' as 'entrada' | 'saida'
+  });
+  const [formEdicao, setFormEdicao] = useState({
+    nome: '',
+    categoriaMaeId: ''
   });
   
   const { toast } = useToast();
@@ -103,6 +110,63 @@ export const CategoriasFinanceiras = () => {
 
   const getCategoriasFilhas = (categoriaMaeId: string) => {
     return categorias.filter(cat => cat.tipo === 'filha' && cat.categoriaMaeId === categoriaMaeId);
+  };
+
+  const handleEditarCategoria = (categoriaId: string) => {
+    const categoria = categorias.find(c => c.id === categoriaId);
+    if (!categoria) return;
+
+    setEditandoCategoria(categoriaId);
+    setFormEdicao({
+      nome: categoria.nome,
+      categoriaMaeId: categoria.categoriaMaeId || ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSubmitEdicao = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editandoCategoria) return;
+
+    const categoria = categorias.find(c => c.id === editandoCategoria);
+    if (!categoria) return;
+
+    if (!formEdicao.nome.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome da categoria é obrigatório",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (categoria.tipo === 'filha' && !formEdicao.categoriaMaeId) {
+      toast({
+        title: "Erro",
+        description: "Selecione uma categoria mãe",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updates: any = {};
+    
+    if (formEdicao.nome !== categoria.nome) {
+      updates.nome = formEdicao.nome.trim();
+    }
+    
+    if (categoria.tipo === 'filha' && formEdicao.categoriaMaeId !== categoria.categoriaMaeId) {
+      updates.categoriaMaeId = formEdicao.categoriaMaeId;
+    }
+
+    const sucesso = await atualizarCategoria(editandoCategoria, updates);
+    
+    if (sucesso) {
+      setIsEditDialogOpen(false);
+      setEditandoCategoria(null);
+      setFormEdicao({ nome: '', categoriaMaeId: '' });
+    }
   };
 
 
@@ -274,7 +338,7 @@ export const CategoriasFinanceiras = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditarCategoria(categoriaMae.id)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => deletarCategoria(categoriaMae.id)}>
@@ -308,7 +372,7 @@ export const CategoriasFinanceiras = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditarCategoria(categoriaFilha.id)}>
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => deletarCategoria(categoriaFilha.id)}>
@@ -323,6 +387,96 @@ export const CategoriasFinanceiras = () => {
             })}
           </TableBody>
         </Table>
+
+        {/* Dialog de Edição */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <form onSubmit={handleSubmitEdicao}>
+              <DialogHeader>
+                <DialogTitle>Editar Categoria Financeira</DialogTitle>
+                <DialogDescription>
+                  Atualize as informações da categoria
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                {editandoCategoria && (() => {
+                  const categoria = categorias.find(c => c.id === editandoCategoria);
+                  if (!categoria) return null;
+                  
+                  return (
+                    <>
+                      <div className="grid gap-2">
+                        <Label>Código</Label>
+                        <Input
+                          value={categoria.codigo}
+                          disabled
+                          className="bg-muted"
+                        />
+                      </div>
+                      
+                      <div className="grid gap-2">
+                        <Label>Plano de Contas</Label>
+                        <Input
+                          value={categoria.tipo === 'mae' ? 'Conta Mãe' : 'Conta Filha'}
+                          disabled
+                          className="bg-muted"
+                        />
+                      </div>
+                      
+                      <div className="grid gap-2">
+                        <Label>Tipo</Label>
+                        <Input
+                          value={categoria.classificacao === 'entrada' ? 'Entrada' : 'Saída'}
+                          disabled
+                          className="bg-muted"
+                        />
+                      </div>
+                      
+                      {categoria.tipo === 'filha' && (
+                        <div className="grid gap-2">
+                          <Label htmlFor="edit-categoriaMae">Categoria Mãe</Label>
+                          <Select 
+                            value={formEdicao.categoriaMaeId} 
+                            onValueChange={(value) => setFormEdicao(prev => ({ ...prev, categoriaMaeId: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione uma categoria mãe" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categoriasMae
+                                .filter(mae => mae.classificacao === categoria.classificacao)
+                                .map(categoriaMae => (
+                                  <SelectItem key={categoriaMae.id} value={categoriaMae.id}>
+                                    {categoriaMae.codigo} - {categoriaMae.nome}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      
+                      <div className="grid gap-2">
+                        <Label htmlFor="edit-nome">Nome da Categoria</Label>
+                        <Input
+                          id="edit-nome"
+                          value={formEdicao.nome}
+                          onChange={(e) => setFormEdicao(prev => ({ ...prev, nome: e.target.value }))}
+                          placeholder="Ex: Receita de Reforma de Cilindros"
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">Salvar Alterações</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </CardContent>
         </CollapsibleContent>
       </Card>
