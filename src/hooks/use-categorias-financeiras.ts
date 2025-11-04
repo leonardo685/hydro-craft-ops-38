@@ -192,18 +192,27 @@ export const useCategoriasFinanceiras = () => {
       // Se mudou a categoria mãe, recalcular o código
       if (updates.categoriaMaeId !== undefined && categoriaAtual.tipo === 'filha') {
         const novaMae = categorias.find(c => c.id === updates.categoriaMaeId);
-        const outrasFilhasDaNovaMae = categorias.filter(
+        if (!novaMae) {
+          toast.error('Categoria mãe não encontrada');
+          return false;
+        }
+        
+        // Buscar todas as filhas da nova mãe (exceto a que está sendo editada)
+        const filhasDaNovaMae = categorias.filter(
           c => c.tipo === 'filha' && c.categoriaMaeId === updates.categoriaMaeId && c.id !== id
         );
         
-        const proximoNumero = outrasFilhasDaNovaMae.length > 0
-          ? Math.max(...outrasFilhasDaNovaMae.map(c => {
-              const partes = c.codigo.split('.');
-              return parseInt(partes[1] || '0') || 0;
-            })) + 1
-          : 1;
+        // Calcular o próximo número sequencial
+        let proximoNumero = 1;
+        if (filhasDaNovaMae.length > 0) {
+          const numerosExistentes = filhasDaNovaMae.map(c => {
+            const partes = c.codigo.split('.');
+            return parseInt(partes[1] || '0') || 0;
+          });
+          proximoNumero = Math.max(...numerosExistentes) + 1;
+        }
         
-        updateData.codigo = `${novaMae?.codigo}.${proximoNumero}`;
+        updateData.codigo = `${novaMae.codigo}.${proximoNumero}`;
       }
 
       const { data, error } = await supabase
