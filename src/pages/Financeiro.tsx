@@ -157,13 +157,15 @@ export default function Financeiro() {
   // Resetar estados dos Popovers quando tipo mudar para transferência
   useEffect(() => {
     if (lancamentoForm.tipo === 'transferencia') {
-      // Primeiro fechar os popovers
       setOpenCategoriaCombobox(false);
       setOpenFornecedorCombobox(false);
-      // Depois esconder os campos com um pequeno delay para garantir desmontagem
-      setTimeout(() => setMostrarCamposEntradaSaida(false), 0);
+      setMostrarCamposEntradaSaida(false);
+      // Forçar remontagem completa do formulário
+      setFormKey(prev => prev + 1);
     } else {
       setMostrarCamposEntradaSaida(true);
+      // Forçar remontagem ao voltar para entrada/saída
+      setFormKey(prev => prev + 1);
     }
   }, [lancamentoForm.tipo]);
 
@@ -224,6 +226,7 @@ export default function Financeiro() {
   const [openCategoriaCombobox, setOpenCategoriaCombobox] = useState(false);
   const [openFornecedorCombobox, setOpenFornecedorCombobox] = useState(false);
   const [mostrarCamposEntradaSaida, setMostrarCamposEntradaSaida] = useState(true);
+  const [formKey, setFormKey] = useState(0);
 
   const colunasVisiveis = {
     tipo: selectedExtratoColumns.some(col => col.value === 'tipo'),
@@ -2037,7 +2040,7 @@ export default function Financeiro() {
                                 Adicione uma nova entrada ou saída no extrato do dia.
                               </DialogDescription>
                             </DialogHeader>
-                          <div className="space-y-4">
+                          <div key={formKey} className="space-y-4">
                             <div>
                               <Label htmlFor="dataEmissao">Data da Emissão</Label>
                               <Popover>
@@ -2070,23 +2073,12 @@ export default function Financeiro() {
                               <Select 
                                 value={lancamentoForm.tipo} 
                                 onValueChange={(value) => {
-                                  console.log('🔄 Mudando tipo de', lancamentoForm.tipo, 'para', value);
-                                  console.log('📊 Estado antes:', { 
-                                    categoria: lancamentoForm.categoria, 
-                                    fornecedor: lancamentoForm.fornecedor,
-                                    mostrarCampos: mostrarCamposEntradaSaida
-                                  });
-                                  
-                                  setLancamentoForm(prev => {
-                                    const novoEstado = {
-                                      ...prev,
-                                      tipo: value,
-                                      categoria: value === 'transferencia' ? '' : prev.categoria,
-                                      fornecedor: value === 'transferencia' ? '' : prev.fornecedor
-                                    };
-                                    console.log('📊 Estado depois:', novoEstado);
-                                    return novoEstado;
-                                  });
+                                  setLancamentoForm(prev => ({
+                                    ...prev,
+                                    tipo: value,
+                                    categoria: value === 'transferencia' ? '' : prev.categoria,
+                                    fornecedor: value === 'transferencia' ? '' : prev.fornecedor
+                                  }));
                                 }}
                               >
                                 <SelectTrigger>
