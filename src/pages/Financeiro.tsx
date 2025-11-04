@@ -1957,7 +1957,7 @@ export default function Financeiro() {
                             Novo Lançamento
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 flex flex-col">
+                        <DialogContent className="max-w-2xl max-h-[90vh] p-0 flex flex-col">
                           <div className="p-6 overflow-y-auto flex-1">
                             <DialogHeader>
                               <DialogTitle>Novo Lançamento</DialogTitle>
@@ -2092,10 +2092,10 @@ export default function Financeiro() {
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                   </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-full p-0">
+                                <PopoverContent className="w-full p-0 pointer-events-auto" align="start">
                                   <Command>
                                     <CommandInput placeholder="Buscar categoria..." />
-                                    <CommandList>
+                                    <CommandList className="max-h-[200px]">
                                       <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
                                       <CommandGroup>
                                         {getCategoriasForSelect().map((categoria) => (
