@@ -1115,8 +1115,9 @@ export default function Financeiro() {
         return;
       }
     } else {
+      // Só valida categoria se NÃO for transferência
       if (!lancamentoForm.categoria) {
-        toast.error("Preencha todos os campos obrigatórios");
+        toast.error("Selecione uma categoria");
         return;
       }
     }
@@ -1972,7 +1973,7 @@ export default function Financeiro() {
                             Novo Lançamento
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[90vh] p-0 flex flex-col">
+                        <DialogContent key={lancamentoForm.tipo} className="max-w-2xl max-h-[90vh] p-0 flex flex-col">
                           <div className="p-6 overflow-y-auto flex-1">
                             <DialogHeader>
                               <DialogTitle>Novo Lançamento</DialogTitle>
@@ -2012,7 +2013,11 @@ export default function Financeiro() {
                               <Label htmlFor="tipo">Tipo de Lançamento</Label>
                               <Select 
                                 value={lancamentoForm.tipo} 
-                                onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, tipo: value }))}
+                                onValueChange={(value) => setLancamentoForm(prev => ({ 
+                                  ...prev, 
+                                  tipo: value,
+                                  categoria: value === 'transferencia' ? '' : prev.categoria
+                                }))}
                               >
                                 <SelectTrigger>
                                   <SelectValue />
@@ -2089,8 +2094,8 @@ export default function Financeiro() {
                               </div>
                             )}
                             
-                            {/* Categoria - só aparece se NÃO for transferência */}
-                            {lancamentoForm.tipo !== 'transferencia' && (
+                            {/* Categoria - só aparece para entrada ou saída */}
+                            {(lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
                               <div>
                                 <Label htmlFor="categoria">Categoria</Label>
                                 <Popover open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
