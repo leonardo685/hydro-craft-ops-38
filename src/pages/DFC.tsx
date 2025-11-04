@@ -700,6 +700,12 @@ export default function DFC() {
     // Filtrar lançamentos por período e conta
     const movimentacoes = lancamentos
       .filter(l => {
+        // Excluir lançamentos já pagos (pois já estão contabilizados no saldo total)
+        if (l.pago) return false;
+        
+        // Excluir transferências (não entram no planejamento)
+        if (l.tipo === 'transferencia') return false;
+        
         // Filtrar por data
         const dataLancamento = new Date(l.dataEsperada);
         
