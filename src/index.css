@@ -37,11 +37,6 @@ All colors MUST be HSL.
     --accent-foreground: 0 0% 100%;
     --accent-light: 140 70% 95%;
 
-    /* Success: Vibrant Neon Green */
-    --success: 140 90% 55%;
-    --success-foreground: 0 0% 100%;
-    --success-light: 140 90% 95%;
-
     /* Warning: Amber */
     --warning: 35 85% 55%;
     --warning-foreground: 0 0% 100%;
@@ -114,11 +109,6 @@ All colors MUST be HSL.
 
     --accent: 140 70% 45%;
     --accent-foreground: 0 0% 100%;
-
-    /* Success: Vibrant Neon Green (Dark mode) */
-    --success: 140 90% 60%;
-    --success-foreground: 0 0% 100%;
-    --success-light: 140 90% 15%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
