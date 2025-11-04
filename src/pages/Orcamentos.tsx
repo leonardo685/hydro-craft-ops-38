@@ -560,6 +560,61 @@ export default function Orcamentos() {
       doc.text(`Validade Proposta: ${validade}`, 22 + col3Width * 2, yPosition + 5.5);
       yPosition += 8;
 
+      // === OBSERVAÇÕES ===
+      if (orcamento.descricao && orcamento.descricao.trim()) {
+        yPosition += 10;
+        
+        // Verificar se precisa de nova página
+        if (yPosition + 40 > pageHeight - 30) {
+          adicionarRodape(currentPage);
+          doc.addPage();
+          currentPage++;
+          yPosition = 20;
+        }
+        
+        // Título "Observações"
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(220, 38, 38);
+        doc.text("OBSERVAÇÕES", 20, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += 5;
+        
+        // Caixa com as observações
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        
+        const maxWidth = pageWidth - 44; // 20 margem esquerda + 20 margem direita + 4 padding
+        const observacoesText = orcamento.descricao.trim();
+        const observacoesLines = doc.splitTextToSize(observacoesText, maxWidth);
+        
+        const lineHeight = 5;
+        const boxPadding = 5;
+        const boxHeight = (observacoesLines.length * lineHeight) + (boxPadding * 2);
+        
+        // Verificar se a caixa completa cabe na página
+        if (yPosition + boxHeight > pageHeight - 30) {
+          adicionarRodape(currentPage);
+          doc.addPage();
+          currentPage++;
+          yPosition = 20;
+        }
+        
+        // Desenhar caixa
+        doc.setDrawColor(200, 200, 200);
+        doc.setFillColor(250, 250, 250);
+        doc.rect(20, yPosition, pageWidth - 40, boxHeight, 'FD');
+        
+        // Adicionar texto das observações
+        let textY = yPosition + boxPadding + 4;
+        observacoesLines.forEach((line: string) => {
+          doc.text(line, 22, textY);
+          textY += lineHeight;
+        });
+        
+        yPosition += boxHeight + 2;
+      }
+
       // === PEÇAS NECESSÁRIAS ===
       if (pecas.length > 0) {
         yPosition += 10;
