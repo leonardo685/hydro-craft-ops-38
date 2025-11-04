@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Package, Settings, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
+import mecHidroLogo from "@/assets/mec-hidro-logo-novo.jpg";
 
 interface ItemSelectionModalProps {
   title: string;
@@ -20,6 +21,7 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
   const [open, setOpen] = useState(false);
   const [realItems, setRealItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [ordemData, setOrdemData] = useState<any>(null);
 
   useEffect(() => {
     if (open && ordemId) {
@@ -37,6 +39,9 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
         .single();
 
       if (error) throw error;
+      
+      // Armazenar dados da ordem para usar no PDF
+      setOrdemData(data);
       
       let fieldData: any[] = [];
       if (type === 'pecas' && data.pecas_necessarias) {
@@ -64,50 +69,182 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
     );
   };
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
+    const EMPRESA_INFO = {
+      nome: "MEC-HIDRO MECANICA E HIDRAULICA LTDA",
+      cnpj: "03.328.334/0001-87",
+      telefone: "(19) 3026-6227",
+      email: "contato@mechidro.com.br"
+    };
+
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    let yPosition = 10;
+
     const selectedData = realItems.filter((_, index) => selectedItems.includes(index.toString()));
+
+    // Função para adicionar detalhes decorativos (triângulos vermelhos e pretos)
+    const adicionarDetalheDecorativo = () => {
+      doc.setFillColor(220, 38, 38);
+      doc.triangle(pageWidth - 30, pageHeight - 30, pageWidth, pageHeight - 30, pageWidth, pageHeight, 'F');
+      doc.setFillColor(0, 0, 0);
+      doc.triangle(pageWidth - 15, pageHeight - 30, pageWidth, pageHeight - 30, pageWidth, pageHeight, 'F');
+    };
+
+    // Função para adicionar rodapé
+    const adicionarRodape = () => {
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        adicionarDetalheDecorativo();
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Página ${i} de ${totalPages}`, 15, pageHeight - 10);
+        doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth - 60, pageHeight - 10);
+      }
+    };
+
+    // Adicionar logo MEC-HIDRO
+    try {
+      const logoImg = new Image();
+      logoImg.src = mecHidroLogo;
+      await new Promise<void>((resolve) => {
+        logoImg.onload = () => {
+          doc.addImage(logoImg, 'JPEG', pageWidth - 50, 8, 35, 20);
+          resolve();
+        };
+        logoImg.onerror = () => resolve();
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar logo:', error);
+    }
+
+    // Cabeçalho com informações da empresa
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(EMPRESA_INFO.nome, 20, yPosition + 5);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`CNPJ: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
+    doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
+    doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
     
-    // Header
-    doc.setFontSize(20);
-    doc.text(title, 20, 30);
+    // Linha separadora vermelha
+    doc.setDrawColor(220, 38, 38);
+    doc.setLineWidth(1);
+    doc.line(20, yPosition + 28, pageWidth - 20, yPosition + 28);
     
+    // Triângulo decorativo vermelho no canto superior direito
+    doc.setFillColor(220, 38, 38);
+    doc.triangle(pageWidth - 20, 10, pageWidth, 10, pageWidth, 40, 'F');
+    
+    yPosition = 48;
+    
+    // Título em vermelho
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(220, 38, 38);
+    doc.text(title.toUpperCase(), pageWidth / 2, yPosition, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+    
+    yPosition = 65;
+
+    // Informações da Ordem
+    if (ordemData) {
+      doc.setFillColor(220, 220, 220);
+      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, pageWidth - 40, 10);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text("Informações da Ordem de Serviço", pageWidth / 2, yPosition + 7, { align: "center" });
+      yPosition += 10;
+      
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      
+      // Primeira linha: Nº Ordem + Data
+      const colWidth = (pageWidth - 40) / 2;
+      
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, colWidth, 8);
+      doc.rect(20 + colWidth, yPosition, colWidth, 8);
+      doc.text(`Nº Ordem: ${ordemData.numero_ordem || 'N/A'}`, 22, yPosition + 5.5);
+      doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 22 + colWidth, yPosition + 5.5);
+      yPosition += 8;
+      
+      // Segunda linha: Cliente
+      doc.rect(20, yPosition, pageWidth - 40, 8);
+      doc.text(`Cliente: ${ordemData.cliente_nome || 'N/A'}`, 22, yPosition + 5.5);
+      yPosition += 8;
+
+      // Terceira linha: Equipamento
+      doc.rect(20, yPosition, pageWidth - 40, 8);
+      doc.text(`Equipamento: ${ordemData.equipamento || 'N/A'}`, 22, yPosition + 5.5);
+      yPosition += 8;
+
+      yPosition += 10;
+    }
+
+    // Título da seção de itens
     doc.setFontSize(12);
-    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 20, 45);
-    doc.text(`Total de itens selecionados: ${selectedData.length}`, 20, 55);
-    
-    // Content
-    let yPosition = 75;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+    doc.setFillColor(128, 128, 128);
+    doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+    doc.text(`${title.toUpperCase()} SELECIONADOS`, pageWidth / 2, yPosition + 7, { align: 'center' });
+    yPosition += 15;
+
+    // Conteúdo dos itens
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal");
     
     selectedData.forEach((item, index) => {
-      if (yPosition > 270) {
+      if (yPosition > pageHeight - 40) {
+        adicionarRodape();
         doc.addPage();
         yPosition = 30;
       }
       
-      doc.setFontSize(10);
+      // Box para cada item
+      const boxHeight = type === 'pecas' ? 25 : 20;
+      
+      doc.setFillColor(index % 2 === 0 ? 245 : 255, index % 2 === 0 ? 245 : 255, index % 2 === 0 ? 245 : 255);
+      doc.rect(20, yPosition, pageWidth - 40, boxHeight, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, pageWidth - 40, boxHeight);
+      
+      doc.setFont("helvetica", "bold");
+      doc.text(`${index + 1}.`, 25, yPosition + 7);
       
       if (type === 'pecas') {
-        doc.text(`${index + 1}. Peça: ${item.peca || item.descricao || 'N/A'}`, 20, yPosition);
-        yPosition += 8;
-        doc.text(`   Quantidade: ${item.quantidade || 'N/A'}`, 25, yPosition);
-        yPosition += 8;
-        doc.text(`   Valor: R$ ${item.valor?.toFixed(2) || '0,00'}`, 25, yPosition);
+        doc.text(`Peça: ${item.peca || item.descricao || 'N/A'}`, 35, yPosition + 7);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Quantidade: ${item.quantidade || 'N/A'}`, 35, yPosition + 14);
+        doc.text(`Valor: R$ ${item.valor?.toFixed(2) || '0,00'}`, 35, yPosition + 21);
       } else if (type === 'usinagem') {
-        doc.text(`${index + 1}. Operação: ${item.trabalho || item.operacao || item.descricao || 'N/A'}`, 20, yPosition);
-        yPosition += 8;
-        doc.text(`   Quantidade: ${item.quantidade || 'N/A'}`, 25, yPosition);
+        doc.text(`Operação: ${item.trabalho || item.operacao || item.descricao || 'N/A'}`, 35, yPosition + 7);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Quantidade: ${item.quantidade || 'N/A'}`, 35, yPosition + 14);
       } else if (type === 'servicos') {
-        doc.text(`${index + 1}. Serviço: ${item.servico || item.descricao || 'N/A'}`, 20, yPosition);
-        yPosition += 8;
-        doc.text(`   Quantidade: ${item.quantidade || 'N/A'}`, 25, yPosition);
+        doc.text(`Serviço: ${item.servico || item.descricao || 'N/A'}`, 35, yPosition + 7);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Quantidade: ${item.quantidade || 'N/A'}`, 35, yPosition + 14);
       }
       
-      yPosition += 15;
+      yPosition += boxHeight + 5;
     });
+
+    // Adicionar rodapé em todas as páginas
+    adicionarRodape();
     
     // Save the PDF
-    doc.save(`${title.toLowerCase().replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
+    const tipoNome = type === 'pecas' ? 'pecas' : type === 'usinagem' ? 'usinagem' : 'servicos';
+    const numeroOrdem = ordemData?.numero_ordem || 'ordem';
+    doc.save(`${numeroOrdem}_${tipoNome}_${new Date().getTime()}.pdf`);
     setOpen(false);
   };
 
