@@ -154,20 +154,6 @@ export default function Financeiro() {
     }
   }, [lancamentoForm.numeroParcelas, lancamentoForm.frequenciaRepeticao, lancamentoForm.dataEsperada, lancamentoForm.formaPagamento]);
 
-  // Resetar estados dos Popovers quando tipo mudar para transferência
-  useEffect(() => {
-    if (lancamentoForm.tipo === 'transferencia') {
-      setOpenCategoriaCombobox(false);
-      setOpenFornecedorCombobox(false);
-      setMostrarCamposEntradaSaida(false);
-      // Forçar remontagem completa do formulário
-      setFormKey(prev => prev + 1);
-    } else {
-      setMostrarCamposEntradaSaida(true);
-      // Forçar remontagem ao voltar para entrada/saída
-      setFormKey(prev => prev + 1);
-    }
-  }, [lancamentoForm.tipo]);
 
   // Estados para os filtros do extrato
   const [filtrosExtrato, setFiltrosExtrato] = useState({
@@ -225,8 +211,6 @@ export default function Financeiro() {
   const [filtrosExpanded, setFiltrosExpanded] = useState(true);
   const [openCategoriaCombobox, setOpenCategoriaCombobox] = useState(false);
   const [openFornecedorCombobox, setOpenFornecedorCombobox] = useState(false);
-  const [mostrarCamposEntradaSaida, setMostrarCamposEntradaSaida] = useState(true);
-  const [formKey, setFormKey] = useState(0);
 
   const colunasVisiveis = {
     tipo: selectedExtratoColumns.some(col => col.value === 'tipo'),
@@ -1993,10 +1977,6 @@ export default function Financeiro() {
                         open={isLancamentoDialogOpen} 
                         onOpenChange={(open) => {
                           setIsLancamentoDialogOpen(open);
-                          if (open) {
-                            // Ao ABRIR, resetar para mostrar campos (já que começa em 'entrada')
-                            setMostrarCamposEntradaSaida(true);
-                          }
                           if (!open) {
                             // Resetar formulário ao fechar
                             setLancamentoForm({
@@ -2019,7 +1999,6 @@ export default function Financeiro() {
                             });
                             setOpenCategoriaCombobox(false);
                             setOpenFornecedorCombobox(false);
-                            setMostrarCamposEntradaSaida(true);
                           }
                         }}
                       >
@@ -2040,7 +2019,7 @@ export default function Financeiro() {
                                 Adicione uma nova entrada ou saída no extrato do dia.
                               </DialogDescription>
                             </DialogHeader>
-                          <div key={formKey} className="space-y-4">
+                          <div className="space-y-4">
                             <div>
                               <Label htmlFor="dataEmissao">Data da Emissão</Label>
                               <Popover>
@@ -2157,10 +2136,10 @@ export default function Financeiro() {
                             )}
                             
                             {/* Categoria - só aparece para entrada ou saída */}
-                            {mostrarCamposEntradaSaida && (lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
+                            {(lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
                               <div key="categoria-field">
                                 <Label htmlFor="categoria">Categoria</Label>
-                                <Popover open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
+                                <Popover key={lancamentoForm.tipo} open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
                                   <PopoverTrigger asChild>
                                     <Button
                                       variant="outline"
@@ -2376,10 +2355,10 @@ export default function Financeiro() {
                             )}
                             
                             {/* Fornecedor/Cliente - só aparece para entrada ou saída */}
-                            {mostrarCamposEntradaSaida && (lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
+                            {(lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
                               <div key="fornecedor-field">
                                 <Label htmlFor="fornecedor">Fornecedor/Cliente</Label>
-                                <Popover open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
+                                <Popover key={lancamentoForm.tipo} open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
                                   <PopoverTrigger asChild>
                                     <Button
                                       variant="outline"
