@@ -387,6 +387,7 @@ export type Database = {
           created_at: string
           id: string
           nome_arquivo: string
+          ordem_servico_id: string | null
           recebimento_id: number | null
         }
         Insert: {
@@ -395,6 +396,7 @@ export type Database = {
           created_at?: string
           id?: string
           nome_arquivo: string
+          ordem_servico_id?: string | null
           recebimento_id?: number | null
         }
         Update: {
@@ -403,9 +405,17 @@ export type Database = {
           created_at?: string
           id?: string
           nome_arquivo?: string
+          ordem_servico_id?: string | null
           recebimento_id?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fotos_equipamentos_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fotos_equipamentos_recebimento_id_fkey"
             columns: ["recebimento_id"]

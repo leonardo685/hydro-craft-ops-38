@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, Upload, Plus, Minus } from "lucide-react";
+import { ArrowLeft, Save, Upload, Plus, Minus, X, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,6 +92,9 @@ const NovaOrdemDireta = () => {
 
   const [usinagemAdicional, setUsinagemAdicional] = useState<Array<{ quantidade: number; nome: string; codigo?: string }>>([]);
   const [novaUsinagemAdicional, setNovaUsinagemAdicional] = useState({ quantidade: 1, nome: "", codigo: "" });
+
+  const [fotos, setFotos] = useState<Array<{ file: File; preview: string }>>([]);
+  const [uploadingFotos, setUploadingFotos] = useState(false);
 
   // Gerar número da ordem automaticamente
   useEffect(() => {
@@ -223,6 +226,72 @@ const NovaOrdemDireta = () => {
     return usinagens;
   };
 
+  const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newFotos: Array<{ file: File; preview: string }> = [];
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith('image/')) {
+        const preview = URL.createObjectURL(file);
+        newFotos.push({ file, preview });
+      }
+    }
+
+    setFotos([...fotos, ...newFotos]);
+  };
+
+  const removerFoto = (index: number) => {
+    const fotoParaRemover = fotos[index];
+    URL.revokeObjectURL(fotoParaRemover.preview);
+    setFotos(fotos.filter((_, i) => i !== index));
+  };
+
+  const uploadFotos = async (ordemId: string) => {
+    if (fotos.length === 0) return;
+
+    setUploadingFotos(true);
+    
+    try {
+      for (const foto of fotos) {
+        const timestamp = Date.now();
+        const fileName = `${ordemId}_${timestamp}_${foto.file.name}`;
+        const filePath = `${fileName}`;
+
+        // Upload para o bucket equipamentos
+        const { error: uploadError } = await supabase.storage
+          .from('equipamentos')
+          .upload(filePath, foto.file);
+
+        if (uploadError) throw uploadError;
+
+        // Obter URL pública
+        const { data: urlData } = supabase.storage
+          .from('equipamentos')
+          .getPublicUrl(filePath);
+
+        // Salvar referência no banco
+        const { error: dbError } = await supabase
+          .from('fotos_equipamentos')
+          .insert({
+            ordem_servico_id: ordemId,
+            arquivo_url: urlData.publicUrl,
+            nome_arquivo: foto.file.name,
+            apresentar_orcamento: false
+          });
+
+        if (dbError) throw dbError;
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload de fotos:', error);
+      throw error;
+    } finally {
+      setUploadingFotos(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       if (!formData.cliente || !formData.equipamento) {
@@ -258,6 +327,11 @@ const NovaOrdemDireta = () => {
         .single();
 
       if (error) throw error;
+
+      // Upload das fotos após criar a ordem
+      if (fotos.length > 0) {
+        await uploadFotos(data.id);
+      }
 
       toast({
         title: "Sucesso!",
@@ -621,6 +695,64 @@ const NovaOrdemDireta = () => {
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Fotos do Equipamento */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Fotos do Equipamento
+            </CardTitle>
+            <CardDescription>Adicione fotos do equipamento e dos trabalhos</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFotoUpload}
+                className="hidden"
+                id="foto-upload"
+              />
+              <Label
+                htmlFor="foto-upload"
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md cursor-pointer hover:bg-primary-hover transition-colors"
+              >
+                <Upload className="h-4 w-4" />
+                Adicionar Fotos
+              </Label>
+              <span className="text-sm text-muted-foreground">
+                {fotos.length} {fotos.length === 1 ? 'foto adicionada' : 'fotos adicionadas'}
+              </span>
+            </div>
+
+            {fotos.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {fotos.map((foto, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={foto.preview}
+                      alt={`Foto ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg border-2 border-border"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removerFoto(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    <div className="absolute bottom-2 left-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded truncate">
+                      {foto.file.name}
+                    </div>
                   </div>
                 ))}
               </div>
