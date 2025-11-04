@@ -2089,66 +2089,67 @@ export default function Financeiro() {
                               </div>
                             )}
                             
-                            <div>
-                              <Label htmlFor="categoria">
-                                Categoria {lancamentoForm.tipo === 'transferencia' && '(opcional)'}
-                              </Label>
-                              <Popover open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={openCategoriaCombobox}
-                                    className="w-full justify-between"
-                                  >
-                                    {lancamentoForm.categoria
-                                      ? getCategoriasForSelect().find((cat) => cat.value === lancamentoForm.categoria)?.label
-                                      : "Selecionar categoria"}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-full p-0 pointer-events-auto" align="start">
-                                  <Command>
-                                    <CommandInput placeholder="Buscar categoria..." />
-                                    <CommandList className="max-h-[200px]">
-                                      <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
-                                      <CommandGroup>
-                                        {getCategoriasForSelect().map((categoria) => (
-                                          <CommandItem
-                                            key={categoria.value}
-                                            value={categoria.label}
-                                            onSelect={() => {
-                                              setLancamentoForm(prev => ({ ...prev, categoria: categoria.value }));
-                                              setOpenCategoriaCombobox(false);
-                                            }}
-                                          >
-                                            <Check
-                                              className={cn(
-                                                "mr-2 h-4 w-4",
-                                                lancamentoForm.categoria === categoria.value ? "opacity-100" : "opacity-0"
-                                              )}
-                                            />
-                                            {categoria.label}
-                                          </CommandItem>
-                                        ))}
-                                      </CommandGroup>
-                                    </CommandList>
-                                  </Command>
-                                </PopoverContent>
-                              </Popover>
-                              <Button 
-                                type="button"
-                                variant="outline" 
-                                size="sm" 
-                                className="w-full mt-2"
-                                onClick={() => {
-                                  navigate('/cadastros', { state: { activeTab: 'categorias' } });
-                                }}
-                              >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Cadastrar Nova Categoria
-                              </Button>
-                            </div>
+                            {/* Categoria - só aparece se NÃO for transferência */}
+                            {lancamentoForm.tipo !== 'transferencia' && (
+                              <div>
+                                <Label htmlFor="categoria">Categoria</Label>
+                                <Popover open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      aria-expanded={openCategoriaCombobox}
+                                      className="w-full justify-between"
+                                    >
+                                      {lancamentoForm.categoria
+                                        ? getCategoriasForSelect().find((cat) => cat.value === lancamentoForm.categoria)?.label
+                                        : "Selecionar categoria"}
+                                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-full p-0 pointer-events-auto" align="start">
+                                    <Command>
+                                      <CommandInput placeholder="Buscar categoria..." />
+                                      <CommandList className="max-h-[200px]">
+                                        <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+                                        <CommandGroup>
+                                          {getCategoriasForSelect().map((categoria) => (
+                                            <CommandItem
+                                              key={categoria.value}
+                                              value={categoria.label}
+                                              onSelect={() => {
+                                                setLancamentoForm(prev => ({ ...prev, categoria: categoria.value }));
+                                                setOpenCategoriaCombobox(false);
+                                              }}
+                                            >
+                                              <Check
+                                                className={cn(
+                                                  "mr-2 h-4 w-4",
+                                                  lancamentoForm.categoria === categoria.value ? "opacity-100" : "opacity-0"
+                                                )}
+                                              />
+                                              {categoria.label}
+                                            </CommandItem>
+                                          ))}
+                                        </CommandGroup>
+                                      </CommandList>
+                                    </Command>
+                                  </PopoverContent>
+                                </Popover>
+                                <Button 
+                                  type="button"
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="w-full mt-2"
+                                  onClick={() => {
+                                    navigate('/cadastros', { state: { activeTab: 'categorias' } });
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Cadastrar Nova Categoria
+                                </Button>
+                              </div>
+                            )}
                             
                             {/* Forma de Pagamento */}
                             <div>
