@@ -154,6 +154,14 @@ export default function Financeiro() {
     }
   }, [lancamentoForm.numeroParcelas, lancamentoForm.frequenciaRepeticao, lancamentoForm.dataEsperada, lancamentoForm.formaPagamento]);
 
+  // Resetar estados dos Popovers quando tipo mudar para transferência
+  useEffect(() => {
+    if (lancamentoForm.tipo === 'transferencia') {
+      setOpenCategoriaCombobox(false);
+      setOpenFornecedorCombobox(false);
+    }
+  }, [lancamentoForm.tipo]);
+
   // Estados para os filtros do extrato
   const [filtrosExtrato, setFiltrosExtrato] = useState({
     dataInicio: null as Date | null,
@@ -1972,14 +1980,45 @@ export default function Financeiro() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>Extrato Bancário - {new Date(2024, 7, 29).toLocaleDateString('pt-BR')}</CardTitle>
-                      <Dialog open={isLancamentoDialogOpen} onOpenChange={setIsLancamentoDialogOpen}>
+                      <Dialog 
+                        open={isLancamentoDialogOpen} 
+                        onOpenChange={(open) => {
+                          setIsLancamentoDialogOpen(open);
+                          if (!open) {
+                            // Resetar formulário ao fechar
+                            setLancamentoForm({
+                              tipo: 'entrada',
+                              valor: '',
+                              descricao: '',
+                              categoria: '',
+                              conta: 'conta_corrente',
+                              contaDestino: '',
+                              fornecedor: '',
+                              paga: false,
+                              dataEmissao: new Date(),
+                              dataPagamento: new Date(),
+                              dataRealizada: new Date(),
+                              dataEsperada: new Date(),
+                              formaPagamento: 'a_vista',
+                              numeroParcelas: 2,
+                              frequenciaRepeticao: 'mensal',
+                              mesesRecorrencia: 12,
+                            });
+                            setOpenCategoriaCombobox(false);
+                            setOpenFornecedorCombobox(false);
+                          }
+                        }}
+                      >
                         <DialogTrigger asChild>
                           <Button>
                             <Plus className="h-4 w-4 mr-2" />
                             Novo Lançamento
                           </Button>
                         </DialogTrigger>
-                        <DialogContent key={lancamentoForm.tipo} className="max-w-2xl max-h-[90vh] p-0 flex flex-col">
+                        <DialogContent 
+                          key={`${lancamentoForm.tipo}-${isLancamentoDialogOpen}`} 
+                          className="max-w-2xl max-h-[90vh] p-0 flex flex-col"
+                        >
                           <div className="p-6 overflow-y-auto flex-1">
                             <DialogHeader>
                               <DialogTitle>Novo Lançamento</DialogTitle>
@@ -2019,12 +2058,15 @@ export default function Financeiro() {
                               <Label htmlFor="tipo">Tipo de Lançamento</Label>
                               <Select 
                                 value={lancamentoForm.tipo} 
-                                onValueChange={(value) => setLancamentoForm(prev => ({ 
-                                  ...prev, 
-                                  tipo: value,
-                                  categoria: value === 'transferencia' ? '' : prev.categoria,
-                                  fornecedor: value === 'transferencia' ? '' : prev.fornecedor
-                                }))}
+                                onValueChange={(value) => {
+                                  console.log('Mudando tipo para:', value);
+                                  setLancamentoForm(prev => ({ 
+                                    ...prev, 
+                                    tipo: value,
+                                    categoria: value === 'transferencia' ? '' : prev.categoria,
+                                    fornecedor: value === 'transferencia' ? '' : prev.fornecedor
+                                  }));
+                                }}
                               >
                                 <SelectTrigger>
                                   <SelectValue />
@@ -2103,7 +2145,7 @@ export default function Financeiro() {
                             
                             {/* Categoria - só aparece para entrada ou saída */}
                             {(lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
-                              <div>
+                              <div key="categoria-field">
                                 <Label htmlFor="categoria">Categoria</Label>
                                 <Popover open={openCategoriaCombobox} onOpenChange={setOpenCategoriaCombobox}>
                                   <PopoverTrigger asChild>
@@ -2322,7 +2364,7 @@ export default function Financeiro() {
                             
                             {/* Fornecedor/Cliente - só aparece para entrada ou saída */}
                             {(lancamentoForm.tipo === 'entrada' || lancamentoForm.tipo === 'saida') && (
-                              <div>
+                              <div key="fornecedor-field">
                                 <Label htmlFor="fornecedor">Fornecedor/Cliente</Label>
                                 <Popover open={openFornecedorCombobox} onOpenChange={setOpenFornecedorCombobox}>
                                   <PopoverTrigger asChild>
