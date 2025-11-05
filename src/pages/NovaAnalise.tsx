@@ -669,7 +669,7 @@ const NovaOrdemServico = () => {
     
     // Se não encontrou, pode ser que estejamos editando uma ordem de serviço existente
     // Neste caso, precisamos buscar a ordem de serviço e depois o recebimento relacionado
-    if (!recebimentoEncontrado && decodedId.startsWith('OS-')) {
+    if (!recebimentoEncontrado && decodedId) {
       console.log('Searching for order service with number:', decodedId);
       // Buscar ordem de serviço e carregar dados para edição
       const loadOrderForEdit = async () => {
