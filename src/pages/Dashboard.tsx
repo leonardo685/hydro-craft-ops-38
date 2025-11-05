@@ -453,10 +453,10 @@ export default function Dashboard() {
   }, [despesasVariaveisPorCategoria]);
 
   const colors = {
-    faturamento: '#10b981',
-    custosVariaveis: '#fca5a5',
-    despesasFixas: '#f59e0b',
-    margemContribuicao: 'hsl(var(--accent))',
+    faturamento: '#10b981',        // Verde
+    custosVariaveis: '#ef4444',    // Vermelho
+    despesasFixas: '#f59e0b',      // Laranja
+    margemContribuicao: '#3b82f6', // Azul
     lucroLiquido: '#10b981',
     despesasTotais: 'hsl(var(--destructive))'
   };

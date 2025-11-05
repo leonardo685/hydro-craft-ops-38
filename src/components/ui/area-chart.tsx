@@ -35,7 +35,7 @@ const AreaChartRoot = React.forwardRef<
   ref
 ) {
   return (
-    <div className="[&_.recharts-cartesian-grid]:hidden">
+    <div className="[&_.recharts-cartesian-grid]:hidden [&_.recharts-legend-wrapper]:!text-base [&_.recharts-legend-item-text]:!text-base [&_.recharts-legend-item-text]:!font-medium [&_.recharts-legend-item]:cursor-pointer [&_.recharts-legend-item]:px-2 [&_.recharts-legend-item]:py-1">
       <SubframeCore.AreaChart
         className={cn("h-80 w-full", className)}
         ref={ref}
