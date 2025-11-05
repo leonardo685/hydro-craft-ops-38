@@ -3008,17 +3008,25 @@ const NovaOrdemServico = () => {
                         size="sm"
                         onClick={async () => {
                           try {
-                            const { data, error } = await supabase.functions.invoke('download-file', {
-                              body: { 
-                                fileUrl: doc.arquivo_url,
-                                fileName: doc.nome_arquivo 
-                              },
-                            });
+                            // Fazer chamada para a edge function com responseType blob
+                            const response = await fetch(
+                              `https://fmbfkufkxvyncadunlhh.supabase.co/functions/v1/download-file`,
+                              {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  fileUrl: doc.arquivo_url,
+                                  fileName: doc.nome_arquivo
+                                })
+                              }
+                            );
 
-                            if (error) throw error;
+                            if (!response.ok) throw new Error('Erro ao baixar arquivo');
 
-                            // Criar blob e fazer download
-                            const blob = new Blob([data], { type: 'application/pdf' });
+                            // Obter o blob da resposta
+                            const blob = await response.blob();
                             const url = window.URL.createObjectURL(blob);
                             const link = document.createElement('a');
                             link.href = url;
