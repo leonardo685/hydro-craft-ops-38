@@ -35,6 +35,18 @@ const NovaOrdemDireta = () => {
     observacoes: ""
   });
 
+  const [dadosTecnicos, setDadosTecnicos] = useState({
+    categoriaEquipamento: "cilindro",
+    camisa: "",
+    hasteComprimento: "",
+    curso: "",
+    pressaoTrabalho: "",
+    conexaoA: "",
+    conexaoB: "",
+    ambienteTrabalho: "",
+    observacoesTecnicas: ""
+  });
+
   const [pecasUtilizadas, setPecasUtilizadas] = useState<Array<{
     quantidade: number;
     peca: string;
@@ -618,6 +630,126 @@ const NovaOrdemDireta = () => {
           </CardContent>
         </Card>
 
+        {/* Dados Técnicos */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Dados Técnicos</CardTitle>
+            <CardDescription>Informações técnicas do equipamento</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="categoriaEquipamento">Categoria do Equipamento*</Label>
+              <Select 
+                value={dadosTecnicos.categoriaEquipamento} 
+                onValueChange={(value) => setDadosTecnicos({...dadosTecnicos, categoriaEquipamento: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cilindro">Cilindro</SelectItem>
+                  <SelectItem value="bomba">Bomba</SelectItem>
+                  <SelectItem value="motor">Motor</SelectItem>
+                  <SelectItem value="valvula">Válvula</SelectItem>
+                  <SelectItem value="outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="camisa">Camisa</Label>
+                <Input
+                  id="camisa"
+                  value={dadosTecnicos.camisa}
+                  onChange={(e) => setDadosTecnicos({...dadosTecnicos, camisa: e.target.value})}
+                  placeholder="Ex: 80mm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="hasteComprimento">Haste - Comprimento</Label>
+                <Input
+                  id="hasteComprimento"
+                  value={dadosTecnicos.hasteComprimento}
+                  onChange={(e) => setDadosTecnicos({...dadosTecnicos, hasteComprimento: e.target.value})}
+                  placeholder="Ex: 1200mm"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="curso">Curso</Label>
+                <Input
+                  id="curso"
+                  value={dadosTecnicos.curso}
+                  onChange={(e) => setDadosTecnicos({...dadosTecnicos, curso: e.target.value})}
+                  placeholder="Ex: 500mm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pressaoTrabalho">Pressão de Trabalho</Label>
+                <Input
+                  id="pressaoTrabalho"
+                  value={dadosTecnicos.pressaoTrabalho}
+                  onChange={(e) => setDadosTecnicos({...dadosTecnicos, pressaoTrabalho: e.target.value})}
+                  placeholder="Ex: 200 bar"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="conexaoA">Conexão A</Label>
+                <Input
+                  id="conexaoA"
+                  value={dadosTecnicos.conexaoA}
+                  onChange={(e) => setDadosTecnicos({...dadosTecnicos, conexaoA: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="conexaoB">Conexão B</Label>
+                <Input
+                  id="conexaoB"
+                  value={dadosTecnicos.conexaoB}
+                  onChange={(e) => setDadosTecnicos({...dadosTecnicos, conexaoB: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ambienteTrabalho">Ambiente de Trabalho*</Label>
+              <Select 
+                value={dadosTecnicos.ambienteTrabalho} 
+                onValueChange={(value) => setDadosTecnicos({...dadosTecnicos, ambienteTrabalho: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="interno">Interno</SelectItem>
+                  <SelectItem value="externo">Externo</SelectItem>
+                  <SelectItem value="submerso">Submerso</SelectItem>
+                  <SelectItem value="controlado">Ambiente Controlado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="observacoesTecnicas">Observações</Label>
+              <Textarea
+                id="observacoesTecnicas"
+                value={dadosTecnicos.observacoesTecnicas}
+                onChange={(e) => setDadosTecnicos({...dadosTecnicos, observacoesTecnicas: e.target.value})}
+                placeholder="Observações técnicas adicionais..."
+                rows={4}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Peças Necessárias */}
         <Card>
