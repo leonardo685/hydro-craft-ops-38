@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Minus, FileDown } from "lucide-react";
+import { X, Plus, Minus, FileDown, Upload, Image, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -37,6 +37,9 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
   const [salvando, setSalvando] = useState(false);
   const [historicoPrecificacao, setHistoricoPrecificacao] = useState<any[]>([]);
   const [carregandoHistorico, setCarregandoHistorico] = useState(false);
+  const [fotosPrecificacao, setFotosPrecificacao] = useState<any[]>([]);
+  const [carregandoFotos, setCarregandoFotos] = useState(false);
+  const [fazendoUpload, setFazendoUpload] = useState(false);
 
   const carregarHistorico = async () => {
     if (!orcamento?.id) return;
@@ -58,6 +61,27 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
     }
   };
 
+  const carregarFotos = async () => {
+    if (!orcamento?.id) return;
+    
+    setCarregandoFotos(true);
+    try {
+      const { data, error } = await supabase
+        .from('fotos_orcamento')
+        .select('*')
+        .eq('orcamento_id', orcamento.id)
+        .eq('tipo', 'precificacao')
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      setFotosPrecificacao(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar fotos:', error);
+    } finally {
+      setCarregandoFotos(false);
+    }
+  };
+
   useEffect(() => {
     if (orcamento) {
       setPrecoDesejado(orcamento.preco_desejado || 0);
@@ -72,6 +96,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
   useEffect(() => {
     if (orcamento?.id) {
       carregarHistorico();
+      carregarFotos();
     }
   }, [orcamento?.id]);
 
@@ -120,6 +145,77 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
     const novos = [...custosVariaveis];
     novos[index] = { ...novos[index], [campo]: valor };
     setCustosVariaveis(novos);
+  };
+
+  const handleUploadFoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !orcamento?.id) return;
+
+    setFazendoUpload(true);
+    try {
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith('image/')) {
+          toast.error(`${file.name} não é uma imagem válida`);
+          continue;
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${orcamento.id}/precificacao/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('documentos')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { error: dbError } = await supabase
+          .from('fotos_orcamento')
+          .insert({
+            orcamento_id: orcamento.id,
+            arquivo_url: uploadData.path,
+            nome_arquivo: file.name,
+            tipo: 'precificacao',
+            apresentar_orcamento: false
+          });
+
+        if (dbError) throw dbError;
+      }
+
+      toast.success(`${files.length} foto(s) enviada(s) com sucesso!`);
+      await carregarFotos();
+      event.target.value = '';
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      toast.error('Erro ao fazer upload das fotos');
+    } finally {
+      setFazendoUpload(false);
+    }
+  };
+
+  const handleRemoverFoto = async (foto: any) => {
+    try {
+      const { error: storageError } = await supabase.storage
+        .from('documentos')
+        .remove([foto.arquivo_url]);
+
+      if (storageError) throw storageError;
+
+      const { error: dbError } = await supabase
+        .from('fotos_orcamento')
+        .delete()
+        .eq('id', foto.id);
+
+      if (dbError) throw dbError;
+
+      toast.success('Foto removida com sucesso!');
+      await carregarFotos();
+    } catch (error) {
+      console.error('Erro ao remover foto:', error);
+      toast.error('Erro ao remover foto');
+    }
   };
 
   const handleSalvar = async () => {
@@ -226,7 +322,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
       percentual_margem: percentualMargem,
     };
 
-    const sucesso = await gerarPDFPrecificacao(dadosAtualizados);
+    const sucesso = await gerarPDFPrecificacao(dadosAtualizados, fotosPrecificacao);
     if (sucesso) {
       toast.success("PDF gerado com sucesso!");
     } else {
@@ -251,7 +347,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
       numero_revisao: revisao.numero_revisao,
     };
 
-    const sucesso = await gerarPDFPrecificacao(dadosRevisao);
+    const sucesso = await gerarPDFPrecificacao(dadosRevisao, fotosPrecificacao);
     if (sucesso) {
       toast.success(`PDF da REV ${revisao.numero_revisao} gerado com sucesso!`);
     } else {
@@ -513,6 +609,67 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
                   <span>{formatarMoeda(totalCustosVariaveis)}</span>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Upload de Fotos para Precificação */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">📷 Fotos da Precificação</CardTitle>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  disabled={fazendoUpload}
+                  onClick={() => document.getElementById('upload-fotos-precificacao')?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-1" />
+                  {fazendoUpload ? 'Enviando...' : 'Adicionar Fotos'}
+                </Button>
+                <input
+                  id="upload-fotos-precificacao"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleUploadFoto}
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {carregandoFotos ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Carregando fotos...
+                </p>
+              ) : fotosPrecificacao.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhuma foto adicionada. As fotos aparecerão apenas no PDF.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {fotosPrecificacao.map((foto) => (
+                    <div
+                      key={foto.id}
+                      className="flex items-center justify-between p-2 bg-muted/30 rounded border"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Image className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm truncate max-w-[300px]">
+                          {foto.nome_arquivo}
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRemoverFoto(foto)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 

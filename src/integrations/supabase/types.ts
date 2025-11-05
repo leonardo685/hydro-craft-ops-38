@@ -471,6 +471,7 @@ export type Database = {
           id: string
           nome_arquivo: string
           orcamento_id: string
+          tipo: string | null
         }
         Insert: {
           apresentar_orcamento?: boolean
@@ -479,6 +480,7 @@ export type Database = {
           id?: string
           nome_arquivo: string
           orcamento_id: string
+          tipo?: string | null
         }
         Update: {
           apresentar_orcamento?: boolean
@@ -487,6 +489,7 @@ export type Database = {
           id?: string
           nome_arquivo?: string
           orcamento_id?: string
+          tipo?: string | null
         }
         Relationships: [
           {
