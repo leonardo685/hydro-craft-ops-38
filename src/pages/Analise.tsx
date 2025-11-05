@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, ThumbsUp, ThumbsDown, Edit, FileText, Download, Tag } from "lucide-react";
+import { Search, Plus, ThumbsUp, ThumbsDown, Edit, FileText, Download, Tag, Settings } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -828,55 +834,54 @@ export default function OrdensServico() {
                            <TableCell className="text-muted-foreground">
                              {new Date(ordem.data_entrada).toLocaleDateString('pt-BR')}
                            </TableCell>
-                             <TableCell className="text-right">
-                               <div className="flex items-center justify-end gap-2">
-                                 <Button 
-                                   variant="ghost" 
-                                   size="sm" 
-                                   className="h-8 w-8 p-0"
-                                   onClick={() => handleOpenLabel(ordem)}
-                                   title="Imprimir Etiqueta"
-                                 >
-                                   <Tag className="h-4 w-4" />
-                                 </Button>
-                                 <Button 
-                                   variant="ghost" 
-                                   size="sm" 
-                                   className="h-8 w-8 p-0"
-                                   onClick={() => navigate(`/analise/novo/${encodeURIComponent(ordem.numero_ordem)}`)}
-                                   title="Editar"
-                                 >
-                                   <Edit className="h-4 w-4" />
-                                 </Button>
-                                 <Button 
-                                   variant="ghost" 
-                                   size="sm" 
-                                   className="h-8 w-8 p-0 text-primary hover:text-primary/80 hover:bg-primary/10"
-                                   onClick={() => handleExportPDF(ordem)}
-                                   title="Exportar PDF"
-                                 >
-                                   <Download className="h-4 w-4" />
-                                 </Button>
-                                 <Button 
-                                   variant="ghost" 
-                                   size="sm" 
-                                   className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                   onClick={() => handleApprove(ordem.id)}
-                                   title="Aprovar"
-                                 >
-                                   <ThumbsUp className="h-4 w-4" />
-                                 </Button>
-                                 <Button 
-                                   variant="ghost" 
-                                   size="sm" 
-                                   className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                   onClick={() => handleReject(ordem.id)}
-                                   title="Rejeitar"
-                                 >
-                                   <ThumbsDown className="h-4 w-4" />
-                                 </Button>
-                               </div>
-                             </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-8 w-8 p-0"
+                                        title="Ações"
+                                      >
+                                        <Settings className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48 bg-popover z-50">
+                                      <DropdownMenuItem onClick={() => handleOpenLabel(ordem)}>
+                                        <Tag className="h-4 w-4 mr-2" />
+                                        Imprimir Etiqueta
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => navigate(`/analise/novo/${encodeURIComponent(ordem.numero_ordem)}`)}>
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Editar
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleExportPDF(ordem)}>
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Baixar PDF
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                    onClick={() => handleApprove(ordem.id)}
+                                    title="Aprovar"
+                                  >
+                                    <ThumbsUp className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => handleReject(ordem.id)}
+                                    title="Rejeitar"
+                                  >
+                                    <ThumbsDown className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
                          </TableRow>
                        ))
                      )}
