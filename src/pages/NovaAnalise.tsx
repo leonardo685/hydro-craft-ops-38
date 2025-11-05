@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, Upload, Camera, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Upload, Camera, FileText, Trash2, Eye } from "lucide-react";
 import { QuantityInput } from "@/components/QuantityInput";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -54,6 +54,14 @@ const NovaOrdemServico = () => {
   const [pecasUtilizadas, setPecasUtilizadas] = useState<Array<{
     quantidade: number;
     peca: string;
+  }>>([]);
+  
+  const [documentosPdf, setDocumentosPdf] = useState<Array<{
+    id: string;
+    nome_arquivo: string;
+    arquivo_url: string;
+    tipo_arquivo: string;
+    tamanho_bytes: number;
   }>>([]);
   
   
@@ -1012,7 +1020,7 @@ const NovaOrdemServico = () => {
               }
             }
 
-            // Carregar documentos técnicos (se necessário no futuro)
+            // Carregar documentos técnicos
             const { data: documentos } = await supabase
               .from('documentos_ordem')
               .select('*')
@@ -1020,6 +1028,7 @@ const NovaOrdemServico = () => {
               
             if (documentos && documentos.length > 0) {
               console.log('Documentos técnicos encontrados:', documentos.length);
+              setDocumentosPdf(documentos);
             }
           }
         } catch (error) {
@@ -2965,6 +2974,50 @@ const NovaOrdemServico = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Seção de Documentos PDF */}
+          {documentosPdf.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  📄 Documentos Técnicos
+                </CardTitle>
+                <CardDescription>
+                  PDFs e documentos anexados à ordem
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {documentosPdf.map((doc) => (
+                    <div 
+                      key={doc.id} 
+                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="font-medium text-sm">{doc.nome_arquivo}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {doc.tamanho_bytes ? `${(doc.tamanho_bytes / 1024).toFixed(2)} KB` : 'Tamanho desconhecido'}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(doc.arquivo_url, '_blank')}
+                        className="flex items-center gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Visualizar
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="flex justify-end gap-4">
             <Button
