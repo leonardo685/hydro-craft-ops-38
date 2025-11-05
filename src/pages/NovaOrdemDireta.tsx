@@ -332,7 +332,7 @@ const NovaOrdemDireta = () => {
         tempo_estimado: formData.prazoEstimado,
         prioridade: formData.prioridade.toLowerCase(),
         observacoes_tecnicas: formData.observacoes,
-        status: 'em_andamento',
+        status: 'pendente',
         data_entrada: new Date().toISOString(),
         recebimento_id: null,
         pecas_necessarias: pecasUtilizadas,
