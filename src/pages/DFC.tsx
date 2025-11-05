@@ -95,6 +95,13 @@ export default function DFC() {
     });
   };
 
+  // Recalcular valores sempre que lançamentos ocultos mudarem
+  useEffect(() => {
+    if (movimentacoesFiltradas.length > 0) {
+      calcularValoresFinanceiros(movimentacoesFiltradas);
+    }
+  }, [lancamentosOcultosTemporarios]);
+
   // Estados para ordenação de colunas
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
