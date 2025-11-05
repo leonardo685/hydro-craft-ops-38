@@ -496,6 +496,71 @@ export type Database = {
         }
         Relationships: []
       }
+      historico_precificacao: {
+        Row: {
+          comissao_percentual: number | null
+          comissao_valor: number | null
+          created_at: string | null
+          custos_variaveis: Json | null
+          desconto_percentual: number | null
+          id: string
+          impostos_percentual: number | null
+          impostos_valor: number | null
+          margem_contribuicao: number | null
+          numero_revisao: number
+          orcamento_id: string
+          percentuais_customizados: Json | null
+          percentual_margem: number | null
+          preco_desejado: number
+          total_custos_variaveis: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          comissao_percentual?: number | null
+          comissao_valor?: number | null
+          created_at?: string | null
+          custos_variaveis?: Json | null
+          desconto_percentual?: number | null
+          id?: string
+          impostos_percentual?: number | null
+          impostos_valor?: number | null
+          margem_contribuicao?: number | null
+          numero_revisao: number
+          orcamento_id: string
+          percentuais_customizados?: Json | null
+          percentual_margem?: number | null
+          preco_desejado?: number
+          total_custos_variaveis?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          comissao_percentual?: number | null
+          comissao_valor?: number | null
+          created_at?: string | null
+          custos_variaveis?: Json | null
+          desconto_percentual?: number | null
+          id?: string
+          impostos_percentual?: number | null
+          impostos_valor?: number | null
+          margem_contribuicao?: number | null
+          numero_revisao?: number
+          orcamento_id?: string
+          percentuais_customizados?: Json | null
+          percentual_margem?: number | null
+          preco_desejado?: number
+          total_custos_variaveis?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_precificacao_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       itens_nfe: {
         Row: {
           codigo: string

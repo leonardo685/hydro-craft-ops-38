@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { X, Plus, Minus, FileDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -34,6 +35,28 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
   const [percentuaisCustomizados, setPercentuaisCustomizados] = useState<CustoVariavel[]>([]);
   const [custosVariaveis, setCustosVariaveis] = useState<CustoVariavel[]>([]);
   const [salvando, setSalvando] = useState(false);
+  const [historicoPrecificacao, setHistoricoPrecificacao] = useState<any[]>([]);
+  const [carregandoHistorico, setCarregandoHistorico] = useState(false);
+
+  const carregarHistorico = async () => {
+    if (!orcamento?.id) return;
+    
+    setCarregandoHistorico(true);
+    try {
+      const { data, error } = await supabase
+        .from('historico_precificacao')
+        .select('*')
+        .eq('orcamento_id', orcamento.id)
+        .order('numero_revisao', { ascending: false });
+      
+      if (error) throw error;
+      setHistoricoPrecificacao(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+    } finally {
+      setCarregandoHistorico(false);
+    }
+  };
 
   useEffect(() => {
     if (orcamento) {
@@ -45,6 +68,12 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
       setCustosVariaveis(orcamento.custos_variaveis || []);
     }
   }, [orcamento]);
+
+  useEffect(() => {
+    if (orcamento?.id) {
+      carregarHistorico();
+    }
+  }, [orcamento?.id]);
 
   const precoBase = precoDesejado / (1 - descontoPercentual / 100);
   const impostosValor = calcularImpostos(precoDesejado, impostosPercentual);
@@ -101,6 +130,52 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
 
     setSalvando(true);
     try {
+      // 1. Verificar se já existe precificação (para criar histórico)
+      const { data: orcamentoAtual } = await supabase
+        .from("orcamentos")
+        .select("preco_desejado, desconto_percentual, impostos_percentual, impostos_valor, comissao_percentual, comissao_valor, percentuais_customizados, custos_variaveis, total_custos_variaveis, margem_contribuicao, percentual_margem")
+        .eq("id", orcamento.id)
+        .maybeSingle();
+
+      // 2. Se já existe precificação anterior, salvar no histórico
+      if (orcamentoAtual && orcamentoAtual.preco_desejado > 0) {
+        // Buscar o número da última revisão
+        const { data: ultimaRevisao } = await supabase
+          .from('historico_precificacao')
+          .select('numero_revisao')
+          .eq('orcamento_id', orcamento.id)
+          .order('numero_revisao', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        const proximaRevisao = (ultimaRevisao?.numero_revisao || 0) + 1;
+        
+        // Salvar a versão anterior no histórico
+        const { error: errorHistorico } = await supabase
+          .from('historico_precificacao')
+          .insert({
+            orcamento_id: orcamento.id,
+            numero_revisao: proximaRevisao,
+            preco_desejado: orcamentoAtual.preco_desejado,
+            desconto_percentual: orcamentoAtual.desconto_percentual,
+            impostos_percentual: orcamentoAtual.impostos_percentual,
+            impostos_valor: orcamentoAtual.impostos_valor,
+            comissao_percentual: orcamentoAtual.comissao_percentual,
+            comissao_valor: orcamentoAtual.comissao_valor,
+            percentuais_customizados: orcamentoAtual.percentuais_customizados,
+            custos_variaveis: orcamentoAtual.custos_variaveis,
+            total_custos_variaveis: orcamentoAtual.total_custos_variaveis,
+            margem_contribuicao: orcamentoAtual.margem_contribuicao,
+            percentual_margem: orcamentoAtual.percentual_margem,
+          });
+        
+        if (errorHistorico) {
+          console.error('Erro ao salvar histórico:', errorHistorico);
+          // Não bloqueia o salvamento se der erro no histórico
+        }
+      }
+
+      // 3. Atualizar orçamento com novos valores
       const { error } = await supabase
         .from("orcamentos")
         .update({
@@ -121,6 +196,10 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
       if (error) throw error;
 
       toast.success("Precificação salva com sucesso!");
+      
+      // Recarregar histórico
+      await carregarHistorico();
+      
       onSave?.();
       onClose();
     } catch (error) {
@@ -150,6 +229,31 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
     const sucesso = await gerarPDFPrecificacao(dadosAtualizados);
     if (sucesso) {
       toast.success("PDF gerado com sucesso!");
+    } else {
+      toast.error("Erro ao gerar PDF");
+    }
+  };
+
+  const handleBaixarPDFRevisao = async (revisao: any) => {
+    const dadosRevisao = {
+      ...orcamento,
+      preco_desejado: revisao.preco_desejado,
+      desconto_percentual: revisao.desconto_percentual,
+      impostos_percentual: revisao.impostos_percentual,
+      impostos_valor: revisao.impostos_valor,
+      comissao_percentual: revisao.comissao_percentual,
+      comissao_valor: revisao.comissao_valor,
+      percentuais_customizados: revisao.percentuais_customizados,
+      custos_variaveis: revisao.custos_variaveis,
+      total_custos_variaveis: revisao.total_custos_variaveis,
+      margem_contribuicao: revisao.margem_contribuicao,
+      percentual_margem: revisao.percentual_margem,
+      numero_revisao: revisao.numero_revisao,
+    };
+
+    const sucesso = await gerarPDFPrecificacao(dadosRevisao);
+    if (sucesso) {
+      toast.success(`PDF da REV ${revisao.numero_revisao} gerado com sucesso!`);
     } else {
       toast.error("Erro ao gerar PDF");
     }
@@ -411,6 +515,55 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
               </div>
             </CardContent>
           </Card>
+
+          {/* Histórico de Precificação */}
+          {historicoPrecificacao.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">📚 Histórico de Revisões</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {carregandoHistorico ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Carregando histórico...
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {historicoPrecificacao.map((revisao) => (
+                      <div
+                        key={revisao.id}
+                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="font-mono">
+                              REV {revisao.numero_revisao}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(revisao.created_at).toLocaleString("pt-BR")}
+                            </span>
+                          </div>
+                          <div className="mt-1 text-sm">
+                            <span className="font-medium">Preço:</span> {formatarMoeda(revisao.preco_desejado)}
+                            <span className="mx-2">•</span>
+                            <span className="font-medium">Margem:</span> {formatarPercentual(revisao.percentual_margem)}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleBaixarPDFRevisao(revisao)}
+                        >
+                          <FileDown className="h-4 w-4 mr-1" />
+                          Baixar PDF
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
         </div>
 

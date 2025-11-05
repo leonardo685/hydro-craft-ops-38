@@ -61,7 +61,18 @@ export const gerarPDFPrecificacao = async (orcamento: any) => {
     doc.text(`Cliente: ${orcamento.cliente_nome}`, 20, yPosition);
     yPosition += 8;
     doc.text(`Equipamento: ${orcamento.equipamento}`, 20, yPosition);
-    yPosition += 15;
+    yPosition += 8;
+    
+    // Indicação de revisão
+    if (orcamento.numero_revisao) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(220, 38, 38); // vermelho
+      doc.text(`REVISÃO ${orcamento.numero_revisao}`, 20, yPosition);
+      doc.setTextColor(0, 0, 0);
+      yPosition += 8;
+    }
+    yPosition += 7;
 
     // Preço Desejado
     doc.setFontSize(14);
@@ -148,7 +159,8 @@ export const gerarPDFPrecificacao = async (orcamento: any) => {
     doc.setFont("helvetica", "italic");
     doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, 20, yPosition);
 
-    doc.save(`Precificacao_Orcamento_${orcamento.numero}.pdf`);
+    const sufixoRevisao = orcamento.numero_revisao ? `_REV${orcamento.numero_revisao}` : '';
+    doc.save(`Precificacao_Orcamento_${orcamento.numero}${sufixoRevisao}.pdf`);
     return true;
   } catch (error) {
     console.error("Erro ao gerar PDF de precificação:", error);
