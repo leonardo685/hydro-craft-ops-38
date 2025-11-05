@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, ThumbsUp, ThumbsDown, Edit, FileText, Download } from "lucide-react";
+import { Search, Plus, ThumbsUp, ThumbsDown, Edit, FileText, Download, Tag } from "lucide-react";
+import { EquipmentLabel } from "@/components/EquipmentLabel";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,7 @@ export default function OrdensServico() {
     key: string;
     direction: 'asc' | 'desc';
   } | null>(null);
+  const [selectedOrdemForLabel, setSelectedOrdemForLabel] = useState<any>(null);
 
   useEffect(() => {
     loadOrdensServico();
@@ -220,6 +222,10 @@ export default function OrdensServico() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleOpenLabel = (ordem: any) => {
+    setSelectedOrdemForLabel(ordem);
   };
 
   const handleExportPDF = async (ordem: any) => {
@@ -805,16 +811,9 @@ export default function OrdensServico() {
                      ) : (
                        filteredOrdensServico.map((ordem) => (
                          <TableRow key={ordem.id} className="hover:bg-muted/30 transition-fast">
-                            <TableCell className="font-medium text-primary">
-                              <div className="flex items-center gap-2">
-                                {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
-                                {!ordem.recebimento_id && (
-                                  <Badge variant="outline" className="text-xs">
-                                    Não vinculada
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
+                             <TableCell className="font-medium text-primary">
+                               {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
+                             </TableCell>
                            <TableCell className="text-primary font-medium">
                              {ordem.recebimentos?.cliente_nome || ordem.cliente_nome}
                            </TableCell>
@@ -829,46 +828,55 @@ export default function OrdensServico() {
                            <TableCell className="text-muted-foreground">
                              {new Date(ordem.data_entrada).toLocaleDateString('pt-BR')}
                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0"
-                                  onClick={() => navigate(`/analise/novo/${encodeURIComponent(ordem.numero_ordem)}`)}
-                                  title="Editar"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0 text-primary hover:text-primary/80 hover:bg-primary/10"
-                                  onClick={() => handleExportPDF(ordem)}
-                                  title="Exportar PDF"
-                                >
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                  onClick={() => handleApprove(ordem.id)}
-                                  title="Aprovar"
-                                >
-                                  <ThumbsUp className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => handleReject(ordem.id)}
-                                  title="Rejeitar"
-                                >
-                                  <ThumbsDown className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                             <TableCell className="text-right">
+                               <div className="flex items-center justify-end gap-2">
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm" 
+                                   className="h-8 w-8 p-0"
+                                   onClick={() => handleOpenLabel(ordem)}
+                                   title="Imprimir Etiqueta"
+                                 >
+                                   <Tag className="h-4 w-4" />
+                                 </Button>
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm" 
+                                   className="h-8 w-8 p-0"
+                                   onClick={() => navigate(`/analise/novo/${encodeURIComponent(ordem.numero_ordem)}`)}
+                                   title="Editar"
+                                 >
+                                   <Edit className="h-4 w-4" />
+                                 </Button>
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm" 
+                                   className="h-8 w-8 p-0 text-primary hover:text-primary/80 hover:bg-primary/10"
+                                   onClick={() => handleExportPDF(ordem)}
+                                   title="Exportar PDF"
+                                 >
+                                   <Download className="h-4 w-4" />
+                                 </Button>
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm" 
+                                   className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                   onClick={() => handleApprove(ordem.id)}
+                                   title="Aprovar"
+                                 >
+                                   <ThumbsUp className="h-4 w-4" />
+                                 </Button>
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm" 
+                                   className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                   onClick={() => handleReject(ordem.id)}
+                                   title="Rejeitar"
+                                 >
+                                   <ThumbsDown className="h-4 w-4" />
+                                 </Button>
+                               </div>
+                             </TableCell>
                          </TableRow>
                        ))
                      )}
@@ -879,6 +887,17 @@ export default function OrdensServico() {
           </CardContent>
         </Card>
       </div>
+
+      {selectedOrdemForLabel && (
+        <EquipmentLabel
+          equipment={{
+            numeroOrdem: selectedOrdemForLabel.recebimentos?.numero_ordem || selectedOrdemForLabel.numero_ordem,
+            cliente: selectedOrdemForLabel.recebimentos?.cliente_nome || selectedOrdemForLabel.cliente_nome,
+            dataEntrada: new Date(selectedOrdemForLabel.data_entrada).toLocaleDateString('pt-BR')
+          }}
+          onClose={() => setSelectedOrdemForLabel(null)}
+        />
+      )}
     </AppLayout>
   );
 }
