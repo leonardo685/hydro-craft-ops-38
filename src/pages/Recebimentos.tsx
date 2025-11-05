@@ -21,12 +21,15 @@ import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 // Removed localStorage function since we're now using Supabase data
 
 export default function Recebimentos() {
   const navigate = useNavigate();
   const { recebimentos, notasFiscais, loading, recarregar } = useRecebimentos();
+  const { toast } = useToast();
   const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
   const [modalChaveAcesso, setModalChaveAcesso] = useState(false);
   const [notaFiscalSelecionada, setNotaFiscalSelecionada] = useState<any>(null);
@@ -448,8 +451,37 @@ export default function Recebimentos() {
                               </DropdownMenuItem>
                               
                               {item.pdf_nota_retorno && (
-                                <DropdownMenuItem onClick={() => {
-                                  window.open(item.pdf_nota_retorno, '_blank');
+                                <DropdownMenuItem onClick={async () => {
+                                  try {
+                                    // Extrair o caminho do arquivo da URL
+                                    const urlParts = item.pdf_nota_retorno.split('/');
+                                    const bucket = urlParts[urlParts.indexOf('object') + 2];
+                                    const filePath = urlParts.slice(urlParts.indexOf('object') + 3).join('/');
+                                    
+                                    // Fazer download do arquivo
+                                    const { data, error } = await supabase.storage
+                                      .from(bucket)
+                                      .download(filePath);
+                                    
+                                    if (error) throw error;
+                                    
+                                    // Criar URL temporária e fazer download
+                                    const url = URL.createObjectURL(data);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `nota_retorno_${item.numero_ordem}.pdf`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                  } catch (error) {
+                                    console.error('Erro ao baixar nota de retorno:', error);
+                                    toast({
+                                      title: 'Erro',
+                                      description: 'Não foi possível baixar a nota de retorno',
+                                      variant: 'destructive'
+                                    });
+                                  }
                                 }}>
                                   <FileText className="h-4 w-4 mr-2" />
                                   NF Retorno
@@ -457,8 +489,37 @@ export default function Recebimentos() {
                               )}
                               
                               {item.pdf_nota_fiscal && (
-                                <DropdownMenuItem onClick={() => {
-                                  window.open(item.pdf_nota_fiscal, '_blank');
+                                <DropdownMenuItem onClick={async () => {
+                                  try {
+                                    // Extrair o caminho do arquivo da URL
+                                    const urlParts = item.pdf_nota_fiscal.split('/');
+                                    const bucket = urlParts[urlParts.indexOf('object') + 2];
+                                    const filePath = urlParts.slice(urlParts.indexOf('object') + 3).join('/');
+                                    
+                                    // Fazer download do arquivo
+                                    const { data, error } = await supabase.storage
+                                      .from(bucket)
+                                      .download(filePath);
+                                    
+                                    if (error) throw error;
+                                    
+                                    // Criar URL temporária e fazer download
+                                    const url = URL.createObjectURL(data);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `nota_fiscal_${item.numero_ordem}.pdf`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                  } catch (error) {
+                                    console.error('Erro ao baixar nota fiscal:', error);
+                                    toast({
+                                      title: 'Erro',
+                                      description: 'Não foi possível baixar a nota fiscal',
+                                      variant: 'destructive'
+                                    });
+                                  }
                                 }}>
                                   <FileCheck className="h-4 w-4 mr-2" />
                                   NF Faturamento
