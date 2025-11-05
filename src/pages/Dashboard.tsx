@@ -455,6 +455,7 @@ export default function Dashboard() {
   const colors = {
     faturamento: '#10b981',
     custosVariaveis: '#fca5a5',
+    despesasFixas: '#f59e0b',
     margemContribuicao: 'hsl(var(--accent))',
     lucroLiquido: '#10b981',
     despesasTotais: 'hsl(var(--destructive))'
@@ -575,7 +576,7 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Faturamento - Últimos 12 Meses</CardTitle>
+            <CardTitle>Visão Geral Financeira - Últimos 12 Meses</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -589,34 +590,9 @@ export default function Dashboard() {
             ) : (
               <AreaChart
                 data={monthlyData}
-                categories={["faturamento"]}
+                categories={["faturamento", "custosVariaveis", "despesasFixas", "margemContribuicao"]}
                 index="mes"
-                colors={[colors.faturamento]}
-                className="h-80"
-              />
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Custos Variáveis - Últimos 12 Meses</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center h-80 text-muted-foreground">
-                Carregando dados...
-              </div>
-            ) : monthlyData.every(m => m.custosVariaveis === 0) ? (
-              <div className="flex items-center justify-center h-80 text-muted-foreground">
-                Nenhum dado disponível. Comece adicionando lançamentos financeiros.
-              </div>
-            ) : (
-              <AreaChart
-                data={monthlyData}
-                categories={["custosVariaveis"]}
-                index="mes"
-                colors={[colors.custosVariaveis]}
+                colors={[colors.faturamento, colors.custosVariaveis, colors.despesasFixas, colors.margemContribuicao]}
                 className="h-80"
               />
             )}
