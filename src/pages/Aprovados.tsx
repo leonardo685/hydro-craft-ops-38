@@ -289,10 +289,17 @@ export default function Aprovados() {
         {/* Modal de Upload do Produto Pronto */}
         {ordemSelecionada && <UploadProdutoProntoModal open={uploadModalOpen} onOpenChange={setUploadModalOpen} ordem={ordemSelecionada} onConfirm={async () => {
         try {
+          // Verificar se a ordem está vinculada a uma nota fiscal de entrada
+          const temNotaEntrada = ordemSelecionada.recebimento_id !== null;
+          
+          // Se vinculada à NF de entrada: aguardando_retorno (nota de retorno)
+          // Se NÃO vinculada: aguardando_faturamento_sem_retorno (apenas nota de saída)
+          const novoStatus = temNotaEntrada ? 'aguardando_retorno' : 'aguardando_faturamento_sem_retorno';
+          
           const {
             error
           } = await supabase.from('ordens_servico').update({
-            status: 'aguardando_retorno'
+            status: novoStatus
           }).eq('id', ordemSelecionada.id);
           if (error) throw error;
 
@@ -305,7 +312,7 @@ export default function Aprovados() {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                tipo: 'ordem_retorno',
+                tipo: temNotaEntrada ? 'ordem_retorno' : 'ordem_faturamento_sem_retorno',
                 numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
                 cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
                 equipamento: ordemSelecionada.equipamento,

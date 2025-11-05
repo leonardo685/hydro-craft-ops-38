@@ -197,11 +197,19 @@ export default function OrdensServico() {
     try {
       console.log('Reprovando ordem:', ordemId);
       
-      // Quando reprovada, a ordem vai direto para faturamento para nota de retorno
+      const ordem = ordensServico.find(o => o.id === ordemId);
+      
+      // Verificar se a ordem está vinculada a uma nota fiscal de entrada
+      const temNotaEntrada = ordem?.recebimento_id !== null;
+      
+      // Se vinculada à NF de entrada: vai para faturamento (nota de retorno)
+      // Se NÃO vinculada: vai direto para finalizadas
+      const novoStatus = temNotaEntrada ? 'reprovada' : 'finalizado';
+      
       const { data, error } = await supabase
         .from('ordens_servico')
         .update({ 
-          status: 'reprovada',
+          status: novoStatus,
           updated_at: new Date().toISOString()
         })
         .eq('id', ordemId)
@@ -216,7 +224,9 @@ export default function OrdensServico() {
       
       toast({
         title: "Ordem reprovada",
-        description: "A ordem foi movida para faturamento para emissão de nota de retorno.",
+        description: temNotaEntrada 
+          ? "A ordem foi movida para faturamento para emissão de nota de retorno."
+          : "A ordem foi movida para finalizadas.",
       });
       
       loadOrdensServico();
