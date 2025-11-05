@@ -351,7 +351,7 @@ export default function Dashboard() {
 
   const colors = {
     faturamento: '#10b981',
-    custosVariaveis: 'hsl(var(--destructive))',
+    custosVariaveis: '#fca5a5',
     margemContribuicao: 'hsl(var(--accent))',
     lucroLiquido: '#10b981',
     despesasTotais: 'hsl(var(--destructive))'
