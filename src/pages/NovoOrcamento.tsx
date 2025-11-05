@@ -877,7 +877,7 @@ export default function NovoOrcamento() {
     return totalPecas + totalServicos + totalUsinagem;
   };
   const calcularValorComDesconto = () => {
-    const total = calcularTotalGeral();
+    const total = informacoesComerciais.valorTotal || 0;
     const desconto = total * (informacoesComerciais.desconto / 100);
     return total - desconto;
   };
