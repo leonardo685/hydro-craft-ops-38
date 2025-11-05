@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { DollarSign, Activity, TrendingUp, TrendingDown, CalendarIcon } from "lucide-react";
 import { AreaChart } from "@/components/ui/area-chart";
-import { PieChart } from "@/components/ui/pie-chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/pie-chart";
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
@@ -15,7 +15,7 @@ import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 import { useContasBancarias } from "@/hooks/use-contas-bancarias";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { Label } from "@/components/ui/label";
-import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LabelList } from 'recharts';
 
 // Custom Tooltip for mini charts
 const CustomTooltip = ({ active, payload }: any) => {
@@ -356,7 +356,7 @@ export default function Dashboard() {
     const mesAtual = hoje.getMonth();
     const anoAtual = hoje.getFullYear();
     
-    const categoriaMap = new Map<string, number>();
+    const categoriaMap = new Map<string, { valor: number; cor: string }>();
     
     lancamentos
       .filter(l => {
@@ -369,13 +369,17 @@ export default function Dashboard() {
       .forEach(l => {
         const categoria = categorias.find(c => c.id === l.categoriaId);
         if (categoria) {
-          const atual = categoriaMap.get(categoria.nome) || 0;
-          categoriaMap.set(categoria.nome, atual + l.valor);
+          const atual = categoriaMap.get(categoria.nome) || { valor: 0, cor: categoria.cor || '#10b981' };
+          categoriaMap.set(categoria.nome, { valor: atual.valor + l.valor, cor: categoria.cor || '#10b981' });
         }
       });
     
     return Array.from(categoriaMap.entries())
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, data]) => ({ 
+        name, 
+        value: data.valor,
+        fill: data.cor
+      }))
       .sort((a, b) => b.value - a.value);
   }, [lancamentos, categorias]);
 
@@ -385,7 +389,7 @@ export default function Dashboard() {
     const mesAtual = hoje.getMonth();
     const anoAtual = hoje.getFullYear();
     
-    const categoriaMap = new Map<string, number>();
+    const categoriaMap = new Map<string, { valor: number; cor: string }>();
     
     lancamentos
       .filter(l => {
@@ -399,15 +403,54 @@ export default function Dashboard() {
       .forEach(l => {
         const categoria = categorias.find(c => c.id === l.categoriaId);
         if (categoria) {
-          const atual = categoriaMap.get(categoria.nome) || 0;
-          categoriaMap.set(categoria.nome, atual + l.valor);
+          const atual = categoriaMap.get(categoria.nome) || { valor: 0, cor: categoria.cor || '#fca5a5' };
+          categoriaMap.set(categoria.nome, { valor: atual.valor + l.valor, cor: categoria.cor || '#fca5a5' });
         }
       });
     
     return Array.from(categoriaMap.entries())
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, data]) => ({ 
+        name, 
+        value: data.valor,
+        fill: data.cor
+      }))
       .sort((a, b) => b.value - a.value);
   }, [lancamentos, categorias]);
+
+  // Configuração de cores para os gráficos de pizza
+  const faturamentoChartConfig = useMemo(() => {
+    const config: ChartConfig = {
+      value: {
+        label: "Valor",
+      },
+    };
+    
+    faturamentoPorCategoria.forEach((item, index) => {
+      config[item.name] = {
+        label: item.name,
+        color: item.fill,
+      };
+    });
+    
+    return config;
+  }, [faturamentoPorCategoria]);
+
+  const despesasChartConfig = useMemo(() => {
+    const config: ChartConfig = {
+      value: {
+        label: "Valor",
+      },
+    };
+    
+    despesasVariaveisPorCategoria.forEach((item, index) => {
+      config[item.name] = {
+        label: item.name,
+        color: item.fill,
+      };
+    });
+    
+    return config;
+  }, [despesasVariaveisPorCategoria]);
 
   const colors = {
     faturamento: '#10b981',
@@ -595,12 +638,52 @@ export default function Dashboard() {
                   Nenhum dado disponível para o mês atual.
                 </div>
               ) : (
-                <div className="h-80">
-                  <PieChart 
-                    data={faturamentoPorCategoria}
-                    showLegend={true}
-                  />
-                </div>
+                <ChartContainer
+                  config={faturamentoChartConfig}
+                  className="mx-auto aspect-square max-h-[350px]"
+                >
+                  <PieChart>
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          nameKey="name"
+                          formatter={(value) => 
+                            new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(Number(value))
+                          }
+                        />
+                      }
+                    />
+                    <Pie
+                      data={faturamentoPorCategoria}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={60}
+                      paddingAngle={4}
+                      cornerRadius={8}
+                    >
+                      {faturamentoPorCategoria.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                      <LabelList
+                        dataKey="name"
+                        position="outside"
+                        className="fill-foreground text-xs"
+                        stroke="none"
+                        fontSize={12}
+                        formatter={(value: any) => {
+                          const item = faturamentoPorCategoria.find(i => i.name === value);
+                          if (!item) return value;
+                          const total = faturamentoPorCategoria.reduce((sum, i) => sum + i.value, 0);
+                          const percent = ((item.value / total) * 100).toFixed(0);
+                          return `${value} ${percent}%`;
+                        }}
+                      />
+                    </Pie>
+                  </PieChart>
+                </ChartContainer>
               )}
             </CardContent>
           </Card>
@@ -619,12 +702,52 @@ export default function Dashboard() {
                   Nenhum dado disponível para o mês atual.
                 </div>
               ) : (
-                <div className="h-80">
-                  <PieChart 
-                    data={despesasVariaveisPorCategoria}
-                    showLegend={true}
-                  />
-                </div>
+                <ChartContainer
+                  config={despesasChartConfig}
+                  className="mx-auto aspect-square max-h-[350px]"
+                >
+                  <PieChart>
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          nameKey="name"
+                          formatter={(value) => 
+                            new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(Number(value))
+                          }
+                        />
+                      }
+                    />
+                    <Pie
+                      data={despesasVariaveisPorCategoria}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={60}
+                      paddingAngle={4}
+                      cornerRadius={8}
+                    >
+                      {despesasVariaveisPorCategoria.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                      <LabelList
+                        dataKey="name"
+                        position="outside"
+                        className="fill-foreground text-xs"
+                        stroke="none"
+                        fontSize={12}
+                        formatter={(value: any) => {
+                          const item = despesasVariaveisPorCategoria.find(i => i.name === value);
+                          if (!item) return value;
+                          const total = despesasVariaveisPorCategoria.reduce((sum, i) => sum + i.value, 0);
+                          const percent = ((item.value / total) * 100).toFixed(0);
+                          return `${value} ${percent}%`;
+                        }}
+                      />
+                    </Pie>
+                  </PieChart>
+                </ChartContainer>
               )}
             </CardContent>
           </Card>
