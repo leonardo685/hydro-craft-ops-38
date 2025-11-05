@@ -23,12 +23,25 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-// Custom Tooltip for mini charts
+// Custom Tooltip for mini charts (valores monetários)
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border border-border bg-background/95 p-2 text-sm shadow-md backdrop-blur-sm">
         <p className="text-foreground">{`Valor: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(payload[0].value)}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+// Custom Tooltip for count values (valores absolutos)
+const CustomTooltipCount = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const count = payload[0].value;
+    return (
+      <div className="rounded-lg border border-border bg-background/95 p-2 text-sm shadow-md backdrop-blur-sm">
+        <p className="text-foreground">{`Quantidade: ${count} orçamento${count !== 1 ? 's' : ''}`}</p>
       </div>
     );
   }
@@ -1359,7 +1372,7 @@ export default function Orcamentos() {
                       </linearGradient>
                     </defs>
                     <Tooltip
-                      content={<CustomTooltip />}
+                      content={<CustomTooltipCount />}
                       cursor={{
                         stroke: 'hsl(var(--border))',
                         strokeWidth: 1,
