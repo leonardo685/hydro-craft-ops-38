@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { DollarSign, Activity, TrendingUp, TrendingDown, CalendarIcon } from "lucide-react";
 import { AreaChart } from "@/components/ui/area-chart";
+import { PieChart } from "@/components/ui/pie-chart";
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
@@ -349,6 +350,65 @@ export default function Dashboard() {
     ];
   }, [monthlyData, saldoAtual, impostosPagosMes, investimentosMes]);
 
+  // Dados para gráfico de pizza - Categorias de Faturamento
+  const faturamentoPorCategoria = useMemo(() => {
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    
+    const categoriaMap = new Map<string, number>();
+    
+    lancamentos
+      .filter(l => {
+        const data = new Date(l.dataEsperada);
+        return data.getMonth() === mesAtual 
+          && data.getFullYear() === anoAtual
+          && l.tipo === 'entrada'
+          && l.categoriaId;
+      })
+      .forEach(l => {
+        const categoria = categorias.find(c => c.id === l.categoriaId);
+        if (categoria) {
+          const atual = categoriaMap.get(categoria.nome) || 0;
+          categoriaMap.set(categoria.nome, atual + l.valor);
+        }
+      });
+    
+    return Array.from(categoriaMap.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [lancamentos, categorias]);
+
+  // Dados para gráfico de pizza - Categorias de Despesas Variáveis
+  const despesasVariaveisPorCategoria = useMemo(() => {
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    
+    const categoriaMap = new Map<string, number>();
+    
+    lancamentos
+      .filter(l => {
+        const data = new Date(l.dataEsperada);
+        const categoria = categorias.find(c => c.id === l.categoriaId);
+        return data.getMonth() === mesAtual 
+          && data.getFullYear() === anoAtual
+          && l.tipo === 'saida'
+          && categoria?.codigo?.startsWith('2'); // Categoria 2 = Custos Variáveis
+      })
+      .forEach(l => {
+        const categoria = categorias.find(c => c.id === l.categoriaId);
+        if (categoria) {
+          const atual = categoriaMap.get(categoria.nome) || 0;
+          categoriaMap.set(categoria.nome, atual + l.valor);
+        }
+      });
+    
+    return Array.from(categoriaMap.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [lancamentos, categorias]);
+
   const colors = {
     faturamento: '#10b981',
     custosVariaveis: '#fca5a5',
@@ -519,6 +579,56 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Faturamento por Categoria - Mês Atual</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center h-80 text-muted-foreground">
+                  Carregando dados...
+                </div>
+              ) : faturamentoPorCategoria.length === 0 ? (
+                <div className="flex items-center justify-center h-80 text-muted-foreground">
+                  Nenhum dado disponível para o mês atual.
+                </div>
+              ) : (
+                <div className="h-80">
+                  <PieChart 
+                    data={faturamentoPorCategoria}
+                    showLegend={true}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Despesas Variáveis por Categoria - Mês Atual</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center h-80 text-muted-foreground">
+                  Carregando dados...
+                </div>
+              ) : despesasVariaveisPorCategoria.length === 0 ? (
+                <div className="flex items-center justify-center h-80 text-muted-foreground">
+                  Nenhum dado disponível para o mês atual.
+                </div>
+              ) : (
+                <div className="h-80">
+                  <PieChart 
+                    data={despesasVariaveisPorCategoria}
+                    showLegend={true}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
       </div>
     </AppLayout>
