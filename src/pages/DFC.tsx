@@ -554,10 +554,10 @@ export default function DFC() {
       const contaOrigem = contasBancariasAtualizadas.find(c => c.id === lancamentoForm.conta);
       const contaDestinoObj = contasBancariasAtualizadas.find(c => c.id === lancamentoForm.contaDestino);
 
-      // Criar lançamento de SAÍDA da conta origem
+      // Criar apenas UM lançamento de transferência
       await adicionarLancamento({
         tipo: 'transferencia' as any,
-        descricao: `Saída de ${contaOrigem?.nome} → ${contaDestinoObj?.nome}`,
+        descricao: `Transferência: ${contaOrigem?.nome} → ${contaDestinoObj?.nome}`,
         categoriaId: undefined,
         valor: valorTotal,
         contaBancaria: lancamentoForm.conta,
@@ -570,23 +570,7 @@ export default function DFC() {
         formaPagamento: 'a_vista'
       });
 
-      // Criar lançamento de ENTRADA na conta destino
-      await adicionarLancamento({
-        tipo: 'transferencia' as any,
-        descricao: `Entrada em ${contaDestinoObj?.nome} ← ${contaOrigem?.nome}`,
-        categoriaId: undefined,
-        valor: valorTotal,
-        contaBancaria: lancamentoForm.contaDestino,
-        contaDestino: lancamentoForm.conta,
-        dataEsperada: dataBase,
-        dataRealizada: lancamentoForm.paga ? lancamentoForm.dataRealizada : null,
-        dataEmissao: lancamentoForm.dataEmissao,
-        pago: lancamentoForm.paga,
-        fornecedorCliente: undefined,
-        formaPagamento: 'a_vista'
-      });
-
-      toast.success("Transferência registrada com sucesso! (2 lançamentos criados)");
+      toast.success("Transferência registrada com sucesso!");
       resetForm();
       setIsLancamentoDialogOpen(false);
       return;
