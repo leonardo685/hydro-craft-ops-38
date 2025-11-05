@@ -289,12 +289,19 @@ export default function Aprovados() {
         {/* Modal de Upload do Produto Pronto */}
         {ordemSelecionada && <UploadProdutoProntoModal open={uploadModalOpen} onOpenChange={setUploadModalOpen} ordem={ordemSelecionada} onConfirm={async () => {
         try {
-          // Verificar se a ordem está vinculada a uma nota fiscal de entrada
-          const temNotaEntrada = ordemSelecionada.recebimento_id !== null;
+          // Determinar status baseado em orcamento_id e recebimento_id
+          let novoStatus = 'finalizado';
           
-          // Se vinculada à NF de entrada: aguardando_retorno (nota de retorno)
-          // Se NÃO vinculada: aguardando_faturamento_sem_retorno (apenas nota de saída)
-          const novoStatus = temNotaEntrada ? 'aguardando_retorno' : 'aguardando_faturamento_sem_retorno';
+          if (ordemSelecionada.orcamento_id) {
+            // Se tem orçamento vinculado, vai direto para finalizado
+            novoStatus = 'finalizado';
+          } else if (!ordemSelecionada.recebimento_id) {
+            // Sem orçamento e sem recebimento, vai para faturamento (nota de retorno)
+            novoStatus = 'aguardando_faturamento_sem_retorno';
+          } else {
+            // Com recebimento mas sem orçamento, vai para aguardando retorno
+            novoStatus = 'aguardando_retorno';
+          }
           
           const {
             error
@@ -306,13 +313,19 @@ export default function Aprovados() {
           // Enviar notificação para o n8n/Telegram
           try {
             const notaFiscalEntrada = ordemSelecionada.recebimentos?.nota_fiscal || ordemSelecionada.recebimentos?.chave_acesso_nfe || 'n/a';
+            const tipoNotificacao = ordemSelecionada.orcamento_id 
+              ? 'ordem_finalizada' 
+              : ordemSelecionada.recebimento_id 
+                ? 'ordem_retorno' 
+                : 'ordem_faturamento_sem_retorno';
+            
             await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                tipo: temNotaEntrada ? 'ordem_retorno' : 'ordem_faturamento_sem_retorno',
+                tipo: tipoNotificacao,
                 numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
                 cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
                 equipamento: ordemSelecionada.equipamento,

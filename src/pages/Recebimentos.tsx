@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText, ChevronDown } from "lucide-react";
+import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText, ChevronDown, Settings, FileCheck } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
 import { ChaveAcessoModal } from "@/components/ChaveAcessoModal";
@@ -428,20 +429,43 @@ export default function Recebimentos() {
                           {getStatusBadge(item.status || 'retornado')}
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedEquipment({
-                                numeroOrdem: item.numero_ordem,
-                                cliente: item.clientes?.nome || item.cliente_nome || 'Cliente não encontrado',
-                                dataEntrada: new Date(item.data_entrada).toLocaleDateString('pt-BR')
-                              })}
-                              className="h-8"
-                            >
-                              <QrCode className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={() => setSelectedEquipment({
+                                  numeroOrdem: item.numero_ordem,
+                                  cliente: item.clientes?.nome || item.cliente_nome || 'Cliente não encontrado',
+                                  dataEntrada: new Date(item.data_entrada).toLocaleDateString('pt-BR')
+                                })}
+                              >
+                                <QrCode className="h-4 w-4 mr-2" />
+                                QR Code
+                              </DropdownMenuItem>
+                              
+                              {item.pdf_nota_retorno && (
+                                <DropdownMenuItem onClick={() => {
+                                  window.open(item.pdf_nota_retorno, '_blank');
+                                }}>
+                                  <FileText className="h-4 w-4 mr-2" />
+                                  NF Retorno
+                                </DropdownMenuItem>
+                              )}
+                              
+                              {item.pdf_nota_fiscal && (
+                                <DropdownMenuItem onClick={() => {
+                                  window.open(item.pdf_nota_fiscal, '_blank');
+                                }}>
+                                  <FileCheck className="h-4 w-4 mr-2" />
+                                  NF Faturamento
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     );

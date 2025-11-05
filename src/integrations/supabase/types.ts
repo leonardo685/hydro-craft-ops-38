@@ -1202,6 +1202,7 @@ export type Database = {
           id: string
           numero_ordem: string
           observacoes_tecnicas: string | null
+          orcamento_id: string | null
           pdf_nota_fiscal: string | null
           pecas_necessarias: Json | null
           prioridade: string
@@ -1226,6 +1227,7 @@ export type Database = {
           id?: string
           numero_ordem: string
           observacoes_tecnicas?: string | null
+          orcamento_id?: string | null
           pdf_nota_fiscal?: string | null
           pecas_necessarias?: Json | null
           prioridade?: string
@@ -1250,6 +1252,7 @@ export type Database = {
           id?: string
           numero_ordem?: string
           observacoes_tecnicas?: string | null
+          orcamento_id?: string | null
           pdf_nota_fiscal?: string | null
           pecas_necessarias?: Json | null
           prioridade?: string
@@ -1265,6 +1268,13 @@ export type Database = {
           valor_estimado?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ordens_servico_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ordens_servico_recebimento_id_fkey"
             columns: ["recebimento_id"]

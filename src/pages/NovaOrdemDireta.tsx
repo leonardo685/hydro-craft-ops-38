@@ -20,7 +20,7 @@ const NovaOrdemDireta = () => {
   
   const [formData, setFormData] = useState({
     cliente: "",
-    tag: "",
+    orcamentoVinculado: "",
     dataAbertura: new Date().toISOString().split('T')[0],
     numeroNota: "",
     numeroSerie: "",
@@ -34,6 +34,8 @@ const NovaOrdemDireta = () => {
     prioridade: "Média",
     observacoes: ""
   });
+
+  const [orcamentosDisponiveis, setOrcamentosDisponiveis] = useState<any[]>([]);
 
   const [dadosTecnicos, setDadosTecnicos] = useState({
     categoriaEquipamento: "cilindro",
@@ -171,6 +173,26 @@ const NovaOrdemDireta = () => {
     };
 
     gerarNumeroOrdem();
+  }, []);
+
+  // Carregar orçamentos disponíveis
+  useEffect(() => {
+    const carregarOrcamentos = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('orcamentos')
+          .select('*')
+          .in('status', ['pendente', 'aprovado', 'faturamento'])
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setOrcamentosDisponiveis(data || []);
+      } catch (error) {
+        console.error('Erro ao carregar orçamentos:', error);
+      }
+    };
+
+    carregarOrcamentos();
   }, []);
 
   const adicionarPeca = () => {
@@ -450,6 +472,7 @@ const NovaOrdemDireta = () => {
         status: 'pendente',
         data_entrada: formData.dataAbertura,
         recebimento_id: null,
+        orcamento_id: formData.orcamentoVinculado || null,
         pecas_necessarias: pecasUtilizadas,
         servicos_necessarios: montarServicos(),
         usinagem_necessaria: montarUsinagem()
@@ -570,12 +593,26 @@ const NovaOrdemDireta = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tag">TAG</Label>
-                <Input
-                  id="tag"
-                  value={formData.tag}
-                  onChange={(e) => setFormData({...formData, tag: e.target.value})}
-                />
+                <Label htmlFor="orcamentoVinculado">Vincular Orçamento (Opcional)</Label>
+                <Select 
+                  value={formData.orcamentoVinculado} 
+                  onValueChange={(value) => setFormData({...formData, orcamentoVinculado: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Nenhum orçamento vinculado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum</SelectItem>
+                    {orcamentosDisponiveis.map(orc => (
+                      <SelectItem key={orc.id} value={orc.id}>
+                        {orc.numero} - {orc.cliente_nome} - {orc.equipamento} - R$ {orc.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Se vinculado, a ordem irá direto para finalizadas ao ser concluída
+                </p>
               </div>
 
               <div className="space-y-2">

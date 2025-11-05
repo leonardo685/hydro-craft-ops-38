@@ -387,19 +387,31 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
         });
       }
 
-      // 4. Atualizar orçamento com nota fiscal
-      const { error: orcamentoError } = await supabase
+      // Atualizar orçamento
+      await supabase
         .from('orcamentos')
         .update({
           status: 'finalizado',
           numero_nf: numeroNF,
-          pdf_nota_fiscal: urlAnexo
+          pdf_nota_fiscal: urlAnexo,
+          updated_at: new Date().toISOString()
         })
         .eq('id', orcamento.id);
 
-      if (orcamentoError) {
-        console.error('Erro ao atualizar orçamento:', orcamentoError);
-        throw orcamentoError;
+      // Verificar se há ordens vinculadas a este orçamento e atualizar pdf_nota_fiscal
+      const { data: ordensVinculadas } = await supabase
+        .from('ordens_servico')
+        .select('id')
+        .eq('orcamento_id', orcamento.id);
+
+      if (ordensVinculadas && ordensVinculadas.length > 0) {
+        await supabase
+          .from('ordens_servico')
+          .update({ 
+            pdf_nota_fiscal: urlAnexo,
+            updated_at: new Date().toISOString()
+          })
+          .eq('orcamento_id', orcamento.id);
       }
 
       onConfirm();
