@@ -862,6 +862,165 @@ const NovaOrdemServico = () => {
                 setFotosAnalise(fotosAnaliseUrls as any);
               }
             }
+          } else if (ordem) {
+            // Ordem criada diretamente (sem recebimento vinculado)
+            console.log('Carregando ordem sem recebimento:', ordem);
+            setIsEdicao(true);
+            setOrdemExistente(ordem);
+            
+            // Criar objeto recebimento a partir dos dados da ordem
+            setRecebimento({
+              id: null,
+              cliente_nome: ordem.cliente_nome,
+              tipo_equipamento: ordem.equipamento,
+              data_entrada: ordem.data_entrada,
+              dataEntrada: new Date(ordem.data_entrada).toLocaleDateString('pt-BR'),
+              numeroOrdem: ordem.numero_ordem,
+              nota_fiscal: null,
+              numero_serie: null,
+              observacoes: ordem.observacoes_tecnicas,
+              fotos: []
+            });
+
+            // Preencher form com dados da ordem
+            setFormData({
+              tecnico: ordem.tecnico || "",
+              problemas: ordem.tipo_problema || ordem.descricao_problema || "",
+              prazoEstimado: ordem.tempo_estimado || "",
+              prioridade: ordem.prioridade === 'alta' ? 'Alta' : 
+                         ordem.prioridade === 'baixa' ? 'Baixa' : 'Média',
+              observacoes: ordem.observacoes_tecnicas || ""
+            });
+
+            // Dados técnicos básicos
+            setDadosTecnicos({
+              tipoEquipamento: ordem.equipamento || "",
+              pressaoTrabalho: "",
+              camisa: "",
+              hasteComprimento: "",
+              curso: "",
+              conexaoA: "",
+              conexaoB: "",
+              temperaturaTrabalho: "",
+              fluidoTrabalho: "",
+              localInstalacao: "",
+              potencia: "",
+              numeroSerie: ""
+            });
+
+            // Carregar peças
+            if (ordem.pecas_necessarias && Array.isArray(ordem.pecas_necessarias)) {
+              console.log('Carregando peças:', ordem.pecas_necessarias);
+              setPecasUtilizadas(ordem.pecas_necessarias as any);
+            }
+
+            // Carregar serviços
+            if (ordem.servicos_necessarios && Array.isArray(ordem.servicos_necessarios)) {
+              console.log('Carregando serviços:', ordem.servicos_necessarios);
+              const servicosObj: any = {};
+              const quantidades: any = {};
+              const nomes: any = {};
+              let personalizado = "";
+              const adicionais: Array<{ quantidade: number; nome: string; codigo?: string }> = [];
+              
+              ordem.servicos_necessarios.forEach((servico: any) => {
+                if (servico.tipo === 'personalizado') {
+                  personalizado = servico.descricao || servico.servico;
+                  quantidades.personalizado = servico.quantidade || 1;
+                } else if (servico.tipo === 'adicional') {
+                  adicionais.push({
+                    quantidade: servico.quantidade || 1,
+                    nome: servico.descricao || servico.servico,
+                    codigo: servico.codigo || ""
+                  });
+                } else if (servico.tipo) {
+                  servicosObj[servico.tipo] = true;
+                  quantidades[servico.tipo] = servico.quantidade || 1;
+                  if (servico.descricao) {
+                    nomes[servico.tipo] = servico.descricao;
+                  }
+                }
+              });
+              
+              setServicosPreDeterminados(prev => ({ ...prev, ...servicosObj }));
+              setServicosQuantidades(prev => ({ ...prev, ...quantidades }));
+              setServicosNomes(prev => ({ ...prev, ...nomes }));
+              setServicosPersonalizados(personalizado);
+              setServicosAdicionais(adicionais);
+            }
+
+            // Carregar usinagem
+            if (ordem.usinagem_necessaria && Array.isArray(ordem.usinagem_necessaria)) {
+              console.log('Carregando usinagem:', ordem.usinagem_necessaria);
+              const usinagemObj: any = {};
+              const quantidades: any = {};
+              const nomes: any = {};
+              let personalizada = "";
+              const adicionais: Array<{ quantidade: number; nome: string; codigo?: string }> = [];
+              
+              ordem.usinagem_necessaria.forEach((usinag: any) => {
+                if (usinag.tipo === 'personalizada') {
+                  personalizada = usinag.descricao || usinag.trabalho;
+                  quantidades.personalizada = usinag.quantidade || 1;
+                } else if (usinag.tipo === 'adicional') {
+                  adicionais.push({
+                    quantidade: usinag.quantidade || 1,
+                    nome: usinag.descricao || usinag.trabalho,
+                    codigo: usinag.codigo || ""
+                  });
+                } else if (usinag.tipo) {
+                  usinagemObj[usinag.tipo] = true;
+                  quantidades[usinag.tipo] = usinag.quantidade || 1;
+                  if (usinag.descricao) {
+                    nomes[usinag.tipo] = usinag.descricao;
+                  }
+                }
+              });
+              
+              setUsinagem(prev => ({ ...prev, ...usinagemObj }));
+              setUsinagemQuantidades(prev => ({ ...prev, ...quantidades }));
+              setUsinagemNomes(prev => ({ ...prev, ...nomes }));
+              setUsinagemPersonalizada(personalizada);
+              setUsinagemAdicional(adicionais);
+            }
+
+            // Carregar fotos da ordem (não do recebimento)
+            const { data: fotos } = await supabase
+              .from('fotos_equipamentos')
+              .select('*')
+              .eq('ordem_servico_id', ordem.id);
+              
+            if (fotos && fotos.length > 0) {
+              console.log('Carregando fotos da ordem:', fotos);
+              
+              const fotosChegadaUrls = fotos
+                .filter(foto => foto.apresentar_orcamento === true)
+                .map(foto => foto.arquivo_url);
+              
+              const fotosAnaliseUrls = fotos
+                .filter(foto => foto.apresentar_orcamento === false)
+                .map(foto => foto.arquivo_url);
+                
+              if (fotosChegadaUrls.length > 0) {
+                setPreviewsChegada(fotosChegadaUrls);
+                setFotosChegada(fotosChegadaUrls as any);
+              }
+              
+              if (fotosAnaliseUrls.length > 0) {
+                setPreviewsAnalise(fotosAnaliseUrls);
+                setFotosAnalise(fotosAnaliseUrls as any);
+              }
+            }
+
+            // Carregar documentos técnicos (se necessário no futuro)
+            const { data: documentos } = await supabase
+              .from('documentos_ordem')
+              .select('*')
+              .eq('ordem_servico_id', ordem.id);
+              
+            if (documentos && documentos.length > 0) {
+              console.log('Documentos técnicos encontrados:', documentos.length);
+            }
           }
         } catch (error) {
           console.error('Erro ao carregar ordem para edição:', error);
@@ -1096,12 +1255,8 @@ const NovaOrdemServico = () => {
             console.log('✅ Dados técnicos do recebimento atualizados com sucesso!', updatedRecebimento);
           }
         } else {
-          console.warn('⚠️ ID do recebimento não encontrado, dados técnicos não foram salvos');
-          console.log('Detalhes:', { 
-            recebimento_id: recebimento?.id, 
-            ordem_recebimento_id: ordemExistente?.recebimento_id,
-            ordem_recebimentos_id: ordemExistente?.recebimentos?.id
-          });
+          console.warn('⚠️ Ordem sem recebimento vinculado - dados técnicos não salvos na tabela recebimentos');
+          console.log('Esta é uma ordem criada diretamente (sem nota fiscal)');
         }
       } else {
         console.log('Criando nova ordem...');
