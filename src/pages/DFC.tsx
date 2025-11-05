@@ -98,9 +98,9 @@ export default function DFC() {
   // Recalcular valores sempre que lançamentos ocultos mudarem
   useEffect(() => {
     if (movimentacoesFiltradas.length > 0) {
-      calcularValoresFinanceiros(movimentacoesFiltradas);
+      calcularValoresFinanceiros(movimentacoesFiltradas, lancamentosOcultosTemporarios);
     }
-  }, [lancamentosOcultosTemporarios]);
+  }, [lancamentosOcultosTemporarios, movimentacoesFiltradas]);
 
   // Estados para ordenação de colunas
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -706,7 +706,7 @@ export default function DFC() {
     // Se não há filtro ativo, limpa resultados
     if (!periodoSelecionado && !dataInicial && !dataFinal) {
       setMovimentacoesFiltradas([]);
-      calcularValoresFinanceiros([]);
+      calcularValoresFinanceiros([], lancamentosOcultosTemporarios);
       setBuscaAtiva(false);
       return;
     }
@@ -748,7 +748,7 @@ export default function DFC() {
       }));
 
     setMovimentacoesFiltradas(movimentacoes);
-    calcularValoresFinanceiros(movimentacoes);
+    calcularValoresFinanceiros(movimentacoes, lancamentosOcultosTemporarios);
     setBuscaAtiva(true);
   };
 
@@ -758,7 +758,7 @@ export default function DFC() {
     setDataFinal('');
     setContaBancariaFiltro('todas');
     setMovimentacoesFiltradas([]);
-    calcularValoresFinanceiros([]);
+    calcularValoresFinanceiros([], new Set());
     setBuscaAtiva(false);
     setLancamentosOcultosTemporarios(new Set());
   };
@@ -801,9 +801,9 @@ export default function DFC() {
       return 0;
     });
   }, [movimentacoesFiltradas, sortColumn, sortDirection]);
-  const calcularValoresFinanceiros = (movimentacoes: any[]) => {
+  const calcularValoresFinanceiros = (movimentacoes: any[], lancamentosOcultos: Set<string>) => {
     // Filtrar lançamentos não ocultados
-    const movimentacoesVisiveis = movimentacoes.filter(m => !lancamentosOcultosTemporarios.has(m.id));
+    const movimentacoesVisiveis = movimentacoes.filter(m => !lancamentosOcultos.has(m.id));
     
     const totalReceber = movimentacoesVisiveis.filter(m => m.tipo === 'receita' && m.status !== 'pago').reduce((acc, m) => acc + m.valor, 0);
     const totalPagar = movimentacoesVisiveis.filter(m => m.tipo === 'despesa' && m.status !== 'pago').reduce((acc, m) => acc + m.valor, 0);
