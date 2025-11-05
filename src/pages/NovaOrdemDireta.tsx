@@ -6,18 +6,26 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, Upload, Plus, Minus, X, Camera } from "lucide-react";
+import { ArrowLeft, Save, Upload, Plus, Minus, X, Camera, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useClientes } from "@/hooks/use-clientes";
 
 const NovaOrdemDireta = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { clientes } = useClientes();
   
   const [formData, setFormData] = useState({
     cliente: "",
+    tag: "",
+    dataAbertura: new Date().toISOString().split('T')[0],
+    numeroNota: "",
+    numeroSerie: "",
+    urgencia: false,
+    solicitante: "",
     equipamento: "",
     numeroOrdem: "",
     tecnico: "",
@@ -323,9 +331,12 @@ const NovaOrdemDireta = () => {
         return;
       }
 
+      // Buscar nome do cliente
+      const clienteSelecionado = clientes.find(c => c.id === formData.cliente);
+
       const ordemData = {
         numero_ordem: formData.numeroOrdem,
-        cliente_nome: formData.cliente,
+        cliente_nome: clienteSelecionado?.nome || '',
         equipamento: formData.equipamento,
         tecnico: formData.tecnico,
         descricao_problema: formData.problemas,
@@ -333,7 +344,7 @@ const NovaOrdemDireta = () => {
         prioridade: formData.prioridade.toLowerCase(),
         observacoes_tecnicas: formData.observacoes,
         status: 'pendente',
-        data_entrada: new Date().toISOString(),
+        data_entrada: formData.dataAbertura,
         recebimento_id: null,
         pecas_necessarias: pecasUtilizadas,
         servicos_necessarios: montarServicos(),
@@ -399,51 +410,127 @@ const NovaOrdemDireta = () => {
             <CardTitle>Informações Básicas</CardTitle>
             <CardDescription>Dados principais da ordem de serviço</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="cliente">Cliente *</Label>
-                <Input
-                  id="cliente"
-                  value={formData.cliente}
-                  onChange={(e) => setFormData({...formData, cliente: e.target.value})}
-                  placeholder="Nome do cliente"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="equipamento">Equipamento *</Label>
-                <Input
-                  id="equipamento"
-                  value={formData.equipamento}
-                  onChange={(e) => setFormData({...formData, equipamento: e.target.value})}
-                  placeholder="Tipo de equipamento"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="notaFiscal">Nota Fiscal</Label>
-                <Input
-                  id="notaFiscal"
-                  value="Não vinculada"
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Esta ordem não está vinculada a um recebimento
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="numeroOrdem">Número da Ordem</Label>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="numeroOrdem">Nº da Ordem*</Label>
                 <Input
                   id="numeroOrdem"
                   value={formData.numeroOrdem}
                   disabled
-                  className="bg-muted"
+                  className="bg-muted text-muted-foreground cursor-not-allowed"
+                  placeholder="Ex: 0065/25"
+                />
+                <p className="text-xs text-muted-foreground">Número gerado automaticamente</p>
+              </div>
+
+              <div className="flex items-center space-x-2 pt-6">
+                <Checkbox
+                  id="urgencia"
+                  checked={formData.urgencia}
+                  onCheckedChange={(checked) => setFormData({...formData, urgencia: checked as boolean})}
+                />
+                <Label htmlFor="urgencia">Urgência</Label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cliente">Cliente*</Label>
+                <Select value={formData.cliente} onValueChange={(value) => setFormData({...formData, cliente: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientes.map(cliente => (
+                      <SelectItem key={cliente.id} value={cliente.id}>
+                        {cliente.nome} {cliente.cnpj_cpf ? `(${cliente.cnpj_cpf.slice(-4)})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2"
+                  onClick={() => navigate("/cadastros")}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Cadastrar Cliente
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tag">TAG</Label>
+                <Input
+                  id="tag"
+                  value={formData.tag}
+                  onChange={(e) => setFormData({...formData, tag: e.target.value})}
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="solicitante">Solicitante</Label>
+                <Input
+                  id="solicitante"
+                  value={formData.solicitante}
+                  onChange={(e) => setFormData({...formData, solicitante: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dataAbertura">Data de Abertura*</Label>
+                <Input
+                  id="dataAbertura"
+                  type="date"
+                  value={formData.dataAbertura}
+                  onChange={(e) => setFormData({...formData, dataAbertura: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="numeroNota">Nº da Nota</Label>
+                <Input
+                  id="numeroNota"
+                  value={formData.numeroNota}
+                  onChange={(e) => setFormData({...formData, numeroNota: e.target.value})}
+                  placeholder="Opcional"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="numeroSerie">Nº de Série</Label>
+              <Input
+                id="numeroSerie"
+                value={formData.numeroSerie}
+                onChange={(e) => setFormData({...formData, numeroSerie: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="equipamento">Equipamento*</Label>
+              <Input
+                id="equipamento"
+                value={formData.equipamento}
+                onChange={(e) => setFormData({...formData, equipamento: e.target.value})}
+                placeholder="Tipo de equipamento"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Detalhes da Ordem */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Detalhes da Ordem</CardTitle>
+            <CardDescription>Informações técnicas e responsáveis</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="tecnico">Técnico Responsável</Label>
                 <Input
