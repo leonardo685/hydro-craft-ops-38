@@ -350,7 +350,7 @@ export default function Dashboard() {
   }, [monthlyData, saldoAtual, impostosPagosMes, investimentosMes]);
 
   const colors = {
-    faturamento: 'hsl(var(--primary))',
+    faturamento: '#10b981',
     custosVariaveis: 'hsl(var(--destructive))',
     margemContribuicao: 'hsl(var(--accent))',
     lucroLiquido: '#10b981',

@@ -35,16 +35,18 @@ const AreaChartRoot = React.forwardRef<
   ref
 ) {
   return (
-    <SubframeCore.AreaChart
-      className={cn("h-80 w-full", className)}
-      ref={ref}
-      data={data}
-      categories={categories}
-      index={index}
-      stacked={stacked}
-      colors={colors}
-      {...otherProps}
-    />
+    <div className="[&_.recharts-cartesian-grid]:hidden">
+      <SubframeCore.AreaChart
+        className={cn("h-80 w-full", className)}
+        ref={ref}
+        data={data}
+        categories={categories}
+        index={index}
+        stacked={stacked}
+        colors={colors}
+        {...otherProps}
+      />
+    </div>
   );
 });
 
