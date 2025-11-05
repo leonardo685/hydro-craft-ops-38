@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Minus, FileDown, Upload, Image, Trash2 } from "lucide-react";
+import { X, Plus, Minus, FileDown, Upload, Image, Trash2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -40,6 +40,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
   const [fotosPrecificacao, setFotosPrecificacao] = useState<any[]>([]);
   const [carregandoFotos, setCarregandoFotos] = useState(false);
   const [fazendoUpload, setFazendoUpload] = useState(false);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
 
   const carregarHistorico = async () => {
     if (!orcamento?.id) return;
@@ -218,6 +219,23 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
     }
   };
 
+  const handleVisualizarFoto = async (foto: any) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('documentos')
+        .createSignedUrl(foto.arquivo_url, 60);
+
+      if (error) throw error;
+      
+      if (data?.signedUrl) {
+        setFotoPreview(data.signedUrl);
+      }
+    } catch (error) {
+      console.error('Erro ao visualizar foto:', error);
+      toast.error('Erro ao carregar foto');
+    }
+  };
+
   const handleSalvar = async () => {
     if (precoDesejado <= 0) {
       toast.error("Preço desejado deve ser maior que zero");
@@ -322,7 +340,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
       percentual_margem: percentualMargem,
     };
 
-    const sucesso = await gerarPDFPrecificacao(dadosAtualizados, fotosPrecificacao);
+    const sucesso = await gerarPDFPrecificacao(dadosAtualizados);
     if (sucesso) {
       toast.success("PDF gerado com sucesso!");
     } else {
@@ -347,7 +365,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
       numero_revisao: revisao.numero_revisao,
     };
 
-    const sucesso = await gerarPDFPrecificacao(dadosRevisao, fotosPrecificacao);
+    const sucesso = await gerarPDFPrecificacao(dadosRevisao);
     if (sucesso) {
       toast.success(`PDF da REV ${revisao.numero_revisao} gerado com sucesso!`);
     } else {
@@ -643,7 +661,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
                 </p>
               ) : fotosPrecificacao.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhuma foto adicionada. As fotos aparecerão apenas no PDF.
+                  Nenhuma foto adicionada. Clique em "Adicionar Fotos" para enviar imagens.
                 </p>
               ) : (
                 <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -652,20 +670,30 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
                       key={foto.id}
                       className="flex items-center justify-between p-2 bg-muted/30 rounded border"
                     >
-                      <div className="flex items-center gap-2">
-                        <Image className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm truncate max-w-[300px]">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Image className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-sm truncate">
                           {foto.nome_arquivo}
                         </span>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleRemoverFoto(foto)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleVisualizarFoto(foto)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleRemoverFoto(foto)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -737,6 +765,24 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Modal de Preview de Foto */}
+      <Dialog open={!!fotoPreview} onOpenChange={() => setFotoPreview(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Visualizar Foto</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4 bg-muted/30 rounded-lg">
+            {fotoPreview && (
+              <img 
+                src={fotoPreview} 
+                alt="Preview" 
+                className="max-w-full max-h-[70vh] object-contain rounded"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

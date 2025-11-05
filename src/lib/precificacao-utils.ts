@@ -41,7 +41,7 @@ export const formatarPercentual = (valor: number): string => {
 };
 
 // PDF
-export const gerarPDFPrecificacao = async (orcamento: any, fotos?: any[]) => {
+export const gerarPDFPrecificacao = async (orcamento: any) => {
   try {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
@@ -74,60 +74,6 @@ export const gerarPDFPrecificacao = async (orcamento: any, fotos?: any[]) => {
       yPosition += 8;
     }
     yPosition += 7;
-
-    // Fotos da Precificação
-    if (fotos && fotos.length > 0) {
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("FOTOS DA PRECIFICAÇÃO", 20, yPosition);
-      yPosition += 10;
-      
-      for (const foto of fotos) {
-        try {
-          // Usar URL assinada para bucket privado
-          const { data, error } = await supabase.storage
-            .from('documentos')
-            .createSignedUrl(foto.arquivo_url, 60); // URL válida por 60 segundos
-          
-          if (error) {
-            console.error('Erro ao criar URL assinada:', error);
-            continue;
-          }
-          
-          if (data?.signedUrl) {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.src = data.signedUrl;
-            
-            await new Promise((resolve, reject) => {
-              img.onload = resolve;
-              img.onerror = reject;
-              // Timeout de 5 segundos
-              setTimeout(() => reject(new Error('Timeout ao carregar imagem')), 5000);
-            });
-            
-            const maxWidth = 170;
-            const imgWidth = img.width;
-            const imgHeight = img.height;
-            const ratio = maxWidth / imgWidth;
-            const width = maxWidth;
-            const height = imgHeight * ratio;
-            
-            if (yPosition + height > 270) {
-              doc.addPage();
-              yPosition = 20;
-            }
-            
-            doc.addImage(img, 'JPEG', 20, yPosition, width, height);
-            yPosition += height + 10;
-          }
-        } catch (error) {
-          console.error('Erro ao adicionar foto ao PDF:', error);
-        }
-      }
-      
-      yPosition += 5;
-    }
 
     // Preço Desejado
     doc.setFontSize(14);
