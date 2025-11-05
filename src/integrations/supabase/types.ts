@@ -305,6 +305,44 @@ export type Database = {
           },
         ]
       }
+      documentos_ordem: {
+        Row: {
+          arquivo_url: string
+          created_at: string | null
+          id: string
+          nome_arquivo: string
+          ordem_servico_id: string | null
+          tamanho_bytes: number | null
+          tipo_arquivo: string
+        }
+        Insert: {
+          arquivo_url: string
+          created_at?: string | null
+          id?: string
+          nome_arquivo: string
+          ordem_servico_id?: string | null
+          tamanho_bytes?: number | null
+          tipo_arquivo: string
+        }
+        Update: {
+          arquivo_url?: string
+          created_at?: string | null
+          id?: string
+          nome_arquivo?: string
+          ordem_servico_id?: string | null
+          tamanho_bytes?: number | null
+          tipo_arquivo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_ordem_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresas_nfe: {
         Row: {
           cnpj: string

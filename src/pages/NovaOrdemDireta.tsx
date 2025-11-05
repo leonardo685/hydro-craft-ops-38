@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, Upload, Plus, Minus, X, Camera, UserPlus } from "lucide-react";
+import { ArrowLeft, Save, Upload, Plus, Minus, X, Camera, UserPlus, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -103,6 +103,9 @@ const NovaOrdemDireta = () => {
 
   const [fotos, setFotos] = useState<Array<{ file: File; preview: string }>>([]);
   const [uploadingFotos, setUploadingFotos] = useState(false);
+
+  const [documentos, setDocumentos] = useState<Array<{ file: File; nome: string; tipo: string }>>([]);
+  const [uploadingDocumentos, setUploadingDocumentos] = useState(false);
 
   // Gerar número da ordem automaticamente
   useEffect(() => {
@@ -277,6 +280,50 @@ const NovaOrdemDireta = () => {
     setFotos(fotos.filter((_, i) => i !== index));
   };
 
+  const handleDocumentoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newDocumentos: Array<{ file: File; nome: string; tipo: string }> = [];
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const tipo = file.type;
+      
+      // Aceitar PDF, Excel (xls, xlsx), Word (doc, docx), e outros documentos
+      if (
+        tipo.includes('pdf') || 
+        tipo.includes('spreadsheet') || 
+        tipo.includes('excel') ||
+        tipo.includes('word') ||
+        tipo.includes('document') ||
+        file.name.endsWith('.xlsx') ||
+        file.name.endsWith('.xls') ||
+        file.name.endsWith('.pdf') ||
+        file.name.endsWith('.doc') ||
+        file.name.endsWith('.docx')
+      ) {
+        newDocumentos.push({ 
+          file, 
+          nome: file.name,
+          tipo: file.type || 'application/octet-stream'
+        });
+      } else {
+        toast({
+          title: "Formato não suportado",
+          description: `O arquivo ${file.name} não é um documento válido (PDF, Excel, Word)`,
+          variant: "destructive"
+        });
+      }
+    }
+
+    setDocumentos([...documentos, ...newDocumentos]);
+  };
+
+  const removerDocumento = (index: number) => {
+    setDocumentos(documentos.filter((_, i) => i !== index));
+  };
+
   const uploadFotos = async (ordemId: string) => {
     if (fotos.length === 0) return;
 
@@ -320,6 +367,50 @@ const NovaOrdemDireta = () => {
     }
   };
 
+  const uploadDocumentos = async (ordemId: string) => {
+    if (documentos.length === 0) return;
+
+    setUploadingDocumentos(true);
+    
+    try {
+      for (const documento of documentos) {
+        const timestamp = Date.now();
+        const fileName = `${ordemId}_${timestamp}_${documento.file.name}`;
+        const filePath = `${fileName}`;
+
+        // Upload para o bucket documentos-tecnicos
+        const { error: uploadError } = await supabase.storage
+          .from('documentos-tecnicos')
+          .upload(filePath, documento.file);
+
+        if (uploadError) throw uploadError;
+
+        // Obter URL pública
+        const { data: urlData } = supabase.storage
+          .from('documentos-tecnicos')
+          .getPublicUrl(filePath);
+
+        // Salvar referência no banco
+        const { error: dbError } = await supabase
+          .from('documentos_ordem')
+          .insert({
+            ordem_servico_id: ordemId,
+            arquivo_url: urlData.publicUrl,
+            nome_arquivo: documento.file.name,
+            tipo_arquivo: documento.tipo,
+            tamanho_bytes: documento.file.size
+          });
+
+        if (dbError) throw dbError;
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload de documentos:', error);
+      throw error;
+    } finally {
+      setUploadingDocumentos(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       if (!formData.cliente || !formData.equipamento) {
@@ -359,9 +450,13 @@ const NovaOrdemDireta = () => {
 
       if (error) throw error;
 
-      // Upload das fotos após criar a ordem
+      // Upload das fotos e documentos após criar a ordem
       if (fotos.length > 0) {
         await uploadFotos(data.id);
+      }
+
+      if (documentos.length > 0) {
+        await uploadDocumentos(data.id);
       }
 
       toast({
@@ -802,6 +897,63 @@ const NovaOrdemDireta = () => {
                     <div className="absolute bottom-2 left-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded truncate">
                       {foto.file.name}
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Documentos Técnicos */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Documentos Técnicos
+            </CardTitle>
+            <CardDescription>Adicione documentos como PDFs, planilhas Excel, desenhos técnicos, cálculos, etc.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Input
+                type="file"
+                accept=".pdf,.xls,.xlsx,.doc,.docx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                multiple
+                onChange={handleDocumentoUpload}
+                className="hidden"
+                id="documento-upload"
+              />
+              <Label
+                htmlFor="documento-upload"
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md cursor-pointer hover:bg-primary-hover transition-colors"
+              >
+                <Upload className="h-4 w-4" />
+                Adicionar Documentos
+              </Label>
+              <span className="text-sm text-muted-foreground">
+                {documentos.length} {documentos.length === 1 ? 'documento adicionado' : 'documentos adicionados'}
+              </span>
+            </div>
+
+            {documentos.length > 0 && (
+              <div className="space-y-2">
+                {documentos.map((documento, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 bg-muted rounded-lg group hover:bg-muted/80 transition-colors">
+                    <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{documento.nome}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(documento.file.size / 1024).toFixed(2)} KB
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removerDocumento(index)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 ))}
               </div>
