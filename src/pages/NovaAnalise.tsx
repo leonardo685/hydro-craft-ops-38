@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, Upload, Camera, FileText, Trash2, Eye } from "lucide-react";
+import { ArrowLeft, Save, Upload, Camera, FileText, Trash2, Download } from "lucide-react";
 import { QuantityInput } from "@/components/QuantityInput";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -3006,11 +3006,16 @@ const NovaOrdemServico = () => {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(doc.arquivo_url, '_blank')}
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = doc.arquivo_url;
+                          link.download = doc.nome_arquivo;
+                          link.click();
+                        }}
                         className="flex items-center gap-2"
                       >
-                        <Eye className="h-4 w-4" />
-                        Visualizar
+                        <Download className="h-4 w-4" />
+                        Baixar
                       </Button>
                     </div>
                   ))}
