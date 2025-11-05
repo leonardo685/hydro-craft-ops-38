@@ -523,64 +523,6 @@ const NovaOrdemDireta = () => {
           </CardContent>
         </Card>
 
-        {/* Detalhes da Ordem */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Detalhes da Ordem</CardTitle>
-            <CardDescription>Informações técnicas e responsáveis</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="tecnico">Técnico Responsável</Label>
-                <Input
-                  id="tecnico"
-                  value={formData.tecnico}
-                  onChange={(e) => setFormData({...formData, tecnico: e.target.value})}
-                  placeholder="Nome do técnico"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="prioridade">Prioridade</Label>
-                <Select
-                  value={formData.prioridade}
-                  onValueChange={(value) => setFormData({...formData, prioridade: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Alta">Alta</SelectItem>
-                    <SelectItem value="Média">Média</SelectItem>
-                    <SelectItem value="Baixa">Baixa</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="prazoEstimado">Prazo Estimado</Label>
-                <Input
-                  id="prazoEstimado"
-                  value={formData.prazoEstimado}
-                  onChange={(e) => setFormData({...formData, prazoEstimado: e.target.value})}
-                  placeholder="Ex: 5 dias"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="problemas">Descrição do Trabalho</Label>
-              <Textarea
-                id="problemas"
-                value={formData.problemas}
-                onChange={(e) => setFormData({...formData, problemas: e.target.value})}
-                placeholder="Descreva o trabalho a ser realizado..."
-                rows={4}
-              />
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Peças Necessárias */}
         <Card>
