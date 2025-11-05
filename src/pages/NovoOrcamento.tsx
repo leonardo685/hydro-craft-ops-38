@@ -878,18 +878,9 @@ export default function NovoOrcamento() {
   };
   const calcularValorComDesconto = () => {
     const total = calcularTotalGeral();
-    const desconto = total * informacoesComerciais.desconto / 100;
+    const desconto = total * (informacoesComerciais.desconto / 100);
     return total - desconto;
   };
-
-  // Atualizar apenas o valor com desconto (não sobrescreve valorTotal editado manualmente)
-  useEffect(() => {
-    const valorComDesconto = calcularValorComDesconto();
-    setInformacoesComerciais(prev => ({
-      ...prev,
-      valorComDesconto
-    }));
-  }, [itensAnalise, informacoesComerciais.desconto]);
 
   // Auto-preencher assunto da proposta com o equipamento
   useEffect(() => {
