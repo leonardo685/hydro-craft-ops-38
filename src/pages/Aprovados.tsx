@@ -98,15 +98,15 @@ export default function Aprovados() {
   const getEtapaColor = (etapa: string) => {
     switch (etapa) {
       case "aguardando_inicio":
-        return "bg-warning-light text-warning border-warning/20";
+        return "bg-warning/10 text-warning border-warning/20";
       case "em_producao":
-        return "bg-primary-light text-primary border-primary/20";
+        return "bg-primary/10 text-primary border-primary/20";
       case "em_teste":
-        return "bg-blue-100 text-blue-700 border-blue-200";
+        return "bg-blue-500/10 text-blue-500 border-blue-500/20 dark:bg-blue-400/10 dark:text-blue-400 dark:border-blue-400/20";
       case "finalizado":
-        return "bg-accent-light text-accent border-accent/20";
+        return "bg-accent/10 text-accent border-accent/20";
       case "entregue":
-        return "bg-accent-light text-accent border-accent/20";
+        return "bg-accent/10 text-accent border-accent/20";
       default:
         return "bg-secondary text-secondary-foreground";
     }
@@ -173,8 +173,8 @@ export default function Aprovados() {
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-green-100 rounded-lg">
-                            <CheckCircle className="h-6 w-6 text-green-600" />
+                          <div className="p-2 bg-accent/10 rounded-lg">
+                            <CheckCircle className="h-6 w-6 text-accent" />
                           </div>
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
@@ -202,7 +202,7 @@ export default function Aprovados() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
+                      <div className="grid md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">Prazo de Entrega</p>
                           <input type="date" className="text-lg font-semibold bg-transparent border-none text-center outline-none" defaultValue={ordem.tempo_estimado || ordem.prazo_entrega || ''} onChange={async e => {
