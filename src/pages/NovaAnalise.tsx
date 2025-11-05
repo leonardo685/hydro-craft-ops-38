@@ -3002,21 +3002,22 @@ const NovaOrdemServico = () => {
                           </p>
                         </div>
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = doc.arquivo_url;
-                          link.download = doc.nome_arquivo;
-                          link.click();
-                        }}
-                        className="flex items-center gap-2"
+                      <a
+                        href={doc.arquivo_url}
+                        download={doc.nome_arquivo}
+                        target="_blank"
+                        rel="noopener noreferrer"
                       >
-                        <Download className="h-4 w-4" />
-                        Baixar
-                      </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Baixar
+                        </Button>
+                      </a>
                     </div>
                   ))}
                 </div>
