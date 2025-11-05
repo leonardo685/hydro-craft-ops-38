@@ -46,11 +46,11 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
       // Verificar se é um arquivo de vídeo
       if (file.type.startsWith('video/')) {
         // Verificar tamanho do arquivo (máximo 50MB)
-        const maxSize = 50 * 1024 * 1024; // 50MB em bytes
+        const maxSize = 500 * 1024 * 1024; // 500MB em bytes
         if (file.size > maxSize) {
           toast({
             title: "Arquivo muito grande",
-            description: "O vídeo deve ter no máximo 50MB. Tente comprimir o arquivo.",
+            description: "O vídeo deve ter no máximo 500MB. Tente comprimir o arquivo.",
             variant: "destructive",
           });
           return;
@@ -393,7 +393,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
 
             {/* Upload de Vídeo */}
             <div>
-              <Label htmlFor="videoTeste">Vídeo do Teste (Opcional - máx. 50MB)</Label>
+              <Label htmlFor="videoTeste">Vídeo do Teste (Opcional - máx. 500MB)</Label>
               <div className="mt-2 space-y-2">
                 <div className="flex items-center gap-4">
                   <Input
