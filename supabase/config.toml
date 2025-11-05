@@ -22,3 +22,6 @@ enable_confirmations = false
 
 [functions.consultar-nfe]
 verify_jwt = false
+
+[functions.download-file]
+verify_jwt = false

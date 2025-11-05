@@ -3002,22 +3002,50 @@ const NovaOrdemServico = () => {
                           </p>
                         </div>
                       </div>
-                      <a
-                        href={doc.arquivo_url}
-                        download={doc.nome_arquivo}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            const { data, error } = await supabase.functions.invoke('download-file', {
+                              body: { 
+                                fileUrl: doc.arquivo_url,
+                                fileName: doc.nome_arquivo 
+                              },
+                            });
+
+                            if (error) throw error;
+
+                            // Criar blob e fazer download
+                            const blob = new Blob([data], { type: 'application/pdf' });
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = doc.nome_arquivo;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            window.URL.revokeObjectURL(url);
+                            
+                            toast({
+                              title: "Download iniciado",
+                              description: `O arquivo ${doc.nome_arquivo} está sendo baixado.`,
+                            });
+                          } catch (error) {
+                            console.error('Erro ao baixar:', error);
+                            toast({
+                              title: "Erro ao baixar",
+                              description: "Não foi possível baixar o arquivo.",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        className="flex items-center gap-2"
                       >
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="flex items-center gap-2"
-                        >
-                          <Download className="h-4 w-4" />
-                          Baixar
-                        </Button>
-                      </a>
+                        <Download className="h-4 w-4" />
+                        Baixar
+                      </Button>
                     </div>
                   ))}
                 </div>
