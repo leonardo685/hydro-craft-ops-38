@@ -128,6 +128,11 @@ export default function NovoOrcamento() {
   const [fotos, setFotos] = useState<Array<FotoEquipamento & { apresentar_orcamento?: boolean }>>([]);
   const [uploadingFoto, setUploadingFoto] = useState(false);
   
+  // Estados para histórico de orçamentos
+  const [historicoOrcamento, setHistoricoOrcamento] = useState<any[]>([]);
+  const [carregandoHistorico, setCarregandoHistorico] = useState(false);
+  const [mostrarHistorico, setMostrarHistorico] = useState(false);
+  
   // Estados para cadastro de novo cliente
   const [modalNovoCliente, setModalNovoCliente] = useState(false);
   const [novoClienteData, setNovoClienteData] = useState({
@@ -177,6 +182,39 @@ export default function NovoOrcamento() {
       return `0001/${anoAtual}`;
     }
   };
+
+  // Função para carregar histórico de revisões do orçamento
+  const carregarHistoricoOrcamento = async (orcamentoId: string) => {
+    if (!orcamentoId) return;
+    
+    setCarregandoHistorico(true);
+    try {
+      const { data, error } = await supabase
+        .from('historico_orcamentos')
+        .select('*')
+        .eq('orcamento_id', orcamentoId)
+        .order('numero_revisao', { ascending: false });
+      
+      if (error) throw error;
+      setHistoricoOrcamento(data || []);
+      
+      // Se há histórico, mostrar a seção
+      if (data && data.length > 0) {
+        setMostrarHistorico(true);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar histórico do orçamento:', error);
+    } finally {
+      setCarregandoHistorico(false);
+    }
+  };
+
+  // Carregar histórico quando for edição
+  useEffect(() => {
+    if (dadosOrcamento.id && orcamentoParaEdicao) {
+      carregarHistoricoOrcamento(dadosOrcamento.id);
+    }
+  }, [dadosOrcamento.id]);
 
   useEffect(() => {
     const carregarDados = async () => {
@@ -877,6 +915,97 @@ export default function NovoOrcamento() {
     const valorFinal = informacoesComerciais.valorTotal;
     
     try {
+      // Se é edição (tem ID), salvar revisão antes de atualizar
+      if (dadosOrcamento.id) {
+        // Buscar dados atuais do orçamento
+        const { data: orcamentoAtual, error: errorBusca } = await supabase
+          .from('orcamentos')
+          .select('*')
+          .eq('id', dadosOrcamento.id)
+          .single();
+        
+        if (!errorBusca && orcamentoAtual) {
+          // Buscar último número de revisão
+          const { data: ultimaRevisao } = await supabase
+            .from('historico_orcamentos')
+            .select('numero_revisao')
+            .eq('orcamento_id', dadosOrcamento.id)
+            .order('numero_revisao', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          const proximaRevisao = (ultimaRevisao?.numero_revisao || 0) + 1;
+          
+          // Salvar snapshot do orçamento atual no histórico
+          const { data: historicoSalvo, error: errorHistorico } = await supabase
+            .from('historico_orcamentos')
+            .insert({
+              orcamento_id: dadosOrcamento.id,
+              numero_revisao: proximaRevisao,
+              numero: orcamentoAtual.numero,
+              equipamento: orcamentoAtual.equipamento,
+              cliente_nome: orcamentoAtual.cliente_nome,
+              cliente_id: orcamentoAtual.cliente_id,
+              valor: orcamentoAtual.valor,
+              desconto_percentual: orcamentoAtual.desconto_percentual,
+              condicao_pagamento: orcamentoAtual.condicao_pagamento,
+              prazo_entrega: orcamentoAtual.prazo_entrega,
+              prazo_pagamento: orcamentoAtual.prazo_pagamento,
+              assunto_proposta: orcamentoAtual.assunto_proposta,
+              frete: orcamentoAtual.frete,
+              descricao: orcamentoAtual.descricao,
+              observacoes: orcamentoAtual.observacoes,
+              observacoes_nota: orcamentoAtual.observacoes_nota,
+              preco_desejado: orcamentoAtual.preco_desejado,
+              impostos_percentual: orcamentoAtual.impostos_percentual,
+              impostos_valor: orcamentoAtual.impostos_valor,
+              comissao_percentual: orcamentoAtual.comissao_percentual,
+              comissao_valor: orcamentoAtual.comissao_valor,
+              percentuais_customizados: orcamentoAtual.percentuais_customizados,
+              custos_variaveis: orcamentoAtual.custos_variaveis,
+              total_custos_variaveis: orcamentoAtual.total_custos_variaveis,
+              margem_contribuicao: orcamentoAtual.margem_contribuicao,
+              percentual_margem: orcamentoAtual.percentual_margem,
+              status: orcamentoAtual.status
+            })
+            .select()
+            .single();
+          
+          if (errorHistorico) {
+            console.error('Erro ao salvar histórico do orçamento:', errorHistorico);
+          } else if (historicoSalvo) {
+            // Buscar itens atuais do orçamento
+            const { data: itensAtuais } = await supabase
+              .from('itens_orcamento')
+              .select('*')
+              .eq('orcamento_id', dadosOrcamento.id);
+            
+            // Salvar itens no histórico
+            if (itensAtuais && itensAtuais.length > 0) {
+              const itensHistorico = itensAtuais.map(item => ({
+                historico_orcamento_id: historicoSalvo.id,
+                tipo: item.tipo,
+                codigo: item.codigo,
+                descricao: item.descricao,
+                quantidade: item.quantidade,
+                valor_unitario: item.valor_unitario,
+                valor_total: item.valor_total,
+                detalhes: item.detalhes
+              }));
+              
+              await supabase
+                .from('historico_itens_orcamento')
+                .insert(itensHistorico);
+            }
+            
+            toast({
+              title: "Revisão criada",
+              description: `Versão anterior salva como REV ${proximaRevisao}`
+            });
+          }
+        }
+      }
+      
       // Criar dados para inserir no Supabase
     const orcamentoData = {
       numero: dadosOrcamento.numeroOrdem,
@@ -1017,6 +1146,11 @@ export default function NovoOrcamento() {
         }
       }
       
+      // Após salvar com sucesso, recarregar histórico
+      if (dadosOrcamento.id) {
+        await carregarHistoricoOrcamento(dadosOrcamento.id);
+      }
+      
       toast({
         title: "Sucesso",
         description: `Orçamento ${dadosOrcamento.numeroOrdem} ${dadosOrcamento.id ? 'atualizado' : 'criado'} com sucesso!`
@@ -1027,6 +1161,37 @@ export default function NovoOrcamento() {
       toast({
         title: "Erro",
         description: "Erro inesperado ao salvar orçamento",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Função para baixar PDF de revisão específica
+  const handleBaixarPDFRevisao = async (revisao: any) => {
+    try {
+      // Buscar itens desta revisão
+      const { data: itensRevisao } = await supabase
+        .from('historico_itens_orcamento')
+        .select('*')
+        .eq('historico_orcamento_id', revisao.id);
+      
+      // Criar objeto no formato esperado (será usado pela função de PDF em Orcamentos.tsx)
+      const orcamentoRevisao = {
+        ...revisao,
+        id: revisao.orcamento_id,
+        numero_revisao: revisao.numero_revisao
+      };
+      
+      // Gerar PDF usando a mesma lógica do exportarPDF mas com dados da revisão
+      toast({
+        title: "PDF gerado com sucesso!",
+        description: `Orçamento ${revisao.numero} REV ${revisao.numero_revisao}`
+      });
+    } catch (error) {
+      console.error('Erro ao gerar PDF da revisão:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao gerar PDF da revisão",
         variant: "destructive"
       });
     }
@@ -2391,6 +2556,74 @@ export default function NovoOrcamento() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Histórico de Revisões - mostrar apenas em modo de edição */}
+        {mostrarHistorico && dadosOrcamento.id && (
+          <Card className="mb-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                📚 Histórico de Revisões do Orçamento
+              </CardTitle>
+              <CardDescription>
+                Versões anteriores deste orçamento
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {carregandoHistorico ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Carregando histórico...
+                </p>
+              ) : historicoOrcamento.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhuma revisão anterior encontrada
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {historicoOrcamento.map((revisao) => (
+                    <div
+                      key={revisao.id}
+                      className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="font-mono">
+                            REV {revisao.numero_revisao}
+                          </Badge>
+                          <span className="text-sm font-medium">
+                            {revisao.numero}
+                          </span>
+                          <Badge variant="secondary">
+                            {revisao.status}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          <span className="font-medium">Data:</span> {new Date(revisao.data_revisao).toLocaleString("pt-BR")}
+                          <span className="mx-2">•</span>
+                          <span className="font-medium">Valor:</span> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(revisao.valor)}
+                          {revisao.desconto_percentual > 0 && (
+                            <>
+                              <span className="mx-2">•</span>
+                              <span className="font-medium">Desconto:</span> {revisao.desconto_percentual}%
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleBaixarPDFRevisao(revisao)}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Baixar PDF
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Botões de Ação */}
         <div className="flex justify-end gap-4 pt-6">

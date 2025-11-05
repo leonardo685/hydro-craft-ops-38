@@ -460,6 +460,53 @@ export type Database = {
           },
         ]
       }
+      historico_itens_orcamento: {
+        Row: {
+          codigo: string | null
+          created_at: string | null
+          descricao: string
+          detalhes: Json | null
+          historico_orcamento_id: string
+          id: string
+          quantidade: number
+          tipo: string
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          codigo?: string | null
+          created_at?: string | null
+          descricao: string
+          detalhes?: Json | null
+          historico_orcamento_id: string
+          id?: string
+          quantidade?: number
+          tipo: string
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Update: {
+          codigo?: string | null
+          created_at?: string | null
+          descricao?: string
+          detalhes?: Json | null
+          historico_orcamento_id?: string
+          id?: string
+          quantidade?: number
+          tipo?: string
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_itens_orcamento_historico_orcamento_id_fkey"
+            columns: ["historico_orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "historico_orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       historico_lancamentos: {
         Row: {
           campo_alterado: string | null
@@ -495,6 +542,113 @@ export type Database = {
           valor_novo?: string | null
         }
         Relationships: []
+      }
+      historico_orcamentos: {
+        Row: {
+          assunto_proposta: string | null
+          cliente_id: string | null
+          cliente_nome: string
+          comissao_percentual: number | null
+          comissao_valor: number | null
+          condicao_pagamento: string | null
+          created_at: string | null
+          custos_variaveis: Json | null
+          data_revisao: string | null
+          desconto_percentual: number | null
+          descricao: string | null
+          equipamento: string
+          frete: string | null
+          id: string
+          impostos_percentual: number | null
+          impostos_valor: number | null
+          margem_contribuicao: number | null
+          numero: string
+          numero_revisao: number
+          observacoes: string | null
+          observacoes_nota: string | null
+          orcamento_id: string
+          percentuais_customizados: Json | null
+          percentual_margem: number | null
+          prazo_entrega: string | null
+          prazo_pagamento: number | null
+          preco_desejado: number | null
+          status: string
+          total_custos_variaveis: number | null
+          valor: number
+        }
+        Insert: {
+          assunto_proposta?: string | null
+          cliente_id?: string | null
+          cliente_nome: string
+          comissao_percentual?: number | null
+          comissao_valor?: number | null
+          condicao_pagamento?: string | null
+          created_at?: string | null
+          custos_variaveis?: Json | null
+          data_revisao?: string | null
+          desconto_percentual?: number | null
+          descricao?: string | null
+          equipamento: string
+          frete?: string | null
+          id?: string
+          impostos_percentual?: number | null
+          impostos_valor?: number | null
+          margem_contribuicao?: number | null
+          numero: string
+          numero_revisao: number
+          observacoes?: string | null
+          observacoes_nota?: string | null
+          orcamento_id: string
+          percentuais_customizados?: Json | null
+          percentual_margem?: number | null
+          prazo_entrega?: string | null
+          prazo_pagamento?: number | null
+          preco_desejado?: number | null
+          status: string
+          total_custos_variaveis?: number | null
+          valor?: number
+        }
+        Update: {
+          assunto_proposta?: string | null
+          cliente_id?: string | null
+          cliente_nome?: string
+          comissao_percentual?: number | null
+          comissao_valor?: number | null
+          condicao_pagamento?: string | null
+          created_at?: string | null
+          custos_variaveis?: Json | null
+          data_revisao?: string | null
+          desconto_percentual?: number | null
+          descricao?: string | null
+          equipamento?: string
+          frete?: string | null
+          id?: string
+          impostos_percentual?: number | null
+          impostos_valor?: number | null
+          margem_contribuicao?: number | null
+          numero?: string
+          numero_revisao?: number
+          observacoes?: string | null
+          observacoes_nota?: string | null
+          orcamento_id?: string
+          percentuais_customizados?: Json | null
+          percentual_margem?: number | null
+          prazo_entrega?: string | null
+          prazo_pagamento?: number | null
+          preco_desejado?: number | null
+          status?: string
+          total_custos_variaveis?: number | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_orcamentos_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       historico_precificacao: {
         Row: {

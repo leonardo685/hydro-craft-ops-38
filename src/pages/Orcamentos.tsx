@@ -446,6 +446,16 @@ export default function Orcamentos() {
       doc.setFont("helvetica", "bold");
       doc.setTextColor(220, 38, 38);
       doc.text("PROPOSTA COMERCIAL", pageWidth / 2, yPosition, { align: "center" });
+      
+      // Adicionar indicação de revisão no título (se houver)
+      if (orcamento.numero_revisao) {
+        yPosition += 8;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(220, 38, 38);
+        doc.text(`(REVISÃO ${orcamento.numero_revisao})`, pageWidth / 2, yPosition, { align: "center" });
+      }
+      
       doc.setTextColor(0, 0, 0);
 
       // === INFORMAÇÕES DO CLIENTE ===
@@ -496,7 +506,13 @@ export default function Orcamentos() {
       doc.setDrawColor(200, 200, 200);
       doc.rect(20, yPosition, colWidth, 8);
       doc.rect(20 + colWidth, yPosition, colWidth, 8);
-      doc.text(`Nº Orçamento: ${orcamento.numero || 'N/A'}`, 22, yPosition + 5.5);
+      
+      // Adicionar indicação de revisão no número do orçamento
+      const numeroExibicao = orcamento.numero_revisao 
+        ? `${orcamento.numero} REV${orcamento.numero_revisao}`
+        : orcamento.numero || 'N/A';
+      
+      doc.text(`Nº Orçamento: ${numeroExibicao}`, 22, yPosition + 5.5);
       doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 22 + colWidth, yPosition + 5.5);
       yPosition += 8;
       
@@ -866,8 +882,12 @@ export default function Orcamentos() {
       // Rodapé da última página
       adicionarRodape(currentPage);
 
-      // Salvar PDF
-      doc.save(`Orcamento_${orcamento.numero}.pdf`);
+      // Salvar PDF com indicação de revisão no nome
+      const nomeArquivo = orcamento.numero_revisao
+        ? `Orcamento_${orcamento.numero.replace(/\//g, '-')}_REV${orcamento.numero_revisao}.pdf`
+        : `Orcamento_${orcamento.numero.replace(/\//g, '-')}.pdf`;
+      
+      doc.save(nomeArquivo);
       toast.success('PDF gerado com sucesso!');
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
