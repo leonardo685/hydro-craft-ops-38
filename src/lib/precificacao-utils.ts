@@ -84,18 +84,26 @@ export const gerarPDFPrecificacao = async (orcamento: any, fotos?: any[]) => {
       
       for (const foto of fotos) {
         try {
-          const { data } = supabase.storage
+          // Usar URL assinada para bucket privado
+          const { data, error } = await supabase.storage
             .from('documentos')
-            .getPublicUrl(foto.arquivo_url);
+            .createSignedUrl(foto.arquivo_url, 60); // URL válida por 60 segundos
           
-          if (data?.publicUrl) {
+          if (error) {
+            console.error('Erro ao criar URL assinada:', error);
+            continue;
+          }
+          
+          if (data?.signedUrl) {
             const img = new Image();
             img.crossOrigin = 'anonymous';
-            img.src = data.publicUrl;
+            img.src = data.signedUrl;
             
             await new Promise((resolve, reject) => {
               img.onload = resolve;
               img.onerror = reject;
+              // Timeout de 5 segundos
+              setTimeout(() => reject(new Error('Timeout ao carregar imagem')), 5000);
             });
             
             const maxWidth = 170;
