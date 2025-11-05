@@ -37,11 +37,11 @@ export default function UploadVideoTeste() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.type.startsWith('video/')) {
-        const maxSize = 100 * 1024 * 1024; // 100MB
+        const maxSize = 500 * 1024 * 1024; // 500MB
         if (file.size > maxSize) {
           toast({
             title: "Arquivo muito grande",
-            description: "O vídeo deve ter no máximo 100MB.",
+            description: "O vídeo deve ter no máximo 500MB.",
             variant: "destructive",
           });
           return;
@@ -150,7 +150,7 @@ export default function UploadVideoTeste() {
           )}
 
           <div>
-            <Label htmlFor="videoFile">Vídeo (máx. 100MB)</Label>
+            <Label htmlFor="videoFile">Vídeo (máx. 500MB)</Label>
             <div className="mt-2 space-y-2">
               <div className="flex items-center gap-4">
                 <Input
