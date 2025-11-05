@@ -2467,7 +2467,7 @@ export default function NovoOrcamento() {
               </div>
               <div>
                 <Label htmlFor="desconto">% Desconto</Label>
-                <Input id="desconto" type="number" min="0" max="100" step="0.1" value={informacoesComerciais.desconto} onChange={e => setInformacoesComerciais(prev => ({
+                <Input id="desconto" type="number" min="0" max="100" step="0.5" value={informacoesComerciais.desconto} onChange={e => setInformacoesComerciais(prev => ({
                 ...prev,
                 desconto: parseFloat(e.target.value) || 0
               }))} />
