@@ -306,26 +306,37 @@ export const useRecebimentos = () => {
   const gerarNumeroOrdem = async () => {
     try {
       const anoAtual = new Date().getFullYear();
-      const anoAbreviado = anoAtual.toString().slice(-2); // Últimos 2 dígitos do ano (ex: 25, 26)
+      const anoAbreviado = anoAtual.toString().slice(-2);
       
-      // Buscar todas as ordens do ano atual
-      const { data, error } = await supabase
-        .from('recebimentos')
-        .select('numero_ordem')
-        .ilike('numero_ordem', `%-${anoAbreviado}`)
-        .order('created_at', { ascending: false });
+      // Buscar todas as ordens do ano atual em ambas as tabelas
+      const [ordensData, recebimentosData] = await Promise.all([
+        supabase
+          .from('ordens_servico')
+          .select('numero_ordem')
+          .ilike('numero_ordem', `MH-%-${anoAbreviado}`),
+        supabase
+          .from('recebimentos')
+          .select('numero_ordem')
+          .ilike('numero_ordem', `MH-%-${anoAbreviado}`)
+      ]);
 
-      if (error) throw error;
+      if (ordensData.error) throw ordensData.error;
+      if (recebimentosData.error) throw recebimentosData.error;
 
-      // Se não houver ordens do ano atual, começar com 001
-      if (!data || data.length === 0) {
+      // Combinar os resultados de ambas as tabelas
+      const todasOrdens = [
+        ...(ordensData.data || []),
+        ...(recebimentosData.data || [])
+      ];
+
+      // Se não houver ordens, começar com 001
+      if (todasOrdens.length === 0) {
         return `MH-001-${anoAbreviado}`;
       }
 
-      // Encontrar o maior número sequencial do ano atual
+      // Encontrar o maior número de todas as ordens
       let maiorNumero = 0;
-      data.forEach(item => {
-        // Formato esperado: MH-XXX-AA (ex: MH-001-25)
+      todasOrdens.forEach(item => {
         const partes = item.numero_ordem.split('-');
         if (partes.length === 3 && partes[2] === anoAbreviado) {
           const numero = parseInt(partes[1]);
