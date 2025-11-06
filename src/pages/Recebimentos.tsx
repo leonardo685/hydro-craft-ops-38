@@ -449,21 +449,14 @@ export default function Recebimentos() {
 
                     return (
                       <TableRow key={index} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => navigate(`/recebimentos/${item.id}`)}
-                              className="text-primary hover:text-primary-hover underline font-medium"
-                            >
-                              {item.numero_ordem}
-                            </button>
-                            {item.is_ordem_direta && (
-                              <Badge variant="outline" className="text-xs">
-                                Ordem Direta
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
+              <TableCell className="font-medium">
+                <button
+                  onClick={() => navigate(`/recebimentos/${item.id}`)}
+                  className="text-primary hover:text-primary-hover underline font-medium"
+                >
+                  {item.numero_ordem}
+                </button>
+              </TableCell>
                         <TableCell className="text-red-500 font-medium">
                           {item.clientes?.nome || item.cliente_nome || 'Cliente não encontrado'}
                         </TableCell>
