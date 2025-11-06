@@ -99,6 +99,9 @@ export default function DRE() {
       const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === categoriaMae.id);
       let totalMae = 0;
 
+      // Somar também os lançamentos diretos da categoria mãe
+      totalMae += calcularValorCategoria(categoriaMae.id);
+
       // Sempre adicionar a categoria mãe primeiro
       const indexMae = resultado.length;
       resultado.push({
