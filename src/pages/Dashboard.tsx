@@ -139,21 +139,6 @@ export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [showFaturamentoModal, setShowFaturamentoModal] = useState(false);
 
-  // Buscar orçamentos faturados
-  const { data: orcamentos = [] } = useQuery({
-    queryKey: ['orcamentos-faturados'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orcamentos')
-        .select('*')
-        .not('numero_nf', 'is', null)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
   // Helper: Filtrar lançamentos por período selecionado
   const getLancamentosFiltrados = useMemo(() => {
     return lancamentos.filter(l => {
@@ -379,31 +364,23 @@ export default function Dashboard() {
       .reduce((acc, l) => acc + l.valor, 0);
   }, [getLancamentosFiltrados, categorias]);
 
-  // Filtrar orçamentos faturados no período
-  const orcamentosFaturadosPeriodo = useMemo(() => {
-    return orcamentos.filter(o => {
-      if (!o.data_criacao) return false;
-      
-      const dataOrc = new Date(o.data_criacao);
-      
-      if (dashboardPeriodType === 'mes') {
-        return dataOrc.getMonth() === selectedMonth.getMonth() 
-          && dataOrc.getFullYear() === selectedMonth.getFullYear();
-      } else if (dashboardPeriodType === 'trimestre') {
-        const ano = parseInt(selectedYear);
-        const quarterMonths = {
-          'Q1': [0, 1, 2],
-          'Q2': [3, 4, 5],
-          'Q3': [6, 7, 8],
-          'Q4': [9, 10, 11]
-        };
-        return quarterMonths[selectedQuarter as keyof typeof quarterMonths].includes(dataOrc.getMonth())
-          && dataOrc.getFullYear() === ano;
-      } else {
-        return dataOrc.getFullYear() === parseInt(selectedYear);
-      }
-    });
-  }, [orcamentos, dashboardPeriodType, selectedMonth, selectedQuarter, selectedYear]);
+  // Filtrar receitas operacionais no período usando data_emissao
+  const receitasOperacionaisPeriodo = useMemo(() => {
+    // Encontrar categoria "Receitas Operacionais" (código 1)
+    const categoriaReceitasOperacionais = categorias.find(c => c.tipo === 'mae' && c.codigo === '1');
+    const categoriasReceitasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === categoriaReceitasOperacionais?.id);
+    const idsReceitasOperacionais = [
+      categoriaReceitasOperacionais?.id,
+      ...categoriasReceitasFilhas.map(c => c.id)
+    ].filter(Boolean);
+    
+    // Filtrar lançamentos de entrada (receitas) da categoria 1
+    return getLancamentosFiltrados.filter(l => 
+      l.tipo === 'entrada' 
+      && l.categoriaId 
+      && idsReceitasOperacionais.includes(l.categoriaId)
+    );
+  }, [getLancamentosFiltrados, categorias]);
 
   // Calcular cards do dashboard com base no período selecionado
   const dashboardCards = useMemo(() => {
@@ -873,41 +850,44 @@ export default function Dashboard() {
         <Dialog open={showFaturamentoModal} onOpenChange={setShowFaturamentoModal}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Orçamentos Faturados - {getPeriodoLabel()}</DialogTitle>
+              <DialogTitle>Receitas Operacionais - {getPeriodoLabel()}</DialogTitle>
             </DialogHeader>
             <div className="mt-4">
-              {orcamentosFaturadosPeriodo.length === 0 ? (
+              {receitasOperacionaisPeriodo.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  Nenhum orçamento faturado neste período.
+                  Nenhuma receita operacional neste período.
                 </p>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Data Faturamento</TableHead>
-                      <TableHead>Nº Orçamento</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Nº NF</TableHead>
+                      <TableHead>Data Emissão</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>Forma Pagamento</TableHead>
                       <TableHead className="text-right">Valor</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orcamentosFaturadosPeriodo.map((orc) => (
-                      <TableRow key={orc.id}>
-                        <TableCell>
-                          {orc.data_criacao ? format(new Date(orc.data_criacao), "dd/MM/yyyy") : "-"}
-                        </TableCell>
-                        <TableCell className="font-medium">{orc.numero}</TableCell>
-                        <TableCell>{orc.cliente_nome}</TableCell>
-                        <TableCell>{orc.numero_nf}</TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL'
-                          }).format(orc.valor)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {receitasOperacionaisPeriodo.map((lanc) => {
+                      const categoria = categorias.find(c => c.id === lanc.categoriaId);
+                      return (
+                        <TableRow key={lanc.id}>
+                          <TableCell>
+                            {lanc.dataEmissao ? format(new Date(lanc.dataEmissao), "dd/MM/yyyy") : "-"}
+                          </TableCell>
+                          <TableCell className="font-medium">{lanc.descricao}</TableCell>
+                          <TableCell>{categoria?.nome || "-"}</TableCell>
+                          <TableCell>{lanc.formaPagamento || "-"}</TableCell>
+                          <TableCell className="text-right font-semibold text-green-600">
+                            {new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(lanc.valor)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
