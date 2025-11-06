@@ -45,7 +45,7 @@ export default function OrdensServico() {
             cliente_nome,
             tipo_equipamento
           ),
-          orcamentos (
+          orcamentos!orcamentos_ordem_servico_id_fkey (
             id,
             status
           )
