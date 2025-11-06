@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, DollarSign, Calendar, FileText, Download, Eye, Filter, ChevronUp, ChevronDown } from "lucide-react";
+import { Receipt, DollarSign, Calendar, FileText, Download, Eye, Filter, ChevronUp, ChevronDown, QrCode } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getOrcamentosEmFaturamento, getOrcamentosFinalizados, emitirNotaFiscal, type Orcamento } from "@/lib/orcamento-utils";
@@ -12,6 +12,7 @@ import EmitirNotaModal from "@/components/EmitirNotaModal";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EquipmentLabel } from "@/components/EquipmentLabel";
 
 interface NotaFaturada {
   id: string;
@@ -31,6 +32,7 @@ export default function Faturamento() {
   const [ordensRetorno, setOrdensRetorno] = useState<any[]>([]);
   const [isEmitirNotaModalOpen, setIsEmitirNotaModalOpen] = useState(false);
   const [selectedOrcamento, setSelectedOrcamento] = useState<any>(null);
+  const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
   
   // Estados para controle de expansão das seções
   const [expandedSections, setExpandedSections] = useState({
@@ -600,6 +602,20 @@ export default function Faturamento() {
                       </div>
 
                       <div className="flex gap-2 pt-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedEquipment({
+                              numeroOrdem: nota.numero_ordem,
+                              cliente: nota.cliente_nome,
+                              dataEntrada: new Date(nota.data_entrada).toLocaleDateString('pt-BR')
+                            });
+                          }}
+                        >
+                          <QrCode className="h-4 w-4 mr-1" />
+                          QR Code
+                        </Button>
                         {(nota.pdf_nota_fiscal || nota.pdf_nota_retorno) && (
                           <>
                             <Button 
@@ -662,6 +678,14 @@ export default function Faturamento() {
         orcamento={selectedOrcamento}
         onConfirm={handleConfirmarEmissao}
       />
+
+      {/* Modal de QR Code */}
+      {selectedEquipment && (
+        <EquipmentLabel 
+          equipment={selectedEquipment} 
+          onClose={() => setSelectedEquipment(null)} 
+        />
+      )}
     </AppLayout>
   );
 }

@@ -35,6 +35,7 @@ export default function Recebimentos() {
   const [notaFiscalSelecionada, setNotaFiscalSelecionada] = useState<any>(null);
   const [modalCriarOrdem, setModalCriarOrdem] = useState<any>(null);
   const [avisoNovaNotaFiscal, setAvisoNovaNotaFiscal] = useState(false);
+  const [ordensFinalizadas, setOrdensFinalizadas] = useState<any[]>([]);
   
   // Estados para filtros
   const [dataInicio, setDataInicio] = useState<Date>();
@@ -49,6 +50,26 @@ export default function Recebimentos() {
   useEffect(() => {
     localStorage.removeItem('recebimentos');
     localStorage.removeItem('notasFiscais');
+  }, []);
+
+  // Carregar ordens finalizadas diretas (sem recebimento_id)
+  useEffect(() => {
+    const loadOrdensFinalizadas = async () => {
+      const { data, error } = await supabase
+        .from('ordens_servico')
+        .select('*')
+        .in('status', ['finalizada', 'faturado'])
+        .is('recebimento_id', null)
+        .order('updated_at', { ascending: false });
+      
+      if (error) {
+        console.error('Erro ao carregar ordens finalizadas:', error);
+      } else {
+        setOrdensFinalizadas(data || []);
+      }
+    };
+    
+    loadOrdensFinalizadas();
   }, []);
   
   // Filtrar recebimentos em andamento (sem nota de retorno)
@@ -76,19 +97,13 @@ export default function Recebimentos() {
     });
   }, [recebimentos, dataInicio, dataFim, filtroCliente, filtroNotaEntrada, filtroNotaFiscal]);
 
-  // Filtrar recebimentos finalizados (com nota de retorno)
-  const recebimentosFinalizados = useMemo(() => {
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
-    
-    return recebimentos.filter(item => {
-      // Apenas equipamentos com nota de retorno emitida
+  // Combinar recebimentos finalizados com ordens diretas
+  const todosFinalizados = useMemo(() => {
+    // Recebimentos com nota de retorno
+    const recebimentosComNota = recebimentos.filter(item => {
       if (!item.pdf_nota_retorno) return false;
       
       const dataItem = new Date(item.data_entrada);
-      
-      // Aplicar filtros de data apenas se estiverem definidos
       if (dataInicio && dataItem < dataInicio) return false;
       if (dataFim && dataItem > dataFim) return false;
       
@@ -99,7 +114,27 @@ export default function Recebimentos() {
       
       return matchCliente && matchNota && matchNotaFiscal;
     });
-  }, [recebimentos, dataInicio, dataFim, filtroCliente, filtroNotaEntrada, filtroNotaFiscal]);
+    
+    // Ordens diretas finalizadas (transformadas no mesmo formato)
+    const ordensTransformadas = ordensFinalizadas
+      .filter(ordem => {
+        const dataItem = new Date(ordem.data_entrada);
+        if (dataInicio && dataItem < dataInicio) return false;
+        if (dataFim && dataItem > dataFim) return false;
+        
+        const matchCliente = !filtroCliente || ordem.cliente_nome.toLowerCase().includes(filtroCliente.toLowerCase());
+        const matchNota = !filtroNotaEntrada || ordem.numero_ordem.includes(filtroNotaEntrada);
+        
+        return matchCliente && matchNota;
+      })
+      .map(ordem => ({
+        ...ordem,
+        is_ordem_direta: true,
+        clientes: null
+      }));
+    
+    return [...recebimentosComNota, ...ordensTransformadas];
+  }, [recebimentos, ordensFinalizadas, dataInicio, dataFim, filtroCliente, filtroNotaEntrada, filtroNotaFiscal]);
 
   // Função para aplicar filtros e recarregar dados
   const handleBuscar = async () => {
@@ -398,7 +433,7 @@ export default function Recebimentos() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recebimentosFinalizados.map((item, index) => {
+                  {todosFinalizados.map((item, index) => {
                     const getStatusBadge = (status: string) => {
                       const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
                         'recebido': { label: 'Recebida', variant: 'secondary' },
@@ -415,12 +450,19 @@ export default function Recebimentos() {
                     return (
                       <TableRow key={index} className="hover:bg-muted/50">
                         <TableCell className="font-medium">
-                          <button
-                            onClick={() => navigate(`/recebimentos/${item.id}`)}
-                            className="text-primary hover:text-primary-hover underline font-medium"
-                          >
-                            {item.numero_ordem}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => navigate(`/recebimentos/${item.id}`)}
+                              className="text-primary hover:text-primary-hover underline font-medium"
+                            >
+                              {item.numero_ordem}
+                            </button>
+                            {item.is_ordem_direta && (
+                              <Badge variant="outline" className="text-xs">
+                                Ordem Direta
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-red-500 font-medium">
                           {item.clientes?.nome || item.cliente_nome || 'Cliente não encontrado'}
