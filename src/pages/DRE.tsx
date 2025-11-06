@@ -99,8 +99,9 @@ export default function DRE() {
       const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === categoriaMae.id);
       let totalMae = 0;
 
-      // Somar também os lançamentos diretos da categoria mãe
-      totalMae += calcularValorCategoria(categoriaMae.id);
+      // Calcular valor dos lançamentos diretos na categoria mãe
+      const valorDiretoMae = calcularValorCategoria(categoriaMae.id);
+      totalMae += valorDiretoMae;
 
       // Sempre adicionar a categoria mãe primeiro
       const indexMae = resultado.length;
@@ -128,6 +129,19 @@ export default function DRE() {
           codigoMae: categoriaMae.codigo
         });
       });
+
+      // Se houver lançamentos diretos na categoria mãe (sem subcategoria), adicionar linha
+      if (valorDiretoMae !== 0) {
+        resultado.push({
+          codigo: `${categoriaMae.codigo}.0`,
+          conta: `Outros - ${categoriaMae.nome}`,
+          valor: valorDiretoMae,
+          percentual: totalReceitas > 0 ? (valorDiretoMae / totalReceitas) * 100 : 0,
+          tipo: 'categoria_filha',
+          nivel: 2,
+          codigoMae: categoriaMae.codigo
+        });
+      }
 
       // Atualizar valor da categoria mãe
       resultado[indexMae].valor = totalMae;
