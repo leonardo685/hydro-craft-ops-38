@@ -75,15 +75,19 @@ export function UploadProdutoProntoModal({
           .getPublicUrl(filePath);
 
         // Salvar referência no banco (usando a tabela fotos_equipamentos)
-        if (ordem.recebimento_id) {
-          await supabase
-            .from('fotos_equipamentos')
-            .insert({
-              recebimento_id: ordem.recebimento_id,
-              arquivo_url: publicUrl,
-              nome_arquivo: fileName,
-              apresentar_orcamento: false, // Fotos do produto pronto
-            });
+        const { error: insertError } = await supabase
+          .from('fotos_equipamentos')
+          .insert({
+            recebimento_id: ordem.recebimento_id || null,
+            ordem_servico_id: ordem.id,
+            arquivo_url: publicUrl,
+            nome_arquivo: fileName,
+            apresentar_orcamento: false, // Fotos do produto pronto
+          });
+
+        if (insertError) {
+          console.error('Erro ao salvar foto no banco:', insertError);
+          throw insertError;
         }
 
         return publicUrl;
@@ -104,10 +108,12 @@ export function UploadProdutoProntoModal({
       // Chamar a função de confirmação (finalizar ordem)
       onConfirm();
     } catch (error) {
-      console.error('Erro no upload:', error);
+      console.error('Erro detalhado no upload:', error);
+      console.error('Ordem:', ordem);
+      console.error('Arquivos selecionados:', selectedFiles.length);
       toast({
         title: "Erro no upload",
-        description: "Erro ao enviar as fotos do produto pronto",
+        description: error instanceof Error ? error.message : "Erro ao enviar as fotos do produto pronto",
         variant: "destructive",
       });
     } finally {
