@@ -87,37 +87,36 @@ export default function LaudoPublico() {
       }
 
       try {
-        // Buscar recebimento
-        const { data: recebimento, error: recebimentoError } = await supabase
-          .from("recebimentos")
-          .select("id, pdf_nota_retorno")
-          .eq("numero_ordem", numeroOrdem)
-          .maybeSingle();
-
-        if (recebimentoError) throw recebimentoError;
-
-        if (!recebimento) {
-          toast.error("Ordem não encontrada");
-          navigate("/");
-          return;
-        }
-
-        // Buscar ordem de serviço
+        // Buscar ordem de serviço diretamente pelo numero_ordem
         const { data: ordem, error: ordemError } = await supabase
           .from("ordens_servico")
           .select(`
             *,
-            recebimentos!inner(numero_ordem)
+            recebimentos(numero_ordem)
           `)
-          .eq("recebimento_id", recebimento.id)
+          .eq("numero_ordem", numeroOrdem)
           .maybeSingle();
 
         if (ordemError) throw ordemError;
 
         if (!ordem) {
-          toast.error("Ordem de serviço não encontrada");
+          toast.error("Ordem não encontrada");
           navigate("/");
           return;
+        }
+
+        // Buscar recebimento se existir (para verificar nota de retorno)
+        let pdfNotaRetorno = null;
+        let recebimentoId = null;
+        if (ordem.recebimento_id) {
+          const { data: recebimento } = await supabase
+            .from("recebimentos")
+            .select("id, pdf_nota_retorno")
+            .eq("id", ordem.recebimento_id)
+            .maybeSingle();
+          
+          pdfNotaRetorno = recebimento?.pdf_nota_retorno;
+          recebimentoId = recebimento?.id;
         }
 
         // Verificar se existe laudo técnico criado (teste) para a ordem
@@ -130,7 +129,7 @@ export default function LaudoPublico() {
         if (testeCheckError) throw testeCheckError;
 
         // Se não existe laudo técnico nem nota de retorno, ordem não está pronta
-        if (!testeCheck && !recebimento?.pdf_nota_retorno) {
+        if (!testeCheck && !pdfNotaRetorno) {
           toast.error("Esta ordem ainda não foi finalizada");
           navigate("/");
           return;
@@ -151,15 +150,19 @@ export default function LaudoPublico() {
 
         setTeste(testeData);
 
-        // Buscar fotos do equipamento
-        const { data: fotosData, error: fotosError } = await supabase
-          .from("fotos_equipamentos")
-          .select("id, arquivo_url, nome_arquivo")
-          .eq("recebimento_id", recebimento.id);
+        // Buscar fotos do equipamento (se houver recebimento associado)
+        let fotosData = [];
+        if (recebimentoId) {
+          const { data: fotos, error: fotosError } = await supabase
+            .from("fotos_equipamentos")
+            .select("id, arquivo_url, nome_arquivo")
+            .eq("recebimento_id", recebimentoId);
 
-        if (fotosError) throw fotosError;
+          if (fotosError) throw fotosError;
+          fotosData = fotos || [];
+        }
 
-        setFotos(fotosData || []);
+        setFotos(fotosData);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
         toast.error("Erro ao carregar laudo");

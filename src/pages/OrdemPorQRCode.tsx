@@ -18,27 +18,12 @@ export default function OrdemPorQRCode() {
       }
 
       try {
-        // Buscar recebimento pelo numero_ordem
-        const { data: recebimento, error: recebimentoError } = await supabase
-          .from("recebimentos")
-          .select("id, pdf_nota_retorno")
-          .eq("numero_ordem", numeroOrdem)
-          .maybeSingle();
-
-        if (recebimentoError) throw recebimentoError;
-
-        if (!recebimento) {
-          toast.error("Ordem não encontrada");
-          navigate("/");
-          return;
-        }
-
-        // Buscar ordem de serviço pelo recebimento_id
-        console.log("🔍 Buscando ordem com recebimento_id:", recebimento.id);
+        // Buscar ordem de serviço diretamente pelo numero_ordem
+        console.log("🔍 Buscando ordem com numero_ordem:", numeroOrdem);
         const { data: ordemServico, error: ordemError } = await supabase
           .from("ordens_servico")
-          .select("id, status")
-          .eq("recebimento_id", recebimento.id)
+          .select("id, status, recebimento_id")
+          .eq("numero_ordem", numeroOrdem)
           .maybeSingle();
 
         console.log("📦 Ordem encontrada:", ordemServico);
@@ -47,42 +32,54 @@ export default function OrdemPorQRCode() {
           throw ordemError;
         }
 
-        if (ordemServico) {
-          // Verificar se existe laudo técnico criado (teste) para a ordem
-          const { data: teste, error: testeError } = await supabase
-            .from("testes_equipamentos")
+        if (!ordemServico) {
+          toast.error("Ordem não encontrada");
+          navigate("/");
+          return;
+        }
+
+        // Buscar recebimento se existir (para verificar nota de retorno)
+        let pdfNotaRetorno = null;
+        if (ordemServico.recebimento_id) {
+          const { data: recebimento } = await supabase
+            .from("recebimentos")
+            .select("pdf_nota_retorno")
+            .eq("id", ordemServico.recebimento_id)
+            .maybeSingle();
+          
+          pdfNotaRetorno = recebimento?.pdf_nota_retorno;
+        }
+
+        // Verificar se existe laudo técnico criado (teste) para a ordem
+        const { data: teste, error: testeError } = await supabase
+          .from("testes_equipamentos")
+          .select("id")
+          .eq("ordem_servico_id", ordemServico.id)
+          .maybeSingle();
+
+        if (testeError) throw testeError;
+
+        // Se existe laudo técnico OU nota de retorno, permite acesso público
+        if (teste || pdfNotaRetorno) {
+          // Verificar se já existe registro de acesso no marketing
+          const { data: registroMarketing, error: marketingError } = await supabase
+            .from("clientes_marketing")
             .select("id")
             .eq("ordem_servico_id", ordemServico.id)
             .maybeSingle();
 
-          if (testeError) throw testeError;
+          if (marketingError) throw marketingError;
 
-          // Se existe laudo técnico OU nota de retorno, permite acesso público
-          if (teste || recebimento.pdf_nota_retorno) {
-            // Verificar se já existe registro de acesso no marketing
-            const { data: registroMarketing, error: marketingError } = await supabase
-              .from("clientes_marketing")
-              .select("id")
-              .eq("ordem_servico_id", ordemServico.id)
-              .maybeSingle();
-
-            if (marketingError) throw marketingError;
-
-            if (!registroMarketing) {
-              // Primeira vez acessando, redirecionar para formulário de captura
-              navigate(`/acesso-ordem/${numeroOrdem}`);
-            } else {
-              // Já preencheu o formulário antes, liberar acesso direto ao laudo
-              navigate(`/laudo-publico/${numeroOrdem}`);
-            }
+          if (!registroMarketing) {
+            // Primeira vez acessando, redirecionar para formulário de captura
+            navigate(`/acesso-ordem/${numeroOrdem}`);
           } else {
-            // Ordem não finalizada, bloquear acesso público
-            toast.error("Esta ordem ainda não possui laudo disponível");
-            navigate("/");
+            // Já preencheu o formulário antes, liberar acesso direto ao laudo
+            navigate(`/laudo-publico/${numeroOrdem}`);
           }
         } else {
-          // Se não existe ordem de serviço, ordem ainda não foi analisada
-          toast.error("Esta ordem ainda não foi analisada");
+          // Ordem não finalizada, bloquear acesso público
+          toast.error("Esta ordem ainda não possui laudo disponível");
           navigate("/");
         }
       } catch (error) {

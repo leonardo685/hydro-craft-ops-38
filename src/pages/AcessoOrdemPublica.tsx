@@ -50,33 +50,31 @@ export default function AcessoOrdemPublica() {
     setLoading(true);
 
     try {
-      // Buscar recebimento e ordem de serviço
-      const { data: recebimento, error: recebimentoError } = await supabase
-        .from("recebimentos")
-        .select("id, pdf_nota_retorno")
-        .eq("numero_ordem", numeroOrdem)
-        .maybeSingle();
-
-      if (recebimentoError) throw recebimentoError;
-
-      if (!recebimento) {
-        toast.error("Ordem não encontrada");
-        navigate("/");
-        return;
-      }
-
+      // Buscar ordem de serviço diretamente pelo numero_ordem
       const { data: ordemServico, error: ordemError } = await supabase
         .from("ordens_servico")
-        .select("id, status")
-        .eq("recebimento_id", recebimento.id)
+        .select("id, status, recebimento_id")
+        .eq("numero_ordem", numeroOrdem)
         .maybeSingle();
 
       if (ordemError) throw ordemError;
 
       if (!ordemServico) {
-        toast.error("Ordem de serviço não encontrada");
+        toast.error("Ordem não encontrada");
         navigate("/");
         return;
+      }
+
+      // Buscar recebimento se existir (para verificar nota de retorno)
+      let pdfNotaRetorno = null;
+      if (ordemServico.recebimento_id) {
+        const { data: recebimento } = await supabase
+          .from("recebimentos")
+          .select("pdf_nota_retorno")
+          .eq("id", ordemServico.recebimento_id)
+          .maybeSingle();
+        
+        pdfNotaRetorno = recebimento?.pdf_nota_retorno;
       }
 
       // Verificar se existe laudo técnico criado (teste) para a ordem
@@ -89,7 +87,7 @@ export default function AcessoOrdemPublica() {
       if (testeError) throw testeError;
 
       // Se não existe laudo técnico nem nota de retorno, ordem não está pronta
-      if (!teste && !recebimento?.pdf_nota_retorno) {
+      if (!teste && !pdfNotaRetorno) {
         toast.error("Esta ordem ainda não foi finalizada");
         navigate("/");
         return;
