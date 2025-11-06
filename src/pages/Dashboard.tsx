@@ -134,6 +134,97 @@ export default function Dashboard() {
   const [selectedQuarter, setSelectedQuarter] = useState<string>('Q1');
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
 
+  // Helper: Filtrar lançamentos por período selecionado
+  const getLancamentosFiltrados = useMemo(() => {
+    return lancamentos.filter(l => {
+      const dataLanc = new Date(l.dataEsperada);
+      
+      if (dashboardPeriodType === 'mes') {
+        return dataLanc.getMonth() === selectedMonth.getMonth() 
+          && dataLanc.getFullYear() === selectedMonth.getFullYear();
+      } else if (dashboardPeriodType === 'trimestre') {
+        const ano = parseInt(selectedYear);
+        const quarterMonths = {
+          'Q1': [0, 1, 2],
+          'Q2': [3, 4, 5],
+          'Q3': [6, 7, 8],
+          'Q4': [9, 10, 11]
+        };
+        return quarterMonths[selectedQuarter as keyof typeof quarterMonths].includes(dataLanc.getMonth())
+          && dataLanc.getFullYear() === ano;
+      } else { // ano
+        return dataLanc.getFullYear() === parseInt(selectedYear);
+      }
+    });
+  }, [lancamentos, dashboardPeriodType, selectedMonth, selectedQuarter, selectedYear]);
+
+  // Helper: Obter cor dinâmica por categoria
+  const getCorCategoria = (categoria: any, index: number): string => {
+    // Se já tem cor definida no banco e não é null, usar ela
+    if (categoria.cor) return categoria.cor;
+    
+    // Paletas de cores por tipo de categoria
+    const paletaReceitas = [
+      '#065f46', // verde escuro
+      '#047857',
+      '#059669',
+      '#10b981', // verde médio
+      '#34d399',
+      '#6ee7b7'  // verde claro
+    ];
+    
+    const paletaDespesas = [
+      '#991b1b', // vermelho escuro
+      '#dc2626',
+      '#ef4444', // vermelho médio
+      '#f87171',
+      '#fca5a5',
+      '#fecaca'  // vermelho claro
+    ];
+    
+    const paletaDespesasFixas = [
+      '#ea580c', // laranja escuro
+      '#f97316',
+      '#fb923c',
+      '#fdba74',
+      '#fed7aa'
+    ];
+    
+    const paletaInvestimentos = [
+      '#ca8a04', // amarelo escuro
+      '#eab308',
+      '#facc15',
+      '#fde047',
+      '#fef08a'
+    ];
+    
+    // Identificar tipo pela categoria
+    const codigo = categoria.codigo || '';
+    if (codigo.startsWith('1')) { // Receitas
+      return paletaReceitas[index % paletaReceitas.length];
+    } else if (codigo.startsWith('2')) { // Custos Variáveis
+      return paletaDespesas[index % paletaDespesas.length];
+    } else if (codigo.startsWith('3')) { // Despesas Fixas
+      return paletaDespesasFixas[index % paletaDespesasFixas.length];
+    } else if (codigo.startsWith('4')) { // Investimentos
+      return paletaInvestimentos[index % paletaInvestimentos.length];
+    }
+    
+    // Fallback para cores neutras
+    return ['#64748b', '#94a3b8', '#cbd5e1'][index % 3];
+  };
+
+  // Helper: Obter label do período selecionado
+  const getPeriodoLabel = (): string => {
+    if (dashboardPeriodType === 'mes') {
+      return selectedMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    } else if (dashboardPeriodType === 'trimestre') {
+      return `${selectedQuarter}/${selectedYear}`;
+    } else {
+      return selectedYear;
+    }
+  };
+
   // Calcular dados mensais a partir dos lançamentos reais - últimos 12 meses
   const monthlyData = useMemo(() => {
     const hoje = new Date();
@@ -239,62 +330,52 @@ export default function Dashboard() {
     }, 0);
   }, [contas, lancamentos]);
 
-  // Calcular impostos pagos do mês atual
-  const impostosPagosMes = useMemo(() => {
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
-    
-    return lancamentos
-      .filter(l => {
-        const data = new Date(l.dataEsperada);
-        return data.getMonth() === mesAtual 
-          && data.getFullYear() === anoAtual
-          && l.tipo === 'saida'
-          && l.pago
-          && l.descricao?.toLowerCase().includes('imposto');
-      })
+  // Calcular impostos pagos do período filtrado
+  const impostosPagosPeriodo = useMemo(() => {
+    return getLancamentosFiltrados
+      .filter(l => 
+        l.tipo === 'saida'
+        && l.pago
+        && l.descricao?.toLowerCase().includes('imposto')
+      )
       .reduce((acc, l) => acc + l.valor, 0);
-  }, [lancamentos]);
+  }, [getLancamentosFiltrados]);
 
-  // Calcular investimentos do mês atual (categoria 4)
-  const investimentosMes = useMemo(() => {
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
-    
-    return lancamentos
-      .filter(l => {
-        const data = new Date(l.dataEsperada);
-        return data.getMonth() === mesAtual 
-          && data.getFullYear() === anoAtual
-          && l.tipo === 'saida'
-          && l.categoriaId 
-          && categorias.find(c => c.id === l.categoriaId)?.codigo?.startsWith('4');
-      })
+  // Calcular investimentos do período filtrado (categoria 4)
+  const investimentosPeriodo = useMemo(() => {
+    return getLancamentosFiltrados
+      .filter(l => 
+        l.tipo === 'saida'
+        && l.categoriaId 
+        && categorias.find(c => c.id === l.categoriaId)?.codigo?.startsWith('4')
+      )
       .reduce((acc, l) => acc + l.valor, 0);
-  }, [lancamentos, categorias]);
+  }, [getLancamentosFiltrados, categorias]);
 
   // Calcular cards do dashboard com base no período selecionado
   const dashboardCards = useMemo(() => {
-    const dadosMesAtual = monthlyData[monthlyData.length - 1];
-    const dadosMesAnterior = monthlyData[monthlyData.length - 2];
-
-    const variacaoFaturamento = dadosMesAnterior?.faturamento > 0
-      ? ((dadosMesAtual.faturamento - dadosMesAnterior.faturamento) / dadosMesAnterior.faturamento) * 100
-      : 0;
-
-    const margemPercentual = dadosMesAtual.faturamento > 0
-      ? (dadosMesAtual.margemContribuicao / dadosMesAtual.faturamento) * 100
-      : 0;
-
-    const variacaoLucro = dadosMesAnterior?.lucroLiquido > 0
-      ? ((dadosMesAtual.lucroLiquido - dadosMesAnterior.lucroLiquido) / dadosMesAnterior.lucroLiquido) * 100
-      : 0;
-
-    const variacaoImpostos = impostosPagosMes > 0 ? 0 : 0;
-    const variacaoInvestimentos = investimentosMes > 0 ? 0 : 0;
-
+    // Receitas do período filtrado
+    const receitasPeriodo = getLancamentosFiltrados
+      .filter(l => l.tipo === 'entrada')
+      .reduce((acc, l) => acc + l.valor, 0);
+    
+    // Custos Variáveis do período filtrado (categoria 2)
+    const custosVariaveisPeriodo = getLancamentosFiltrados
+      .filter(l => l.tipo === 'saida' && l.categoriaId && categorias.find(c => c.id === l.categoriaId)?.codigo?.startsWith('2'))
+      .reduce((acc, l) => acc + l.valor, 0);
+    
+    // Despesas Fixas do período filtrado (categoria 3)
+    const despesasFixasPeriodo = getLancamentosFiltrados
+      .filter(l => l.tipo === 'saida' && l.categoriaId && categorias.find(c => c.id === l.categoriaId)?.codigo?.startsWith('3'))
+      .reduce((acc, l) => acc + l.valor, 0);
+    
+    // Margem de Contribuição
+    const margemContribuicao = receitasPeriodo - custosVariaveisPeriodo;
+    const margemPercentual = receitasPeriodo > 0 ? (margemContribuicao / receitasPeriodo) * 100 : 0;
+    
+    // Lucro Líquido
+    const lucroLiquido = margemContribuicao - despesasFixasPeriodo - investimentosPeriodo;
+    
     // Preparar dados dos mini gráficos (últimos 7 meses)
     const last7Months = monthlyData.slice(-7);
     
@@ -305,13 +386,13 @@ export default function Dashboard() {
         change: "",
         changeValue: 0,
         icon: DollarSign,
-        chartData: last7Months.map(m => ({ month: m.mes, value: saldoAtual })) // Simplificado
+        chartData: last7Months.map(m => ({ month: m.mes, value: saldoAtual }))
       },
       {
         title: "Faturamento Total",
-        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(dadosMesAtual.faturamento),
-        change: `${variacaoFaturamento >= 0 ? '+' : ''}${variacaoFaturamento.toFixed(1)}%`,
-        changeValue: variacaoFaturamento,
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(receitasPeriodo),
+        change: "",
+        changeValue: 0,
         icon: TrendingUp,
         chartData: last7Months.map(m => ({ month: m.mes, value: m.faturamento }))
       },
@@ -325,97 +406,79 @@ export default function Dashboard() {
       },
       {
         title: "Lucro Líquido",
-        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(dadosMesAtual.lucroLiquido),
-        change: `${variacaoLucro >= 0 ? '+' : ''}${variacaoLucro.toFixed(1)}%`,
-        changeValue: variacaoLucro,
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lucroLiquido),
+        change: "",
+        changeValue: 0,
         icon: TrendingUp,
         chartData: last7Months.map(m => ({ month: m.mes, value: m.lucroLiquido }))
       },
       {
-        title: "Impostos Pagos (Mês)",
-        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(impostosPagosMes),
+        title: "Impostos Pagos",
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(impostosPagosPeriodo),
         change: "",
-        changeValue: variacaoImpostos,
+        changeValue: 0,
         icon: Activity,
-        chartData: last7Months.map(m => ({ month: m.mes, value: impostosPagosMes })) // Simplificado
+        chartData: last7Months.map(m => ({ month: m.mes, value: 0 }))
       },
       {
-        title: "Investimentos (Mês)",
-        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(investimentosMes),
+        title: "Investimentos",
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(investimentosPeriodo),
         change: "",
-        changeValue: variacaoInvestimentos,
+        changeValue: 0,
         icon: Activity,
         chartData: last7Months.map(m => ({ month: m.mes, value: m.investimentos }))
       }
     ];
-  }, [monthlyData, saldoAtual, impostosPagosMes, investimentosMes]);
+  }, [getLancamentosFiltrados, categorias, monthlyData, saldoAtual, impostosPagosPeriodo, investimentosPeriodo]);
 
-  // Dados para gráfico de pizza - Categorias de Faturamento
+  // Dados para gráfico de pizza - Categorias de Faturamento (com filtro de período)
   const faturamentoPorCategoria = useMemo(() => {
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
+    const categoriaMap = new Map<string, { valor: number; categoria: any }>();
     
-    const categoriaMap = new Map<string, { valor: number; cor: string }>();
-    
-    lancamentos
-      .filter(l => {
-        const data = new Date(l.dataEsperada);
-        return data.getMonth() === mesAtual 
-          && data.getFullYear() === anoAtual
-          && l.tipo === 'entrada'
-          && l.categoriaId;
-      })
+    getLancamentosFiltrados
+      .filter(l => l.tipo === 'entrada' && l.categoriaId)
       .forEach(l => {
         const categoria = categorias.find(c => c.id === l.categoriaId);
         if (categoria) {
-          const atual = categoriaMap.get(categoria.nome) || { valor: 0, cor: categoria.cor || '#10b981' };
-          categoriaMap.set(categoria.nome, { valor: atual.valor + l.valor, cor: categoria.cor || '#10b981' });
+          const atual = categoriaMap.get(categoria.nome) || { valor: 0, categoria };
+          categoriaMap.set(categoria.nome, { valor: atual.valor + l.valor, categoria });
         }
       });
     
     return Array.from(categoriaMap.entries())
-      .map(([name, data]) => ({ 
+      .map(([name, data], index) => ({ 
         name, 
         value: data.valor,
-        fill: data.cor
+        fill: getCorCategoria(data.categoria, index)
       }))
       .sort((a, b) => b.value - a.value);
-  }, [lancamentos, categorias]);
+  }, [getLancamentosFiltrados, categorias]);
 
-  // Dados para gráfico de pizza - Categorias de Despesas Variáveis
+  // Dados para gráfico de pizza - Categorias de Despesas Variáveis (com filtro de período)
   const despesasVariaveisPorCategoria = useMemo(() => {
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
+    const categoriaMap = new Map<string, { valor: number; categoria: any }>();
     
-    const categoriaMap = new Map<string, { valor: number; cor: string }>();
-    
-    lancamentos
+    getLancamentosFiltrados
       .filter(l => {
-        const data = new Date(l.dataEsperada);
         const categoria = categorias.find(c => c.id === l.categoriaId);
-        return data.getMonth() === mesAtual 
-          && data.getFullYear() === anoAtual
-          && l.tipo === 'saida'
-          && categoria?.codigo?.startsWith('2'); // Categoria 2 = Custos Variáveis
+        return l.tipo === 'saida' && categoria?.codigo?.startsWith('2'); // Categoria 2 = Custos Variáveis
       })
       .forEach(l => {
         const categoria = categorias.find(c => c.id === l.categoriaId);
         if (categoria) {
-          const atual = categoriaMap.get(categoria.nome) || { valor: 0, cor: categoria.cor || '#fca5a5' };
-          categoriaMap.set(categoria.nome, { valor: atual.valor + l.valor, cor: categoria.cor || '#fca5a5' });
+          const atual = categoriaMap.get(categoria.nome) || { valor: 0, categoria };
+          categoriaMap.set(categoria.nome, { valor: atual.valor + l.valor, categoria });
         }
       });
     
     return Array.from(categoriaMap.entries())
-      .map(([name, data]) => ({ 
+      .map(([name, data], index) => ({ 
         name, 
         value: data.valor,
-        fill: data.cor
+        fill: getCorCategoria(data.categoria, index)
       }))
       .sort((a, b) => b.value - a.value);
-  }, [lancamentos, categorias]);
+  }, [getLancamentosFiltrados, categorias]);
 
   // Configuração de cores para os gráficos de pizza
   const faturamentoChartConfig = useMemo(() => {
@@ -551,10 +614,6 @@ export default function Dashboard() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-transparent">Aplicar</label>
-                <Button className="w-full">Aplicar Filtro</Button>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -602,7 +661,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Faturamento por Categoria - Mês Atual</CardTitle>
+              <CardTitle>Faturamento por Categoria - {getPeriodoLabel()}</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -611,7 +670,7 @@ export default function Dashboard() {
                 </div>
               ) : faturamentoPorCategoria.length === 0 ? (
                 <div className="flex items-center justify-center h-80 text-muted-foreground">
-                  Nenhum dado disponível para o mês atual.
+                  Nenhum dado disponível para o período selecionado.
                 </div>
               ) : (
                 <ChartContainer
@@ -666,7 +725,7 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Despesas Variáveis por Categoria - Mês Atual</CardTitle>
+              <CardTitle>Despesas Variáveis por Categoria - {getPeriodoLabel()}</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -675,7 +734,7 @@ export default function Dashboard() {
                 </div>
               ) : despesasVariaveisPorCategoria.length === 0 ? (
                 <div className="flex items-center justify-center h-80 text-muted-foreground">
-                  Nenhum dado disponível para o mês atual.
+                  Nenhum dado disponível para o período selecionado.
                 </div>
               ) : (
                 <ChartContainer
