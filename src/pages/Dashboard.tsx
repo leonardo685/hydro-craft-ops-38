@@ -515,6 +515,22 @@ export default function Dashboard() {
   const despesasVariaveisPorCategoria = useMemo(() => {
     const categoriaMap = new Map<string, { valor: number; categoria: any }>();
     
+    // Paleta expandida de tons de vermelho para despesas variáveis
+    const paletaVermelho = [
+      '#7f1d1d', // vermelho muito escuro
+      '#991b1b', // vermelho escuro
+      '#b91c1c', // vermelho escuro médio
+      '#dc2626', // vermelho
+      '#ef4444', // vermelho médio
+      '#f87171', // vermelho claro
+      '#fca5a5', // vermelho mais claro
+      '#fecaca', // vermelho bem claro
+      '#fee2e2', // vermelho muito claro
+      '#9f1239', // rosa escuro
+      '#e11d48', // rosa médio
+      '#f43f5e', // rosa
+    ];
+    
     getLancamentosFiltrados
       .filter(l => {
         const categoria = categorias.find(c => c.id === l.categoriaId);
@@ -532,9 +548,9 @@ export default function Dashboard() {
       .map(([name, data], index) => ({ 
         name, 
         value: data.valor,
-        fill: getCorCategoria(data.categoria, index)
+        fill: paletaVermelho[index % paletaVermelho.length] // Usar paleta de vermelhos
       }))
-      .sort((a, b) => b.value - a.value);
+      .sort((a, b) => b.value - a.value); // Ordena do maior para o menor
   }, [getLancamentosFiltrados, categorias]);
 
   // Configuração de cores para os gráficos de pizza
