@@ -354,9 +354,13 @@ export default function Dashboard() {
 
   // Calcular cards do dashboard com base no período selecionado
   const dashboardCards = useMemo(() => {
-    // Receitas do período filtrado
+    // Receitas Operacionais do período filtrado (APENAS categoria 1 - igual ao DRE)
+    const categoriaReceitasOperacionais = categorias.find(c => c.tipo === 'mae' && c.codigo === '1');
+    const categoriasReceitasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === categoriaReceitasOperacionais?.id);
+    const idsReceitasOperacionais = categoriasReceitasFilhas.map(c => c.id);
+    
     const receitasPeriodo = getLancamentosFiltrados
-      .filter(l => l.tipo === 'entrada')
+      .filter(l => l.tipo === 'entrada' && l.categoriaId && idsReceitasOperacionais.includes(l.categoriaId))
       .reduce((acc, l) => acc + l.valor, 0);
     
     // Custos Variáveis do período filtrado (categoria 2)
