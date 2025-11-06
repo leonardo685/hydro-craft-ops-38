@@ -137,7 +137,14 @@ export default function Dashboard() {
   // Helper: Filtrar lançamentos por período selecionado
   const getLancamentosFiltrados = useMemo(() => {
     return lancamentos.filter(l => {
-      const dataLanc = new Date(l.dataEsperada);
+      // Mesma lógica do DRE: híbrida de competência
+      const ehRecorrencia = !!l.frequenciaRepeticao;
+      const dataReferencia = ehRecorrencia ? l.dataEsperada : l.dataEmissao;
+      
+      // Validar se a data de referência existe
+      if (!dataReferencia) return false;
+      
+      const dataLanc = new Date(dataReferencia);
       
       if (dashboardPeriodType === 'mes') {
         return dataLanc.getMonth() === selectedMonth.getMonth() 
