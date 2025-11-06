@@ -290,14 +290,14 @@ export default function Aprovados() {
         {ordemSelecionada && <UploadProdutoProntoModal open={uploadModalOpen} onOpenChange={setUploadModalOpen} ordem={ordemSelecionada} onConfirm={async () => {
         try {
           // Determinar status baseado em orcamento_id e recebimento_id
-          let novoStatus = 'finalizado';
+          let novoStatus = 'finalizada';
           
           if (ordemSelecionada.orcamento_id) {
-            // Se tem orçamento vinculado, vai direto para finalizado
-            novoStatus = 'finalizado';
+            // Se tem orçamento vinculado, vai direto para finalizada
+            novoStatus = 'finalizada';
           } else if (!ordemSelecionada.recebimento_id) {
-            // Sem orçamento e sem recebimento, vai para faturamento (nota de retorno)
-            novoStatus = 'aguardando_faturamento_sem_retorno';
+            // Sem orçamento e sem recebimento, vai para faturado (precisa emitir NF de retorno)
+            novoStatus = 'faturado';
           } else {
             // Com recebimento mas sem orçamento, vai para aguardando retorno
             novoStatus = 'aguardando_retorno';
