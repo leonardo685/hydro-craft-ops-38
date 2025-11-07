@@ -3090,14 +3090,13 @@ export default function NovoOrcamento() {
                 <Label htmlFor="prazoEntrega">Prazo de Entrega (dias)</Label>
                 <Input 
                   id="prazoEntrega" 
-                  type="number"
-                  min="1"
+                  type="text"
                   value={informacoesComerciais.prazoEntrega} 
                   onChange={e => setInformacoesComerciais(prev => ({
                     ...prev,
                     prazoEntrega: e.target.value
                   }))} 
-                  placeholder="5"
+                  placeholder="Ex: 5 dias ou 1 semana"
                 />
               </div>
               <div>
