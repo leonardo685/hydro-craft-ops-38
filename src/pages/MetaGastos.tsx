@@ -294,7 +294,7 @@ export default function MetaGastos() {
     const totalDespesas = totalDespesasBase * (1 + planejamento.ajusteDespesas / 100);
     
     const metaMargemReais = totalFaturamento * (planejamento.ajusteMargemContribuicao / 100);
-    const custosVariaveisMaximo = totalFaturamento - totalDespesas - metaMargemReais;
+    const custosVariaveisMaximo = totalFaturamento - metaMargemReais;
     const percentualCustosVariaveis = totalFaturamento > 0 ? custosVariaveisMaximo / totalFaturamento : 0;
     const pontoEquilibrio = percentualCustosVariaveis < 1 ? totalDespesas / (1 - percentualCustosVariaveis) : 0;
     const lucroOperacional = totalFaturamento - totalDespesas - custosVariaveisMaximo;
