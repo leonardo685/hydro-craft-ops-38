@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Target, Plus, Pencil, Trash2, TrendingUp, TrendingDown, AlertTriangle, ArrowUp, ArrowDown, Calculator, DollarSign } from "lucide-react";
+import { Target, Plus, Pencil, Trash2, TrendingUp, TrendingDown, AlertTriangle, ArrowUp, ArrowDown, Calculator, DollarSign, FileDown } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
@@ -22,6 +22,7 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
+import jsPDF from "jspdf";
 
 interface MetaGasto {
   id: string;
@@ -490,6 +491,320 @@ export default function MetaGastos() {
     setCalcOpen(true);
   };
 
+  // Função para gerar PDF do Planejamento
+  const gerarPDFPlanejamento = async () => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      let yPosition = 20;
+
+      // Função helper para quebra de linha
+      const desenharCelulaComQuebraLinha = (
+        texto: string,
+        x: number,
+        y: number,
+        largura: number,
+        alturaMinima: number = 8
+      ): number => {
+        const maxWidth = largura - 4;
+        const lineHeight = 4;
+        const cellPadding = 2;
+        
+        const textLines = doc.splitTextToSize(texto, maxWidth);
+        const alturaCalculada = Math.max(alturaMinima, textLines.length * lineHeight + cellPadding * 2);
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(x, y, largura, alturaCalculada);
+        
+        textLines.forEach((line: string, index: number) => {
+          const textY = y + 5 + (index * lineHeight);
+          doc.text(line, x + cellPadding, textY);
+        });
+        
+        return alturaCalculada;
+      };
+
+      const adicionarNovaPagina = () => {
+        doc.addPage();
+        yPosition = 20;
+      };
+
+      const verificarEspaco = (espacoNecessario: number) => {
+        if (yPosition + espacoNecessario > doc.internal.pageSize.height - 20) {
+          adicionarNovaPagina();
+        }
+      };
+
+      // === CABEÇALHO ===
+      doc.setFillColor(41, 128, 185);
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("PLANEJAMENTO ESTRATÉGICO FINANCEIRO", pageWidth / 2, 15, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, pageWidth / 2, 25, { align: 'center' });
+      
+      yPosition = 45;
+      doc.setTextColor(0, 0, 0);
+
+      // === FATURAMENTOS ===
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(41, 128, 185);
+      doc.text("1. FATURAMENTOS", 20, yPosition);
+      yPosition += 8;
+
+      if (planejamento.faturamentos.length > 0) {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setDrawColor(200, 200, 200);
+        
+        // Cabeçalho da tabela
+        doc.rect(20, yPosition, pageWidth - 40, 8);
+        doc.text("Descrição", 22, yPosition + 5.5);
+        doc.text("Valor", pageWidth - 60, yPosition + 5.5);
+        yPosition += 8;
+
+        doc.setFont("helvetica", "normal");
+        planejamento.faturamentos.forEach(item => {
+          verificarEspaco(8);
+          doc.rect(20, yPosition, pageWidth - 40, 8);
+          doc.text(item.descricao, 22, yPosition + 5.5);
+          doc.text(formatCurrency(item.valor), pageWidth - 60, yPosition + 5.5);
+          yPosition += 8;
+        });
+
+        // Total
+        doc.setFont("helvetica", "bold");
+        doc.rect(20, yPosition, pageWidth - 40, 8);
+        doc.text("TOTAL", 22, yPosition + 5.5);
+        doc.text(formatCurrency(calcularTotais.totalFaturamentoBase), pageWidth - 60, yPosition + 5.5);
+        yPosition += 8;
+      } else {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "italic");
+        doc.text("Nenhum faturamento cadastrado", 22, yPosition + 5);
+        yPosition += 8;
+      }
+
+      yPosition += 5;
+
+      // === DESPESAS FIXAS ===
+      verificarEspaco(20);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(41, 128, 185);
+      doc.text("2. DESPESAS FIXAS", 20, yPosition);
+      yPosition += 8;
+
+      if (planejamento.despesasFixas.length > 0) {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        
+        doc.rect(20, yPosition, pageWidth - 40, 8);
+        doc.text("Descrição", 22, yPosition + 5.5);
+        doc.text("Valor", pageWidth - 60, yPosition + 5.5);
+        yPosition += 8;
+
+        doc.setFont("helvetica", "normal");
+        planejamento.despesasFixas.forEach(item => {
+          verificarEspaco(8);
+          doc.rect(20, yPosition, pageWidth - 40, 8);
+          doc.text(item.descricao, 22, yPosition + 5.5);
+          doc.text(formatCurrency(item.valor), pageWidth - 60, yPosition + 5.5);
+          yPosition += 8;
+        });
+
+        doc.setFont("helvetica", "bold");
+        doc.rect(20, yPosition, pageWidth - 40, 8);
+        doc.text("TOTAL", 22, yPosition + 5.5);
+        doc.text(formatCurrency(calcularTotais.totalDespesasBase), pageWidth - 60, yPosition + 5.5);
+        yPosition += 8;
+      } else {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "italic");
+        doc.text("Nenhuma despesa fixa cadastrada", 22, yPosition + 5);
+        yPosition += 8;
+      }
+
+      yPosition += 5;
+
+      // === DESPESAS NÃO OPERACIONAIS ===
+      verificarEspaco(20);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(41, 128, 185);
+      doc.text("3. DESPESAS NÃO OPERACIONAIS", 20, yPosition);
+      yPosition += 8;
+
+      if (planejamento.despesasNaoOperacionais.length > 0) {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        
+        doc.rect(20, yPosition, pageWidth - 40, 8);
+        doc.text("Descrição", 22, yPosition + 5.5);
+        doc.text("Valor", pageWidth - 60, yPosition + 5.5);
+        yPosition += 8;
+
+        doc.setFont("helvetica", "normal");
+        planejamento.despesasNaoOperacionais.forEach(item => {
+          verificarEspaco(8);
+          doc.rect(20, yPosition, pageWidth - 40, 8);
+          doc.text(item.descricao, 22, yPosition + 5.5);
+          doc.text(formatCurrency(item.valor), pageWidth - 60, yPosition + 5.5);
+          yPosition += 8;
+        });
+
+        doc.setFont("helvetica", "bold");
+        doc.rect(20, yPosition, pageWidth - 40, 8);
+        doc.text("TOTAL", 22, yPosition + 5.5);
+        doc.text(formatCurrency(calcularTotais.totalDespesasNaoOp), pageWidth - 60, yPosition + 5.5);
+        yPosition += 8;
+      } else {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "italic");
+        doc.text("Nenhuma despesa não operacional cadastrada", 22, yPosition + 5);
+        yPosition += 8;
+      }
+
+      yPosition += 5;
+
+      // === INVESTIMENTOS ===
+      verificarEspaco(20);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(41, 128, 185);
+      doc.text("4. INVESTIMENTOS", 20, yPosition);
+      yPosition += 8;
+
+      if (planejamento.investimentos.length > 0) {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        
+        doc.rect(20, yPosition, pageWidth - 40, 8);
+        doc.text("Descrição", 22, yPosition + 5.5);
+        doc.text("Valor", pageWidth - 60, yPosition + 5.5);
+        yPosition += 8;
+
+        doc.setFont("helvetica", "normal");
+        planejamento.investimentos.forEach(item => {
+          verificarEspaco(8);
+          doc.rect(20, yPosition, pageWidth - 40, 8);
+          doc.text(item.descricao, 22, yPosition + 5.5);
+          doc.text(formatCurrency(item.valor), pageWidth - 60, yPosition + 5.5);
+          yPosition += 8;
+        });
+
+        doc.setFont("helvetica", "bold");
+        doc.rect(20, yPosition, pageWidth - 40, 8);
+        doc.text("TOTAL", 22, yPosition + 5.5);
+        doc.text(formatCurrency(calcularTotais.totalInvestimentos), pageWidth - 60, yPosition + 5.5);
+        yPosition += 8;
+      } else {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "italic");
+        doc.text("Nenhum investimento cadastrado", 22, yPosition + 5);
+        yPosition += 8;
+      }
+
+      yPosition += 10;
+
+      // === ANÁLISE FINANCEIRA ===
+      verificarEspaco(60);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(41, 128, 185);
+      doc.text("5. ANÁLISE FINANCEIRA", 20, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(0, 0, 0);
+
+      const indicadores = [
+        { label: "Faturamento Ajustado", valor: calcularTotais.totalFaturamento, ajuste: `(${planejamento.ajusteFaturamento > 0 ? '+' : ''}${planejamento.ajusteFaturamento}%)` },
+        { label: "Despesas Fixas Ajustadas", valor: calcularTotais.totalDespesas, ajuste: `(${planejamento.ajusteDespesas > 0 ? '+' : ''}${planejamento.ajusteDespesas}%)` },
+        { label: "Meta de Margem de Contribuição", valor: calcularTotais.metaMargemReais, ajuste: `(${planejamento.ajusteMargemContribuicao}%)` },
+        { label: "Custos Variáveis Máximo", valor: calcularTotais.custosVariaveisMaximo, ajuste: `(${(calcularTotais.percentualCustosVariaveis * 100).toFixed(1)}%)` },
+        { label: "Ponto de Equilíbrio", valor: calcularTotais.pontoEquilibrio, ajuste: "" },
+        { label: "Margem de Lucro Operacional", valor: calcularTotais.margemLucroOperacional, ajuste: "%", isPercentual: true },
+        { label: "Índice de Lucratividade", valor: calcularTotais.indiceLucratividade, ajuste: "x", isMultiplicador: true },
+      ];
+
+      indicadores.forEach((item: any) => {
+        verificarEspaco(8);
+        const altura = desenharCelulaComQuebraLinha(
+          item.label,
+          20,
+          yPosition,
+          (pageWidth - 40) * 0.6,
+          8
+        );
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(20 + (pageWidth - 40) * 0.6, yPosition, (pageWidth - 40) * 0.4, altura);
+        
+        let valorTexto = '';
+        if (item.isPercentual) {
+          valorTexto = `${item.valor.toFixed(2)}${item.ajuste}`;
+        } else if (item.isMultiplicador) {
+          valorTexto = `${item.valor.toFixed(2)}${item.ajuste}`;
+        } else {
+          valorTexto = `${formatCurrency(item.valor)} ${item.ajuste}`;
+        }
+        
+        doc.text(valorTexto, 22 + (pageWidth - 40) * 0.6, yPosition + 5.5);
+        yPosition += altura;
+      });
+
+      yPosition += 10;
+
+      // === RESULTADO FINAL ===
+      verificarEspaco(30);
+      doc.setFillColor(240, 248, 255);
+      doc.rect(20, yPosition, pageWidth - 40, 25, 'F');
+      
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(41, 128, 185);
+      doc.text("LUCRO LÍQUIDO PROJETADO", pageWidth / 2, yPosition + 8, { align: 'center' });
+      
+      doc.setFontSize(16);
+      const lucroColor = calcularTotais.lucroLiquido >= 0 ? [34, 139, 34] : [220, 53, 69];
+      doc.setTextColor(lucroColor[0], lucroColor[1], lucroColor[2]);
+      doc.text(formatCurrency(calcularTotais.lucroLiquido), pageWidth / 2, yPosition + 18, { align: 'center' });
+      
+      yPosition += 30;
+
+      // === RODAPÉ ===
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(
+          `Página ${i} de ${totalPages} - Gerado em ${new Date().toLocaleString('pt-BR')}`,
+          pageWidth / 2,
+          doc.internal.pageSize.height - 10,
+          { align: 'center' }
+        );
+      }
+
+      doc.save(`Planejamento-Estrategico-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
+      toast.success("PDF gerado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.error("Erro ao gerar PDF");
+    }
+  };
+
   // Componente Popover da Calculadora
   const CalculadoraPopover = ({ tipo }: { tipo: 'despesa' | 'faturamento' | 'despesaNaoOp' | 'investimento' }) => (
     <Popover open={calcOpen} onOpenChange={setCalcOpen}>
@@ -887,6 +1202,18 @@ export default function MetaGastos() {
 
           {/* ABA 2: PLANEJAMENTO ESTRATÉGICO */}
           <TabsContent value="estrategico" className="space-y-6">
+            {/* Header com botão de exportar */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold">Simulação Financeira</h3>
+                <p className="text-sm text-muted-foreground">Planeje cenários e analise a viabilidade financeira</p>
+              </div>
+              <Button onClick={gerarPDFPlanejamento} variant="outline" className="gap-2">
+                <FileDown className="h-4 w-4" />
+                Exportar PDF
+              </Button>
+            </div>
+
             {/* Seção 1: Formulários de Entrada */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
