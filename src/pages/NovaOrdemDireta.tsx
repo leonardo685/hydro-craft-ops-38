@@ -602,7 +602,6 @@ const NovaOrdemDireta = () => {
                     <SelectValue placeholder="Nenhum orçamento vinculado" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
                     {orcamentosDisponiveis.map(orc => (
                       <SelectItem key={orc.id} value={orc.id}>
                         {orc.numero} - {orc.cliente_nome} - {orc.equipamento} - R$ {orc.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
