@@ -90,7 +90,7 @@ const menuItems = [
       { title: "Dashboard", url: "/financeiro/dashboard", permission: "financeiro_dashboard" },
       { title: "DRE", url: "/financeiro/dre", permission: "financeiro_dre" },
       { title: "DFC", url: "/financeiro/dfc", permission: "financeiro_dfc" },
-      { title: "Meta de Gastos", url: "/financeiro/meta-gastos", permission: "financeiro_metas" },
+      { title: "Planejamento", url: "/financeiro/meta-gastos", permission: "financeiro_metas" },
     ]
   },
 ];

@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Target, Plus, Pencil, Trash2, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Target, Plus, Pencil, Trash2, TrendingUp, TrendingDown, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
@@ -34,6 +35,20 @@ interface MetaGasto {
   observacoes?: string;
 }
 
+interface ItemPlanejamento {
+  id: string;
+  descricao: string;
+  valor: number;
+}
+
+interface DadosPlanejamento {
+  despesasFixas: ItemPlanejamento[];
+  faturamentos: ItemPlanejamento[];
+  ajusteFaturamento: number;
+  ajusteDespesas: number;
+  ajusteMargemContribuicao: number;
+}
+
 export default function MetaGastos() {
   const [modeloGestao, setModeloGestao] = useState<'dre' | 'esperado' | 'realizado'>('realizado');
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
@@ -54,6 +69,18 @@ export default function MetaGastos() {
     dataFim: new Date(),
     observacoes: ''
   });
+
+  // Estados para Planejamento Estratégico
+  const [planejamento, setPlanejamento] = useState<DadosPlanejamento>({
+    despesasFixas: [],
+    faturamentos: [],
+    ajusteFaturamento: 0,
+    ajusteDespesas: 0,
+    ajusteMargemContribuicao: 30
+  });
+
+  const [formDespesa, setFormDespesa] = useState({ descricao: '', valor: '' });
+  const [formFaturamento, setFormFaturamento] = useState({ descricao: '', valor: '' });
 
   // Calcular valor gasto para cada meta baseado no modelo de gestão selecionado
   const metasComGastos = useMemo(() => {
@@ -244,13 +271,118 @@ export default function MetaGastos() {
   const totalGasto = metasComGastos.reduce((acc, meta) => acc + meta.valorGasto, 0);
   const disponivel = totalMetas - totalGasto;
 
+  // Cálculos do Planejamento Estratégico
+  const calcularTotais = useMemo(() => {
+    const totalFaturamentoBase = planejamento.faturamentos.reduce((acc, f) => acc + f.valor, 0);
+    const totalDespesasBase = planejamento.despesasFixas.reduce((acc, d) => acc + d.valor, 0);
+    
+    const totalFaturamento = totalFaturamentoBase * (1 + planejamento.ajusteFaturamento / 100);
+    const totalDespesas = totalDespesasBase * (1 + planejamento.ajusteDespesas / 100);
+    
+    const metaMargemReais = totalFaturamento * (planejamento.ajusteMargemContribuicao / 100);
+    const custosVariaveisMaximo = totalFaturamento - totalDespesas - metaMargemReais;
+    const percentualCustosVariaveis = totalFaturamento > 0 ? custosVariaveisMaximo / totalFaturamento : 0;
+    const pontoEquilibrio = percentualCustosVariaveis < 1 ? totalDespesas / (1 - percentualCustosVariaveis) : 0;
+    const lucroOperacional = totalFaturamento - totalDespesas - custosVariaveisMaximo;
+    const margemLucroOperacional = totalFaturamento > 0 ? (lucroOperacional / totalFaturamento) * 100 : 0;
+    const indiceLucratividade = totalDespesas > 0 ? lucroOperacional / totalDespesas : 0;
+    
+    return {
+      totalFaturamento,
+      totalDespesas,
+      metaMargemReais,
+      custosVariaveisMaximo,
+      percentualCustosVariaveis,
+      pontoEquilibrio,
+      lucroOperacional,
+      margemLucroOperacional,
+      indiceLucratividade,
+      totalFaturamentoBase,
+      totalDespesasBase
+    };
+  }, [planejamento]);
+
+  // Funções para gerenciar despesas fixas
+  const adicionarDespesa = () => {
+    if (!formDespesa.descricao || !formDespesa.valor) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+    
+    const novaDespesa: ItemPlanejamento = {
+      id: Date.now().toString(),
+      descricao: formDespesa.descricao,
+      valor: parseFloat(formDespesa.valor)
+    };
+    
+    setPlanejamento(prev => ({
+      ...prev,
+      despesasFixas: [...prev.despesasFixas, novaDespesa]
+    }));
+    
+    setFormDespesa({ descricao: '', valor: '' });
+    toast.success("Despesa adicionada");
+  };
+
+  const removerDespesa = (id: string) => {
+    setPlanejamento(prev => ({
+      ...prev,
+      despesasFixas: prev.despesasFixas.filter(d => d.id !== id)
+    }));
+    toast.success("Despesa removida");
+  };
+
+  // Funções para gerenciar faturamento
+  const adicionarFaturamento = () => {
+    if (!formFaturamento.descricao || !formFaturamento.valor) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+    
+    const novoFaturamento: ItemPlanejamento = {
+      id: Date.now().toString(),
+      descricao: formFaturamento.descricao,
+      valor: parseFloat(formFaturamento.valor)
+    };
+    
+    setPlanejamento(prev => ({
+      ...prev,
+      faturamentos: [...prev.faturamentos, novoFaturamento]
+    }));
+    
+    setFormFaturamento({ descricao: '', valor: '' });
+    toast.success("Faturamento adicionado");
+  };
+
+  const removerFaturamento = (id: string) => {
+    setPlanejamento(prev => ({
+      ...prev,
+      faturamentos: prev.faturamentos.filter(f => f.id !== id)
+    }));
+    toast.success("Faturamento removido");
+  };
+
+  // Funções para ajustar percentuais
+  const ajustarPercentual = (tipo: 'faturamento' | 'despesas' | 'margem', incremento: number) => {
+    setPlanejamento(prev => {
+      if (tipo === 'faturamento') {
+        return { ...prev, ajusteFaturamento: prev.ajusteFaturamento + incremento };
+      } else if (tipo === 'despesas') {
+        return { ...prev, ajusteDespesas: prev.ajusteDespesas + incremento };
+      } else {
+        const novoValor = prev.ajusteMargemContribuicao + incremento;
+        return { ...prev, ajusteMargemContribuicao: Math.max(0, Math.min(100, novoValor)) };
+      }
+    });
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Meta de Gastos</h1>
-            <p className="text-muted-foreground">Gerencie suas metas de gastos por categoria</p>
+            <h1 className="text-3xl font-bold">Planejamento</h1>
+            <p className="text-muted-foreground">Gerencie metas e simulações estratégicas</p>
           </div>
           <div className="flex items-center gap-3">
             <Select value={modeloGestao} onValueChange={(value: 'dre' | 'esperado' | 'realizado') => setModeloGestao(value)}>
@@ -384,56 +516,64 @@ export default function MetaGastos() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-l-4 border-l-primary">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-primary" />
-                <CardTitle className="text-base font-medium">Total de Metas</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="text-3xl font-bold text-primary">
-                {formatCurrency(totalMetas)}
-              </div>
-              <p className="text-sm text-muted-foreground">{metasComGastos.length} metas cadastradas</p>
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="metas" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="metas">Metas de Gastos</TabsTrigger>
+            <TabsTrigger value="estrategico">Planejamento Estratégico</TabsTrigger>
+          </TabsList>
 
-          <Card className="border-l-4 border-l-red-500">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2 text-destructive">
-                <TrendingDown className="h-5 w-5" />
-                <CardTitle className="text-base font-medium">Total Gasto</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="text-3xl font-bold text-destructive">
-                {formatCurrency(totalGasto)}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {((totalGasto / totalMetas) * 100).toFixed(1)}% das metas
-              </p>
-            </CardContent>
-          </Card>
+          {/* ABA 1: METAS DE GASTOS */}
+          <TabsContent value="metas" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="border-l-4 border-l-primary">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-base font-medium">Total de Metas</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="text-3xl font-bold text-primary">
+                    {formatCurrency(totalMetas)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">{metasComGastos.length} metas cadastradas</p>
+                </CardContent>
+              </Card>
 
-          <Card className="border-l-4 border-l-green-500">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2 text-green-600">
-                <TrendingUp className="h-5 w-5" />
-                <CardTitle className="text-base font-medium">Disponível</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="text-3xl font-bold text-green-600">
-                {formatCurrency(disponivel)}
-              </div>
-              <p className="text-sm text-muted-foreground">Saldo restante</p>
-            </CardContent>
-          </Card>
-        </div>
+              <Card className="border-l-4 border-l-red-500">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 text-destructive">
+                    <TrendingDown className="h-5 w-5" />
+                    <CardTitle className="text-base font-medium">Total Gasto</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="text-3xl font-bold text-destructive">
+                    {formatCurrency(totalGasto)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {((totalGasto / totalMetas) * 100).toFixed(1)}% das metas
+                  </p>
+                </CardContent>
+              </Card>
 
-        <Card>
+              <Card className="border-l-4 border-l-green-500">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 text-green-600">
+                    <TrendingUp className="h-5 w-5" />
+                    <CardTitle className="text-base font-medium">Disponível</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="text-3xl font-bold text-green-600">
+                    {formatCurrency(disponivel)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Saldo restante</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
           <CardHeader>
             <CardTitle>Metas de Gastos</CardTitle>
             <div className="flex gap-2 mt-4">
@@ -559,6 +699,351 @@ export default function MetaGastos() {
             </Table>
           </CardContent>
         </Card>
+          </TabsContent>
+
+          {/* ABA 2: PLANEJAMENTO ESTRATÉGICO */}
+          <TabsContent value="estrategico" className="space-y-6">
+            {/* Seção 1: Formulários de Entrada */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Formulário Despesas Fixas */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Despesas Fixas Médias</CardTitle>
+                  <p className="text-sm text-muted-foreground">Registre as despesas fixas do último ano</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="Descrição (ex: Aluguel)"
+                      value={formDespesa.descricao}
+                      onChange={(e) => setFormDespesa(prev => ({ ...prev, descricao: e.target.value }))}
+                    />
+                    <Input 
+                      type="number"
+                      placeholder="Valor"
+                      value={formDespesa.valor}
+                      onChange={(e) => setFormDespesa(prev => ({ ...prev, valor: e.target.value }))}
+                      className="w-32"
+                    />
+                    <Button onClick={adicionarDespesa}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {planejamento.despesasFixas.length > 0 && (
+                    <div className="border rounded-lg">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Descrição</TableHead>
+                            <TableHead className="text-right">Valor</TableHead>
+                            <TableHead className="w-12"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {planejamento.despesasFixas.map(despesa => (
+                            <TableRow key={despesa.id}>
+                              <TableCell>{despesa.descricao}</TableCell>
+                              <TableCell className="text-right font-medium">
+                                {formatCurrency(despesa.valor)}
+                              </TableCell>
+                              <TableCell>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => removerDespesa(despesa.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Formulário Faturamento */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Faturamento do Último Ano</CardTitle>
+                  <p className="text-sm text-muted-foreground">Registre o faturamento por fonte</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="Descrição (ex: Vendas Produto A)"
+                      value={formFaturamento.descricao}
+                      onChange={(e) => setFormFaturamento(prev => ({ ...prev, descricao: e.target.value }))}
+                    />
+                    <Input 
+                      type="number"
+                      placeholder="Valor"
+                      value={formFaturamento.valor}
+                      onChange={(e) => setFormFaturamento(prev => ({ ...prev, valor: e.target.value }))}
+                      className="w-32"
+                    />
+                    <Button onClick={adicionarFaturamento}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {planejamento.faturamentos.length > 0 && (
+                    <div className="border rounded-lg">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Descrição</TableHead>
+                            <TableHead className="text-right">Valor</TableHead>
+                            <TableHead className="w-12"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {planejamento.faturamentos.map(fat => (
+                            <TableRow key={fat.id}>
+                              <TableCell>{fat.descricao}</TableCell>
+                              <TableCell className="text-right font-medium">
+                                {formatCurrency(fat.valor)}
+                              </TableCell>
+                              <TableCell>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => removerFaturamento(fat.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Seção 2: Cards de Simulação com Botões de Ajuste */}
+            {(planejamento.despesasFixas.length > 0 || planejamento.faturamentos.length > 0) && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  
+                  {/* Card 1: Faturamento com Ajuste */}
+                  <Card className="border-l-4 border-l-green-500">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Faturamento Total</CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        Base: {formatCurrency(calcularTotais.totalFaturamentoBase)}
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="text-2xl font-bold text-green-600">
+                        {formatCurrency(calcularTotais.totalFaturamento)}
+                      </div>
+                      
+                      <div className="flex items-center justify-between gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => ajustarPercentual('faturamento', -0.5)}
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                        </Button>
+                        
+                        <div className="text-center">
+                          <div className="text-lg font-semibold">
+                            {planejamento.ajusteFaturamento > 0 ? '+' : ''}
+                            {planejamento.ajusteFaturamento.toFixed(1)}%
+                          </div>
+                          <div className="text-xs text-muted-foreground">Ajuste</div>
+                        </div>
+                        
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => ajustarPercentual('faturamento', 0.5)}
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Card 2: Despesas Fixas com Ajuste */}
+                  <Card className="border-l-4 border-l-red-500">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Despesas Fixas</CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        Base: {formatCurrency(calcularTotais.totalDespesasBase)}
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="text-2xl font-bold text-red-600">
+                        {formatCurrency(calcularTotais.totalDespesas)}
+                      </div>
+                      
+                      <div className="flex items-center justify-between gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => ajustarPercentual('despesas', -0.5)}
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                        </Button>
+                        
+                        <div className="text-center">
+                          <div className="text-lg font-semibold">
+                            {planejamento.ajusteDespesas > 0 ? '+' : ''}
+                            {planejamento.ajusteDespesas.toFixed(1)}%
+                          </div>
+                          <div className="text-xs text-muted-foreground">Ajuste</div>
+                        </div>
+                        
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => ajustarPercentual('despesas', 0.5)}
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Card 3: Meta de Margem de Contribuição */}
+                  <Card className="border-l-4 border-l-blue-500">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Meta de Margem</CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        Margem de Contribuição
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {formatCurrency(calcularTotais.metaMargemReais)}
+                      </div>
+                      
+                      <div className="flex items-center justify-between gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => ajustarPercentual('margem', -0.5)}
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                        </Button>
+                        
+                        <div className="text-center">
+                          <div className="text-lg font-semibold">
+                            {planejamento.ajusteMargemContribuicao.toFixed(1)}%
+                          </div>
+                          <div className="text-xs text-muted-foreground">Meta</div>
+                        </div>
+                        
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => ajustarPercentual('margem', 0.5)}
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Seção 3: Indicadores Financeiros */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Indicadores Financeiros</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Análise estratégica baseada nos dados informados
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      
+                      {/* Ponto de Equilíbrio */}
+                      <div className="space-y-2 p-4 border rounded-lg">
+                        <div className="text-sm font-medium text-muted-foreground">
+                          Ponto de Equilíbrio
+                        </div>
+                        <div className="text-2xl font-bold">
+                          {formatCurrency(calcularTotais.pontoEquilibrio)}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Faturamento mínimo para cobrir custos
+                        </p>
+                      </div>
+
+                      {/* Margem de Lucro Operacional */}
+                      <div className="space-y-2 p-4 border rounded-lg">
+                        <div className="text-sm font-medium text-muted-foreground">
+                          Margem de Lucro
+                        </div>
+                        <div className="text-2xl font-bold">
+                          {calcularTotais.margemLucroOperacional.toFixed(2)}%
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Lucro sobre faturamento
+                        </p>
+                      </div>
+
+                      {/* Custos Variáveis Máximo */}
+                      <div className="space-y-2 p-4 border rounded-lg">
+                        <div className="text-sm font-medium text-muted-foreground">
+                          Custos Variáveis Máx.
+                        </div>
+                        <div className="text-2xl font-bold">
+                          {formatCurrency(calcularTotais.custosVariaveisMaximo)}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {(calcularTotais.percentualCustosVariaveis * 100).toFixed(1)}% do faturamento
+                        </p>
+                      </div>
+
+                      {/* Índice de Lucratividade */}
+                      <div className="space-y-2 p-4 border rounded-lg">
+                        <div className="text-sm font-medium text-muted-foreground">
+                          Índice de Lucratividade
+                        </div>
+                        <div className="text-2xl font-bold">
+                          {calcularTotais.indiceLucratividade.toFixed(2)}x
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Lucro / Despesas Fixas
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Resumo Executivo */}
+                    <div className="mt-6 p-4 bg-muted rounded-lg space-y-2">
+                      <h4 className="font-semibold">Resumo Executivo</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium">Lucro Operacional:</span>
+                          <span className="ml-2 text-green-600 font-bold">
+                            {formatCurrency(calcularTotais.lucroOperacional)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-medium">% sobre Faturamento:</span>
+                          <span className="ml-2 font-bold">
+                            {calcularTotais.margemLucroOperacional.toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
