@@ -410,7 +410,7 @@ export default function MetaGastos() {
   };
 
   // Componente Popover da Calculadora
-  const CalculadoraPopover = () => (
+  const CalculadoraPopover = ({ tipo }: { tipo: 'despesa' | 'faturamento' }) => (
     <Popover open={calcOpen} onOpenChange={setCalcOpen}>
       <PopoverTrigger asChild>
         <Button 
@@ -418,6 +418,7 @@ export default function MetaGastos() {
           variant="outline" 
           size="icon"
           className="shrink-0"
+          onClick={() => abrirCalculadora(tipo)}
         >
           <Calculator className="h-4 w-4" />
         </Button>
@@ -829,9 +830,7 @@ export default function MetaGastos() {
                       onChange={(e) => setFormDespesa(prev => ({ ...prev, valor: e.target.value }))}
                       className="w-32"
                     />
-                    <div onClick={() => abrirCalculadora('despesa')}>
-                      <CalculadoraPopover />
-                    </div>
+                    <CalculadoraPopover tipo="despesa" />
                   </div>
                   <Button onClick={adicionarDespesa}>
                     <Plus className="h-4 w-4" />
@@ -894,9 +893,7 @@ export default function MetaGastos() {
                       onChange={(e) => setFormFaturamento(prev => ({ ...prev, valor: e.target.value }))}
                       className="w-32"
                     />
-                    <div onClick={() => abrirCalculadora('faturamento')}>
-                      <CalculadoraPopover />
-                    </div>
+                    <CalculadoraPopover tipo="faturamento" />
                   </div>
                   <Button onClick={adicionarFaturamento}>
                     <Plus className="h-4 w-4" />
