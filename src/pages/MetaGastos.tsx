@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Target, Plus, Pencil, Trash2, TrendingUp, TrendingDown, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react";
+import { Target, Plus, Pencil, Trash2, TrendingUp, TrendingDown, AlertTriangle, ArrowUp, ArrowDown, Calculator, DollarSign } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
@@ -81,6 +81,12 @@ export default function MetaGastos() {
 
   const [formDespesa, setFormDespesa] = useState({ descricao: '', valor: '' });
   const [formFaturamento, setFormFaturamento] = useState({ descricao: '', valor: '' });
+  
+  // Estados para calculadora
+  const [calcOpen, setCalcOpen] = useState(false);
+  const [calcTipo, setCalcTipo] = useState<'despesa' | 'faturamento'>('despesa');
+  const [calcValorBase, setCalcValorBase] = useState('');
+  const [calcMultiplicador, setCalcMultiplicador] = useState('1');
 
   // Calcular valor gasto para cada meta baseado no modelo de gestão selecionado
   const metasComGastos = useMemo(() => {
@@ -375,6 +381,102 @@ export default function MetaGastos() {
       }
     });
   };
+
+  // Funções da calculadora
+  const calcularValor = () => {
+    const base = parseFloat(calcValorBase) || 0;
+    const mult = parseFloat(calcMultiplicador) || 1;
+    return base * mult;
+  };
+
+  const aplicarCalculadora = () => {
+    const resultado = calcularValor().toString();
+    
+    if (calcTipo === 'despesa') {
+      setFormDespesa(prev => ({ ...prev, valor: resultado }));
+    } else {
+      setFormFaturamento(prev => ({ ...prev, valor: resultado }));
+    }
+    
+    // Resetar calculadora
+    setCalcOpen(false);
+    setCalcValorBase('');
+    setCalcMultiplicador('1');
+  };
+
+  const abrirCalculadora = (tipo: 'despesa' | 'faturamento') => {
+    setCalcTipo(tipo);
+    setCalcOpen(true);
+  };
+
+  // Componente Popover da Calculadora
+  const CalculadoraPopover = () => (
+    <Popover open={calcOpen} onOpenChange={setCalcOpen}>
+      <PopoverTrigger asChild>
+        <Button 
+          type="button"
+          variant="outline" 
+          size="icon"
+          className="shrink-0"
+        >
+          <Calculator className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80">
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-semibold mb-2">Calculadora</h4>
+            <p className="text-sm text-muted-foreground">
+              Multiplique valores para calcular rapidamente
+            </p>
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="calc-base">Valor Base (R$)</Label>
+              <Input 
+                id="calc-base"
+                type="number"
+                placeholder="0.00"
+                value={calcValorBase}
+                onChange={(e) => setCalcValorBase(e.target.value)}
+                step="0.01"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="calc-mult">Multiplicador</Label>
+              <Input 
+                id="calc-mult"
+                type="number"
+                placeholder="1"
+                value={calcMultiplicador}
+                onChange={(e) => setCalcMultiplicador(e.target.value)}
+                step="0.01"
+              />
+            </div>
+            
+            <div className="pt-3 border-t">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm font-medium">Resultado:</span>
+                <span className="text-lg font-bold text-primary">
+                  {formatCurrency(calcularValor())}
+                </span>
+              </div>
+              
+              <Button 
+                onClick={aplicarCalculadora} 
+                className="w-full"
+                disabled={!calcValorBase}
+              >
+                Aplicar Valor
+              </Button>
+            </div>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 
   return (
     <AppLayout>
@@ -713,12 +815,13 @@ export default function MetaGastos() {
                   <p className="text-sm text-muted-foreground">Registre as despesas fixas do último ano</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex gap-2">
-                    <Input 
-                      placeholder="Descrição (ex: Aluguel)"
-                      value={formDespesa.descricao}
-                      onChange={(e) => setFormDespesa(prev => ({ ...prev, descricao: e.target.value }))}
-                    />
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Descrição (ex: Aluguel)"
+                    value={formDespesa.descricao}
+                    onChange={(e) => setFormDespesa(prev => ({ ...prev, descricao: e.target.value }))}
+                  />
+                  <div className="flex gap-1 items-center">
                     <Input 
                       type="number"
                       placeholder="Valor"
@@ -726,10 +829,14 @@ export default function MetaGastos() {
                       onChange={(e) => setFormDespesa(prev => ({ ...prev, valor: e.target.value }))}
                       className="w-32"
                     />
-                    <Button onClick={adicionarDespesa}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                    <div onClick={() => abrirCalculadora('despesa')}>
+                      <CalculadoraPopover />
+                    </div>
                   </div>
+                  <Button onClick={adicionarDespesa}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
                   
                   {planejamento.despesasFixas.length > 0 && (
                     <div className="border rounded-lg">
@@ -773,12 +880,13 @@ export default function MetaGastos() {
                   <p className="text-sm text-muted-foreground">Registre o faturamento por fonte</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex gap-2">
-                    <Input 
-                      placeholder="Descrição (ex: Vendas Produto A)"
-                      value={formFaturamento.descricao}
-                      onChange={(e) => setFormFaturamento(prev => ({ ...prev, descricao: e.target.value }))}
-                    />
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Descrição (ex: Vendas Produto A)"
+                    value={formFaturamento.descricao}
+                    onChange={(e) => setFormFaturamento(prev => ({ ...prev, descricao: e.target.value }))}
+                  />
+                  <div className="flex gap-1 items-center">
                     <Input 
                       type="number"
                       placeholder="Valor"
@@ -786,10 +894,14 @@ export default function MetaGastos() {
                       onChange={(e) => setFormFaturamento(prev => ({ ...prev, valor: e.target.value }))}
                       className="w-32"
                     />
-                    <Button onClick={adicionarFaturamento}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                    <div onClick={() => abrirCalculadora('faturamento')}>
+                      <CalculadoraPopover />
+                    </div>
                   </div>
+                  <Button onClick={adicionarFaturamento}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
                   
                   {planejamento.faturamentos.length > 0 && (
                     <div className="border rounded-lg">
