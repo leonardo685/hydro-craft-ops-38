@@ -44,6 +44,8 @@ interface ItemPlanejamento {
 interface DadosPlanejamento {
   despesasFixas: ItemPlanejamento[];
   faturamentos: ItemPlanejamento[];
+  despesasNaoOperacionais: ItemPlanejamento[];
+  investimentos: ItemPlanejamento[];
   ajusteFaturamento: number;
   ajusteDespesas: number;
   ajusteMargemContribuicao: number;
@@ -74,6 +76,8 @@ export default function MetaGastos() {
   const [planejamento, setPlanejamento] = useState<DadosPlanejamento>({
     despesasFixas: [],
     faturamentos: [],
+    despesasNaoOperacionais: [],
+    investimentos: [],
     ajusteFaturamento: 0,
     ajusteDespesas: 0,
     ajusteMargemContribuicao: 30
@@ -81,10 +85,12 @@ export default function MetaGastos() {
 
   const [formDespesa, setFormDespesa] = useState({ descricao: '', valor: '' });
   const [formFaturamento, setFormFaturamento] = useState({ descricao: '', valor: '' });
+  const [formDespesaNaoOp, setFormDespesaNaoOp] = useState({ descricao: '', valor: '' });
+  const [formInvestimento, setFormInvestimento] = useState({ descricao: '', valor: '' });
   
   // Estados para calculadora
   const [calcOpen, setCalcOpen] = useState(false);
-  const [calcTipo, setCalcTipo] = useState<'despesa' | 'faturamento'>('despesa');
+  const [calcTipo, setCalcTipo] = useState<'despesa' | 'faturamento' | 'despesaNaoOp' | 'investimento'>('despesa');
   const [calcValorBase, setCalcValorBase] = useState('');
   const [calcMultiplicador, setCalcMultiplicador] = useState('1');
 
@@ -281,6 +287,8 @@ export default function MetaGastos() {
   const calcularTotais = useMemo(() => {
     const totalFaturamentoBase = planejamento.faturamentos.reduce((acc, f) => acc + f.valor, 0);
     const totalDespesasBase = planejamento.despesasFixas.reduce((acc, d) => acc + d.valor, 0);
+    const totalDespesasNaoOp = planejamento.despesasNaoOperacionais.reduce((acc, d) => acc + d.valor, 0);
+    const totalInvestimentos = planejamento.investimentos.reduce((acc, i) => acc + i.valor, 0);
     
     const totalFaturamento = totalFaturamentoBase * (1 + planejamento.ajusteFaturamento / 100);
     const totalDespesas = totalDespesasBase * (1 + planejamento.ajusteDespesas / 100);
@@ -293,6 +301,10 @@ export default function MetaGastos() {
     const margemLucroOperacional = totalFaturamento > 0 ? (lucroOperacional / totalFaturamento) * 100 : 0;
     const indiceLucratividade = totalDespesas > 0 ? lucroOperacional / totalDespesas : 0;
     
+    const lucroAntesInvestimentos = lucroOperacional;
+    const lucroLiquido = lucroOperacional - totalDespesasNaoOp - totalInvestimentos;
+    const margemLucroLiquido = totalFaturamento > 0 ? (lucroLiquido / totalFaturamento) * 100 : 0;
+    
     return {
       totalFaturamento,
       totalDespesas,
@@ -304,7 +316,12 @@ export default function MetaGastos() {
       margemLucroOperacional,
       indiceLucratividade,
       totalFaturamentoBase,
-      totalDespesasBase
+      totalDespesasBase,
+      totalDespesasNaoOp,
+      totalInvestimentos,
+      lucroAntesInvestimentos,
+      lucroLiquido,
+      margemLucroLiquido
     };
   }, [planejamento]);
 
@@ -368,6 +385,66 @@ export default function MetaGastos() {
     toast.success("Faturamento removido");
   };
 
+  // Funções para gerenciar despesas não operacionais
+  const adicionarDespesaNaoOp = () => {
+    if (!formDespesaNaoOp.descricao || !formDespesaNaoOp.valor) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+    
+    const novaDespesa: ItemPlanejamento = {
+      id: Date.now().toString(),
+      descricao: formDespesaNaoOp.descricao,
+      valor: parseFloat(formDespesaNaoOp.valor)
+    };
+    
+    setPlanejamento(prev => ({
+      ...prev,
+      despesasNaoOperacionais: [...prev.despesasNaoOperacionais, novaDespesa]
+    }));
+    
+    setFormDespesaNaoOp({ descricao: '', valor: '' });
+    toast.success("Despesa não operacional adicionada");
+  };
+
+  const removerDespesaNaoOp = (id: string) => {
+    setPlanejamento(prev => ({
+      ...prev,
+      despesasNaoOperacionais: prev.despesasNaoOperacionais.filter(d => d.id !== id)
+    }));
+    toast.success("Despesa não operacional removida");
+  };
+
+  // Funções para gerenciar investimentos
+  const adicionarInvestimento = () => {
+    if (!formInvestimento.descricao || !formInvestimento.valor) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+    
+    const novoInvestimento: ItemPlanejamento = {
+      id: Date.now().toString(),
+      descricao: formInvestimento.descricao,
+      valor: parseFloat(formInvestimento.valor)
+    };
+    
+    setPlanejamento(prev => ({
+      ...prev,
+      investimentos: [...prev.investimentos, novoInvestimento]
+    }));
+    
+    setFormInvestimento({ descricao: '', valor: '' });
+    toast.success("Investimento adicionado");
+  };
+
+  const removerInvestimento = (id: string) => {
+    setPlanejamento(prev => ({
+      ...prev,
+      investimentos: prev.investimentos.filter(i => i.id !== id)
+    }));
+    toast.success("Investimento removido");
+  };
+
   // Funções para ajustar percentuais
   const ajustarPercentual = (tipo: 'faturamento' | 'despesas' | 'margem', incremento: number) => {
     setPlanejamento(prev => {
@@ -394,8 +471,12 @@ export default function MetaGastos() {
     
     if (calcTipo === 'despesa') {
       setFormDespesa(prev => ({ ...prev, valor: resultado }));
-    } else {
+    } else if (calcTipo === 'faturamento') {
       setFormFaturamento(prev => ({ ...prev, valor: resultado }));
+    } else if (calcTipo === 'despesaNaoOp') {
+      setFormDespesaNaoOp(prev => ({ ...prev, valor: resultado }));
+    } else if (calcTipo === 'investimento') {
+      setFormInvestimento(prev => ({ ...prev, valor: resultado }));
     }
     
     // Resetar calculadora
@@ -404,13 +485,13 @@ export default function MetaGastos() {
     setCalcMultiplicador('1');
   };
 
-  const abrirCalculadora = (tipo: 'despesa' | 'faturamento') => {
+  const abrirCalculadora = (tipo: 'despesa' | 'faturamento' | 'despesaNaoOp' | 'investimento') => {
     setCalcTipo(tipo);
     setCalcOpen(true);
   };
 
   // Componente Popover da Calculadora
-  const CalculadoraPopover = ({ tipo }: { tipo: 'despesa' | 'faturamento' }) => (
+  const CalculadoraPopover = ({ tipo }: { tipo: 'despesa' | 'faturamento' | 'despesaNaoOp' | 'investimento' }) => (
     <Popover open={calcOpen} onOpenChange={setCalcOpen}>
       <PopoverTrigger asChild>
         <Button 
@@ -1148,6 +1229,207 @@ export default function MetaGastos() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Seção 4: Despesas Não Operacionais e Investimentos */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Formulário Despesas Não Operacionais */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Despesas Não Operacionais</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Despesas fora da operação (ex: multas, juros)
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex gap-2">
+                        <Input 
+                          placeholder="Descrição (ex: Multa fiscal)"
+                          value={formDespesaNaoOp.descricao}
+                          onChange={(e) => setFormDespesaNaoOp(prev => ({ ...prev, descricao: e.target.value }))}
+                        />
+                        <div className="flex gap-1 items-center">
+                          <Input 
+                            type="number"
+                            placeholder="Valor"
+                            value={formDespesaNaoOp.valor}
+                            onChange={(e) => setFormDespesaNaoOp(prev => ({ ...prev, valor: e.target.value }))}
+                            className="w-32"
+                          />
+                          <CalculadoraPopover tipo="despesaNaoOp" />
+                        </div>
+                        <Button onClick={adicionarDespesaNaoOp}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {planejamento.despesasNaoOperacionais.length > 0 && (
+                        <div className="border rounded-lg">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Descrição</TableHead>
+                                <TableHead className="text-right">Valor</TableHead>
+                                <TableHead className="w-12"></TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {planejamento.despesasNaoOperacionais.map(despesa => (
+                                <TableRow key={despesa.id}>
+                                  <TableCell>{despesa.descricao}</TableCell>
+                                  <TableCell className="text-right font-medium">
+                                    {formatCurrency(despesa.valor)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => removerDespesaNaoOp(despesa.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Formulário Investimentos */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Investimentos</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Investimentos planejados (ex: equipamentos, expansão)
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex gap-2">
+                        <Input 
+                          placeholder="Descrição (ex: Nova máquina)"
+                          value={formInvestimento.descricao}
+                          onChange={(e) => setFormInvestimento(prev => ({ ...prev, descricao: e.target.value }))}
+                        />
+                        <div className="flex gap-1 items-center">
+                          <Input 
+                            type="number"
+                            placeholder="Valor"
+                            value={formInvestimento.valor}
+                            onChange={(e) => setFormInvestimento(prev => ({ ...prev, valor: e.target.value }))}
+                            className="w-32"
+                          />
+                          <CalculadoraPopover tipo="investimento" />
+                        </div>
+                        <Button onClick={adicionarInvestimento}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {planejamento.investimentos.length > 0 && (
+                        <div className="border rounded-lg">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Descrição</TableHead>
+                                <TableHead className="text-right">Valor</TableHead>
+                                <TableHead className="w-12"></TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {planejamento.investimentos.map(inv => (
+                                <TableRow key={inv.id}>
+                                  <TableCell>{inv.descricao}</TableCell>
+                                  <TableCell className="text-right font-medium">
+                                    {formatCurrency(inv.valor)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => removerInvestimento(inv.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Seção 5: Novos Indicadores (Lucro Líquido) */}
+                {(planejamento.despesasNaoOperacionais.length > 0 || planejamento.investimentos.length > 0) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Indicadores de Lucro Líquido</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Análise após despesas não operacionais e investimentos
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        {/* Lucro Antes dos Investimentos */}
+                        <div className="space-y-2 p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
+                          <div className="text-sm font-medium text-muted-foreground">
+                            Lucro Antes dos Investimentos
+                          </div>
+                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            {formatCurrency(calcularTotais.lucroAntesInvestimentos)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Lucro operacional (antes de deduzir despesas não operacionais e investimentos)
+                          </p>
+                        </div>
+
+                        {/* Margem de Lucro Líquido */}
+                        <div className="space-y-2 p-4 border rounded-lg bg-green-50 dark:bg-green-950">
+                          <div className="text-sm font-medium text-muted-foreground">
+                            Margem de Lucro Líquido
+                          </div>
+                          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            {calcularTotais.margemLucroLiquido.toFixed(2)}%
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Lucro líquido sobre faturamento
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Resumo Executivo do Lucro Líquido */}
+                      <div className="mt-6 p-4 bg-muted rounded-lg space-y-2">
+                        <h4 className="font-semibold">Resumo do Lucro Líquido</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium">Lucro Operacional:</span>
+                            <span className="ml-2 text-blue-600 dark:text-blue-400 font-bold">
+                              {formatCurrency(calcularTotais.lucroOperacional)}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-medium">(-) Desp. Não Op. + Invest.:</span>
+                            <span className="ml-2 text-red-600 dark:text-red-400 font-bold">
+                              {formatCurrency(calcularTotais.totalDespesasNaoOp + calcularTotais.totalInvestimentos)}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-medium">(=) Lucro Líquido:</span>
+                            <span className="ml-2 text-green-600 dark:text-green-400 font-bold">
+                              {formatCurrency(calcularTotais.lucroLiquido)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </>
             )}
 
