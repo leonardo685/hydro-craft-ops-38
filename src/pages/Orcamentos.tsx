@@ -428,6 +428,35 @@ export default function Orcamentos() {
         return y;
       };
 
+      // Função para desenhar célula com quebra automática de linha
+      const desenharCelulaComQuebraLinha = (
+        texto: string,
+        x: number,
+        y: number,
+        largura: number,
+        alturaMinima: number = 8
+      ): number => {
+        const maxWidth = largura - 4; // padding de 2 em cada lado
+        const lineHeight = 4;
+        const cellPadding = 2;
+        
+        // Quebrar texto em linhas
+        const textLines = doc.splitTextToSize(texto, maxWidth);
+        const alturaCalculada = Math.max(alturaMinima, textLines.length * lineHeight + cellPadding * 2);
+        
+        // Desenhar célula
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(x, y, largura, alturaCalculada);
+        
+        // Desenhar texto linha por linha
+        textLines.forEach((line: string, index: number) => {
+          const textY = y + 5 + (index * lineHeight);
+          doc.text(line, x + cellPadding, textY);
+        });
+        
+        return alturaCalculada;
+      };
+
       // === CABEÇALHO ===
       // Logo
       try {
@@ -529,12 +558,17 @@ export default function Orcamentos() {
       doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 22 + colWidth, yPosition + 5.5);
       yPosition += 8;
       
-      // Segunda linha: Nome do Cliente (linha inteira)
-      doc.rect(20, yPosition, pageWidth - 40, 8);
-      doc.text(`Nome do Cliente: ${orcamento.cliente_nome || 'N/A'}`, 22, yPosition + 5.5);
-      yPosition += 8;
+      // Segunda linha: Nome do Cliente com quebra automática
+      const alturaCliente = desenharCelulaComQuebraLinha(
+        `Nome do Cliente: ${orcamento.cliente_nome || 'N/A'}`,
+        20,
+        yPosition,
+        pageWidth - 40
+      );
+      yPosition += alturaCliente;
       
-      // Terceira linha: CNPJ (linha inteira)
+      // Terceira linha: CNPJ (altura fixa, geralmente curto)
+      doc.setDrawColor(200, 200, 200);
       doc.rect(20, yPosition, pageWidth - 40, 8);
       doc.text(`CNPJ: ${cnpjCliente || 'N/A'}`, 22, yPosition + 5.5);
       yPosition += 8;
@@ -576,31 +610,32 @@ export default function Orcamentos() {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       
-      // Primeira linha: Assunto (span full width)
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, pageWidth - 40, 8);
-      doc.text(`Assunto: ${assunto}`, 22, yPosition + 5.5);
-      yPosition += 8;
+      // Primeira linha: Assunto com quebra automática de linha
+      const alturaAssunto = desenharCelulaComQuebraLinha(
+        `Assunto: ${assunto}`,
+        20,
+        yPosition,
+        pageWidth - 40,
+        8
+      );
+      yPosition += alturaAssunto;
       
       // Segunda linha: Valor Total + Condição Pagamento + Prazo Entrega
       const col3Width = (pageWidth - 40) / 3;
-      
-      doc.rect(20, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
-      doc.text(`Valor Total: ${valorTotal}`, 22, yPosition + 5.5);
-      doc.text(`Condição Pagamento: ${prazo}`, 22 + col3Width, yPosition + 5.5);
-      doc.text(`Prazo Entrega: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
-      yPosition += 8;
+      const alturaLinha2 = Math.max(
+        desenharCelulaComQuebraLinha(`Valor Total: ${valorTotal}`, 20, yPosition, col3Width, 8),
+        desenharCelulaComQuebraLinha(`Condição Pagamento: ${prazo}`, 20 + col3Width, yPosition, col3Width, 8),
+        desenharCelulaComQuebraLinha(`Prazo Entrega: ${prazoEntrega}`, 20 + col3Width * 2, yPosition, col3Width, 8)
+      );
+      yPosition += alturaLinha2;
       
       // Terceira linha: Garantia + Frete + Validade Proposta
-      doc.rect(20, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
-      doc.text(`Garantia: ${garantia}`, 22, yPosition + 5.5);
-      doc.text(`Frete: ${frete}`, 22 + col3Width, yPosition + 5.5);
-      doc.text(`Validade Proposta: ${validade}`, 22 + col3Width * 2, yPosition + 5.5);
-      yPosition += 8;
+      const alturaLinha3 = Math.max(
+        desenharCelulaComQuebraLinha(`Garantia: ${garantia}`, 20, yPosition, col3Width, 8),
+        desenharCelulaComQuebraLinha(`Frete: ${frete}`, 20 + col3Width, yPosition, col3Width, 8),
+        desenharCelulaComQuebraLinha(`Validade Proposta: ${validade}`, 20 + col3Width * 2, yPosition, col3Width, 8)
+      );
+      yPosition += alturaLinha3;
 
       // === OBSERVAÇÕES ===
       if (orcamento.descricao && orcamento.descricao.trim()) {
