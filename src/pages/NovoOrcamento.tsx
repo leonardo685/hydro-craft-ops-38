@@ -297,6 +297,7 @@ export default function NovoOrcamento() {
         setInformacoesComerciais(prev => ({
           ...prev,
           valorTotal: Number(orcamentoEdicao.valor) || 0,
+          desconto: Number(orcamentoEdicao.desconto_percentual) || 0,
           condicaoPagamento: orcamentoEdicao.condicao_pagamento || '',
           prazoEntrega: orcamentoEdicao.prazo_entrega || '',
           assuntoProposta: orcamentoEdicao.assunto_proposta || '',
@@ -906,7 +907,7 @@ export default function NovoOrcamento() {
     const valorFinal = informacoesComerciais.valorTotal;
     
     try {
-      // Se é edição (tem ID), salvar revisão antes de atualizar
+      // Se é edição (tem ID), verificar se houve alterações antes de salvar revisão
       if (dadosOrcamento.id) {
         // Buscar dados atuais do orçamento
         const { data: orcamentoAtual, error: errorBusca } = await supabase
@@ -916,83 +917,121 @@ export default function NovoOrcamento() {
           .single();
         
         if (!errorBusca && orcamentoAtual) {
-          // Buscar último número de revisão
-          const { data: ultimaRevisao } = await supabase
-            .from('historico_orcamentos')
-            .select('numero_revisao')
-            .eq('orcamento_id', dadosOrcamento.id)
-            .order('numero_revisao', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          
-          const proximaRevisao = (ultimaRevisao?.numero_revisao || 0) + 1;
-          
-          // Salvar snapshot do orçamento atual no histórico
-          const { data: historicoSalvo, error: errorHistorico } = await supabase
-            .from('historico_orcamentos')
-            .insert({
-              orcamento_id: dadosOrcamento.id,
-              numero_revisao: proximaRevisao,
-              numero: orcamentoAtual.numero,
-              equipamento: orcamentoAtual.equipamento,
-              cliente_nome: orcamentoAtual.cliente_nome,
-              cliente_id: orcamentoAtual.cliente_id,
-              valor: orcamentoAtual.valor,
-              desconto_percentual: orcamentoAtual.desconto_percentual,
-              condicao_pagamento: orcamentoAtual.condicao_pagamento,
-              prazo_entrega: orcamentoAtual.prazo_entrega,
-              prazo_pagamento: orcamentoAtual.prazo_pagamento,
-              assunto_proposta: orcamentoAtual.assunto_proposta,
-              frete: orcamentoAtual.frete,
-              descricao: orcamentoAtual.descricao,
-              observacoes: orcamentoAtual.observacoes,
-              observacoes_nota: orcamentoAtual.observacoes_nota,
-              preco_desejado: orcamentoAtual.preco_desejado,
-              impostos_percentual: orcamentoAtual.impostos_percentual,
-              impostos_valor: orcamentoAtual.impostos_valor,
-              comissao_percentual: orcamentoAtual.comissao_percentual,
-              comissao_valor: orcamentoAtual.comissao_valor,
-              percentuais_customizados: orcamentoAtual.percentuais_customizados,
-              custos_variaveis: orcamentoAtual.custos_variaveis,
-              total_custos_variaveis: orcamentoAtual.total_custos_variaveis,
-              margem_contribuicao: orcamentoAtual.margem_contribuicao,
-              percentual_margem: orcamentoAtual.percentual_margem,
-              status: orcamentoAtual.status
-            })
-            .select()
-            .single();
-          
-          if (errorHistorico) {
-            console.error('Erro ao salvar histórico do orçamento:', errorHistorico);
-          } else if (historicoSalvo) {
-            // Buscar itens atuais do orçamento
-            const { data: itensAtuais } = await supabase
-              .from('itens_orcamento')
-              .select('*')
-              .eq('orcamento_id', dadosOrcamento.id);
-            
-            // Salvar itens no histórico
-            if (itensAtuais && itensAtuais.length > 0) {
-              const itensHistorico = itensAtuais.map(item => ({
-                historico_orcamento_id: historicoSalvo.id,
-                tipo: item.tipo,
-                codigo: item.codigo,
-                descricao: item.descricao,
-                quantidade: item.quantidade,
-                valor_unitario: item.valor_unitario,
-                valor_total: item.valor_total,
-                detalhes: item.detalhes
-              }));
-              
-              await supabase
-                .from('historico_itens_orcamento')
-                .insert(itensHistorico);
-            }
-            
-            toast({
-              title: "Revisão criada",
-              description: `Versão anterior salva como REV ${proximaRevisao}`
+          // Verificar se houve alterações nos campos principais
+          const houveAlteracaoCampos = 
+            orcamentoAtual.equipamento !== (dadosOrcamento.tag || 'Equipamento não especificado') ||
+            orcamentoAtual.cliente_nome !== dadosOrcamento.cliente ||
+            Number(orcamentoAtual.valor) !== Number(valorFinal) ||
+            Number(orcamentoAtual.desconto_percentual || 0) !== Number(informacoesComerciais.desconto) ||
+            orcamentoAtual.condicao_pagamento !== (informacoesComerciais.condicaoPagamento || null) ||
+            orcamentoAtual.prazo_entrega !== (informacoesComerciais.prazoEntrega || null) ||
+            orcamentoAtual.frete !== (informacoesComerciais.frete || 'CIF');
+
+          // Verificar se itens mudaram
+          const { data: itensAtuaisCheck } = await supabase
+            .from('itens_orcamento')
+            .select('*')
+            .eq('orcamento_id', dadosOrcamento.id);
+
+          const todosItensNovos = [
+            ...itensAnalise.pecas,
+            ...itensAnalise.servicos,
+            ...itensAnalise.usinagem
+          ];
+
+          const itensForamAlterados = 
+            !itensAtuaisCheck ||
+            itensAtuaisCheck.length !== todosItensNovos.length ||
+            itensAtuaisCheck.some((itemAtual, idx) => {
+              const itemNovo = todosItensNovos[idx];
+              return !itemNovo ||
+                itemAtual.descricao !== itemNovo.descricao ||
+                Number(itemAtual.quantidade) !== Number(itemNovo.quantidade) ||
+                Number(itemAtual.valor_unitario) !== Number(itemNovo.valorUnitario);
             });
+
+          // Só criar revisão se houver alteração
+          if (houveAlteracaoCampos || itensForamAlterados) {
+            // Buscar último número de revisão
+            const { data: ultimaRevisao } = await supabase
+              .from('historico_orcamentos')
+              .select('numero_revisao')
+              .eq('orcamento_id', dadosOrcamento.id)
+              .order('numero_revisao', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            
+            const proximaRevisao = (ultimaRevisao?.numero_revisao || 0) + 1;
+            
+            // Salvar snapshot do orçamento atual no histórico
+            const { data: historicoSalvo, error: errorHistorico } = await supabase
+              .from('historico_orcamentos')
+              .insert({
+                orcamento_id: dadosOrcamento.id,
+                numero_revisao: proximaRevisao,
+                numero: orcamentoAtual.numero,
+                equipamento: orcamentoAtual.equipamento,
+                cliente_nome: orcamentoAtual.cliente_nome,
+                cliente_id: orcamentoAtual.cliente_id,
+                valor: orcamentoAtual.valor,
+                desconto_percentual: orcamentoAtual.desconto_percentual,
+                condicao_pagamento: orcamentoAtual.condicao_pagamento,
+                prazo_entrega: orcamentoAtual.prazo_entrega,
+                prazo_pagamento: orcamentoAtual.prazo_pagamento,
+                assunto_proposta: orcamentoAtual.assunto_proposta,
+                frete: orcamentoAtual.frete,
+                descricao: orcamentoAtual.descricao,
+                observacoes: orcamentoAtual.observacoes,
+                observacoes_nota: orcamentoAtual.observacoes_nota,
+                preco_desejado: orcamentoAtual.preco_desejado,
+                impostos_percentual: orcamentoAtual.impostos_percentual,
+                impostos_valor: orcamentoAtual.impostos_valor,
+                comissao_percentual: orcamentoAtual.comissao_percentual,
+                comissao_valor: orcamentoAtual.comissao_valor,
+                percentuais_customizados: orcamentoAtual.percentuais_customizados,
+                custos_variaveis: orcamentoAtual.custos_variaveis,
+                total_custos_variaveis: orcamentoAtual.total_custos_variaveis,
+                margem_contribuicao: orcamentoAtual.margem_contribuicao,
+                percentual_margem: orcamentoAtual.percentual_margem,
+                status: orcamentoAtual.status
+              })
+              .select()
+              .single();
+            
+            if (errorHistorico) {
+              console.error('Erro ao salvar histórico do orçamento:', errorHistorico);
+            } else if (historicoSalvo) {
+              // Buscar itens atuais do orçamento
+              const { data: itensAtuais } = await supabase
+                .from('itens_orcamento')
+                .select('*')
+                .eq('orcamento_id', dadosOrcamento.id);
+              
+              // Salvar itens no histórico
+              if (itensAtuais && itensAtuais.length > 0) {
+                const itensHistorico = itensAtuais.map(item => ({
+                  historico_orcamento_id: historicoSalvo.id,
+                  tipo: item.tipo,
+                  codigo: item.codigo,
+                  descricao: item.descricao,
+                  quantidade: item.quantidade,
+                  valor_unitario: item.valor_unitario,
+                  valor_total: item.valor_total,
+                  detalhes: item.detalhes
+                }));
+                
+                await supabase
+                  .from('historico_itens_orcamento')
+                  .insert(itensHistorico);
+              }
+              
+              toast({
+                title: "Revisão criada",
+                description: `Versão anterior salva como REV ${proximaRevisao}`
+              });
+            }
+          } else {
+            console.log('✓ Nenhuma alteração detectada, revisão não criada');
           }
         }
       }
@@ -1005,6 +1044,7 @@ export default function NovoOrcamento() {
       equipamento: dadosOrcamento.tag || 'Equipamento não especificado',
         descricao: dadosOrcamento.observacoes || '',
         valor: valorFinal,
+        desconto_percentual: informacoesComerciais.desconto,
         status: 'pendente',
         observacoes: `Tipo: ${dadosOrcamento.tipoOrdem} | Solicitante: ${dadosOrcamento.solicitante} | Nota: ${dadosOrcamento.numeroNota} | Ordem Ref: ${dadosOrcamento.numeroSerie}`,
         ordem_servico_id: ordemServicoId || null,
@@ -1166,14 +1206,555 @@ export default function NovoOrcamento() {
         .select('*')
         .eq('historico_orcamento_id', revisao.id);
       
-      // Criar objeto no formato esperado (será usado pela função de PDF em Orcamentos.tsx)
-      const orcamentoRevisao = {
-        ...revisao,
-        id: revisao.orcamento_id,
-        numero_revisao: revisao.numero_revisao
+      if (!itensRevisao) {
+        throw new Error('Itens da revisão não encontrados');
+      }
+
+      // Organizar itens por tipo
+      const itensRevisaoOrganizados = {
+        pecas: itensRevisao.filter(i => i.tipo === 'peca').map(i => ({
+          id: i.id,
+          tipo: 'peca' as const,
+          descricao: i.descricao,
+          codigo: i.codigo || '',
+          quantidade: Number(i.quantidade),
+          valorUnitario: Number(i.valor_unitario),
+          valorTotal: Number(i.valor_total),
+          detalhes: i.detalhes
+        })),
+        servicos: itensRevisao.filter(i => i.tipo === 'servico').map(i => ({
+          id: i.id,
+          tipo: 'servico' as const,
+          descricao: i.descricao,
+          codigo: i.codigo || '',
+          quantidade: Number(i.quantidade),
+          valorUnitario: Number(i.valor_unitario),
+          valorTotal: Number(i.valor_total),
+          detalhes: i.detalhes
+        })),
+        usinagem: itensRevisao.filter(i => i.tipo === 'usinagem').map(i => ({
+          id: i.id,
+          tipo: 'usinagem' as const,
+          descricao: i.descricao,
+          codigo: i.codigo || '',
+          quantidade: Number(i.quantidade),
+          valorUnitario: Number(i.valor_unitario),
+          valorTotal: Number(i.valor_total),
+          detalhes: i.detalhes
+        }))
       };
+
+      // Buscar fotos do orçamento
+      const { data: fotosRevisao } = await supabase
+        .from('fotos_orcamento')
+        .select('*')
+        .eq('orcamento_id', revisao.orcamento_id)
+        .eq('apresentar_orcamento', true);
+
+      // ===== GERAR PDF USANDO A MESMA LÓGICA DO EXPORTARPDF =====
+      const EMPRESA_INFO = {
+        nome: "MEC-HIDRO MECANICA E HIDRAULICA LTDA",
+        cnpj: "03.328.334/0001-87",
+        telefone: "(19) 3026-6227",
+        email: "contato@mechidro.com.br"
+      };
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      let yPosition = 10;
+
+      // Definir posições das colunas da tabela
+      const tableStartX = 20;
+      const colDescricaoWidth = 70;
+      const colQtdWidth = 18;
+      const colCodigoWidth = 22;
+      const colValorUnitWidth = 28;
+      const colTotalWidth = 28;
       
-      // Gerar PDF usando a mesma lógica do exportarPDF mas com dados da revisão
+      const colDescricao = tableStartX;
+      const colQtd = colDescricao + colDescricaoWidth;
+      const colCodigo = colQtd + colQtdWidth;
+      const colValorUnit = colCodigo + colCodigoWidth;
+      const colTotal = colValorUnit + colValorUnitWidth;
+
+      // Função para adicionar detalhes decorativos
+      const adicionarDetalheDecorativo = () => {
+        doc.setFillColor(220, 38, 38);
+        doc.triangle(pageWidth - 30, pageHeight - 30, pageWidth, pageHeight - 30, pageWidth, pageHeight, 'F');
+        doc.setFillColor(0, 0, 0);
+        doc.triangle(pageWidth - 15, pageHeight - 30, pageWidth, pageHeight - 30, pageWidth, pageHeight, 'F');
+      };
+
+      // Função para adicionar rodapé
+      const adicionarRodape = () => {
+        const totalPages = doc.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          adicionarDetalheDecorativo();
+          doc.setFontSize(8);
+          doc.setTextColor(128, 128, 128);
+          doc.text(`Página ${i} de ${totalPages}`, 15, pageHeight - 10);
+          doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth - 60, pageHeight - 10);
+        }
+      };
+
+      // Adicionar logo
+      try {
+        const logoImg = new Image();
+        logoImg.src = mecHidroLogo;
+        await new Promise<void>((resolve) => {
+          logoImg.onload = () => {
+            doc.addImage(logoImg, 'JPEG', pageWidth - 50, 8, 35, 20);
+            resolve();
+          };
+          logoImg.onerror = () => resolve();
+        });
+      } catch (error) {
+        console.error('Erro ao adicionar logo:', error);
+      }
+
+      // Cabeçalho
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(EMPRESA_INFO.nome, 20, yPosition + 5);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`CNPJ: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
+      doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
+      doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
+      
+      doc.setDrawColor(220, 38, 38);
+      doc.setLineWidth(1);
+      doc.line(20, yPosition + 28, pageWidth - 20, yPosition + 28);
+      
+      doc.setFillColor(220, 38, 38);
+      doc.triangle(pageWidth - 20, 10, pageWidth, 10, pageWidth, 40, 'F');
+      
+      yPosition = 48;
+      
+      // Título com número da revisão
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(220, 38, 38);
+      doc.text("PROPOSTA COMERCIAL", pageWidth / 2, yPosition, { align: "center" });
+      yPosition += 8;
+      doc.setFontSize(12);
+      doc.text(`REVISÃO ${revisao.numero_revisao}`, pageWidth / 2, yPosition, { align: "center" });
+      doc.setTextColor(0, 0, 0);
+      
+      yPosition = 70;
+
+      // Buscar CNPJ do cliente
+      let cnpjCliente = '';
+      if (revisao.cliente_id) {
+        const { data: clienteData } = await supabase
+          .from('clientes')
+          .select('cnpj_cpf')
+          .eq('id', revisao.cliente_id)
+          .maybeSingle();
+        
+        if (clienteData) {
+          cnpjCliente = clienteData.cnpj_cpf || '';
+        }
+      }
+
+      // Informações do Cliente
+      doc.setFillColor(220, 220, 220);
+      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, pageWidth - 40, 10);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Informações do Cliente", pageWidth / 2, yPosition + 7, { align: "center" });
+      yPosition += 10;
+      
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      
+      const colWidth = (pageWidth - 40) / 2;
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, colWidth, 8);
+      doc.rect(20 + colWidth, yPosition, colWidth, 8);
+      doc.text(`Nº Orçamento: ${revisao.numero} REV ${revisao.numero_revisao}`, 22, yPosition + 5.5);
+      doc.text(`Data: ${new Date(revisao.data_revisao).toLocaleDateString('pt-BR')}`, 22 + colWidth, yPosition + 5.5);
+      yPosition += 8;
+      
+      doc.rect(20, yPosition, pageWidth - 40, 8);
+      doc.text(`Nome do Cliente: ${revisao.cliente_nome || 'N/A'}`, 22, yPosition + 5.5);
+      yPosition += 8;
+      
+      doc.rect(20, yPosition, pageWidth - 40, 8);
+      doc.text(`CNPJ: ${cnpjCliente || 'N/A'}`, 22, yPosition + 5.5);
+      yPosition += 8;
+      
+      yPosition += 10;
+
+      // Condições Comerciais
+      const valorComDesconto = Number(revisao.valor) * (1 - (Number(revisao.desconto_percentual || 0) / 100));
+      
+      doc.setFillColor(220, 220, 220);
+      doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, pageWidth - 40, 10);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Condições Comerciais", pageWidth / 2, yPosition + 7, { align: "center" });
+      yPosition += 10;
+      
+      const valorTotalFormatado = `R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+      const condicaoPagamento = revisao.condicao_pagamento || 'A combinar';
+      const assunto = revisao.assunto_proposta || revisao.equipamento || 'REFORMA/MANUTENÇÃO';
+      const prazoEntrega = revisao.prazo_entrega || '5 dias úteis';
+      const garantia = '6 Meses';
+      const frete = revisao.frete || 'CIF';
+      
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, pageWidth - 40, 8);
+      doc.text(`Assunto: ${assunto}`, 22, yPosition + 5.5);
+      yPosition += 8;
+      
+      const col3Width = (pageWidth - 40) / 3;
+      doc.rect(20, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+      doc.text(`Valor Total: ${valorTotalFormatado}`, 22, yPosition + 5.5);
+      doc.text(`Condição Pagamento: ${condicaoPagamento}`, 22 + col3Width, yPosition + 5.5);
+      doc.text(`Prazo Entrega: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
+      yPosition += 8;
+      
+      doc.rect(20, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+      doc.text(`Garantia: ${garantia}`, 22, yPosition + 5.5);
+      doc.text(`Frete: ${frete}`, 22 + col3Width, yPosition + 5.5);
+      doc.text(`Validade Proposta: 12 meses`, 22 + col3Width * 2, yPosition + 5.5);
+      yPosition += 8;
+      yPosition += 10;
+
+      // Tabela de Peças
+      if (itensRevisaoOrganizados.pecas.length > 0) {
+        if (yPosition > 210) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(220, 38, 38);
+        doc.text('PEÇAS NECESSÁRIAS', 20, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += 10;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setFillColor(220, 220, 220);
+        doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(20, yPosition, pageWidth - 40, 8);
+
+        doc.text('Descrição', colDescricao + 2, yPosition + 5.5);
+        doc.text('Qtd.', colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
+        doc.text('Codigo', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
+        doc.text('Valor Unitario', colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
+        doc.text('Valor Total', colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
+        yPosition += 8;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        let totalPecas = 0;
+
+        itensRevisaoOrganizados.pecas.forEach((item, index) => {
+          if (yPosition > 270) {
+            doc.addPage();
+            yPosition = 20;
+          }
+
+          const rowHeight = 8;
+          if (index % 2 === 0) {
+            doc.setFillColor(245, 245, 245);
+          } else {
+            doc.setFillColor(255, 255, 255);
+          }
+          doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(20, yPosition, pageWidth - 40, rowHeight);
+
+          const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
+          doc.text(desc, colDescricao + 2, yPosition + 5.5);
+          doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
+          doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
+          
+          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
+          doc.text(valorUnit, colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
+          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
+          doc.text(valorTot, colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
+          totalPecas += item.valorTotal;
+
+          yPosition += rowHeight;
+        });
+
+        yPosition += 5;
+        const boxWidth = 50;
+        const boxHeight = 8;
+        const boxX = pageWidth - 20 - 25 - boxWidth;
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(boxX, yPosition, boxWidth, boxHeight);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('Total de Peças', boxX + 2, yPosition + 5.5);
+        
+        const valorBoxX = boxX + boxWidth;
+        doc.rect(valorBoxX, yPosition, 25, boxHeight);
+        const totalPecasTexto = totalPecas > 0 ? `R$ ${totalPecas.toFixed(2).replace('.', ',')}` : '';
+        doc.text(totalPecasTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
+        
+        yPosition += 15;
+      }
+
+      // Tabela de Serviços (mesma lógica)
+      if (itensRevisaoOrganizados.servicos.length > 0) {
+        const espacoNecessario = 10 + 8 + 16;
+        if (yPosition + espacoNecessario > pageHeight - 30) {
+          adicionarRodape();
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(220, 38, 38);
+        doc.text('SERVIÇOS A EXECUTAR', 20, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += 10;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setFillColor(220, 220, 220);
+        doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(20, yPosition, pageWidth - 40, 8);
+
+        doc.text('Descrição', colDescricao + 2, yPosition + 5.5);
+        doc.text('Qtd.', colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
+        doc.text('Codigo', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
+        doc.text('Valor Unitario', colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
+        doc.text('Valor Total', colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
+        yPosition += 8;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        let totalServicos = 0;
+
+        itensRevisaoOrganizados.servicos.forEach((item, index) => {
+          if (yPosition + 8 > pageHeight - 30) {
+            adicionarRodape();
+            doc.addPage();
+            yPosition = 20;
+          }
+
+          const rowHeight = 8;
+          if (index % 2 === 0) {
+            doc.setFillColor(245, 245, 245);
+          } else {
+            doc.setFillColor(255, 255, 255);
+          }
+          doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(20, yPosition, pageWidth - 40, rowHeight);
+
+          const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
+          doc.text(desc, colDescricao + 2, yPosition + 5.5);
+          doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
+          doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
+          
+          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
+          doc.text(valorUnit, colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
+          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
+          doc.text(valorTot, colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
+          totalServicos += item.valorTotal;
+
+          yPosition += rowHeight;
+        });
+
+        yPosition += 5;
+        const boxWidth = 50;
+        const boxHeight = 8;
+        const boxX = pageWidth - 20 - 25 - boxWidth;
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(boxX, yPosition, boxWidth, boxHeight);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('Total de Serviços', boxX + 2, yPosition + 5.5);
+        
+        const valorBoxX = boxX + boxWidth;
+        doc.rect(valorBoxX, yPosition, 25, boxHeight);
+        const totalServicosTexto = totalServicos > 0 ? `R$ ${totalServicos.toFixed(2).replace('.', ',')}` : '';
+        doc.text(totalServicosTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
+        
+        yPosition += 15;
+      }
+
+      // Tabela de Usinagem (mesma lógica)
+      if (itensRevisaoOrganizados.usinagem.length > 0) {
+        const espacoNecessario = 10 + 8 + 16;
+        if (yPosition + espacoNecessario > pageHeight - 30) {
+          adicionarRodape();
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(220, 38, 38);
+        doc.text('USINAGEM NECESSÁRIA', 20, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += 10;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setFillColor(220, 220, 220);
+        doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(20, yPosition, pageWidth - 40, 8);
+
+        doc.text('Descrição', colDescricao + 2, yPosition + 5.5);
+        doc.text('Qtd.', colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
+        doc.text('Codigo', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
+        doc.text('Valor Unitario', colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
+        doc.text('Valor Total', colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
+        yPosition += 8;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        let totalUsinagem = 0;
+
+        itensRevisaoOrganizados.usinagem.forEach((item, index) => {
+          if (yPosition + 8 > pageHeight - 30) {
+            adicionarRodape();
+            doc.addPage();
+            yPosition = 20;
+          }
+
+          const rowHeight = 8;
+          if (index % 2 === 0) {
+            doc.setFillColor(245, 245, 245);
+          } else {
+            doc.setFillColor(255, 255, 255);
+          }
+          doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(20, yPosition, pageWidth - 40, rowHeight);
+
+          const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
+          doc.text(desc, colDescricao + 2, yPosition + 5.5);
+          doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
+          doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
+          
+          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
+          doc.text(valorUnit, colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
+          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
+          doc.text(valorTot, colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
+          totalUsinagem += item.valorTotal;
+
+          yPosition += rowHeight;
+        });
+
+        yPosition += 5;
+        const boxWidth = 50;
+        const boxHeight = 8;
+        const boxX = pageWidth - 20 - 25 - boxWidth;
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(boxX, yPosition, boxWidth, boxHeight);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('Total de Usinagem', boxX + 2, yPosition + 5.5);
+        
+        const valorBoxX = boxX + boxWidth;
+        doc.rect(valorBoxX, yPosition, 25, boxHeight);
+        const totalUsinagemTexto = totalUsinagem > 0 ? `R$ ${totalUsinagem.toFixed(2)}` : '';
+        doc.text(totalUsinagemTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
+        
+        yPosition += 15;
+      }
+
+      // Adicionar fotos se existirem
+      if (fotosRevisao && fotosRevisao.length > 0) {
+        doc.addPage();
+        let yPosFotos = 20;
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(220, 38, 38);
+        doc.text('Fotos do Orçamento', 20, yPosFotos);
+        doc.setTextColor(0, 0, 0);
+        yPosFotos += 10;
+        
+        const fotosPorPagina = 4;
+        const maxFotoWidth = 80;
+        const maxFotoHeight = 55;
+        const espacoHorizontal = 12;
+        const espacoVertical = 12;
+        
+        for (let i = 0; i < fotosRevisao.length; i += fotosPorPagina) {
+          if (i > 0) {
+            doc.addPage();
+            yPosFotos = 20;
+          }
+          
+          const fotosPagina = fotosRevisao.slice(i, i + fotosPorPagina);
+          
+          for (let j = 0; j < fotosPagina.length; j++) {
+            const col = j % 2;
+            const row = Math.floor(j / 2);
+            const xPos = 20 + col * (maxFotoWidth + espacoHorizontal);
+            const yPos = yPosFotos + row * (maxFotoHeight + espacoVertical);
+            
+            try {
+              await new Promise<void>((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                  const imgAspectRatio = img.width / img.height;
+                  const maxAspectRatio = maxFotoWidth / maxFotoHeight;
+                  
+                  let finalWidth = maxFotoWidth;
+                  let finalHeight = maxFotoHeight;
+                  
+                  if (imgAspectRatio > maxAspectRatio) {
+                    finalHeight = maxFotoWidth / imgAspectRatio;
+                  } else {
+                    finalWidth = maxFotoHeight * imgAspectRatio;
+                  }
+                  
+                  const xOffset = (maxFotoWidth - finalWidth) / 2;
+                  const yOffset = (maxFotoHeight - finalHeight) / 2;
+                  
+                  doc.addImage(img, 'JPEG', xPos + xOffset, yPos + yOffset, finalWidth, finalHeight);
+                  resolve();
+                };
+                img.onerror = () => resolve();
+                img.src = fotosPagina[j].arquivo_url;
+              });
+            } catch (error) {
+              console.error('Erro ao adicionar foto:', error);
+            }
+          }
+        }
+      }
+
+      // Adicionar rodapés
+      adicionarRodape();
+
+      // Salvar PDF
+      doc.save(`Orcamento_${revisao.numero.replace(/[^a-zA-Z0-9]/g, "_")}_REV${revisao.numero_revisao}.pdf`);
+      
       toast({
         title: "PDF gerado com sucesso!",
         description: `Orçamento ${revisao.numero} REV ${revisao.numero_revisao}`
