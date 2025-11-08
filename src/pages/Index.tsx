@@ -22,10 +22,10 @@ const Index = () => {
       }).eq('status', 'pendente'), supabase.from('orcamentos').select('status', {
         count: 'exact'
       }).eq('status', 'aprovado')]);
-      const emAnalise = recebimentos.data?.filter(r => r.status === 'em_analise').length || 0;
+      const aguardandoAnalise = recebimentos.data?.filter(r => r.status === 'recebido').length || 0;
       return {
         totalRecebimentos: recebimentos.count || 0,
-        emAnalise,
+        emAnalise: aguardandoAnalise,
         orcamentosPendentes: orcamentos.count || 0,
         ordensAprovadas: ordensAprovadas.count || 0
       };
@@ -71,7 +71,7 @@ const Index = () => {
     icon: ClipboardList,
     color: "text-primary"
   }, {
-    label: "Em Análise",
+    label: "Aguardando Análise",
     value: statsData?.emAnalise.toString() || "0",
     icon: Search,
     color: "text-warning"
