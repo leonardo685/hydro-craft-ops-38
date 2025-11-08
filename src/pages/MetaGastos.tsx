@@ -19,7 +19,8 @@ import { useMetasGastos } from "@/hooks/use-metas-gastos";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, endOfMonth, addMonths, endOfYear, differenceInDays } from "date-fns";
+import { ptBR } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 import jsPDF from "jspdf";
@@ -51,6 +52,21 @@ interface DadosPlanejamento {
   ajusteDespesas: number;
   ajusteMargemContribuicao: number;
 }
+
+const calcularDataFim = (
+  dataInicio: Date, 
+  periodo: 'mensal' | 'trimestral' | 'anual'
+): Date => {
+  switch (periodo) {
+    case 'mensal':
+      return endOfMonth(dataInicio);
+    case 'trimestral':
+      const terceiroMes = addMonths(dataInicio, 2);
+      return endOfMonth(terceiroMes);
+    case 'anual':
+      return endOfYear(dataInicio);
+  }
+};
 
 export default function MetaGastos() {
   const [modeloGestao, setModeloGestao] = useState<'dre' | 'esperado' | 'realizado'>('realizado');
@@ -235,13 +251,15 @@ export default function MetaGastos() {
   };
 
   const handleEditarMeta = (meta: MetaGasto) => {
+    const dataFimRecalculada = calcularDataFim(meta.dataInicio, meta.periodo);
+    
     setEditandoId(meta.id);
     setMetaForm({
       categoriaId: meta.categoriaId,
       valorMeta: String(meta.valorMeta),
       periodo: meta.periodo,
       dataInicio: meta.dataInicio,
-      dataFim: meta.dataFim,
+      dataFim: dataFimRecalculada,
       observacoes: meta.observacoes || ''
     });
     setIsDialogOpen(true);
@@ -257,12 +275,15 @@ export default function MetaGastos() {
   };
 
   const resetForm = () => {
+    const hoje = new Date();
+    const dataFimInicial = calcularDataFim(hoje, 'mensal');
+    
     setMetaForm({
       categoriaId: '',
       valorMeta: '',
       periodo: 'mensal',
-      dataInicio: new Date(),
-      dataFim: new Date(),
+      dataInicio: hoje,
+      dataFim: dataFimInicial,
       observacoes: ''
     });
     setEditandoId(null);
@@ -941,7 +962,14 @@ export default function MetaGastos() {
 
                 <div className="space-y-2">
                   <Label>Período</Label>
-                  <Select value={metaForm.periodo} onValueChange={(value: 'mensal' | 'trimestral' | 'anual') => setMetaForm(prev => ({ ...prev, periodo: value }))}>
+                  <Select value={metaForm.periodo} onValueChange={(value: 'mensal' | 'trimestral' | 'anual') => {
+                    const novaDataFim = calcularDataFim(metaForm.dataInicio, value);
+                    setMetaForm(prev => ({ 
+                      ...prev, 
+                      periodo: value,
+                      dataFim: novaDataFim 
+                    }));
+                  }}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -967,7 +995,16 @@ export default function MetaGastos() {
                         <Calendar
                           mode="single"
                           selected={metaForm.dataInicio}
-                          onSelect={(date) => date && setMetaForm(prev => ({ ...prev, dataInicio: date }))}
+                          onSelect={(date) => {
+                            if (date) {
+                              const novaDataFim = calcularDataFim(date, metaForm.periodo);
+                              setMetaForm(prev => ({ 
+                                ...prev, 
+                                dataInicio: date,
+                                dataFim: novaDataFim
+                              }));
+                            }
+                          }}
                           initialFocus
                           className="pointer-events-auto"
                         />
@@ -975,24 +1012,38 @@ export default function MetaGastos() {
                     </Popover>
                   </div>
                   <div className="space-y-2">
-                    <Label>Data Fim</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !metaForm.dataFim && "text-muted-foreground")}>
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {metaForm.dataFim ? format(metaForm.dataFim, "dd/MM/yyyy") : "Selecionar"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={metaForm.dataFim}
-                          onSelect={(date) => date && setMetaForm(prev => ({ ...prev, dataFim: date }))}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <div className="flex items-center gap-2">
+                      <Label>Data Fim</Label>
+                      <Badge variant="outline" className="text-xs">
+                        Automático
+                      </Badge>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start text-left font-normal bg-muted cursor-default"
+                      disabled
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(metaForm.dataFim, "dd/MM/yyyy")}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Calculado baseado no período selecionado
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-muted p-3 rounded-md flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Duração:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">
+                      {differenceInDays(metaForm.dataFim, metaForm.dataInicio) + 1} dias
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      ({format(metaForm.dataInicio, "dd/MM")} até {format(metaForm.dataFim, "dd/MM/yyyy")})
+                    </span>
                   </div>
                 </div>
 
