@@ -15,19 +15,19 @@ const Index = () => {
   } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
-      const [recebimentos, orcamentos, ordens] = await Promise.all([supabase.from('recebimentos').select('status', {
+      const [recebimentos, orcamentos, ordensAprovadas] = await Promise.all([supabase.from('recebimentos').select('status', {
         count: 'exact'
       }), supabase.from('orcamentos').select('status', {
         count: 'exact'
-      }).eq('status', 'pendente'), supabase.from('ordens_servico').select('status', {
+      }).eq('status', 'pendente'), supabase.from('orcamentos').select('status', {
         count: 'exact'
-      }).eq('status', 'em_andamento')]);
+      }).eq('status', 'aprovado')]);
       const emAnalise = recebimentos.data?.filter(r => r.status === 'em_analise').length || 0;
       return {
         totalRecebimentos: recebimentos.count || 0,
         emAnalise,
         orcamentosPendentes: orcamentos.count || 0,
-        projetosAndamento: ordens.count || 0
+        ordensAprovadas: ordensAprovadas.count || 0
       };
     }
   });
@@ -81,10 +81,10 @@ const Index = () => {
     icon: Calculator,
     color: "text-accent"
   }, {
-    label: "Projetos em Andamento",
-    value: statsData?.projetosAndamento.toString() || "0",
+    label: "Ordens Aprovadas",
+    value: statsData?.ordensAprovadas.toString() || "0",
     icon: CheckCircle,
-    color: "text-primary"
+    color: "text-success"
   }];
   const quickActions = [{
     title: "Novo Recebimento",
