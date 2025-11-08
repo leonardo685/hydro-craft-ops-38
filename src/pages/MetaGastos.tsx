@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Target, Plus, Pencil, Trash2, TrendingUp, TrendingDown, AlertTriangle, ArrowUp, ArrowDown, Calculator, DollarSign, FileDown } from "lucide-react";
+import { Target, Plus, Pencil, Trash2, TrendingUp, TrendingDown, AlertTriangle, ArrowUp, ArrowDown, Calculator, DollarSign, FileDown, Save } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
@@ -510,6 +510,26 @@ export default function MetaGastos() {
   const abrirCalculadora = (tipo: 'despesa' | 'faturamento' | 'despesaNaoOp' | 'investimento') => {
     setCalcTipo(tipo);
     setCalcOpen(true);
+  };
+
+  // Função para salvar planejamento
+  const salvarPlanejamento = () => {
+    try {
+      const planejamentoParaSalvar = {
+        ...planejamento,
+        dataGeracao: new Date().toISOString(),
+        totais: calcularTotais
+      };
+      
+      localStorage.setItem('planejamento_estrategico', JSON.stringify(planejamentoParaSalvar));
+      
+      toast.success('Planejamento salvo com sucesso!', {
+        description: 'Seus dados foram salvos localmente e estarão disponíveis na próxima vez que acessar.'
+      });
+    } catch (error) {
+      console.error('Erro ao salvar planejamento:', error);
+      toast.error('Erro ao salvar planejamento');
+    }
   };
 
   // Função para gerar PDF do Planejamento
@@ -1259,10 +1279,16 @@ export default function MetaGastos() {
                 <h3 className="text-lg font-semibold">Simulação Financeira</h3>
                 <p className="text-sm text-muted-foreground">Planeje cenários e analise a viabilidade financeira</p>
               </div>
-              <Button onClick={gerarPDFPlanejamento} variant="outline" className="gap-2">
-                <FileDown className="h-4 w-4" />
-                Exportar PDF
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={salvarPlanejamento} variant="default" className="gap-2">
+                  <Save className="h-4 w-4" />
+                  Salvar Planejamento
+                </Button>
+                <Button onClick={gerarPDFPlanejamento} variant="outline" className="gap-2">
+                  <FileDown className="h-4 w-4" />
+                  Exportar PDF
+                </Button>
+              </div>
             </div>
 
             {/* Seção 1: Formulários de Entrada */}
