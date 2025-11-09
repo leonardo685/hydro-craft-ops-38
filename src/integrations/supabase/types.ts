@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      aprovadores_fluxo: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          fluxo_permissao: string
+          id: string
+          nome: string
+          telefone: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          fluxo_permissao: string
+          id?: string
+          nome: string
+          telefone: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          fluxo_permissao?: string
+          id?: string
+          nome?: string
+          telefone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       atividades_sistema: {
         Row: {
           created_at: string
