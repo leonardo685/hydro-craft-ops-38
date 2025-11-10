@@ -486,7 +486,7 @@ export default function NovoOrcamento() {
               clienteId: ordemServico.recebimentos?.cliente_id || '',
               solicitante: '',
               numeroNota: ordemServico.recebimentos?.nota_fiscal || '',
-              numeroSerie: ordemRef, // Usar ordem de referência gerada automaticamente
+              numeroSerie: ordemServico.recebimentos?.numero_ordem || ordemRef, // Usar número da ordem do recebimento
               dataAbertura: new Date().toISOString().split('T')[0],
               observacoes: ordemServico.observacoes_tecnicas || '',
               tag: ordemServico.equipamento || ''
@@ -1224,6 +1224,22 @@ export default function NovoOrcamento() {
               variant: "destructive"
             });
           }
+        }
+      }
+      
+      // Atualizar status do recebimento se o orçamento está vinculado a uma ordem de serviço
+      if (ordemServicoId) {
+        const { data: ordemServico } = await supabase
+          .from('ordens_servico')
+          .select('recebimento_id')
+          .eq('id', ordemServicoId)
+          .maybeSingle();
+        
+        if (ordemServico?.recebimento_id) {
+          await supabase
+            .from('recebimentos')
+            .update({ status: 'aguardando_aprovacao' })
+            .eq('id', ordemServico.recebimento_id);
         }
       }
       
