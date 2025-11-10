@@ -275,7 +275,8 @@ export default function Financeiro() {
 
   // Função para calcular status de pagamento
   const getStatusPagamento = (dataEsperada: Date, dataRealizada: Date | null, pago: boolean) => {
-    if (pago) return 'pago';
+    // Se tem data realizada ou está marcado como pago, considera como pago
+    if (pago || dataRealizada) return 'pago';
     
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
