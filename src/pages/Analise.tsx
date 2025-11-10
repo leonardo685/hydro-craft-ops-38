@@ -150,6 +150,7 @@ export default function OrdensServico() {
       if (error) throw error;
       
       // Enviar notificação para o n8n/Telegram
+      let notificacaoEnviada = false;
       try {
         if (ordem) {
           // Buscar o número correto da ordem no formato MH-XXX-YY
@@ -159,7 +160,7 @@ export default function OrdensServico() {
             .eq('id', ordem.recebimento_id)
             .single();
 
-          await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
+          const webhookResponse = await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -172,9 +173,21 @@ export default function OrdensServico() {
               data_aprovacao: format(new Date(), 'dd-MM-yyyy')
             })
           });
+
+          if (webhookResponse.ok) {
+            notificacaoEnviada = true;
+            console.log('✅ Notificação enviada com sucesso');
+          } else {
+            console.error('❌ Webhook retornou erro:', webhookResponse.status);
+          }
         }
       } catch (webhookError) {
-        console.error('Erro ao enviar webhook:', webhookError);
+        console.error('❌ Erro ao enviar webhook:', webhookError);
+        toast({
+          title: "Aviso",
+          description: "Ordem aprovada, mas notificação não foi enviada. Verifique o webhook.",
+          variant: "destructive"
+        });
       }
       
       toast({
