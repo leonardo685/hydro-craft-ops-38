@@ -174,7 +174,7 @@ export default function OrdensServico() {
           try {
             console.log(`📤 Tentativa ${tentativa}/${maxTentativas} de envio da notificação...`);
             
-            const webhookResponse = await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
+            const webhookResponse = await fetch('https://primary-production-dc42.up.railway.app/webhook/f2cabfd9-4e4c-4dd0-802a-b27c4b0c9d17', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
