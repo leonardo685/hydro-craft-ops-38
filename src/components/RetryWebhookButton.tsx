@@ -11,6 +11,7 @@ export const RetryWebhookButton = () => {
     try {
       const { data, error } = await supabase.functions.invoke('retry-webhook', {
         body: {
+          tipo: "ordem_aprovada",
           numero_ordem: "MH-033-25",
           cliente: "RECIVALE INDUSTRIA E COMERCIO DE METAIS S.A.",
           equipamento: "Cilindro Hidráulico",

@@ -11,11 +11,12 @@ serve(async (req) => {
   }
 
   try {
-    const { numero_ordem, cliente, equipamento, data_aprovacao } = await req.json();
+    const { tipo, numero_ordem, cliente, equipamento, data_aprovacao } = await req.json();
 
-    console.log(`🔄 Retrying webhook for order: ${numero_ordem}`);
+    console.log(`🔄 Retrying webhook for order: ${numero_ordem} (tipo: ${tipo})`);
 
     const payload = {
+      tipo,
       numero_ordem,
       cliente,
       equipamento,
