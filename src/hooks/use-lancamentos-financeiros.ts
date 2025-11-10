@@ -129,6 +129,8 @@ export const useLancamentosFinanceiros = () => {
       if (lancamento.dataEsperada) updateData.data_esperada = lancamento.dataEsperada.toISOString();
       if (lancamento.dataRealizada !== undefined) {
         updateData.data_realizada = lancamento.dataRealizada ? lancamento.dataRealizada.toISOString() : null;
+        // Sincronização automática: se data_realizada está preenchida, pago deve ser true
+        updateData.pago = lancamento.dataRealizada ? true : false;
       }
       if (lancamento.dataEmissao) updateData.data_emissao = lancamento.dataEmissao.toISOString();
       if (lancamento.pago !== undefined) updateData.pago = lancamento.pago;
