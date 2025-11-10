@@ -310,32 +310,66 @@ export default function Aprovados() {
           }).eq('id', ordemSelecionada.id);
           if (error) throw error;
 
-          // Enviar notificação para o n8n/Telegram
-          try {
-            const notaFiscalEntrada = ordemSelecionada.recebimentos?.nota_fiscal || ordemSelecionada.recebimentos?.chave_acesso_nfe || 'n/a';
-            const tipoNotificacao = ordemSelecionada.orcamento_id 
-              ? 'ordem_finalizada' 
-              : ordemSelecionada.recebimento_id 
-                ? 'ordem_retorno' 
-                : 'ordem_faturamento_sem_retorno';
-            
-            await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                tipo: tipoNotificacao,
-                numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
-                cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
-                equipamento: ordemSelecionada.equipamento,
-                nota_fiscal_entrada: notaFiscalEntrada,
-                data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
-                data_aprovacao: ordemSelecionada.updated_at ? format(parseISO(ordemSelecionada.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy')
-              })
+          // Enviar notificação para o n8n/Telegram com retry
+          const maxTentativas = 3;
+          const intervaloRetry = 2000; // 2 segundos
+          let notificacaoEnviada = false;
+
+          const notaFiscalEntrada = ordemSelecionada.recebimentos?.nota_fiscal || ordemSelecionada.recebimentos?.chave_acesso_nfe || 'n/a';
+          const tipoNotificacao = ordemSelecionada.orcamento_id 
+            ? 'ordem_finalizada' 
+            : ordemSelecionada.recebimento_id 
+              ? 'ordem_retorno' 
+              : 'ordem_faturamento_sem_retorno';
+          
+          const payload = {
+            tipo: tipoNotificacao,
+            numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
+            cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
+            equipamento: ordemSelecionada.equipamento,
+            nota_fiscal_entrada: notaFiscalEntrada,
+            data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
+            data_aprovacao: ordemSelecionada.updated_at ? format(parseISO(ordemSelecionada.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy')
+          };
+
+          for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+            try {
+              console.log(`📤 Tentativa ${tentativa}/${maxTentativas} de envio da notificação...`);
+              
+              const webhookResponse = await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+              });
+
+              if (webhookResponse.ok) {
+                notificacaoEnviada = true;
+                console.log('✅ Notificação de faturamento enviada com sucesso na tentativa', tentativa);
+                break;
+              } else {
+                console.error(`❌ Tentativa ${tentativa} falhou com status:`, webhookResponse.status);
+                if (tentativa < maxTentativas) {
+                  console.log(`⏳ Aguardando ${intervaloRetry/1000}s antes da próxima tentativa...`);
+                  await new Promise(resolve => setTimeout(resolve, intervaloRetry));
+                }
+              }
+            } catch (webhookError) {
+              console.error(`❌ Erro na tentativa ${tentativa}:`, webhookError);
+              if (tentativa < maxTentativas) {
+                console.log(`⏳ Aguardando ${intervaloRetry/1000}s antes da próxima tentativa...`);
+                await new Promise(resolve => setTimeout(resolve, intervaloRetry));
+              }
+            }
+          }
+
+          if (!notificacaoEnviada) {
+            toast({
+              title: "Aviso",
+              description: `Operação concluída, mas notificação não foi enviada após ${maxTentativas} tentativas.`,
+              variant: "destructive"
             });
-          } catch (webhookError) {
-            console.error('Erro ao enviar webhook:', webhookError);
           }
           toast({
             title: "Ordem finalizada",

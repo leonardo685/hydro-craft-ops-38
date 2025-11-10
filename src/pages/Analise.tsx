@@ -149,45 +149,66 @@ export default function OrdensServico() {
 
       if (error) throw error;
       
-      // Enviar notificação para o n8n/Telegram
+      // Enviar notificação para o n8n/Telegram com retry
       let notificacaoEnviada = false;
-      try {
-        if (ordem) {
-          // Buscar o número correto da ordem no formato MH-XXX-YY
-          const { data: recebimento } = await supabase
-            .from('recebimentos')
-            .select('numero_ordem')
-            .eq('id', ordem.recebimento_id)
-            .single();
+      const maxTentativas = 3;
+      const intervaloRetry = 2000; // 2 segundos
+      
+      if (ordem) {
+        // Buscar o número correto da ordem no formato MH-XXX-YY
+        const { data: recebimento } = await supabase
+          .from('recebimentos')
+          .select('numero_ordem')
+          .eq('id', ordem.recebimento_id)
+          .single();
 
-          const webhookResponse = await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              tipo: 'ordem_aprovada',
-              numero_ordem: recebimento?.numero_ordem || ordem.numero_ordem,
-              cliente: ordem.cliente_nome,
-              equipamento: ordem.equipamento,
-              data_aprovacao: format(new Date(), 'dd-MM-yyyy')
-            })
-          });
+        const payload = {
+          tipo: 'ordem_aprovada',
+          numero_ordem: recebimento?.numero_ordem || ordem.numero_ordem,
+          cliente: ordem.cliente_nome,
+          equipamento: ordem.equipamento,
+          data_aprovacao: format(new Date(), 'dd-MM-yyyy')
+        };
 
-          if (webhookResponse.ok) {
-            notificacaoEnviada = true;
-            console.log('✅ Notificação enviada com sucesso');
-          } else {
-            console.error('❌ Webhook retornou erro:', webhookResponse.status);
+        for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+          try {
+            console.log(`📤 Tentativa ${tentativa}/${maxTentativas} de envio da notificação...`);
+            
+            const webhookResponse = await fetch('https://primary-production-dc42.up.railway.app/webhook/01607294-b2b4-4482-931f-c3723b128d7d', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload)
+            });
+
+            if (webhookResponse.ok) {
+              notificacaoEnviada = true;
+              console.log('✅ Notificação enviada com sucesso na tentativa', tentativa);
+              break;
+            } else {
+              console.error(`❌ Tentativa ${tentativa} falhou com status:`, webhookResponse.status);
+              if (tentativa < maxTentativas) {
+                console.log(`⏳ Aguardando ${intervaloRetry/1000}s antes da próxima tentativa...`);
+                await new Promise(resolve => setTimeout(resolve, intervaloRetry));
+              }
+            }
+          } catch (webhookError) {
+            console.error(`❌ Erro na tentativa ${tentativa}:`, webhookError);
+            if (tentativa < maxTentativas) {
+              console.log(`⏳ Aguardando ${intervaloRetry/1000}s antes da próxima tentativa...`);
+              await new Promise(resolve => setTimeout(resolve, intervaloRetry));
+            }
           }
         }
-      } catch (webhookError) {
-        console.error('❌ Erro ao enviar webhook:', webhookError);
-        toast({
-          title: "Aviso",
-          description: "Ordem aprovada, mas notificação não foi enviada. Verifique o webhook.",
-          variant: "destructive"
-        });
+
+        if (!notificacaoEnviada) {
+          toast({
+            title: "Aviso",
+            description: `Ordem aprovada, mas notificação não foi enviada após ${maxTentativas} tentativas. Verifique o webhook.`,
+            variant: "destructive"
+          });
+        }
       }
       
       toast({
