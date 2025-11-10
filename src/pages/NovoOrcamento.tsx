@@ -183,6 +183,43 @@ export default function NovoOrcamento() {
     }
   };
 
+  // Função para gerar próximo número de ordem de referência no formato MH-000-00
+  const gerarProximaOrdemReferencia = async () => {
+    try {
+      const anoAtual = new Date().getFullYear().toString().slice(-2);
+      
+      // Buscar a última ordem de referência do ano atual
+      const { data, error } = await supabase
+        .from('orcamentos')
+        .select('ordem_referencia')
+        .not('ordem_referencia', 'is', null)
+        .ilike('ordem_referencia', `MH-%-${anoAtual}`)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Erro ao buscar última ordem de referência:', error);
+        return `MH-001-${anoAtual}`;
+      }
+
+      if (data && data.length > 0 && data[0].ordem_referencia) {
+        // Extrair o número sequencial: MH-XXX-YY
+        const partes = data[0].ordem_referencia.split('-');
+        if (partes.length === 3 && partes[0] === 'MH' && partes[2] === anoAtual) {
+          const sequencial = parseInt(partes[1]) + 1;
+          return `MH-${sequencial.toString().padStart(3, '0')}-${anoAtual}`;
+        }
+      }
+
+      // Se não encontrou nenhuma ordem do ano atual, começar com 001
+      return `MH-001-${anoAtual}`;
+    } catch (error) {
+      console.error('Erro ao gerar próxima ordem de referência:', error);
+      const anoAtual = new Date().getFullYear().toString().slice(-2);
+      return `MH-001-${anoAtual}`;
+    }
+  };
+
   // Função para carregar histórico de revisões do orçamento
   const carregarHistoricoOrcamento = async (orcamentoId: string) => {
     if (!orcamentoId) return;
@@ -280,8 +317,8 @@ export default function NovoOrcamento() {
           tag: orcamentoEdicao.equipamento || '',
           solicitante: orcamentoEdicao.observacoes?.split('|')[1]?.replace('Solicitante:', '')?.trim() || '',
           dataAbertura: orcamentoEdicao.data_criacao ? new Date(orcamentoEdicao.data_criacao).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          numeroNota: orcamentoEdicao.observacoes?.split('|')[2]?.replace('Nota:', '')?.trim() || '',
-          numeroSerie: orcamentoEdicao.observacoes?.split('|')[3]?.replace('Ordem Ref:', '')?.trim() || orcamentoEdicao.observacoes?.split('|')[3]?.replace('Série:', '')?.trim() || '',
+          numeroNota: orcamentoEdicao.numero_nota_entrada || orcamentoEdicao.observacoes?.split('|')[2]?.replace('Nota:', '')?.trim() || '',
+          numeroSerie: orcamentoEdicao.ordem_referencia || orcamentoEdicao.observacoes?.split('|')[3]?.replace('Ordem Ref:', '')?.trim() || orcamentoEdicao.observacoes?.split('|')[3]?.replace('Série:', '')?.trim() || '',
           observacoes: orcamentoEdicao.descricao || '',
           status: orcamentoEdicao.status || 'pendente'
         });
@@ -393,11 +430,13 @@ export default function NovoOrcamento() {
         return; // Skip other loading logic for editing
       }
 
-      // Gerar número do orçamento apenas se for novo
+      // Gerar número do orçamento e ordem de referência apenas se for novo
       const proximoNumero = await gerarProximoNumero();
+      const proximaOrdemRef = await gerarProximaOrdemReferencia();
       setDadosOrcamento(prev => ({
         ...prev,
-        numeroOrdem: proximoNumero
+        numeroOrdem: proximoNumero,
+        numeroSerie: proximaOrdemRef
       }));
 
       if (ordemServicoId) {
@@ -436,6 +475,9 @@ export default function NovoOrcamento() {
           }
 
           if (ordemServico) {
+            // Gerar ordem de referência automaticamente
+            const ordemRef = await gerarProximaOrdemReferencia();
+            
             // Preencher dados do orçamento com dados da ordem de serviço
             setDadosOrcamento(prev => ({
               ...prev,
@@ -444,7 +486,7 @@ export default function NovoOrcamento() {
               clienteId: ordemServico.recebimentos?.cliente_id || '',
               solicitante: '',
               numeroNota: ordemServico.recebimentos?.nota_fiscal || '',
-              numeroSerie: ordemServico.numero_ordem || '',
+              numeroSerie: ordemRef, // Usar ordem de referência gerada automaticamente
               dataAbertura: new Date().toISOString().split('T')[0],
               observacoes: ordemServico.observacoes_tecnicas || '',
               tag: ordemServico.equipamento || ''
@@ -1036,6 +1078,12 @@ export default function NovoOrcamento() {
         }
       }
       
+      // Gerar ordem de referência automaticamente se não existir
+      let ordemRef = dadosOrcamento.numeroSerie;
+      if (!ordemRef || !ordemRef.startsWith('MH-')) {
+        ordemRef = await gerarProximaOrdemReferencia();
+      }
+
       // Criar dados para inserir no Supabase
     const orcamentoData = {
       numero: dadosOrcamento.numeroOrdem,
@@ -1046,7 +1094,9 @@ export default function NovoOrcamento() {
         valor: valorFinal,
         desconto_percentual: informacoesComerciais.desconto,
         status: 'pendente',
-        observacoes: `Tipo: ${dadosOrcamento.tipoOrdem} | Solicitante: ${dadosOrcamento.solicitante} | Nota: ${dadosOrcamento.numeroNota} | Ordem Ref: ${dadosOrcamento.numeroSerie}`,
+        observacoes: `Tipo: ${dadosOrcamento.tipoOrdem} | Solicitante: ${dadosOrcamento.solicitante}`,
+        numero_nota_entrada: dadosOrcamento.numeroNota || null,
+        ordem_referencia: ordemRef,
         ordem_servico_id: ordemServicoId || null,
         condicao_pagamento: informacoesComerciais.condicaoPagamento || null,
         prazo_entrega: informacoesComerciais.prazoEntrega || null,
@@ -2578,11 +2628,11 @@ export default function NovoOrcamento() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="numeroSerie">Ordem Referencia</Label>
+                  <Label htmlFor="numeroSerie">Ordem Referência (Automático)</Label>
                   <Input id="numeroSerie" value={dadosOrcamento.numeroSerie} onChange={e => setDadosOrcamento(prev => ({
                   ...prev,
                   numeroSerie: e.target.value
-                }))} placeholder="Número da ordem de serviço referência" disabled={!!ordemServicoId} className={ordemServicoId ? "bg-muted" : ""} />
+                }))} placeholder="MH-000-00" className="bg-muted" disabled />
                 </div>
                 <div>
                   <Label htmlFor="tag">TAG</Label>

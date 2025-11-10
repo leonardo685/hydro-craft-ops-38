@@ -1107,8 +1107,10 @@ export type Database = {
           margem_contribuicao: number | null
           numero: string
           numero_nf: string | null
+          numero_nota_entrada: string | null
           observacoes: string | null
           observacoes_nota: string | null
+          ordem_referencia: string | null
           ordem_servico_id: string | null
           pdf_nota_fiscal: string | null
           percentuais_customizados: Json | null
@@ -1148,8 +1150,10 @@ export type Database = {
           margem_contribuicao?: number | null
           numero: string
           numero_nf?: string | null
+          numero_nota_entrada?: string | null
           observacoes?: string | null
           observacoes_nota?: string | null
+          ordem_referencia?: string | null
           ordem_servico_id?: string | null
           pdf_nota_fiscal?: string | null
           percentuais_customizados?: Json | null
@@ -1189,8 +1193,10 @@ export type Database = {
           margem_contribuicao?: number | null
           numero?: string
           numero_nf?: string | null
+          numero_nota_entrada?: string | null
           observacoes?: string | null
           observacoes_nota?: string | null
+          ordem_referencia?: string | null
           ordem_servico_id?: string | null
           pdf_nota_fiscal?: string | null
           percentuais_customizados?: Json | null
