@@ -573,22 +573,15 @@ export default function Orcamentos() {
       doc.text(`CNPJ: ${cnpjCliente || 'N/A'}`, 22, yPosition + 5.5);
       yPosition += 8;
 
-      // Quarta linha: NF de Entrada e Ordem Referência (duas colunas)
-      if (orcamento.numero_nota_entrada || orcamento.ordem_referencia) {
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(20, yPosition, colWidth, 8);
-        doc.rect(20 + colWidth, yPosition, colWidth, 8);
-        
-        if (orcamento.numero_nota_entrada) {
-          doc.text(`NF de Entrada: ${orcamento.numero_nota_entrada}`, 22, yPosition + 5.5);
-        }
-        
-        if (orcamento.ordem_referencia) {
-          doc.text(`Ordem Referência: ${orcamento.ordem_referencia}`, 22 + colWidth, yPosition + 5.5);
-        }
-        
-        yPosition += 8;
-      }
+      // Quarta linha: NF de Entrada e Ordem Referência (duas colunas) - sempre exibir
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(20, yPosition, colWidth, 8);
+      doc.rect(20 + colWidth, yPosition, colWidth, 8);
+      
+      doc.text(`NF de Entrada: ${orcamento.numero_nota_entrada || 'N/A'}`, 22, yPosition + 5.5);
+      doc.text(`Ordem Referência: ${orcamento.ordem_referencia || 'N/A'}`, 22 + colWidth, yPosition + 5.5);
+      
+      yPosition += 8;
 
       // === CONDIÇÕES COMERCIAIS ===
       yPosition += 10;
