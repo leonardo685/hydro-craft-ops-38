@@ -450,11 +450,6 @@ export default function DFC() {
   const contaAtual = contasBancariasAtualizadas.find(conta => conta.id === contaSelecionada);
   const saldoContaSelecionada = contaAtual ? contaAtual.saldo : saldoTotal;
 
-  // Cálculos dos cards - usando dados reais do banco
-  // Apenas lançamentos PAGOS com data realizada são contabilizados
-  const totalEntradas = lancamentos.filter(item => item.tipo === 'entrada' && item.pago && item.dataRealizada).reduce((acc, item) => acc + item.valor, 0);
-  const totalSaidas = lancamentos.filter(item => item.tipo === 'saida' && item.pago && item.dataRealizada).reduce((acc, item) => acc + item.valor, 0);
-  const saldoDia = totalEntradas - totalSaidas;
   const getStatusPagamento = (dataEsperada: Date, dataRealizada: Date | null, pago: boolean) => {
     // Se tem data realizada válida ou está marcado como pago, considera como pago
     if (pago || (dataRealizada && dataRealizada instanceof Date && !isNaN(dataRealizada.getTime()))) {
@@ -527,6 +522,25 @@ export default function DFC() {
     }
     return true;
   });
+
+  // Cálculos dos cards - baseado nos lançamentos filtrados
+  // Apenas lançamentos PAGOS são contabilizados
+  const totalEntradasFiltradas = useMemo(() => {
+    return extratoFiltrado
+      .filter(item => item.tipo === 'entrada' && item.pago)
+      .reduce((acc, item) => acc + item.valor, 0);
+  }, [extratoFiltrado]);
+
+  const totalSaidasFiltradas = useMemo(() => {
+    return extratoFiltrado
+      .filter(item => item.tipo === 'saida' && item.pago)
+      .reduce((acc, item) => acc + item.valor, 0);
+  }, [extratoFiltrado]);
+
+  const saldoDiaFiltrado = useMemo(() => {
+    return totalEntradasFiltradas - totalSaidasFiltradas;
+  }, [totalEntradasFiltradas, totalSaidasFiltradas]);
+
   const handleLancamento = async () => {
     if (!lancamentoForm.valor || !lancamentoForm.descricao) {
       toast.error("Preencha todos os campos obrigatórios");
@@ -2066,8 +2080,8 @@ export default function DFC() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-green-600">{formatCurrency(totalEntradas)}</div>
-                      <p className="text-xs text-muted-foreground mt-1">Recebimentos do dia</p>
+                      <div className="text-2xl font-bold text-green-600">{formatCurrency(totalEntradasFiltradas)}</div>
+                      <p className="text-xs text-muted-foreground mt-1">Recebimentos (filtrados)</p>
                     </CardContent>
                   </Card>
 
@@ -2079,12 +2093,12 @@ export default function DFC() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-destructive">{formatCurrency(totalSaidas)}</div>
-                      <p className="text-xs text-muted-foreground mt-1">Pagamentos do dia</p>
+                      <div className="text-2xl font-bold text-destructive">{formatCurrency(totalSaidasFiltradas)}</div>
+                      <p className="text-xs text-muted-foreground mt-1">Pagamentos (filtrados)</p>
                     </CardContent>
                   </Card>
 
-                  <Card className={saldoDia >= 0 ? "bg-blue-50 dark:bg-blue-950/20 border-2 shadow-lg" : "bg-amber-50 dark:bg-amber-950/20 border-2 shadow-lg"}>
+                  <Card className={saldoDiaFiltrado >= 0 ? "bg-blue-50 dark:bg-blue-950/20 border-2 shadow-lg" : "bg-amber-50 dark:bg-amber-950/20 border-2 shadow-lg"}>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />
@@ -2092,11 +2106,11 @@ export default function DFC() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className={`text-2xl font-bold ${saldoDia >= 0 ? 'text-blue-600' : 'text-amber-600'}`}>
-                        {formatCurrency(saldoDia)}
+                      <div className={`text-2xl font-bold ${saldoDiaFiltrado >= 0 ? 'text-blue-600' : 'text-amber-600'}`}>
+                        {formatCurrency(saldoDiaFiltrado)}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {saldoDia >= 0 ? 'Resultado positivo' : 'Resultado negativo'}
+                        {saldoDiaFiltrado >= 0 ? 'Resultado positivo' : 'Resultado negativo'}
                       </p>
                     </CardContent>
                   </Card>
