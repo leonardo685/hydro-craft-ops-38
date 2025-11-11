@@ -104,6 +104,179 @@ export function UploadExtratoModal({
     return new Date();
   };
 
+  // Função auxiliar para converter valores brasileiros
+  const converterValorBR = (str: string): number => {
+    if (!str) return 0;
+    // Remove tudo exceto dígitos, vírgula, ponto e sinal negativo
+    const cleaned = str.replace(/[^\d,.-]/g, '').trim();
+    // Converte formato BR (1.234,56) para float
+    return parseFloat(cleaned.replace(/\./g, '').replace(',', '.'));
+  };
+
+  // Detecta o banco pelo nome do arquivo ou conteúdo
+  const detectarBanco = (texto: string, nomeArquivo: string): string => {
+    const textoLower = texto.toLowerCase();
+    const nomeLower = nomeArquivo.toLowerCase();
+    
+    if (nomeLower.includes('c6') || textoLower.includes('c6 bank') || textoLower.includes('banco c6')) {
+      return 'C6 Bank';
+    }
+    if (nomeLower.includes('sicredi') || textoLower.includes('sicredi')) {
+      return 'Sicredi';
+    }
+    if (nomeLower.includes('itau') || textoLower.includes('itaú') || textoLower.includes('itau')) {
+      return 'Itaú';
+    }
+    if (nomeLower.includes('nubank') || textoLower.includes('nubank') || textoLower.includes('roxinho')) {
+      return 'Nubank';
+    }
+    if (nomeLower.includes('bradesco') || textoLower.includes('bradesco')) {
+      return 'Bradesco';
+    }
+    if (nomeLower.includes('santander') || textoLower.includes('santander')) {
+      return 'Santander';
+    }
+    if (nomeLower.includes('caixa') || textoLower.includes('caixa econômica')) {
+      return 'Caixa';
+    }
+    if (nomeLower.includes('bb') || nomeLower.includes('banco do brasil') || textoLower.includes('banco do brasil')) {
+      return 'Banco do Brasil';
+    }
+    
+    return 'Genérico';
+  };
+
+  // Parser genérico que tenta múltiplos padrões
+  const parseGenerico = (fullText: string, nomeArquivo: string): TransacaoExtrato[] => {
+    const transacoes: TransacaoExtrato[] = [];
+    let transacaoIndex = 0;
+    
+    console.log('🔍 Tentando parser genérico multi-formato...');
+    
+    // Lista de regex para diferentes formatos de banco
+    const patterns = [
+      // Formato 1: Sicredi/tradicional - Data Descrição Valor Saldo
+      {
+        nome: 'Sicredi/Tradicional',
+        regex: /(\d{2}\/\d{2}\/\d{4})\s+([A-Z][\s\S]+?)\s+([-]?[\d.]+,\d{2})\s+([-]?[\d.]+,\d{2})/g,
+        grupos: { data: 1, descricao: 2, valor: 3, saldo: 4 }
+      },
+      // Formato 2: C6 Bank - Data Descrição -R$ Valor ou R$ Valor
+      {
+        nome: 'C6 Bank',
+        regex: /(\d{2}\/\d{2}\/\d{4})\s+(.+?)\s+(-?R?\$?\s*[\d.]+,\d{2})/g,
+        grupos: { data: 1, descricao: 2, valor: 3 }
+      },
+      // Formato 3: Nubank/App - Data Descrição Valor (sem R$)
+      {
+        nome: 'Nubank/Simples',
+        regex: /(\d{2}\/\d{2}\/\d{4})\s+([^\d\n]+?)\s+([-+]?\s*[\d.]+,\d{2})/g,
+        grupos: { data: 1, descricao: 2, valor: 3 }
+      },
+      // Formato 4: Itaú - DD/MM Descrição Valor
+      {
+        nome: 'Itaú/DD-MM',
+        regex: /(\d{2}\/\d{2})\s+([^\d\n]+?)\s+([-]?[\d.]+,\d{2})/g,
+        grupos: { data: 1, descricao: 2, valor: 3 }
+      },
+      // Formato 5: Data com hífen - DD-MM-YYYY
+      {
+        nome: 'Data com hífen',
+        regex: /(\d{2}-\d{2}-\d{4})\s+(.+?)\s+([-]?R?\$?\s*[\d.]+,\d{2})/g,
+        grupos: { data: 1, descricao: 2, valor: 3 }
+      },
+      // Formato 6: Mais genérico - qualquer data seguida de texto e valor
+      {
+        nome: 'Genérico amplo',
+        regex: /(\d{2}[\/\-]\d{2}[\/\-]\d{2,4})\s+(.{5,}?)\s+([-+]?R?\$?\s*[\d.]+,\d{2})/g,
+        grupos: { data: 1, descricao: 2, valor: 3 }
+      }
+    ];
+    
+    // Tenta cada padrão
+    for (const pattern of patterns) {
+      console.log(`🔍 Testando padrão: ${pattern.nome}`);
+      const regex = new RegExp(pattern.regex.source, 'g');
+      let match;
+      let countThisPattern = 0;
+      
+      while ((match = regex.exec(fullText)) !== null) {
+        const dataStr = match[pattern.grupos.data];
+        const descricaoBruta = match[pattern.grupos.descricao];
+        const valorStr = match[pattern.grupos.valor];
+        
+        // Filtros básicos para ignorar cabeçalhos
+        const descricaoLower = descricaoBruta?.toLowerCase() || '';
+        if (descricaoLower.includes('saldo anterior') || 
+            descricaoLower.includes('saldo atual') ||
+            descricaoLower.includes('total') ||
+            descricaoLower.includes('extrato') ||
+            descricaoLower.includes('data descrição') ||
+            descricaoLower.includes('lançamento') ||
+            descricaoLower.length < 3) {
+          continue;
+        }
+        
+        // Converte valor
+        const valorNum = converterValorBR(valorStr);
+        if (isNaN(valorNum) || valorNum === 0) continue;
+        
+        // Determina tipo (entrada/saída)
+        const isNegativo = valorStr.includes('-') || valorNum < 0;
+        
+        // Parse da data
+        let data: Date;
+        try {
+          data = parseDate(dataStr);
+        } catch {
+          continue;
+        }
+        
+        // Limpa descrição
+        const descricaoLimpa = descricaoBruta
+          .trim()
+          .replace(/\s+/g, ' ')
+          .replace(/\s*(PIX_DEB|PIX_CRED|PIX|TED|DOC|CX\d+|DOCUMENTO)\s*/gi, '')
+          .replace(/\s+[-+]?R?\$?\s*[\d.]+,\d{2}\s*$/, '')
+          .substring(0, 200);
+        
+        if (descricaoLimpa.length < 3) continue;
+        
+        const transacao: TransacaoExtrato = {
+          id: `temp_${Date.now()}_${transacaoIndex}_${pattern.nome.replace(/\s/g, '_')}`,
+          data,
+          descricao: descricaoLimpa,
+          valor: Math.abs(valorNum),
+          tipo: isNegativo ? 'saida' : 'entrada',
+          selecionada: true
+        };
+        
+        transacoes.push(transacao);
+        transacaoIndex++;
+        countThisPattern++;
+      }
+      
+      console.log(`   ${pattern.nome}: ${countThisPattern} transações encontradas`);
+      
+      // Se encontrou transações suficientes, para aqui
+      if (transacoes.length > 0) {
+        console.log(`✅ Padrão "${pattern.nome}" funcionou! ${transacoes.length} transações`);
+        break;
+      }
+    }
+    
+    // Remove duplicatas baseadas em data + descrição + valor
+    const transacoesUnicas = transacoes.filter((t, index, self) => 
+      index === self.findIndex(x => 
+        x.data.getTime() === t.data.getTime() && 
+        x.descricao === t.descricao && 
+        x.valor === t.valor
+      )
+    );
+    
+    return transacoesUnicas;
+  };
+
   const parsePDF = (file: File): Promise<TransacaoExtrato[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -111,7 +284,7 @@ export function UploadExtratoModal({
         try {
           const arrayBuffer = e.target?.result as ArrayBuffer;
           
-          // Configurar o worker do PDF.js usando o arquivo local do pacote
+          // Configurar o worker do PDF.js
           pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
           
           // Carregar o PDF
@@ -121,6 +294,7 @@ export function UploadExtratoModal({
           let fullText = '';
           
           // Extrair texto de todas as páginas
+          console.log(`📄 Processando PDF com ${pdf.numPages} página(s)...`);
           for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
@@ -130,83 +304,30 @@ export function UploadExtratoModal({
             fullText += pageText + '\n';
           }
           
-          console.log('📄 Texto extraído do PDF (primeiras 500 chars):', fullText.substring(0, 500));
+          console.log('📄 Primeiras 800 caracteres:', fullText.substring(0, 800));
           
-          const transacoes: TransacaoExtrato[] = [];
+          // Detecta o banco
+          const bancoDetectado = detectarBanco(fullText, file.name);
+          console.log(`🏦 Banco detectado: ${bancoDetectado}`);
           
-          // Regex global para encontrar padrões de transação do Sicredi
-          // Formato: DD/MM/YYYY + descrição (pode incluir documentos como PIX_DEB, CX123, etc) + valor + saldo
-          // Captura descrição de forma mais flexível para incluir todas as variações
-          const regexTransacao = /(\d{2}\/\d{2}\/\d{4})\s+([A-Z][\s\S]+?)\s+([-]?[\d.]+,\d{2})\s+([-]?[\d.]+,\d{2})/g;
+          // Usa parser genérico que tenta múltiplos formatos
+          const transacoes = parseGenerico(fullText, file.name);
           
-          let match;
-          let transacaoIndex = 0;
+          console.log(`📊 Total final: ${transacoes.length} transações encontradas`);
           
-          while ((match = regexTransacao.exec(fullText)) !== null) {
-            const [, dataStr, descricaoBruta, valorStr, saldoStr] = match;
-            
-            // Ignora se for cabeçalho ou linha de saldo anterior
-            const descricaoLower = descricaoBruta.toLowerCase();
-            if (descricaoLower.includes('saldo anterior') || 
-                descricaoLower.includes('saldo atual') ||
-                descricaoLower.includes('total') ||
-                descricaoLower.includes('extrato') ||
-                descricaoLower.includes('data descrição')) {
-              continue;
-            }
-            
-            // Converte valores brasileiros (1.234,56) para float
-            const converterValor = (str: string): number => {
-              if (!str) return 0;
-              return parseFloat(str.replace(/\./g, '').replace(',', '.'));
-            };
-            
-            const valorMovimentacao = converterValor(valorStr);
-            const isNegativo = valorStr.includes('-');
-            
-            // Parse da data
-            const data = parseDate(dataStr);
-            
-            // Limpar descrição - remove espaços múltiplos e documentos
-            const descricaoLimpa = descricaoBruta
-              .trim()
-              .replace(/\s+/g, ' ')
-              .replace(/\s*(PIX_DEB|PIX_CRED|CX\d+|DOCUMENTO)\s*/g, '') // Remove códigos de documento
-              .replace(/\s+[-]?[\d.]+,\d{2}\s*$/, '') // Remove valores que possam ter sido capturados
-              .substring(0, 200);
-            
-            if (!isNaN(valorMovimentacao) && Math.abs(valorMovimentacao) > 0 && descricaoLimpa.length > 3) {
-              const transacao: TransacaoExtrato = {
-                id: `temp_${Date.now()}_${transacaoIndex}`,
-                data,
-                descricao: descricaoLimpa,
-                valor: Math.abs(valorMovimentacao),
-                tipo: isNegativo ? 'saida' : 'entrada',
-                selecionada: true
-              };
-              
-              transacoes.push(transacao);
-              transacaoIndex++;
-              
-              console.log(`✅ Transação ${transacoes.length}:`, {
-                data: dataStr,
-                desc: descricaoLimpa.substring(0, 50),
-                valor: valorMovimentacao,
-                tipo: isNegativo ? 'saída' : 'entrada'
-              });
-            }
-          }
-          
-          console.log(`📊 Total de transações encontradas: ${transacoes.length}`);
+          // Log das primeiras 3 transações para debug
+          transacoes.slice(0, 3).forEach((t, i) => {
+            console.log(`   ${i + 1}. ${format(t.data, 'dd/MM/yyyy')} - ${t.descricao.substring(0, 40)} - R$ ${t.valor.toFixed(2)} (${t.tipo})`);
+          });
           
           if (transacoes.length === 0) {
-            console.error('❌ Nenhuma transação detectada. Texto do PDF (500 chars):', fullText.substring(0, 500));
+            console.error('❌ Nenhuma transação detectada.');
+            console.error('Texto completo (primeiros 1500 chars):', fullText.substring(0, 1500));
             throw new Error(
-              "Nenhuma transação encontrada no PDF.\n\n" +
-              "Formatos suportados:\n" +
-              "• Sicredi: DD/MM/YYYY Descrição Valor Saldo\n" +
-              "• Outros bancos com formato similar\n\n" +
-              "Verifique se o PDF contém dados de transações."
+              `Nenhuma transação encontrada no PDF.\n\n` +
+              `Banco detectado: ${bancoDetectado}\n\n` +
+              `O sistema tentou ${6} formatos diferentes, mas não encontrou transações.\n\n` +
+              `Dica: Tente exportar o extrato como XLSX se disponível.`
             );
           }
           
@@ -229,46 +350,140 @@ export function UploadExtratoModal({
           const data = e.target?.result;
           const workbook = XLSX.read(data, { type: 'binary' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '', raw: false });
+          
+          console.log('📊 Processando XLSX:', file.name);
+          console.log(`   Encontradas ${jsonData.length} linhas`);
           
           if (!jsonData || jsonData.length === 0) {
             throw new Error("Planilha vazia ou sem dados válidos");
           }
 
-          const transacoes = jsonData.map((row: any, index) => {
-            // Busca por colunas de data (case insensitive)
-            const dataKey = Object.keys(row).find(k => 
-              k.toLowerCase().includes('data') || k.toLowerCase().includes('date')
-            );
-            
-            // Busca por colunas de descrição
-            const descricaoKey = Object.keys(row).find(k => 
-              k.toLowerCase().includes('descri') || k.toLowerCase().includes('description') || 
-              k.toLowerCase().includes('histor')
-            );
-            
-            // Busca por colunas de valor
-            const valorKey = Object.keys(row).find(k => 
-              k.toLowerCase().includes('valor') || k.toLowerCase().includes('value') || 
-              k.toLowerCase().includes('montante') || k.toLowerCase().includes('amount')
-            );
+          // Log das colunas encontradas
+          if (jsonData.length > 0) {
+            const colunas = Object.keys(jsonData[0] as any);
+            console.log('   Colunas:', colunas);
+          }
 
-            const valorStr = valorKey ? String(row[valorKey]) : '0';
-            const valorNum = parseFloat(valorStr.replace(/[^\d,-]/g, '').replace(',', '.'));
+          const transacoes = jsonData.map((row: any, index) => {
+            // Busca por colunas de data (mais flexível)
+            const dataKey = Object.keys(row).find(k => {
+              const kLower = k.toLowerCase();
+              return kLower.includes('data') || 
+                     kLower.includes('date') || 
+                     kLower.includes('dt') ||
+                     kLower.includes('dia');
+            });
+            
+            // Busca por colunas de descrição (mais flexível)
+            const descricaoKey = Object.keys(row).find(k => {
+              const kLower = k.toLowerCase();
+              return kLower.includes('descri') || 
+                     kLower.includes('description') || 
+                     kLower.includes('histor') ||
+                     kLower.includes('detalhe') ||
+                     kLower.includes('memo') ||
+                     kLower.includes('obs') ||
+                     kLower.includes('lancamento');
+            });
+            
+            // Busca por colunas de valor (mais flexível, incluindo débito/crédito)
+            let valorKey = Object.keys(row).find(k => {
+              const kLower = k.toLowerCase();
+              return kLower.includes('valor') || 
+                     kLower.includes('value') || 
+                     kLower.includes('montante') || 
+                     kLower.includes('amount') ||
+                     kLower.includes('débito') ||
+                     kLower.includes('debito') ||
+                     kLower.includes('crédito') ||
+                     kLower.includes('credito');
+            });
+
+            // Se não encontrou valor, tenta pela primeira coluna numérica
+            if (!valorKey) {
+              valorKey = Object.keys(row).find(k => {
+                const val = String(row[k]).replace(/[^\d,.-]/g, '');
+                return val.length > 0 && !isNaN(parseFloat(val.replace(',', '.')));
+              });
+            }
+
+            // Parse do valor com mais tolerância
+            let valorNum = 0;
+            if (valorKey) {
+              const valorStr = String(row[valorKey]);
+              // Remove tudo exceto dígitos, vírgula, ponto e sinal
+              const valorLimpo = valorStr.replace(/[^\d,.-]/g, '');
+              // Converte formato brasileiro (1.234,56) ou internacional (1,234.56)
+              if (valorLimpo.includes(',') && valorLimpo.includes('.')) {
+                // Se tem ambos, assume brasileiro se vírgula vem depois
+                if (valorLimpo.lastIndexOf(',') > valorLimpo.lastIndexOf('.')) {
+                  valorNum = parseFloat(valorLimpo.replace(/\./g, '').replace(',', '.'));
+                } else {
+                  valorNum = parseFloat(valorLimpo.replace(/,/g, ''));
+                }
+              } else if (valorLimpo.includes(',')) {
+                // Só vírgula, assume brasileiro
+                valorNum = parseFloat(valorLimpo.replace(',', '.'));
+              } else {
+                // Só ponto ou sem separador
+                valorNum = parseFloat(valorLimpo);
+              }
+            }
+
+            // Se não encontrou descrição, usa a primeira coluna de texto
+            let descricao = 'Transação sem descrição';
+            if (descricaoKey) {
+              descricao = String(row[descricaoKey]);
+            } else {
+              const primeiraTextoKey = Object.keys(row).find(k => {
+                const val = String(row[k]);
+                return val.length > 3 && isNaN(parseFloat(val.replace(/[^\d]/g, '')));
+              });
+              if (primeiraTextoKey) {
+                descricao = String(row[primeiraTextoKey]);
+              }
+            }
+
+            // Determina tipo baseado no sinal ou colunas de débito/crédito
+            let tipo: 'entrada' | 'saida' = 'entrada';
+            const valorKeyLower = valorKey?.toLowerCase() || '';
+            if (valorKeyLower.includes('débito') || valorKeyLower.includes('debito') || valorNum < 0) {
+              tipo = 'saida';
+            } else if (valorKeyLower.includes('crédito') || valorKeyLower.includes('credito') || valorNum > 0) {
+              tipo = 'entrada';
+            }
             
             return {
-              id: `temp_${index}`,
+              id: `temp_xlsx_${index}`,
               data: dataKey ? parseDate(row[dataKey]) : new Date(),
-              descricao: descricaoKey ? String(row[descricaoKey]) : `Transação ${index + 1}`,
+              descricao: descricao.substring(0, 200).trim() || `Transação ${index + 1}`,
               valor: Math.abs(valorNum || 0),
-              tipo: valorNum >= 0 ? 'entrada' : 'saida' as 'entrada' | 'saida',
+              tipo,
               selecionada: true
             };
           }).filter(t => t.valor > 0); // Remove transações com valor 0
           
+          console.log(`✅ XLSX processado: ${transacoes.length} transações válidas`);
+          
+          // Log das primeiras 3 para debug
+          transacoes.slice(0, 3).forEach((t, i) => {
+            console.log(`   ${i + 1}. ${format(t.data, 'dd/MM/yyyy')} - ${t.descricao.substring(0, 40)} - R$ ${t.valor.toFixed(2)} (${t.tipo})`);
+          });
+
+          if (transacoes.length === 0) {
+            throw new Error(
+              "Nenhuma transação válida encontrada na planilha.\n\n" +
+              "Certifique-se de que a planilha contém:\n" +
+              "• Uma coluna com datas\n" +
+              "• Uma coluna com descrições\n" +
+              "• Uma coluna com valores numéricos"
+            );
+          }
+          
           resolve(transacoes);
         } catch (error) {
-          console.error('Erro ao processar XLSX:', error);
+          console.error('❌ Erro ao processar XLSX:', error);
           reject(error);
         }
       };
@@ -393,7 +608,7 @@ export function UploadExtratoModal({
         <DialogHeader>
           <DialogTitle>Lançamento por Extrato</DialogTitle>
           <DialogDescription>
-            Importe transações de arquivos XLSX ou PDF e categorize-as
+            Importe transações de qualquer banco em XLSX ou PDF. Suporta: Sicredi, C6 Bank, Nubank, Itaú, Bradesco, Santander e outros.
           </DialogDescription>
         </DialogHeader>
 
@@ -407,7 +622,8 @@ export function UploadExtratoModal({
             <div className="text-center space-y-2">
               <h3 className="font-semibold text-lg">Selecione o arquivo do extrato</h3>
               <p className="text-sm text-muted-foreground">
-                Formatos aceitos: XLSX, XLS ou PDF (máx. 10MB)
+                Formatos aceitos: XLSX, XLS ou PDF (máx. 10MB)<br/>
+                Funciona com extratos de qualquer banco brasileiro
               </p>
             </div>
 
