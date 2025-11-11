@@ -257,8 +257,10 @@ export default function DFC() {
     descricao: '',
     tipo: 'todos',
     status: 'todos',
-    fornecedor: 'todos'
+    fornecedor: [] as string[]
   });
+  
+  const [selectedFornecedores, setSelectedFornecedores] = useState<Option[]>([]);
   const extratoColumnOptions: Option[] = [{
     value: 'tipo',
     label: 'Tipo'
@@ -327,16 +329,36 @@ export default function DFC() {
     fornecedor: selectedExtratoColumns.some(col => col.value === 'fornecedor')
   };
 
+  // Função utilitária para extrair últimos 2 dígitos do CNPJ/CPF
+  const getUltimos2DigitosCnpj = (cnpjCpf?: string): string => {
+    if (!cnpjCpf) return '';
+    const numeros = cnpjCpf.replace(/\D/g, '');
+    return numeros.length >= 2 ? numeros.slice(-2) : '';
+  };
+
   // Combinar clientes e fornecedores em uma lista
   const fornecedoresClientes = [...clientes.map(c => ({
     id: c.id,
     nome: c.nome,
+    cnpj_cpf: c.cnpj_cpf,
     tipo: 'cliente' as const
   })), ...fornecedoresData.map(f => ({
     id: f.id,
     nome: f.nome,
+    cnpj_cpf: f.cnpj_cpf,
     tipo: 'fornecedor' as const
   }))];
+
+  // Opções para o MultipleSelector com CNPJ
+  const fornecedoresClientesOptions: Option[] = fornecedoresClientes.map(f => {
+    const ultimos2 = getUltimos2DigitosCnpj(f.cnpj_cpf);
+    const label = ultimos2 ? `${f.nome} (${ultimos2})` : f.nome;
+    
+    return {
+      value: f.nome,
+      label: label
+    };
+  });
   const contasBancarias = contasAtivas.map(conta => ({
     id: conta.nome,
     nome: conta.banco ? `${conta.nome} - ${conta.banco}` : conta.nome,
@@ -474,8 +496,9 @@ export default function DFC() {
       descricao: '',
       tipo: 'todos',
       status: 'todos',
-      fornecedor: 'todos'
+      fornecedor: []
     });
+    setSelectedFornecedores([]);
   };
   const extratoFiltrado = extratoData.filter(item => {
     // Filtro de tipo
@@ -487,8 +510,10 @@ export default function DFC() {
     // Filtro de categoria (comparando IDs)
     if (filtrosExtrato.categoria !== 'todas' && item.categoriaId !== filtrosExtrato.categoria) return false;
 
-    // Filtro de fornecedor
-    if (filtrosExtrato.fornecedor !== 'todos' && item.fornecedor !== filtrosExtrato.fornecedor) return false;
+    // Filtro de fornecedor - agora aceita múltiplos
+    if (filtrosExtrato.fornecedor.length > 0 && !filtrosExtrato.fornecedor.includes(item.fornecedor)) {
+      return false;
+    }
 
     // Filtro de descrição
     if (filtrosExtrato.descricao && !item.descricao.toLowerCase().includes(filtrosExtrato.descricao.toLowerCase())) return false;
@@ -1911,18 +1936,24 @@ export default function DFC() {
 
                       <div className="space-y-2">
                         <Label className="text-xs">Fornecedor/Cliente</Label>
-                        <Select value={filtrosExtrato.fornecedor} onValueChange={value => setFiltrosExtrato(prev => ({
-                      ...prev,
-                      fornecedor: value
-                    }))}>
-                          <SelectTrigger className="h-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todos">Todos</SelectItem>
-                            {fornecedoresClientes.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
+                        <MultipleSelector
+                          value={selectedFornecedores}
+                          onChange={(options) => {
+                            setSelectedFornecedores(options);
+                            setFiltrosExtrato(prev => ({
+                              ...prev,
+                              fornecedor: options.map(o => o.value)
+                            }));
+                          }}
+                          options={fornecedoresClientesOptions}
+                          placeholder="Selecione fornecedores/clientes..."
+                          emptyIndicator={
+                            <p className="text-center text-sm text-muted-foreground">
+                              Nenhum fornecedor/cliente encontrado.
+                            </p>
+                          }
+                          className="h-9"
+                        />
                       </div>
 
                       <div className="space-y-2">
