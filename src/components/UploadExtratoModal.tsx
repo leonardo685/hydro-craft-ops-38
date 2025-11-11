@@ -85,7 +85,8 @@ export function UploadExtratoModal({
       'dd-MM-yyyy',
       'yyyy-MM-dd',
       'dd/MM/yy',
-      'dd-MM-yy'
+      'dd-MM-yy',
+      'dd/MM'  // Formato curto sem ano - assume ano atual
     ];
     
     for (const formatStr of formats) {
@@ -155,13 +156,19 @@ export function UploadExtratoModal({
     
     // Lista de regex para diferentes formatos de banco
     const patterns = [
-      // Formato 1: Sicredi/tradicional - Data Descrição Valor Saldo
+      // Formato 1: C6 Bank Tabela (DD/MM formato curto com tipo e descrição)
+      {
+        nome: 'C6 Bank Tabela',
+        regex: /(\d{2}\/\d{2})\s+\d{2}\/\d{2}\s+([^\|]+?)\s+([^\|]+?)\s+(-R\$\s*[\d.]+,\d{2}|R\$\s*[\d.]+,\d{2})/g,
+        grupos: { data: 1, tipo: 2, descricao: 3, valor: 4 }
+      },
+      // Formato 2: Sicredi/tradicional - Data Descrição Valor Saldo
       {
         nome: 'Sicredi/Tradicional',
         regex: /(\d{2}\/\d{2}\/\d{4})\s+([A-Z][\s\S]+?)\s+([-]?[\d.]+,\d{2})\s+([-]?[\d.]+,\d{2})/g,
         grupos: { data: 1, descricao: 2, valor: 3, saldo: 4 }
       },
-      // Formato 2: C6 Bank - Data Descrição -R$ Valor ou R$ Valor
+      // Formato 3: C6 Bank ano completo - Data Descrição -R$ Valor ou R$ Valor
       {
         nome: 'C6 Bank',
         regex: /(\d{2}\/\d{2}\/\d{4})\s+(.+?)\s+(-?R?\$?\s*[\d.]+,\d{2})/g,
@@ -204,11 +211,13 @@ export function UploadExtratoModal({
         const dataStr = match[pattern.grupos.data];
         const descricaoBruta = match[pattern.grupos.descricao];
         const valorStr = match[pattern.grupos.valor];
+        const tipoStr = pattern.grupos.tipo ? match[pattern.grupos.tipo]?.trim() : '';
         
-        // Filtros básicos para ignorar cabeçalhos
+        // Filtros básicos para ignorar cabeçalhos e linhas de saldo
         const descricaoLower = descricaoBruta?.toLowerCase() || '';
         if (descricaoLower.includes('saldo anterior') || 
             descricaoLower.includes('saldo atual') ||
+            descricaoLower.includes('saldo do dia') ||
             descricaoLower.includes('total') ||
             descricaoLower.includes('extrato') ||
             descricaoLower.includes('data descrição') ||
@@ -232,13 +241,18 @@ export function UploadExtratoModal({
           continue;
         }
         
-        // Limpa descrição
-        const descricaoLimpa = descricaoBruta
+        // Limpa descrição e adiciona tipo se houver
+        let descricaoLimpa = descricaoBruta
           .trim()
           .replace(/\s+/g, ' ')
           .replace(/\s*(PIX_DEB|PIX_CRED|PIX|TED|DOC|CX\d+|DOCUMENTO)\s*/gi, '')
           .replace(/\s+[-+]?R?\$?\s*[\d.]+,\d{2}\s*$/, '')
           .substring(0, 200);
+        
+        // Se tem tipo (C6 Bank tabela), adiciona à descrição
+        if (tipoStr && !descricaoLimpa.includes(tipoStr)) {
+          descricaoLimpa = `${tipoStr.trim()} - ${descricaoLimpa}`;
+        }
         
         if (descricaoLimpa.length < 3) continue;
         
