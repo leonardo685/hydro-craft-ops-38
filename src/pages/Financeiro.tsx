@@ -1115,6 +1115,12 @@ export default function Financeiro() {
       return;
     }
 
+    // Validação obrigatória da conta bancária
+    if (!lancamentoForm.conta) {
+      toast.error("Selecione a conta bancária");
+      return;
+    }
+
     // Validação específica para transferências
     if (lancamentoForm.tipo === 'transferencia') {
       if (!lancamentoForm.contaDestino) {
@@ -2102,14 +2108,14 @@ export default function Financeiro() {
                             </div>
                             <div>
                               <Label htmlFor="conta">
-                                {lancamentoForm.tipo === 'transferencia' ? 'Conta Bancária de Origem' : 'Conta Bancária'}
+                                {lancamentoForm.tipo === 'transferencia' ? 'Conta Bancária de Origem *' : 'Conta Bancária *'}
                               </Label>
                               <Select 
                                 value={lancamentoForm.conta} 
                                 onValueChange={(value) => setLancamentoForm(prev => ({ ...prev, conta: value }))}
                               >
                                 <SelectTrigger>
-                                  <SelectValue />
+                                  <SelectValue placeholder="Selecione a conta..." />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {contasBancarias.map((conta) => (
