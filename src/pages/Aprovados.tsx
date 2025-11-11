@@ -13,7 +13,7 @@ import { UploadProdutoProntoModal } from "@/components/UploadProdutoProntoModal"
 import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-import { RetryWebhookButton } from "@/components/RetryWebhookButton";
+
 export default function Aprovados() {
   const [ordensServico, setOrdensServico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -386,7 +386,7 @@ export default function Aprovados() {
           });
         }
       }} />}
-      <RetryWebhookButton />
+      
       </div>
     </AppLayout>;
 }
