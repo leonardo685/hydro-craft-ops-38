@@ -48,6 +48,7 @@ export function UploadExtratoModal({
   const [transacoes, setTransacoes] = useState<TransacaoExtrato[]>([]);
   const [loading, setLoading] = useState(false);
   const [processando, setProcessando] = useState(false);
+  const [bancoSelecionado, setBancoSelecionado] = useState<string>('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -509,6 +510,13 @@ export function UploadExtratoModal({
   const processar = async () => {
     if (!arquivo) return;
     
+    if (!bancoSelecionado) {
+      toast.error("Selecione o banco", {
+        description: "É necessário selecionar a conta bancária antes de processar"
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
       const ext = arquivo.name.split('.').pop()?.toLowerCase();
@@ -521,7 +529,13 @@ export function UploadExtratoModal({
         transacoesParsed = await parseXLSX(arquivo);
       }
       
-      setTransacoes(transacoesParsed);
+      // Aplica o banco selecionado em todas as transações
+      const transacoesComBanco = transacoesParsed.map(t => ({
+        ...t,
+        contaBancaria: bancoSelecionado
+      }));
+      
+      setTransacoes(transacoesComBanco);
       setEtapa('categorizar');
       toast.success("Extrato processado", {
         description: `${transacoesParsed.length} transações encontradas`
@@ -609,6 +623,7 @@ export function UploadExtratoModal({
     setEtapa('upload');
     setArquivo(null);
     setTransacoes([]);
+    setBancoSelecionado('');
   };
 
   const fornecedoresClientes = [...fornecedores, ...clientes];
@@ -641,8 +656,26 @@ export function UploadExtratoModal({
               </p>
             </div>
 
-            <div className="w-full max-w-md">
-              <label htmlFor="file-upload" className="cursor-pointer">
+            <div className="w-full max-w-md space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Conta Bancária / Banco
+                </label>
+                <Select value={bancoSelecionado} onValueChange={setBancoSelecionado}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o banco..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contasBancarias.map(conta => (
+                      <SelectItem key={conta.id} value={conta.nome}>
+                        {conta.nome}{conta.banco ? ` - ${conta.banco}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <label htmlFor="file-upload" className="cursor-pointer block">
                 <div className="border-2 border-dashed rounded-lg p-8 hover:border-primary transition-colors text-center">
                   <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-sm">
@@ -661,7 +694,7 @@ export function UploadExtratoModal({
 
             {arquivo && (
               <div className="flex gap-2">
-                <Button onClick={processar} disabled={loading}>
+                <Button onClick={processar} disabled={loading || !bancoSelecionado}>
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Processar Extrato
                 </Button>
