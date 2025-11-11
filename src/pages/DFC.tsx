@@ -247,6 +247,7 @@ export default function DFC() {
     setDataFinal(fim.toISOString().split('T')[0]);
   }, [periodoSelecionado]);
   const [filtrosExtrato, setFiltrosExtrato] = useState({
+    tipoData: 'esperada' as 'esperada' | 'realizada',
     dataInicio: null as Date | null,
     dataFim: null as Date | null,
     valorMinimo: '',
@@ -463,6 +464,7 @@ export default function DFC() {
   };
   const limparFiltros = () => {
     setFiltrosExtrato({
+      tipoData: 'esperada',
       dataInicio: null,
       dataFim: null,
       valorMinimo: '',
@@ -507,7 +509,8 @@ export default function DFC() {
     if (filtrosExtrato.dataInicio) {
       const dataInicio = new Date(filtrosExtrato.dataInicio);
       dataInicio.setHours(0, 0, 0, 0);
-      const dataItem = new Date(item.dataEsperada);
+      const campoData = filtrosExtrato.tipoData === 'esperada' ? item.dataEsperada : item.dataRealizada;
+      const dataItem = new Date(campoData);
       dataItem.setHours(0, 0, 0, 0);
       if (dataItem < dataInicio) return false;
     }
@@ -516,7 +519,8 @@ export default function DFC() {
     if (filtrosExtrato.dataFim) {
       const dataFim = new Date(filtrosExtrato.dataFim);
       dataFim.setHours(23, 59, 59, 999);
-      const dataItem = new Date(item.dataEsperada);
+      const campoData = filtrosExtrato.tipoData === 'esperada' ? item.dataEsperada : item.dataRealizada;
+      const dataItem = new Date(campoData);
       dataItem.setHours(0, 0, 0, 0);
       if (dataItem > dataFim) return false;
     }
@@ -1799,7 +1803,26 @@ export default function DFC() {
                     <Label className="text-sm font-medium">Filtros</Label>
                     {filtrosExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </div>
-                  {filtrosExpanded && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-muted/30">
+                  {filtrosExpanded && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 p-4 border rounded-lg bg-muted/30">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Tipo de Data</Label>
+                        <Select 
+                          value={filtrosExtrato.tipoData} 
+                          onValueChange={(value: 'esperada' | 'realizada') => setFiltrosExtrato(prev => ({
+                            ...prev,
+                            tipoData: value
+                          }))}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="esperada">Data Esperada</SelectItem>
+                            <SelectItem value="realizada">Data Realizada</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       <div className="space-y-2">
                         <Label className="text-xs">Data Início</Label>
                         <Popover>
