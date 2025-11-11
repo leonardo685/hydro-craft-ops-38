@@ -1935,28 +1935,6 @@ export default function DFC() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-xs">Fornecedor/Cliente</Label>
-                        <MultipleSelector
-                          value={selectedFornecedores}
-                          onChange={(options) => {
-                            setSelectedFornecedores(options);
-                            setFiltrosExtrato(prev => ({
-                              ...prev,
-                              fornecedor: options.map(o => o.value)
-                            }));
-                          }}
-                          options={fornecedoresClientesOptions}
-                          placeholder="Selecione fornecedores/clientes..."
-                          emptyIndicator={
-                            <p className="text-center text-sm text-muted-foreground">
-                              Nenhum fornecedor/cliente encontrado.
-                            </p>
-                          }
-                          className="h-9"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
                         <Label className="text-xs">Status</Label>
                         <Select value={filtrosExtrato.status} onValueChange={value => setFiltrosExtrato(prev => ({
                       ...prev,
@@ -1996,6 +1974,28 @@ export default function DFC() {
                       ...prev,
                       valorMaximo: e.target.value
                     }))} className="h-9" />
+                      </div>
+
+                      <div className="space-y-2 col-span-2">
+                        <Label className="text-xs">Fornecedor/Cliente</Label>
+                        <MultipleSelector
+                          value={selectedFornecedores}
+                          onChange={(options) => {
+                            setSelectedFornecedores(options);
+                            setFiltrosExtrato(prev => ({
+                              ...prev,
+                              fornecedor: options.map(o => o.value)
+                            }));
+                          }}
+                          options={fornecedoresClientesOptions}
+                          placeholder="Selecione fornecedores/clientes..."
+                          emptyIndicator={
+                            <p className="text-center text-sm text-muted-foreground">
+                              Nenhum fornecedor/cliente encontrado.
+                            </p>
+                          }
+                          className="h-9"
+                        />
                       </div>
 
                        <div className="col-span-full flex gap-2">
