@@ -20,10 +20,12 @@ interface OrdemAguardandoRetorno {
 }
 export function OrdensAguardandoRetorno({
   isExpanded = true,
-  onToggleExpand
+  onToggleExpand,
+  ordensExternas
 }: {
   isExpanded?: boolean;
   onToggleExpand?: () => void;
+  ordensExternas?: OrdemAguardandoRetorno[];
 }) {
   const [ordens, setOrdens] = useState<OrdemAguardandoRetorno[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,9 +35,17 @@ export function OrdensAguardandoRetorno({
     toast
   } = useToast();
   const navigate = useNavigate();
+  
   useEffect(() => {
-    loadOrdens();
-  }, []);
+    // Se há ordens externas, usa elas e não carrega
+    if (ordensExternas) {
+      setOrdens(ordensExternas);
+      setLoading(false);
+    } else {
+      loadOrdens();
+    }
+  }, [ordensExternas]);
+  
   const loadOrdens = async () => {
     try {
       const {

@@ -40,11 +40,17 @@ export default function Faturamento() {
     orcamentosEmFaturamento: true,
   });
   
-  // Estados para filtros
+  // Estados para filtros da aba Faturadas
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
   const [tipoNota, setTipoNota] = useState<string>("todos");
   const [clienteFiltro, setClienteFiltro] = useState("");
+
+  // Estados para filtros da aba Faturamento
+  const [dataInicioFat, setDataInicioFat] = useState("");
+  const [dataFimFat, setDataFimFat] = useState("");
+  const [tipoDocumentoFat, setTipoDocumentoFat] = useState<string>("todos");
+  const [clienteFiltroFat, setClienteFiltroFat] = useState("");
 
   useEffect(() => {
     loadData();
@@ -220,6 +226,7 @@ export default function Faturamento() {
 
   // Verificar se há algum filtro aplicado
   const temFiltrosAtivos = dataInicio || dataFim || tipoNota !== "todos" || clienteFiltro;
+  const temFiltrosAtivosFat = dataInicioFat || dataFimFat || tipoDocumentoFat !== "todos" || clienteFiltroFat;
 
   // Filtrar notas faturadas
   const notasFiltradas = notasFaturadas.filter(nota => {
@@ -255,6 +262,64 @@ export default function Faturamento() {
     // Filtro de cliente
     if (clienteFiltro) {
       passa = passa && nota.cliente_nome.toLowerCase().includes(clienteFiltro.toLowerCase());
+    }
+    
+    return passa;
+  });
+
+  // Filtrar ordens de retorno
+  const ordensRetornoFiltradas = ordensRetorno.filter(ordem => {
+    if (!temFiltrosAtivosFat) return true;
+    
+    let passa = true;
+    
+    if (dataInicioFat) {
+      const dataOrdem = new Date(ordem.updated_at);
+      const dataInicioDate = new Date(dataInicioFat);
+      passa = passa && dataOrdem >= dataInicioDate;
+    }
+    
+    if (dataFimFat) {
+      const dataOrdem = new Date(ordem.updated_at);
+      const dataFimDate = new Date(dataFimFat);
+      passa = passa && dataOrdem <= dataFimDate;
+    }
+    
+    if (tipoDocumentoFat !== "todos" && tipoDocumentoFat === "orcamento") {
+      passa = false; // Ordens não são orçamentos
+    }
+    
+    if (clienteFiltroFat) {
+      passa = passa && ordem.cliente_nome.toLowerCase().includes(clienteFiltroFat.toLowerCase());
+    }
+    
+    return passa;
+  });
+
+  // Filtrar orçamentos em faturamento
+  const orcamentosEmFaturamentoFiltrados = orcamentosEmFaturamento.filter(orcamento => {
+    if (!temFiltrosAtivosFat) return true;
+    
+    let passa = true;
+    
+    if (dataInicioFat) {
+      const dataOrcamento = new Date(orcamento.data_aprovacao || orcamento.updated_at);
+      const dataInicioDate = new Date(dataInicioFat);
+      passa = passa && dataOrcamento >= dataInicioDate;
+    }
+    
+    if (dataFimFat) {
+      const dataOrcamento = new Date(orcamento.data_aprovacao || orcamento.updated_at);
+      const dataFimDate = new Date(dataFimFat);
+      passa = passa && dataOrcamento <= dataFimDate;
+    }
+    
+    if (tipoDocumentoFat !== "todos" && tipoDocumentoFat === "ordem") {
+      passa = false; // Orçamentos não são ordens
+    }
+    
+    if (clienteFiltroFat) {
+      passa = passa && orcamento.cliente_nome.toLowerCase().includes(clienteFiltroFat.toLowerCase());
     }
     
     return passa;
@@ -382,10 +447,64 @@ export default function Faturamento() {
           </TabsList>
 
           <TabsContent value="faturamento" className="space-y-6 mt-6">
+            {/* Filtros */}
+            <Card className="shadow-soft">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Filter className="h-5 w-5" />
+                  Filtros
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Data Início</label>
+                    <Input
+                      type="date"
+                      value={dataInicioFat}
+                      onChange={(e) => setDataInicioFat(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Data Fim</label>
+                    <Input
+                      type="date"
+                      value={dataFimFat}
+                      onChange={(e) => setDataFimFat(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Tipo de Nota</label>
+                    <Select value={tipoDocumentoFat} onValueChange={setTipoDocumentoFat}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="ordem">Ordem de Serviço</SelectItem>
+                        <SelectItem value="orcamento">Orçamento</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Cliente</label>
+                    <Input
+                      type="text"
+                      placeholder="Buscar por cliente"
+                      value={clienteFiltroFat}
+                      onChange={(e) => setClienteFiltroFat(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Ordens Aguardando Retorno */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Ordens Aguardando Retorno</h3>
+                <h3 className="text-lg font-semibold">
+                  Ordens Aguardando Retorno ({ordensRetornoFiltradas.length})
+                </h3>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -404,13 +523,31 @@ export default function Faturamento() {
                   )}
                 </Button>
               </div>
-              {expandedSections.ordensRetorno && <OrdensAguardandoRetorno />}
+              {expandedSections.ordensRetorno && (
+                ordensRetornoFiltradas.length > 0 ? (
+                  <OrdensAguardandoRetorno ordensExternas={ordensRetornoFiltradas} />
+                ) : (
+                  <Card>
+                    <CardContent className="p-12 text-center">
+                      <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">
+                        Nenhuma ordem encontrada
+                      </h3>
+                      <p className="text-muted-foreground">
+                        {temFiltrosAtivosFat ? 'Ajuste os filtros para encontrar ordens' : 'Nenhuma ordem aguardando retorno'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )
+              )}
             </div>
 
             {/* Orçamentos Aguardando Faturamento */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Orçamentos Aguardando Faturamento</h3>
+                <h3 className="text-lg font-semibold">
+                  Orçamentos Aguardando Faturamento ({orcamentosEmFaturamentoFiltrados.length})
+                </h3>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -431,7 +568,7 @@ export default function Faturamento() {
               </div>
               {expandedSections.orcamentosEmFaturamento && (
                 <div className="space-y-4">
-                  {orcamentosEmFaturamento.map((item) => (
+                  {orcamentosEmFaturamentoFiltrados.map((item) => (
                 <Card key={item.id} className="shadow-soft hover:shadow-medium transition-smooth">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
@@ -484,15 +621,15 @@ export default function Faturamento() {
                 </Card>
                   ))}
                   
-                  {orcamentosEmFaturamento.length === 0 && (
+                  {orcamentosEmFaturamentoFiltrados.length === 0 && (
                     <Card>
                       <CardContent className="p-12 text-center">
                         <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                         <h3 className="text-lg font-medium text-foreground mb-2">
-                          Nenhum orçamento aguardando faturamento
+                          Nenhum orçamento encontrado
                         </h3>
                         <p className="text-muted-foreground">
-                          Aprove orçamentos para que apareçam aqui
+                          {temFiltrosAtivosFat ? 'Ajuste os filtros para encontrar orçamentos' : 'Nenhum orçamento aguardando faturamento'}
                         </p>
                       </CardContent>
                     </Card>
