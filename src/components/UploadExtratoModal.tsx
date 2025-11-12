@@ -157,43 +157,49 @@ export function UploadExtratoModal({
     
     // Lista de regex para diferentes formatos de banco
     const patterns = [
-      // Formato 1: C6 Bank Tabela (DD/MM formato curto com tipo e descrição)
+      // Formato 1: C6 Bank Tabela Robusto (DD/MM formato curto sem pipes)
       {
         nome: 'C6 Bank Tabela',
-        regex: /(\d{2}\/\d{2})\s+\d{2}\/\d{2}\s+([^\|]+?)\s+([^\|]+?)\s+(-R\$\s*[\d.]+,\d{2}|R\$\s*[\d.]+,\d{2})/g,
+        regex: /(\d{2}\/\d{2})\s+\d{2}\/\d{2}\s+(Outros gastos|Entrada PIX|Saída PIX|TED|DOC|Tarifa|Débito|Crédito|[A-Za-zÀ-ÿ\s]+?)\s+(C6TAG|PIX|TED|DOC|[A-ZÀ-Ÿ][^\d-]*?)\s+(-R\$\s*[\d.]+,\d{2}|R\$\s*[\d.]+,\d{2})/g,
         grupos: { data: 1, tipo: 2, descricao: 3, valor: 4 }
       },
-      // Formato 2: Sicredi/tradicional - Data Descrição Valor Saldo
+      // Formato 2: C6 Bank Simplificado (backup - apenas data curta + texto + valor)
       {
-        nome: 'Sicredi/Tradicional',
-        regex: /(\d{2}\/\d{2}\/\d{4})\s+([A-Z][\s\S]+?)\s+([-]?[\d.]+,\d{2})\s+([-]?[\d.]+,\d{2})/g,
-        grupos: { data: 1, descricao: 2, valor: 3, saldo: 4 }
-      },
-      // Formato 3: C6 Bank ano completo - Data Descrição -R$ Valor ou R$ Valor
-      {
-        nome: 'C6 Bank',
-        regex: /(\d{2}\/\d{2}\/\d{4})\s+(.+?)\s+(-?R?\$?\s*[\d.]+,\d{2})/g,
+        nome: 'C6 Bank Simplificado',
+        regex: /(\d{2}\/\d{2})\s+\d{2}\/\d{2}\s+.+?\s+(C6TAG [A-Z]+|[A-ZÀ-Ÿ][^-R$]+?)\s+(-R\$\s*[\d.]+,\d{2}|R\$\s*[\d.]+,\d{2})/g,
         grupos: { data: 1, descricao: 2, valor: 3 }
       },
-      // Formato 3: Nubank/App - Data Descrição Valor (sem R$)
-      {
-        nome: 'Nubank/Simples',
-        regex: /(\d{2}\/\d{2}\/\d{4})\s+([^\d\n]+?)\s+([-+]?\s*[\d.]+,\d{2})/g,
-        grupos: { data: 1, descricao: 2, valor: 3 }
-      },
-      // Formato 4: Itaú - DD/MM Descrição Valor
+      // Formato 3: Itaú/DD-MM (logo após C6 pois também usa formato curto)
       {
         nome: 'Itaú/DD-MM',
         regex: /(\d{2}\/\d{2})\s+([^\d\n]+?)\s+([-]?[\d.]+,\d{2})/g,
         grupos: { data: 1, descricao: 2, valor: 3 }
       },
-      // Formato 5: Data com hífen - DD-MM-YYYY
+      // Formato 4: Sicredi/tradicional - Data Descrição Valor Saldo
+      {
+        nome: 'Sicredi/Tradicional',
+        regex: /(\d{2}\/\d{2}\/\d{4})\s+([A-Z][\s\S]+?)\s+([-]?[\d.]+,\d{2})\s+([-]?[\d.]+,\d{2})/g,
+        grupos: { data: 1, descricao: 2, valor: 3, saldo: 4 }
+      },
+      // Formato 5: C6 Bank ano completo - Data Descrição -R$ Valor ou R$ Valor
+      {
+        nome: 'C6 Bank Ano Completo',
+        regex: /(\d{2}\/\d{2}\/\d{4})\s+(.+?)\s+(-?R?\$?\s*[\d.]+,\d{2})/g,
+        grupos: { data: 1, descricao: 2, valor: 3 }
+      },
+      // Formato 6: Nubank/App - Data Descrição Valor (sem R$)
+      {
+        nome: 'Nubank/Simples',
+        regex: /(\d{2}\/\d{2}\/\d{4})\s+([^\d\n]+?)\s+([-+]?\s*[\d.]+,\d{2})/g,
+        grupos: { data: 1, descricao: 2, valor: 3 }
+      },
+      // Formato 7: Data com hífen - DD-MM-YYYY
       {
         nome: 'Data com hífen',
         regex: /(\d{2}-\d{2}-\d{4})\s+(.+?)\s+([-]?R?\$?\s*[\d.]+,\d{2})/g,
         grupos: { data: 1, descricao: 2, valor: 3 }
       },
-      // Formato 6: Mais genérico - qualquer data seguida de texto e valor
+      // Formato 8: Mais genérico - qualquer data seguida de texto e valor
       {
         nome: 'Genérico amplo',
         regex: /(\d{2}[\/\-]\d{2}[\/\-]\d{2,4})\s+(.{5,}?)\s+([-+]?R?\$?\s*[\d.]+,\d{2})/g,
@@ -214,15 +220,13 @@ export function UploadExtratoModal({
         const valorStr = match[pattern.grupos.valor];
         const tipoStr = pattern.grupos.tipo ? match[pattern.grupos.tipo]?.trim() : '';
         
-        // Filtros básicos para ignorar cabeçalhos e linhas de saldo
+        // Filtros básicos para ignorar cabeçalhos e linhas de saldo (case-insensitive)
         const descricaoLower = descricaoBruta?.toLowerCase() || '';
-        if (descricaoLower.includes('saldo anterior') || 
-            descricaoLower.includes('saldo atual') ||
-            descricaoLower.includes('saldo do dia') ||
-            descricaoLower.includes('total') ||
-            descricaoLower.includes('extrato') ||
-            descricaoLower.includes('data descrição') ||
-            descricaoLower.includes('lançamento') ||
+        if (/saldo\s+(anterior|atual|do\s+dia)/i.test(descricaoBruta) ||
+            /total\s*(de\s*)?(entradas|saídas|geral)?/i.test(descricaoBruta) ||
+            /extrato/i.test(descricaoBruta) ||
+            /data\s+(descrição|movimentação)/i.test(descricaoBruta) ||
+            /lançamento/i.test(descricaoBruta) ||
             descricaoLower.length < 3) {
           continue;
         }
@@ -289,6 +293,11 @@ export function UploadExtratoModal({
       )
     );
     
+    // Validação da soma total
+    const totalEntradas = transacoesUnicas.filter(t => t.tipo === 'entrada').reduce((sum, t) => sum + t.valor, 0);
+    const totalSaidas = transacoesUnicas.filter(t => t.tipo === 'saida').reduce((sum, t) => sum + t.valor, 0);
+    console.log(`💰 Totais calculados - Entradas: R$ ${totalEntradas.toFixed(2)} | Saídas: R$ ${totalSaidas.toFixed(2)}`);
+    
     return transacoesUnicas;
   };
 
@@ -316,10 +325,11 @@ export function UploadExtratoModal({
             const pageText = textContent.items
               .map((item: any) => item.str)
               .join(' ');
+            console.log(`📄 Página ${i}: ${pageText.substring(0, 200)}...`);
             fullText += pageText + '\n';
           }
           
-          console.log('📄 Primeiras 800 caracteres:', fullText.substring(0, 800));
+          console.log('📄 Primeiras 1500 caracteres:', fullText.substring(0, 1500));
           
           // Detecta o banco
           const bancoDetectado = detectarBanco(fullText, file.name);
