@@ -256,11 +256,12 @@ export default function DFC() {
     categoria: 'todas',
     descricao: '',
     tipo: 'todos',
-    status: 'todos',
+    status: [] as string[],
     fornecedor: [] as string[]
   });
   
   const [selectedFornecedores, setSelectedFornecedores] = useState<Option[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<Option[]>([]);
   const extratoColumnOptions: Option[] = [{
     value: 'tipo',
     label: 'Tipo'
@@ -495,10 +496,11 @@ export default function DFC() {
       categoria: 'todas',
       descricao: '',
       tipo: 'todos',
-      status: 'todos',
+      status: [],
       fornecedor: []
     });
     setSelectedFornecedores([]);
+    setSelectedStatus([]);
   };
   const extratoFiltrado = extratoData.filter(item => {
     // Filtro de tipo
@@ -524,10 +526,10 @@ export default function DFC() {
     // Filtro de valor máximo
     if (filtrosExtrato.valorMaximo && item.valor > parseFloat(filtrosExtrato.valorMaximo)) return false;
 
-    // Filtro de status
-    if (filtrosExtrato.status !== 'todos') {
+    // Filtro de status (array)
+    if (filtrosExtrato.status.length > 0) {
       const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
-      if (status !== filtrosExtrato.status) return false;
+      if (!filtrosExtrato.status.includes(status)) return false;
     }
 
     // Filtro de data início
@@ -1936,20 +1938,28 @@ export default function DFC() {
 
                       <div className="space-y-2">
                         <Label className="text-xs">Status</Label>
-                        <Select value={filtrosExtrato.status} onValueChange={value => setFiltrosExtrato(prev => ({
-                      ...prev,
-                      status: value
-                    }))}>
-                          <SelectTrigger className="h-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todos">Todos</SelectItem>
-                            <SelectItem value="pago">Pago</SelectItem>
-                            <SelectItem value="no_prazo">No Prazo</SelectItem>
-                            <SelectItem value="atrasado">Atrasado</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <MultipleSelector
+                          value={selectedStatus}
+                          onChange={(options) => {
+                            setSelectedStatus(options);
+                            setFiltrosExtrato(prev => ({
+                              ...prev,
+                              status: options.map(o => o.value)
+                            }));
+                          }}
+                          options={[
+                            { value: 'pago', label: 'Pago' },
+                            { value: 'no_prazo', label: 'No Prazo' },
+                            { value: 'atrasado', label: 'Atrasado' }
+                          ]}
+                          placeholder="Selecione status..."
+                          emptyIndicator={
+                            <p className="text-center text-sm text-muted-foreground">
+                              Nenhum status encontrado.
+                            </p>
+                          }
+                          className="min-h-9 !w-full"
+                        />
                       </div>
 
                       <div className="space-y-2">
