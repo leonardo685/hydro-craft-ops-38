@@ -512,7 +512,13 @@ export function UploadExtratoModal({
           resolve(transacoes);
         } catch (error) {
           console.error('❌ Erro ao processar CSV:', error);
-          reject(error);
+          
+          // Detecta erro de senha
+          if (error instanceof Error && error.message.includes('password-protected')) {
+            reject(new Error('ARQUIVO_PROTEGIDO_SENHA'));
+          } else {
+            reject(error);
+          }
         }
       };
       reader.onerror = () => reject(new Error("Erro ao ler arquivo"));
@@ -662,7 +668,13 @@ export function UploadExtratoModal({
           resolve(transacoes);
         } catch (error) {
           console.error('❌ Erro ao processar XLSX:', error);
-          reject(error);
+          
+          // Detecta erro de senha
+          if (error instanceof Error && error.message.includes('password-protected')) {
+            reject(new Error('ARQUIVO_PROTEGIDO_SENHA'));
+          } else {
+            reject(error);
+          }
         }
       };
       reader.onerror = () => reject(new Error("Erro ao ler arquivo"));
@@ -707,9 +719,26 @@ export function UploadExtratoModal({
       });
     } catch (error) {
       console.error('Erro ao processar arquivo:', error);
-      toast.error("Erro ao processar arquivo", {
-        description: "Verifique se o arquivo está no formato correto"
-      });
+      
+      if (error instanceof Error) {
+        if (error.message === 'ARQUIVO_PROTEGIDO_SENHA') {
+          toast.error("Arquivo protegido por senha", {
+            description: "Remova a senha do arquivo Excel e tente novamente. A biblioteca não suporta arquivos protegidos."
+          });
+        } else if (error.message.includes('Nenhuma transação válida')) {
+          toast.error("Estrutura inválida", {
+            description: error.message
+          });
+        } else {
+          toast.error("Erro ao processar arquivo", {
+            description: error.message || "Verifique se o arquivo está no formato correto"
+          });
+        }
+      } else {
+        toast.error("Erro ao processar arquivo", {
+          description: "Verifique se o arquivo está no formato correto"
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -818,6 +847,9 @@ export function UploadExtratoModal({
               <p className="text-sm text-muted-foreground">
                 Formatos aceitos: XLSX, XLS, CSV ou PDF (máx. 10MB)<br/>
                 Funciona com extratos de qualquer banco brasileiro
+              </p>
+              <p className="text-xs text-destructive mt-2">
+                ⚠️ Arquivos Excel protegidos por senha não são suportados
               </p>
             </div>
 
