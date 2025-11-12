@@ -64,9 +64,9 @@ export function UploadExtratoModal({
 
     // Validar formato
     const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!['xlsx', 'xls', 'pdf'].includes(ext || '')) {
+    if (!['xlsx', 'xls', 'pdf', 'csv'].includes(ext || '')) {
       toast.error("Formato inválido", {
-        description: "Por favor, envie um arquivo XLSX, XLS ou PDF"
+        description: "Por favor, envie um arquivo XLSX, XLS, CSV ou PDF"
       });
       return;
     }
@@ -367,6 +367,159 @@ export function UploadExtratoModal({
     });
   };
 
+  const parseCSV = (file: File): Promise<TransacaoExtrato[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'string' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '', raw: false });
+          
+          console.log('📊 Processando CSV:', file.name);
+          console.log(`   Encontradas ${jsonData.length} linhas`);
+          
+          if (!jsonData || jsonData.length === 0) {
+            throw new Error("Arquivo CSV vazio ou sem dados válidos");
+          }
+
+          // Log das colunas encontradas
+          if (jsonData.length > 0) {
+            const colunas = Object.keys(jsonData[0] as any);
+            console.log('   Colunas:', colunas);
+          }
+
+          const transacoes = jsonData.map((row: any, index) => {
+            // Busca por colunas de data (mais flexível)
+            const dataKey = Object.keys(row).find(k => {
+              const kLower = k.toLowerCase();
+              return kLower.includes('data') || 
+                     kLower.includes('date') || 
+                     kLower.includes('dt') ||
+                     kLower.includes('dia');
+            });
+            
+            // Busca por colunas de descrição (mais flexível)
+            const descricaoKey = Object.keys(row).find(k => {
+              const kLower = k.toLowerCase();
+              return kLower.includes('descri') || 
+                     kLower.includes('description') || 
+                     kLower.includes('histor') ||
+                     kLower.includes('detalhe') ||
+                     kLower.includes('memo') ||
+                     kLower.includes('obs') ||
+                     kLower.includes('lancamento');
+            });
+            
+            // Busca por colunas de valor (mais flexível, incluindo débito/crédito)
+            let valorKey = Object.keys(row).find(k => {
+              const kLower = k.toLowerCase();
+              return kLower.includes('valor') || 
+                     kLower.includes('value') || 
+                     kLower.includes('montante') || 
+                     kLower.includes('amount') ||
+                     kLower.includes('débito') ||
+                     kLower.includes('debito') ||
+                     kLower.includes('crédito') ||
+                     kLower.includes('credito');
+            });
+
+            // Se não encontrou valor, tenta pela primeira coluna numérica
+            if (!valorKey) {
+              valorKey = Object.keys(row).find(k => {
+                const val = String(row[k]).replace(/[^\d,.-]/g, '');
+                return val.length > 0 && !isNaN(parseFloat(val.replace(',', '.')));
+              });
+            }
+
+            // Parse do valor com mais tolerância
+            let valorNum = 0;
+            if (valorKey) {
+              const valorStr = String(row[valorKey]);
+              // Remove tudo exceto dígitos, vírgula, ponto e sinal
+              const valorLimpo = valorStr.replace(/[^\d,.-]/g, '');
+              // Converte formato brasileiro (1.234,56) ou internacional (1,234.56)
+              if (valorLimpo.includes(',') && valorLimpo.includes('.')) {
+                // Se tem ambos, assume brasileiro se vírgula vem depois
+                if (valorLimpo.lastIndexOf(',') > valorLimpo.lastIndexOf('.')) {
+                  valorNum = parseFloat(valorLimpo.replace(/\./g, '').replace(',', '.'));
+                } else {
+                  valorNum = parseFloat(valorLimpo.replace(/,/g, ''));
+                }
+              } else if (valorLimpo.includes(',')) {
+                // Só vírgula - assume brasileiro
+                valorNum = parseFloat(valorLimpo.replace(',', '.'));
+              } else {
+                // Só ponto ou nada - padrão
+                valorNum = parseFloat(valorLimpo);
+              }
+            }
+
+            // Determina o tipo (entrada/saída)
+            let tipo: 'entrada' | 'saida' = 'entrada';
+            
+            // Tenta detectar pelo nome da coluna ou valor negativo
+            if (valorKey) {
+              const kLower = valorKey.toLowerCase();
+              if (kLower.includes('débito') || kLower.includes('debito') || kLower.includes('saida') || kLower.includes('saída')) {
+                tipo = 'saida';
+              } else if (kLower.includes('crédito') || kLower.includes('credito') || kLower.includes('entrada')) {
+                tipo = 'entrada';
+              }
+            }
+            
+            // Se o valor é negativo, é saída
+            if (valorNum < 0) {
+              tipo = 'saida';
+              valorNum = Math.abs(valorNum);
+            }
+
+            // Parse da data
+            const dataStr = dataKey ? row[dataKey] : new Date();
+            const data = parseDate(dataStr);
+
+            // Descrição
+            const descricao = descricaoKey 
+              ? String(row[descricaoKey]).trim().substring(0, 200)
+              : `Transação linha ${index + 1}`;
+
+            // Skip linhas sem valor ou sem descrição mínima
+            if (!valorNum || valorNum === 0 || descricao.length < 2) {
+              return null;
+            }
+
+            return {
+              id: `temp_${Date.now()}_${index}`,
+              data,
+              descricao,
+              valor: valorNum,
+              tipo,
+              selecionada: true
+            };
+          }).filter((t): t is TransacaoExtrato => t !== null);
+
+          if (transacoes.length === 0) {
+            throw new Error(
+              "Nenhuma transação válida encontrada no CSV.\n\n" +
+              "Certifique-se de que o arquivo contém:\n" +
+              "• Uma coluna com datas\n" +
+              "• Uma coluna com descrições\n" +
+              "• Uma coluna com valores numéricos"
+            );
+          }
+          
+          resolve(transacoes);
+        } catch (error) {
+          console.error('❌ Erro ao processar CSV:', error);
+          reject(error);
+        }
+      };
+      reader.onerror = () => reject(new Error("Erro ao ler arquivo"));
+      reader.readAsText(file);
+    });
+  };
+
   const parseXLSX = (file: File): Promise<TransacaoExtrato[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -535,6 +688,8 @@ export function UploadExtratoModal({
       
       if (ext === 'pdf') {
         transacoesParsed = await parsePDF(arquivo);
+      } else if (ext === 'csv') {
+        transacoesParsed = await parseCSV(arquivo);
       } else {
         transacoesParsed = await parseXLSX(arquivo);
       }
@@ -647,7 +802,7 @@ export function UploadExtratoModal({
         <DialogHeader>
           <DialogTitle>Lançamento por Extrato</DialogTitle>
           <DialogDescription>
-            Importe transações de qualquer banco em XLSX ou PDF. Suporta: Sicredi, C6 Bank, Nubank, Itaú, Bradesco, Santander e outros.
+            Importe transações de qualquer banco em XLSX, CSV ou PDF. Suporta: Sicredi, C6 Bank, Nubank, Itaú, Bradesco, Santander e outros.
           </DialogDescription>
         </DialogHeader>
 
@@ -661,7 +816,7 @@ export function UploadExtratoModal({
             <div className="text-center space-y-2">
               <h3 className="font-semibold text-lg">Selecione o arquivo do extrato</h3>
               <p className="text-sm text-muted-foreground">
-                Formatos aceitos: XLSX, XLS ou PDF (máx. 10MB)<br/>
+                Formatos aceitos: XLSX, XLS, CSV ou PDF (máx. 10MB)<br/>
                 Funciona com extratos de qualquer banco brasileiro
               </p>
             </div>
@@ -695,7 +850,7 @@ export function UploadExtratoModal({
                 <input
                   id="file-upload"
                   type="file"
-                  accept=".xlsx,.xls,.pdf"
+                  accept=".xlsx,.xls,.csv,.pdf"
                   onChange={handleFileChange}
                   className="hidden"
                 />
