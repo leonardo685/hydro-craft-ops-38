@@ -1994,7 +1994,7 @@ export default function DFC() {
                               Nenhum fornecedor/cliente encontrado.
                             </p>
                           }
-                          className="h-9"
+                          className="min-h-9 !w-full"
                         />
                       </div>
 
