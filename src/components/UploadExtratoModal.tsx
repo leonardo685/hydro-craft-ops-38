@@ -367,6 +367,31 @@ export function UploadExtratoModal({
     });
   };
 
+  // Função auxiliar para parsing de valores numéricos
+  const parseValor = (valorStr: any): number => {
+    if (!valorStr) return 0;
+    
+    const str = String(valorStr);
+    const limpo = str.replace(/[^\d,.-]/g, '');
+    
+    if (limpo.includes(',') && limpo.includes('.')) {
+      // Tem ambos: determina formato baseado em qual vem depois
+      if (limpo.lastIndexOf(',') > limpo.lastIndexOf('.')) {
+        // Formato BR: 1.234,56
+        return parseFloat(limpo.replace(/\./g, '').replace(',', '.'));
+      } else {
+        // Formato US: 1,234.56
+        return parseFloat(limpo.replace(/,/g, ''));
+      }
+    } else if (limpo.includes(',')) {
+      // Só vírgula: assume BR
+      return parseFloat(limpo.replace(',', '.'));
+    } else {
+      // Só ponto ou sem separador
+      return parseFloat(limpo);
+    }
+  };
+
   const parseCSV = (file: File): Promise<TransacaoExtrato[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -390,7 +415,87 @@ export function UploadExtratoModal({
             console.log('   Colunas:', colunas);
           }
 
+          // Detecta colunas separadas de Entrada e Saída
+          const primeiraLinha = jsonData[0] as any;
+          const entradaKey = Object.keys(primeiraLinha).find(k => {
+            const kLower = k.toLowerCase().trim();
+            return (kLower.includes('entrada') || kLower.includes('crédito') || kLower.includes('credito')) 
+                   && (kLower.includes('r$') || kLower.includes('valor') || kLower.includes('rs'));
+          });
+
+          const saidaKey = Object.keys(primeiraLinha).find(k => {
+            const kLower = k.toLowerCase().trim();
+            return (kLower.includes('saída') || kLower.includes('saida') || kLower.includes('débito') || kLower.includes('debito')) 
+                   && (kLower.includes('r$') || kLower.includes('valor') || kLower.includes('rs'));
+          });
+
+          const temColunasSeparadas = entradaKey && saidaKey;
+          
+          if (temColunasSeparadas) {
+            console.log('   ✅ Detectadas colunas separadas de Entrada/Saída');
+            console.log(`      Entrada: "${entradaKey}"`);
+            console.log(`      Saída: "${saidaKey}"`);
+          } else {
+            console.log('   ℹ️ Usando detecção de coluna única de valores');
+          }
+
           const transacoes = jsonData.map((row: any, index) => {
+            // FLUXO A: Colunas separadas de Entrada/Saída
+            if (temColunasSeparadas) {
+              const valorEntrada = parseValor(row[entradaKey!]);
+              const valorSaida = parseValor(row[saidaKey!]);
+              
+              // Busca data e descrição
+              const dataKey = Object.keys(row).find(k => {
+                const kLower = k.toLowerCase();
+                return kLower.includes('data') || 
+                       kLower.includes('date') || 
+                       kLower.includes('dt') ||
+                       kLower.includes('dia');
+              });
+              
+              const descricaoKey = Object.keys(row).find(k => {
+                const kLower = k.toLowerCase();
+                return kLower.includes('descri') || 
+                       kLower.includes('description') || 
+                       kLower.includes('histor') ||
+                       kLower.includes('detalhe') ||
+                       kLower.includes('memo') ||
+                       kLower.includes('obs') ||
+                       kLower.includes('lancamento');
+              });
+              
+              // Determina tipo e valor baseado em qual coluna tem valor
+              let tipo: 'entrada' | 'saida';
+              let valor: number;
+              
+              if (valorEntrada > 0 && valorSaida === 0) {
+                tipo = 'entrada';
+                valor = valorEntrada;
+              } else if (valorSaida > 0 && valorEntrada === 0) {
+                tipo = 'saida';
+                valor = valorSaida;
+              } else if (valorEntrada > 0 && valorSaida > 0) {
+                // Caso raro: ambas preenchidas, usar a maior
+                console.warn('⚠️ Linha com entrada E saída preenchidas:', row);
+                tipo = valorEntrada > valorSaida ? 'entrada' : 'saida';
+                valor = Math.max(valorEntrada, valorSaida);
+              } else {
+                // Ambas zeradas, skip
+                return null;
+              }
+              
+              return {
+                id: `temp_csv_${index}`,
+                data: dataKey ? parseDate(row[dataKey]) : new Date(),
+                descricao: descricaoKey ? String(row[descricaoKey]).trim() : 'Sem descrição',
+                valor,
+                tipo,
+                selecionada: true
+              };
+            }
+            
+            // FLUXO B: Coluna única (lógica original)
             // Busca por colunas de data (mais flexível)
             const dataKey = Object.keys(row).find(k => {
               const kLower = k.toLowerCase();
@@ -433,27 +538,10 @@ export function UploadExtratoModal({
               });
             }
 
-            // Parse do valor com mais tolerância
+            // Parse do valor usando a função auxiliar
             let valorNum = 0;
             if (valorKey) {
-              const valorStr = String(row[valorKey]);
-              // Remove tudo exceto dígitos, vírgula, ponto e sinal
-              const valorLimpo = valorStr.replace(/[^\d,.-]/g, '');
-              // Converte formato brasileiro (1.234,56) ou internacional (1,234.56)
-              if (valorLimpo.includes(',') && valorLimpo.includes('.')) {
-                // Se tem ambos, assume brasileiro se vírgula vem depois
-                if (valorLimpo.lastIndexOf(',') > valorLimpo.lastIndexOf('.')) {
-                  valorNum = parseFloat(valorLimpo.replace(/\./g, '').replace(',', '.'));
-                } else {
-                  valorNum = parseFloat(valorLimpo.replace(/,/g, ''));
-                }
-              } else if (valorLimpo.includes(',')) {
-                // Só vírgula - assume brasileiro
-                valorNum = parseFloat(valorLimpo.replace(',', '.'));
-              } else {
-                // Só ponto ou nada - padrão
-                valorNum = parseFloat(valorLimpo);
-              }
+              valorNum = parseValor(row[valorKey]);
             }
 
             // Determina o tipo (entrada/saída)
@@ -505,7 +593,7 @@ export function UploadExtratoModal({
               "Certifique-se de que o arquivo contém:\n" +
               "• Uma coluna com datas\n" +
               "• Uma coluna com descrições\n" +
-              "• Uma coluna com valores numéricos"
+              "• Uma coluna com valores OU colunas separadas de Entrada/Saída"
             );
           }
           
@@ -549,7 +637,87 @@ export function UploadExtratoModal({
             console.log('   Colunas:', colunas);
           }
 
+          // Detecta colunas separadas de Entrada e Saída
+          const primeiraLinha = jsonData[0] as any;
+          const entradaKey = Object.keys(primeiraLinha).find(k => {
+            const kLower = k.toLowerCase().trim();
+            return (kLower.includes('entrada') || kLower.includes('crédito') || kLower.includes('credito')) 
+                   && (kLower.includes('r$') || kLower.includes('valor') || kLower.includes('rs'));
+          });
+
+          const saidaKey = Object.keys(primeiraLinha).find(k => {
+            const kLower = k.toLowerCase().trim();
+            return (kLower.includes('saída') || kLower.includes('saida') || kLower.includes('débito') || kLower.includes('debito')) 
+                   && (kLower.includes('r$') || kLower.includes('valor') || kLower.includes('rs'));
+          });
+
+          const temColunasSeparadas = entradaKey && saidaKey;
+          
+          if (temColunasSeparadas) {
+            console.log('   ✅ Detectadas colunas separadas de Entrada/Saída');
+            console.log(`      Entrada: "${entradaKey}"`);
+            console.log(`      Saída: "${saidaKey}"`);
+          } else {
+            console.log('   ℹ️ Usando detecção de coluna única de valores');
+          }
+
           const transacoes = jsonData.map((row: any, index) => {
+            // FLUXO A: Colunas separadas de Entrada/Saída
+            if (temColunasSeparadas) {
+              const valorEntrada = parseValor(row[entradaKey!]);
+              const valorSaida = parseValor(row[saidaKey!]);
+              
+              // Busca data e descrição
+              const dataKey = Object.keys(row).find(k => {
+                const kLower = k.toLowerCase();
+                return kLower.includes('data') || 
+                       kLower.includes('date') || 
+                       kLower.includes('dt') ||
+                       kLower.includes('dia');
+              });
+              
+              const descricaoKey = Object.keys(row).find(k => {
+                const kLower = k.toLowerCase();
+                return kLower.includes('descri') || 
+                       kLower.includes('description') || 
+                       kLower.includes('histor') ||
+                       kLower.includes('detalhe') ||
+                       kLower.includes('memo') ||
+                       kLower.includes('obs') ||
+                       kLower.includes('lancamento');
+              });
+              
+              // Determina tipo e valor baseado em qual coluna tem valor
+              let tipo: 'entrada' | 'saida';
+              let valor: number;
+              
+              if (valorEntrada > 0 && valorSaida === 0) {
+                tipo = 'entrada';
+                valor = valorEntrada;
+              } else if (valorSaida > 0 && valorEntrada === 0) {
+                tipo = 'saida';
+                valor = valorSaida;
+              } else if (valorEntrada > 0 && valorSaida > 0) {
+                // Caso raro: ambas preenchidas, usar a maior
+                console.warn('⚠️ Linha com entrada E saída preenchidas:', row);
+                tipo = valorEntrada > valorSaida ? 'entrada' : 'saida';
+                valor = Math.max(valorEntrada, valorSaida);
+              } else {
+                // Ambas zeradas, skip
+                return null;
+              }
+              
+              return {
+                id: `temp_xlsx_${index}`,
+                data: dataKey ? parseDate(row[dataKey]) : new Date(),
+                descricao: descricaoKey ? String(row[descricaoKey]).trim() : 'Sem descrição',
+                valor,
+                tipo,
+                selecionada: true
+              };
+            }
+            
+            // FLUXO B: Coluna única (lógica original)
             // Busca por colunas de data (mais flexível)
             const dataKey = Object.keys(row).find(k => {
               const kLower = k.toLowerCase();
@@ -592,27 +760,10 @@ export function UploadExtratoModal({
               });
             }
 
-            // Parse do valor com mais tolerância
+            // Parse do valor usando a função auxiliar
             let valorNum = 0;
             if (valorKey) {
-              const valorStr = String(row[valorKey]);
-              // Remove tudo exceto dígitos, vírgula, ponto e sinal
-              const valorLimpo = valorStr.replace(/[^\d,.-]/g, '');
-              // Converte formato brasileiro (1.234,56) ou internacional (1,234.56)
-              if (valorLimpo.includes(',') && valorLimpo.includes('.')) {
-                // Se tem ambos, assume brasileiro se vírgula vem depois
-                if (valorLimpo.lastIndexOf(',') > valorLimpo.lastIndexOf('.')) {
-                  valorNum = parseFloat(valorLimpo.replace(/\./g, '').replace(',', '.'));
-                } else {
-                  valorNum = parseFloat(valorLimpo.replace(/,/g, ''));
-                }
-              } else if (valorLimpo.includes(',')) {
-                // Só vírgula, assume brasileiro
-                valorNum = parseFloat(valorLimpo.replace(',', '.'));
-              } else {
-                // Só ponto ou sem separador
-                valorNum = parseFloat(valorLimpo);
-              }
+              valorNum = parseValor(row[valorKey]);
             }
 
             // Se não encontrou descrição, usa a primeira coluna de texto
@@ -661,7 +812,7 @@ export function UploadExtratoModal({
               "Certifique-se de que a planilha contém:\n" +
               "• Uma coluna com datas\n" +
               "• Uma coluna com descrições\n" +
-              "• Uma coluna com valores numéricos"
+              "• Uma coluna com valores OU colunas separadas de Entrada/Saída"
             );
           }
           
