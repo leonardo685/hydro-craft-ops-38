@@ -1055,15 +1055,23 @@ const NovaOrdemServico = () => {
         fotos: (recebimentoEncontrado as any).fotos_equipamentos || []
       });
       
-      // Dados técnicos começam vazios para nova análise
+      // Carregar dados técnicos do recebimento
+      console.log('📊 Carregando dados técnicos do recebimento:', {
+        camisa: (recebimentoEncontrado as any).camisa,
+        haste_comprimento: (recebimentoEncontrado as any).haste_comprimento,
+        curso: (recebimentoEncontrado as any).curso,
+        conexao_a: (recebimentoEncontrado as any).conexao_a,
+        conexao_b: (recebimentoEncontrado as any).conexao_b
+      });
+      
       setDadosTecnicos({
         tipoEquipamento: recebimentoEncontrado.tipo_equipamento || "",
         pressaoTrabalho: (recebimentoEncontrado as any).pressao_trabalho || "",
-        camisa: "",
-        hasteComprimento: "",
-        curso: "",
-        conexaoA: "",
-        conexaoB: "",
+        camisa: (recebimentoEncontrado as any).camisa || "",
+        hasteComprimento: (recebimentoEncontrado as any).haste_comprimento || "",
+        curso: (recebimentoEncontrado as any).curso || "",
+        conexaoA: (recebimentoEncontrado as any).conexao_a || "",
+        conexaoB: (recebimentoEncontrado as any).conexao_b || "",
         temperaturaTrabalho: (recebimentoEncontrado as any).temperatura_trabalho || "",
         fluidoTrabalho: (recebimentoEncontrado as any).fluido_trabalho || "",
         localInstalacao: (recebimentoEncontrado as any).local_instalacao || "",
