@@ -53,16 +53,24 @@ export function OrdensAguardandoRetorno({
         error
       } = await supabase.from('ordens_servico').select(`
           *,
-          recebimentos(nota_fiscal, numero_ordem)
+          recebimentos!left(nota_fiscal, numero_ordem)
         `).eq('status', 'aguardando_retorno').order('created_at', {
         ascending: false
       });
       if (error) throw error;
-      const ordensFormatadas = data?.map(ordem => ({
-        ...ordem,
-        numero_ordem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem,
-        nota_fiscal: ordem.recebimentos?.nota_fiscal
-      })) || [];
+      
+      const ordensFormatadas = data?.map(ordem => {
+        // Priorizar número do recebimento sempre
+        const numeroExibicao = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
+        
+        console.log(`✅ Ordem ${ordem.id}: OS número = ${ordem.numero_ordem}, Recebimento número = ${ordem.recebimentos?.numero_ordem}, Exibindo = ${numeroExibicao}`);
+        
+        return {
+          ...ordem,
+          numero_ordem: numeroExibicao,
+          nota_fiscal: ordem.recebimentos?.nota_fiscal
+        };
+      }) || [];
       setOrdens(ordensFormatadas);
     } catch (error) {
       console.error('Erro ao carregar ordens:', error);
@@ -151,6 +159,11 @@ export function OrdensAguardandoRetorno({
                       <CardTitle className="text-lg flex items-center gap-2">
                         <FileText className="h-5 w-5 text-primary" />
                         Ordem {ordem.numero_ordem}
+                        {ordem.numero_ordem.startsWith('OS-') && ordem.numero_ordem.match(/^OS-\d{13}/) && (
+                          <Badge variant="destructive" className="text-xs">
+                            Formato Antigo
+                          </Badge>
+                        )}
                       </CardTitle>
                       <CardDescription className="mt-1">
                         {ordem.equipamento} - {ordem.cliente_nome}
