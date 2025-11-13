@@ -666,93 +666,87 @@ const NovaOrdemServico = () => {
     if (loading) return;
     
     const decodedId = id ? decodeURIComponent(id) : '';
-    console.log('Looking for recebimento with ID:', decodedId);
-    console.log('Available recebimentos:', recebimentos);
+    console.log('🔍 Buscando análise para:', decodedId);
     
-    // Primeiro tenta buscar diretamente na tabela recebimentos
-    let recebimentoEncontrado = recebimentos.find((r: any) => 
-      r.numero_ordem === decodedId || 
-      r.id?.toString() === decodedId
-    );
-    
-    // Se não encontrou, pode ser que estejamos editando uma ordem de serviço existente
-    // Neste caso, precisamos buscar a ordem de serviço e depois o recebimento relacionado
-    if (!recebimentoEncontrado && decodedId) {
-      console.log('Searching for order service with number:', decodedId);
-      // Buscar ordem de serviço e carregar dados para edição
-      const loadOrderForEdit = async () => {
-        try {
-          const { data: ordem, error } = await supabase
-            .from('ordens_servico')
-            .select(`
-              *,
-              recebimentos (
-                id,
-                numero_ordem,
-                cliente_nome,
-                tipo_equipamento,
-                data_entrada,
-                nota_fiscal,
-                numero_serie,
-                observacoes,
-                pressao_trabalho,
-                temperatura_trabalho,
-                fluido_trabalho,
-                local_instalacao,
-                potencia,
-                camisa,
-                haste_comprimento,
-                curso,
-                conexao_a,
-                conexao_b,
-                fotos_equipamentos (*)
-              )
-            `)
-            .eq('numero_ordem', decodedId)
-            .maybeSingle();
+    // ✅ CORREÇÃO: Verificar PRIMEIRO se existe ordem de serviço (modo edição)
+    const loadOrderForEdit = async () => {
+      if (!decodedId) return false;
+      
+      console.log('🔎 Verificando se existe ordem de serviço:', decodedId);
+      try {
+        const { data: ordem, error } = await supabase
+          .from('ordens_servico')
+          .select(`
+            *,
+            recebimentos (
+              id,
+              numero_ordem,
+              cliente_nome,
+              tipo_equipamento,
+              data_entrada,
+              nota_fiscal,
+              numero_serie,
+              observacoes,
+              pressao_trabalho,
+              temperatura_trabalho,
+              fluido_trabalho,
+              local_instalacao,
+              potencia,
+              camisa,
+              haste_comprimento,
+              curso,
+              conexao_a,
+              conexao_b,
+              fotos_equipamentos (*)
+            )
+          `)
+          .eq('numero_ordem', decodedId)
+          .maybeSingle();
 
-          if (error) {
-            console.error('Erro ao buscar ordem de serviço:', error);
-            return;
+        if (error) {
+          console.error('❌ Erro ao buscar ordem de serviço:', error);
+          return false;
+        }
+
+        if (ordem && ordem.recebimentos) {
+          console.log('✅ Ordem de serviço encontrada - MODO EDIÇÃO');
+          setIsEdicao(true);
+          setOrdemExistente(ordem);
+          
+          // Carregar dados do recebimento
+          const recebimentoData = ordem.recebimentos;
+          setRecebimento({
+            id: recebimentoData.id,
+            cliente_nome: recebimentoData.cliente_nome,
+            tipo_equipamento: recebimentoData.tipo_equipamento,
+            data_entrada: recebimentoData.data_entrada,
+            dataEntrada: new Date(recebimentoData.data_entrada).toLocaleDateString('pt-BR'),
+            numeroOrdem: recebimentoData.numero_ordem,
+            nota_fiscal: recebimentoData.nota_fiscal,
+            numero_serie: recebimentoData.numero_serie,
+            observacoes: recebimentoData.observacoes,
+            fotos: recebimentoData.fotos_equipamentos || []
+          });
+
+          // Preencher form com dados da ordem existente
+          setFormData({
+            tecnico: ordem.tecnico || "",
+            problemas: ordem.tipo_problema || ordem.descricao_problema || "",
+            prazoEstimado: ordem.tempo_estimado || "",
+            prioridade: ordem.prioridade === 'alta' ? 'Alta' : 
+                       ordem.prioridade === 'baixa' ? 'Baixa' : 'Média',
+            observacoes: ordem.observacoes_tecnicas || ""
+          });
+
+          // Carregar peças se existirem
+          if (ordem.pecas_necessarias && Array.isArray(ordem.pecas_necessarias)) {
+            console.log('📦 Carregando', ordem.pecas_necessarias.length, 'peças');
+            setPecasUtilizadas(ordem.pecas_necessarias as any);
           }
 
-          if (ordem && ordem.recebimentos) {
-            setIsEdicao(true);
-            setOrdemExistente(ordem);
-            
-            // Carregar dados do recebimento
-            const recebimentoData = ordem.recebimentos;
-            setRecebimento({
-              id: recebimentoData.id,
-              cliente_nome: recebimentoData.cliente_nome,
-              tipo_equipamento: recebimentoData.tipo_equipamento,
-              data_entrada: recebimentoData.data_entrada,
-              dataEntrada: new Date(recebimentoData.data_entrada).toLocaleDateString('pt-BR'),
-              numeroOrdem: recebimentoData.numero_ordem,
-              nota_fiscal: recebimentoData.nota_fiscal,
-              numero_serie: recebimentoData.numero_serie,
-              observacoes: recebimentoData.observacoes,
-              fotos: recebimentoData.fotos_equipamentos || []
-            });
-
-            // Preencher form com dados da ordem existente
-            setFormData({
-              tecnico: ordem.tecnico || "",
-              problemas: ordem.tipo_problema || ordem.descricao_problema || "",
-              prazoEstimado: ordem.tempo_estimado || "",
-              prioridade: ordem.prioridade === 'alta' ? 'Alta' : 
-                         ordem.prioridade === 'baixa' ? 'Baixa' : 'Média',
-              observacoes: ordem.observacoes_tecnicas || ""
-            });
-
-            // Carregar peças se existirem
-            if (ordem.pecas_necessarias && Array.isArray(ordem.pecas_necessarias)) {
-              console.log('Carregando peças:', ordem.pecas_necessarias);
-              setPecasUtilizadas(ordem.pecas_necessarias as any);
-            }
-
-            // Carregar serviços se existirem
-            if (ordem.servicos_necessarios && Array.isArray(ordem.servicos_necessarios)) {
+          // Carregar serviços se existirem
+          if (ordem.servicos_necessarios && Array.isArray(ordem.servicos_necessarios)) {
+            console.log('🔧 Carregando', ordem.servicos_necessarios.length, 'serviços');
               console.log('Carregando serviços:', ordem.servicos_necessarios);
               const servicosObj: any = {};
               const quantidades: any = {};
@@ -787,9 +781,9 @@ const NovaOrdemServico = () => {
               setServicosAdicionais(adicionais);
             }
 
-            // Carregar usinagem se existir
-            if (ordem.usinagem_necessaria && Array.isArray(ordem.usinagem_necessaria)) {
-              console.log('Carregando usinagem:', ordem.usinagem_necessaria);
+          // Carregar usinagem se existir
+          if (ordem.usinagem_necessaria && Array.isArray(ordem.usinagem_necessaria)) {
+            console.log('⚙️ Carregando', ordem.usinagem_necessaria.length, 'usinagens');
               const usinagemObj: any = {};
               const quantidades: any = {};
               const nomes: any = {};
@@ -1030,84 +1024,101 @@ const NovaOrdemServico = () => {
               console.log('Documentos técnicos encontrados:', documentos.length);
               setDocumentosPdf(documentos);
             }
-          }
-        } catch (error) {
-          console.error('Erro ao carregar ordem para edição:', error);
-        }
-      };
-
-      loadOrderForEdit();
-      return;
-    }
-    
-    console.log('Found recebimento:', recebimentoEncontrado);
-    
-    if (recebimentoEncontrado) {
-      setRecebimento({
-        id: recebimentoEncontrado.id,
-        cliente_nome: recebimentoEncontrado.cliente_nome,
-        tipo_equipamento: recebimentoEncontrado.tipo_equipamento,
-        data_entrada: recebimentoEncontrado.data_entrada,
-        dataEntrada: new Date(recebimentoEncontrado.data_entrada).toLocaleDateString('pt-BR'),
-        numeroOrdem: recebimentoEncontrado.numero_ordem,
-        nota_fiscal: recebimentoEncontrado.nota_fiscal,
-        numero_serie: recebimentoEncontrado.numero_serie,
-        fotos: (recebimentoEncontrado as any).fotos_equipamentos || []
-      });
-      
-      // Carregar dados técnicos do recebimento
-      console.log('📊 Carregando dados técnicos do recebimento:', {
-        camisa: (recebimentoEncontrado as any).camisa,
-        haste_comprimento: (recebimentoEncontrado as any).haste_comprimento,
-        curso: (recebimentoEncontrado as any).curso,
-        conexao_a: (recebimentoEncontrado as any).conexao_a,
-        conexao_b: (recebimentoEncontrado as any).conexao_b
-      });
-      
-      setDadosTecnicos({
-        tipoEquipamento: recebimentoEncontrado.tipo_equipamento || "",
-        pressaoTrabalho: (recebimentoEncontrado as any).pressao_trabalho || "",
-        camisa: (recebimentoEncontrado as any).camisa || "",
-        hasteComprimento: (recebimentoEncontrado as any).haste_comprimento || "",
-        curso: (recebimentoEncontrado as any).curso || "",
-        conexaoA: (recebimentoEncontrado as any).conexao_a || "",
-        conexaoB: (recebimentoEncontrado as any).conexao_b || "",
-        temperaturaTrabalho: (recebimentoEncontrado as any).temperatura_trabalho || "",
-        fluidoTrabalho: (recebimentoEncontrado as any).fluido_trabalho || "",
-        localInstalacao: (recebimentoEncontrado as any).local_instalacao || "",
-        potencia: (recebimentoEncontrado as any).potencia || "",
-        numeroSerie: (recebimentoEncontrado as any).numero_serie || ""
-      });
-      
-      // Carregar fotos do recebimento separando por tipo
-      if (recebimentoEncontrado.fotos && recebimentoEncontrado.fotos.length > 0) {
-        console.log('Carregando fotos do recebimento:', recebimentoEncontrado.fotos);
-        
-        // Fotos de chegada (apresentar_orcamento = true)
-        const fotosChegadaUrls = recebimentoEncontrado.fotos
-          .filter((foto: any) => foto.apresentar_orcamento === true)
-          .map((foto: any) => foto.arquivo_url);
-        
-        if (fotosChegadaUrls.length > 0) {
-          console.log('✅ Fotos de CHEGADA carregadas:', fotosChegadaUrls.length, fotosChegadaUrls);
-          setPreviewsChegada(fotosChegadaUrls);
-          setFotosChegada(fotosChegadaUrls as any);
+          return true; // ✅ Ordem encontrada e carregada
         }
         
-        // Fotos de análise (apresentar_orcamento = false)
-        const fotosAnaliseUrls = recebimentoEncontrado.fotos
-          .filter((foto: any) => foto.apresentar_orcamento === false)
-          .map((foto: any) => foto.arquivo_url);
-        
-        if (fotosAnaliseUrls.length > 0) {
-          console.log('✅ Fotos de ANÁLISE carregadas:', fotosAnaliseUrls.length, fotosAnaliseUrls);
-          setPreviewsAnalise(fotosAnaliseUrls);
-          setFotosAnalise(fotosAnaliseUrls as any);
-        }
+        console.log('⚠️ Ordem de serviço não encontrada');
+        return false; // ❌ Ordem não encontrada
+      } catch (error) {
+        console.error('❌ Erro ao carregar ordem para edição:', error);
+        return false;
       }
-    } else {
-      console.log('Recebimento not found for ID:', decodedId);
-    }
+    };
+
+    // ✅ Executar verificação: primeiro ordem, depois recebimento
+    loadOrderForEdit().then(encontrouOrdem => {
+      if (encontrouOrdem) {
+        console.log('✅ Processamento concluído: MODO EDIÇÃO');
+        return;
+      }
+      
+      // ❌ Não encontrou ordem - buscar recebimento para MODO CRIAÇÃO
+      console.log('🔎 Ordem não encontrada, buscando recebimento:', decodedId);
+      const recebimentoEncontrado = recebimentos.find((r: any) => 
+        r.numero_ordem === decodedId || 
+        r.id?.toString() === decodedId
+      );
+      
+      console.log('Recebimento encontrado:', recebimentoEncontrado);
+      
+      if (recebimentoEncontrado) {
+        console.log('✅ Recebimento encontrado - MODO CRIAÇÃO');
+        setRecebimento({
+          id: recebimentoEncontrado.id,
+          cliente_nome: recebimentoEncontrado.cliente_nome,
+          tipo_equipamento: recebimentoEncontrado.tipo_equipamento,
+          data_entrada: recebimentoEncontrado.data_entrada,
+          dataEntrada: new Date(recebimentoEncontrado.data_entrada).toLocaleDateString('pt-BR'),
+          numeroOrdem: recebimentoEncontrado.numero_ordem,
+          nota_fiscal: recebimentoEncontrado.nota_fiscal,
+          numero_serie: recebimentoEncontrado.numero_serie,
+          fotos: (recebimentoEncontrado as any).fotos_equipamentos || []
+        });
+        
+        // Carregar dados técnicos do recebimento
+        console.log('📊 Carregando dados técnicos do recebimento:', {
+          camisa: (recebimentoEncontrado as any).camisa,
+          haste_comprimento: (recebimentoEncontrado as any).haste_comprimento,
+          curso: (recebimentoEncontrado as any).curso,
+          conexao_a: (recebimentoEncontrado as any).conexao_a,
+          conexao_b: (recebimentoEncontrado as any).conexao_b
+        });
+        
+        setDadosTecnicos({
+          tipoEquipamento: recebimentoEncontrado.tipo_equipamento || "",
+          pressaoTrabalho: (recebimentoEncontrado as any).pressao_trabalho || "",
+          camisa: (recebimentoEncontrado as any).camisa || "",
+          hasteComprimento: (recebimentoEncontrado as any).haste_comprimento || "",
+          curso: (recebimentoEncontrado as any).curso || "",
+          conexaoA: (recebimentoEncontrado as any).conexao_a || "",
+          conexaoB: (recebimentoEncontrado as any).conexao_b || "",
+          temperaturaTrabalho: (recebimentoEncontrado as any).temperatura_trabalho || "",
+          fluidoTrabalho: (recebimentoEncontrado as any).fluido_trabalho || "",
+          localInstalacao: (recebimentoEncontrado as any).local_instalacao || "",
+          potencia: (recebimentoEncontrado as any).potencia || "",
+          numeroSerie: (recebimentoEncontrado as any).numero_serie || ""
+        });
+        
+        // Carregar fotos do recebimento separando por tipo
+        if (recebimentoEncontrado.fotos && recebimentoEncontrado.fotos.length > 0) {
+          console.log('Carregando fotos do recebimento:', recebimentoEncontrado.fotos);
+          
+          // Fotos de chegada (apresentar_orcamento = true)
+          const fotosChegadaUrls = recebimentoEncontrado.fotos
+            .filter((foto: any) => foto.apresentar_orcamento === true)
+            .map((foto: any) => foto.arquivo_url);
+          
+          if (fotosChegadaUrls.length > 0) {
+            console.log('✅ Fotos de CHEGADA carregadas:', fotosChegadaUrls.length, fotosChegadaUrls);
+            setPreviewsChegada(fotosChegadaUrls);
+            setFotosChegada(fotosChegadaUrls as any);
+          }
+          
+          // Fotos de análise (apresentar_orcamento = false)
+          const fotosAnaliseUrls = recebimentoEncontrado.fotos
+            .filter((foto: any) => foto.apresentar_orcamento === false)
+            .map((foto: any) => foto.arquivo_url);
+          
+          if (fotosAnaliseUrls.length > 0) {
+            console.log('✅ Fotos de ANÁLISE carregadas:', fotosAnaliseUrls.length, fotosAnaliseUrls);
+            setPreviewsAnalise(fotosAnaliseUrls);
+            setFotosAnalise(fotosAnaliseUrls as any);
+          }
+        }
+      } else {
+        console.log('⚠️ Recebimento não encontrado para ID:', decodedId);
+      }
+    });
   }, [id, recebimentos, loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
