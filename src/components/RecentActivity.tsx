@@ -103,11 +103,14 @@ export const RecentActivity = () => {
                   key={atividade.id} 
                   className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
                 >
-                  <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", tipoInfo.bgColor)}>
+                  <div className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
+                    tipoInfo.bgColor
+                  )}>
                     <IconComponent className={cn("h-4 w-4", tipoInfo.color)} />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{atividade.descricao}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{atividade.descricao}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatarTempo(atividade.created_at)}
                     </p>
