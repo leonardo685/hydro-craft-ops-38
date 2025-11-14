@@ -433,13 +433,12 @@ export default function NovoOrcamento() {
         return; // Skip other loading logic for editing
       }
 
-      // Gerar número do orçamento e ordem de referência apenas se for novo
+      // Gerar apenas número do orçamento se for novo
       const proximoNumero = await gerarProximoNumero();
-      const proximaOrdemRef = await gerarProximaOrdemReferencia();
       setDadosOrcamento(prev => ({
         ...prev,
         numeroOrdem: proximoNumero,
-        numeroSerie: proximaOrdemRef
+        numeroSerie: '' // Deixar vazio - será gerado apenas se baseado em ordem de serviço
       }));
 
       if (ordemServicoId) {
@@ -1083,9 +1082,9 @@ export default function NovoOrcamento() {
         }
       }
       
-      // Gerar ordem de referência automaticamente se não existir
+      // Gerar ordem de referência apenas se for baseado em ordem de serviço
       let ordemRef = dadosOrcamento.numeroSerie;
-      if (!ordemRef || !ordemRef.startsWith('MH-')) {
+      if (orcamentoParaEdicao?.ordem_servico_id && (!ordemRef || !ordemRef.startsWith('MH-'))) {
         ordemRef = await gerarProximaOrdemReferencia();
       }
 
@@ -2672,7 +2671,7 @@ export default function NovoOrcamento() {
                   <Input id="numeroSerie" value={dadosOrcamento.numeroSerie} onChange={e => setDadosOrcamento(prev => ({
                   ...prev,
                   numeroSerie: e.target.value
-                }))} placeholder="MH-000-00" className="bg-muted" disabled />
+                }))} placeholder="Gerada apenas para orçamentos baseados em ordens de serviço" className="bg-muted" disabled />
                 </div>
                 <div>
                   <Label htmlFor="tag">TAG</Label>
