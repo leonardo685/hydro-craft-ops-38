@@ -608,13 +608,19 @@ export default function Orcamentos() {
       const valorTotal = Number(orcamento.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
       const prazo = orcamento.condicao_pagamento || (orcamento.prazo_pagamento ? `${orcamento.prazo_pagamento} DDL` : 'A combinar');
       const dataGeracao = new Date().toLocaleDateString('pt-BR');
-      const validade = orcamento.data_vencimento 
-        ? new Date(orcamento.data_vencimento).toLocaleDateString('pt-BR') 
-        : '12 meses';
+      const validade = orcamento.validade_proposta 
+        ? `${orcamento.validade_proposta} dias`
+        : '30 dias';
       
       const assunto = orcamento.assunto_proposta || orcamento.equipamento || 'REFORMA/MANUTENÇÃO';
       const prazoEntrega = orcamento.prazo_entrega || '5 dias úteis';
-      const garantia = '6 Meses';
+      const garantia = orcamento.garantia === 'sem' 
+        ? 'Sem Garantia'
+        : orcamento.garantia === '12'
+        ? '12 meses'
+        : orcamento.garantia === '6'
+        ? '6 meses'
+        : '12 meses';
       const frete = orcamento.frete || 'CIF';
       
       doc.setFontSize(9);
