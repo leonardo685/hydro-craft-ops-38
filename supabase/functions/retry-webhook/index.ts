@@ -11,17 +11,24 @@ serve(async (req) => {
   }
 
   try {
-    const { tipo, numero_ordem, cliente, equipamento, data_aprovacao } = await req.json();
+    const bodyData = await req.json();
+    
+    console.log(`🔄 Retrying webhook - Tipo: ${bodyData.tipo}`);
 
-    console.log(`🔄 Retrying webhook for order: ${numero_ordem} (tipo: ${tipo})`);
-
-    const payload = {
-      tipo,
-      numero_ordem,
-      cliente,
-      equipamento,
-      data_aprovacao
+    // Substituir campos vazios/null/undefined por "."
+    const sanitizePayload = (obj: any): any => {
+      const sanitized: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        sanitized[key] = (value === null || value === undefined || value === '') 
+          ? '.' 
+          : value;
+      }
+      return sanitized;
     };
+
+    const payload = sanitizePayload(bodyData);
+    
+    console.log('📦 Payload sanitizado:', payload);
 
     const webhookUrl = 'https://primary-production-dc42.up.railway.app/webhook/f2cabfd9-4e4c-4dd0-802a-b27c4b0c9d17';
     
@@ -38,10 +45,10 @@ serve(async (req) => {
     }
 
     const result = await response.text();
-    console.log(`✅ Webhook sent successfully for ${numero_ordem}`);
+    console.log(`✅ Webhook sent successfully`);
 
     return new Response(
-      JSON.stringify({ success: true, result }),
+      JSON.stringify({ success: true, result, payload }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
