@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench } from "lucide-react";
+import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,6 +83,55 @@ export default function Aprovados() {
       });
     }
   };
+
+  const retryWebhookMH044 = async () => {
+    try {
+      const ordem = ordensServico.find(o => 
+        (o.recebimentos?.numero_ordem || o.numero_ordem) === 'MH-044-25'
+      );
+      
+      if (!ordem) {
+        toast({
+          title: "Erro",
+          description: "Ordem MH-044-25 não encontrada",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const payload = {
+        tipo: "ordem_aprovada",
+        numero_ordem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem,
+        cliente: ordem.recebimentos?.cliente_nome || ordem.cliente_nome,
+        equipamento: ordem.equipamento,
+        data_aprovacao: format(new Date(ordem.updated_at), 'dd-MM-yyyy'),
+        tecnico: ordem.tecnico_responsavel || ordem.tecnico,
+        prazo_entrega: ordem.tempo_estimado || ordem.prazo_entrega,
+        nota_fiscal_entrada: ordem.recebimentos?.nota_fiscal || ordem.recebimentos?.chave_acesso_nfe
+      };
+
+      console.log('📤 Enviando retry webhook MH-044-25:', payload);
+
+      const { data, error } = await supabase.functions.invoke('retry-webhook', {
+        body: payload
+      });
+
+      if (error) throw error;
+
+      console.log("✅ Webhook retry successful:", data);
+      toast({
+        title: "Sucesso",
+        description: `Webhook reenviado para MH-044-25!`,
+      });
+    } catch (error) {
+      console.error("❌ Webhook retry failed:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao reenviar webhook: " + error.message,
+        variant: "destructive"
+      });
+    }
+  };
   const getSidebarColor = (ordem: any) => {
     // Verificar se existe prazo_entrega nos dados do recebimento ou na ordem
     const prazoEntrega = ordem.tempo_estimado || ordem.prazo_entrega;
@@ -154,6 +203,14 @@ export default function Aprovados() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button 
+              onClick={retryWebhookMH044}
+              variant="outline"
+              className="gap-2 border-orange-500 text-orange-600 hover:bg-orange-50"
+            >
+              <RotateCw className="h-4 w-4" />
+              🔧 Retry MH-044-25 (TEMP)
+            </Button>
             <Button variant="outline">
               <Package className="h-4 w-4 mr-2" />
               Relatório de Produção
