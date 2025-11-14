@@ -629,6 +629,7 @@ export type Database = {
           descricao: string | null
           equipamento: string
           frete: string | null
+          garantia: string | null
           id: string
           impostos_percentual: number | null
           impostos_valor: number | null
@@ -645,6 +646,7 @@ export type Database = {
           preco_desejado: number | null
           status: string
           total_custos_variaveis: number | null
+          validade_proposta: string | null
           valor: number
         }
         Insert: {
@@ -661,6 +663,7 @@ export type Database = {
           descricao?: string | null
           equipamento: string
           frete?: string | null
+          garantia?: string | null
           id?: string
           impostos_percentual?: number | null
           impostos_valor?: number | null
@@ -677,6 +680,7 @@ export type Database = {
           preco_desejado?: number | null
           status: string
           total_custos_variaveis?: number | null
+          validade_proposta?: string | null
           valor?: number
         }
         Update: {
@@ -693,6 +697,7 @@ export type Database = {
           descricao?: string | null
           equipamento?: string
           frete?: string | null
+          garantia?: string | null
           id?: string
           impostos_percentual?: number | null
           impostos_valor?: number | null
@@ -709,6 +714,7 @@ export type Database = {
           preco_desejado?: number | null
           status?: string
           total_custos_variaveis?: number | null
+          validade_proposta?: string | null
           valor?: number
         }
         Relationships: [
@@ -1101,6 +1107,7 @@ export type Database = {
           equipamento: string
           forma_pagamento: string | null
           frete: string | null
+          garantia: string | null
           id: string
           impostos_percentual: number | null
           impostos_valor: number | null
@@ -1122,6 +1129,7 @@ export type Database = {
           status_negociacao: string | null
           total_custos_variaveis: number | null
           updated_at: string
+          validade_proposta: string | null
           valor: number
         }
         Insert: {
@@ -1144,6 +1152,7 @@ export type Database = {
           equipamento: string
           forma_pagamento?: string | null
           frete?: string | null
+          garantia?: string | null
           id?: string
           impostos_percentual?: number | null
           impostos_valor?: number | null
@@ -1165,6 +1174,7 @@ export type Database = {
           status_negociacao?: string | null
           total_custos_variaveis?: number | null
           updated_at?: string
+          validade_proposta?: string | null
           valor?: number
         }
         Update: {
@@ -1187,6 +1197,7 @@ export type Database = {
           equipamento?: string
           forma_pagamento?: string | null
           frete?: string | null
+          garantia?: string | null
           id?: string
           impostos_percentual?: number | null
           impostos_valor?: number | null
@@ -1208,6 +1219,7 @@ export type Database = {
           status_negociacao?: string | null
           total_custos_variaveis?: number | null
           updated_at?: string
+          validade_proposta?: string | null
           valor?: number
         }
         Relationships: [

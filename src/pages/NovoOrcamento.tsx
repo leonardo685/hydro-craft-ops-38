@@ -104,7 +104,8 @@ export default function NovoOrcamento() {
     desconto: 0,
     valorComDesconto: 0,
     condicaoPagamento: '',
-    prazoMeses: '12',
+    garantia: '12',
+    validadeProposta: '30',
     prazoEntrega: '',
     pedidoCompraMisto: '',
     pedidoCompraProduto: '',
@@ -338,7 +339,9 @@ export default function NovoOrcamento() {
           condicaoPagamento: orcamentoEdicao.condicao_pagamento || '',
           prazoEntrega: orcamentoEdicao.prazo_entrega || '',
           assuntoProposta: orcamentoEdicao.assunto_proposta || '',
-          frete: orcamentoEdicao.frete || 'CIF'
+          frete: orcamentoEdicao.frete || 'CIF',
+          garantia: orcamentoEdicao.garantia || '12',
+          validadeProposta: orcamentoEdicao.validade_proposta || '30'
         }));
 
         // Carregar itens do orçamento
@@ -1022,6 +1025,8 @@ export default function NovoOrcamento() {
                 prazo_pagamento: orcamentoAtual.prazo_pagamento,
                 assunto_proposta: orcamentoAtual.assunto_proposta,
                 frete: orcamentoAtual.frete,
+                garantia: orcamentoAtual.garantia,
+                validade_proposta: orcamentoAtual.validade_proposta,
                 descricao: orcamentoAtual.descricao,
                 observacoes: orcamentoAtual.observacoes,
                 observacoes_nota: orcamentoAtual.observacoes_nota,
@@ -1101,7 +1106,9 @@ export default function NovoOrcamento() {
         condicao_pagamento: informacoesComerciais.condicaoPagamento || null,
         prazo_entrega: informacoesComerciais.prazoEntrega || null,
         assunto_proposta: informacoesComerciais.assuntoProposta || null,
-        frete: informacoesComerciais.frete || 'CIF'
+        frete: informacoesComerciais.frete || 'CIF',
+        garantia: informacoesComerciais.garantia || null,
+        validade_proposta: informacoesComerciais.validadeProposta || null
       };
 
       let response;
@@ -1472,7 +1479,16 @@ export default function NovoOrcamento() {
       const condicaoPagamento = revisao.condicao_pagamento || 'A combinar';
       const assunto = revisao.assunto_proposta || revisao.equipamento || 'REFORMA/MANUTENÇÃO';
       const prazoEntrega = revisao.prazo_entrega || '5 dias úteis';
-      const garantia = '6 Meses';
+      const garantia = revisao.garantia === 'sem' 
+        ? 'Sem Garantia'
+        : revisao.garantia === '12'
+        ? '12 meses'
+        : revisao.garantia === '6'
+        ? '6 meses'
+        : '12 meses';
+      const validadeProposta = revisao.validade_proposta 
+        ? `${revisao.validade_proposta} dias` 
+        : '30 dias';
       const frete = revisao.frete || 'CIF';
       
       doc.setFontSize(9);
@@ -1497,7 +1513,7 @@ export default function NovoOrcamento() {
       doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
       doc.text(`Garantia: ${garantia}`, 22, yPosition + 5.5);
       doc.text(`Frete: ${frete}`, 22 + col3Width, yPosition + 5.5);
-      doc.text(`Validade Proposta: 12 meses`, 22 + col3Width * 2, yPosition + 5.5);
+      doc.text(`Validade Proposta: ${validadeProposta}`, 22 + col3Width * 2, yPosition + 5.5);
       yPosition += 8;
       yPosition += 10;
 
@@ -2086,11 +2102,19 @@ export default function NovoOrcamento() {
     const valorTotalFormatado = `R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
     const condicaoPagamento = informacoesComerciais.condicaoPagamento || 'A combinar';
     const dataGeracao = new Date().toLocaleDateString('pt-BR');
-    const validadeProposta = `${informacoesComerciais.prazoMeses} meses`;
+    const validadeProposta = informacoesComerciais.validadeProposta 
+      ? `${informacoesComerciais.validadeProposta} dias` 
+      : '30 dias';
     
     const assunto = informacoesComerciais.assuntoProposta || dadosOrcamento.tag || 'REFORMA/MANUTENÇÃO';
     const prazoEntrega = informacoesComerciais.prazoEntrega || '5 dias úteis';
-    const garantia = '6 Meses';
+    const garantia = informacoesComerciais.garantia === 'sem' 
+      ? 'Sem Garantia'
+      : informacoesComerciais.garantia === '12'
+      ? '12 meses'
+      : informacoesComerciais.garantia === '6'
+      ? '6 meses'
+      : '12 meses';
     const frete = informacoesComerciais.frete || 'CIF';
     
     doc.setFontSize(9);
@@ -3166,21 +3190,34 @@ export default function NovoOrcamento() {
                 />
               </div>
               <div>
-                <Label htmlFor="prazoMeses">Prazo (Meses)</Label>
-                <Select value={informacoesComerciais.prazoMeses} onValueChange={value => setInformacoesComerciais(prev => ({
+                <Label htmlFor="garantia">Garantia</Label>
+                <Select value={informacoesComerciais.garantia} onValueChange={value => setInformacoesComerciais(prev => ({
                 ...prev,
-                prazoMeses: value
+                garantia: value
               }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="6">6 Meses</SelectItem>
-                    <SelectItem value="12">12 Meses</SelectItem>
-                    <SelectItem value="18">18 Meses</SelectItem>
-                    <SelectItem value="24">24 Meses</SelectItem>
+                    <SelectItem value="12">12 meses</SelectItem>
+                    <SelectItem value="6">6 meses</SelectItem>
+                    <SelectItem value="sem">Sem Garantia</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label htmlFor="validadeProposta">Validade da Proposta (dias)</Label>
+                <Input 
+                  id="validadeProposta" 
+                  type="number"
+                  min="1"
+                  value={informacoesComerciais.validadeProposta} 
+                  onChange={e => setInformacoesComerciais(prev => ({
+                    ...prev,
+                    validadeProposta: e.target.value
+                  }))} 
+                  placeholder="Ex: 30"
+                />
               </div>
             </div>
 
