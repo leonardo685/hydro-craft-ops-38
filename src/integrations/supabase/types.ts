@@ -454,6 +454,7 @@ export type Database = {
           arquivo_url: string
           created_at: string
           id: string
+          legenda: string | null
           nome_arquivo: string
           ordem_servico_id: string | null
           recebimento_id: number | null
@@ -463,6 +464,7 @@ export type Database = {
           arquivo_url: string
           created_at?: string
           id?: string
+          legenda?: string | null
           nome_arquivo: string
           ordem_servico_id?: string | null
           recebimento_id?: number | null
@@ -472,6 +474,7 @@ export type Database = {
           arquivo_url?: string
           created_at?: string
           id?: string
+          legenda?: string | null
           nome_arquivo?: string
           ordem_servico_id?: string | null
           recebimento_id?: number | null

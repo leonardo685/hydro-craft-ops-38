@@ -45,6 +45,7 @@ export interface FotoEquipamento {
   arquivo_url: string;
   nome_arquivo: string;
   apresentar_orcamento: boolean;
+  legenda?: string;
 }
 
 export interface NotaFiscal {
