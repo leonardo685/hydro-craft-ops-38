@@ -502,6 +502,7 @@ export type Database = {
           arquivo_url: string
           created_at: string
           id: string
+          legenda: string | null
           nome_arquivo: string
           orcamento_id: string
           tipo: string | null
@@ -511,6 +512,7 @@ export type Database = {
           arquivo_url: string
           created_at?: string
           id?: string
+          legenda?: string | null
           nome_arquivo: string
           orcamento_id: string
           tipo?: string | null
@@ -520,6 +522,7 @@ export type Database = {
           arquivo_url?: string
           created_at?: string
           id?: string
+          legenda?: string | null
           nome_arquivo?: string
           orcamento_id?: string
           tipo?: string | null
