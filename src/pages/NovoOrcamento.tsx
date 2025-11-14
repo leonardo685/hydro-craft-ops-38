@@ -126,7 +126,7 @@ export default function NovoOrcamento() {
     usinagem: []
   });
   const [analiseData, setAnaliseData] = useState<any>(null);
-  const [fotos, setFotos] = useState<Array<FotoEquipamento & { apresentar_orcamento?: boolean }>>([]);
+  const [fotos, setFotos] = useState<Array<FotoEquipamento & { apresentar_orcamento?: boolean; legenda?: string }>>([]);
   const [uploadingFoto, setUploadingFoto] = useState(false);
   
   // Estados para histórico de orçamentos
@@ -408,7 +408,8 @@ export default function NovoOrcamento() {
                 arquivo_url: f.arquivo_url,
                 nome_arquivo: f.nome_arquivo,
                 apresentar_orcamento: f.apresentar_orcamento || false,
-                recebimento_id: f.recebimento_id
+                recebimento_id: f.recebimento_id,
+                legenda: f.legenda || null
               })));
             }
           }
@@ -420,12 +421,13 @@ export default function NovoOrcamento() {
             .eq('orcamento_id', orcamentoEdicao.id);
 
           if (fotosData) {
-            setFotos(fotosData.map(f => ({
+            setFotos(fotosData.map((f: any) => ({
               id: f.id,
               arquivo_url: f.arquivo_url,
               nome_arquivo: f.nome_arquivo,
               apresentar_orcamento: f.apresentar_orcamento || false,
-              recebimento_id: null
+              recebimento_id: null,
+              legenda: f.legenda || null
             })));
           }
         }
@@ -459,7 +461,8 @@ export default function NovoOrcamento() {
                   id,
                   arquivo_url,
                   nome_arquivo,
-                  apresentar_orcamento
+                  apresentar_orcamento,
+                  legenda
                 )
               )
             `)
@@ -764,7 +767,8 @@ export default function NovoOrcamento() {
           arquivo_url: urlData.publicUrl,
           nome_arquivo: arquivo.name,
           apresentar_orcamento: true,
-          recebimento_id: null
+          recebimento_id: null,
+          legenda: null
         };
 
         setFotos(prev => [...prev, novaFoto]);
@@ -801,6 +805,33 @@ export default function NovoOrcamento() {
         ? { ...foto, apresentar_orcamento: !foto.apresentar_orcamento }
         : foto
     ));
+  };
+
+  const atualizarLegenda = async (fotoId: string, novaLegenda: string) => {
+    try {
+      setFotos(prevFotos =>
+        prevFotos.map(f =>
+          f.id === fotoId ? { ...f, legenda: novaLegenda } : f
+        )
+      );
+
+      // Só atualiza no banco se não for id temporário
+      if (!fotoId.startsWith('temp-')) {
+        const { error } = await supabase
+          .from('fotos_equipamentos')
+          .update({ legenda: novaLegenda })
+          .eq('id', fotoId);
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar legenda:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a legenda",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleSalvarNovoCliente = async () => {
@@ -1214,7 +1245,8 @@ export default function NovoOrcamento() {
           orcamento_id: orcamentoId,
           arquivo_url: foto.arquivo_url,
           nome_arquivo: foto.nome_arquivo,
-          apresentar_orcamento: foto.apresentar_orcamento || false
+          apresentar_orcamento: foto.apresentar_orcamento || false,
+          legenda: foto.legenda || null
         }));
 
         if (fotosParaInserir.length > 0) {
@@ -2448,7 +2480,7 @@ export default function NovoOrcamento() {
         const maxFotoWidth = 80;
         const maxFotoHeight = 55;
         const espacoHorizontal = 12;
-        const espacoVertical = 12;
+        const espacoVertical = 18; // Aumentado para acomodar legendas
         
         for (let i = 0; i < fotos.length; i += fotosPorPagina) {
           if (i > 0) {
@@ -2491,6 +2523,23 @@ export default function NovoOrcamento() {
                   const yOffset = (maxFotoHeight - finalHeight) / 2;
                   
                   doc.addImage(img, 'JPEG', xPos + xOffset, yPos + yOffset, finalWidth, finalHeight);
+                  
+                  // Adicionar legenda abaixo da foto se existir
+                  if (fotosPagina[j].legenda) {
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(8);
+                    doc.setTextColor(80, 80, 80);
+                    
+                    const legendaY = yPos + finalHeight + yOffset + 3;
+                    const legendaTexto = fotosPagina[j].legenda.substring(0, 50);
+                    doc.text(legendaTexto, xPos + (maxFotoWidth / 2), legendaY, { 
+                      align: 'center',
+                      maxWidth: maxFotoWidth - 4
+                    });
+                    
+                    doc.setTextColor(0, 0, 0);
+                  }
+                  
                   resolve();
                 };
                 img.onerror = () => resolve();
@@ -2759,6 +2808,14 @@ export default function NovoOrcamento() {
                         >
                           Apresentar Orçamento
                         </label>
+                      </div>
+                      <div className="px-1">
+                        <Input
+                          placeholder="Legenda da foto..."
+                          value={foto.legenda || ''}
+                          onChange={(e) => atualizarLegenda(foto.id, e.target.value)}
+                          className="text-xs h-8"
+                        />
                       </div>
                     </div>
                   ))}
