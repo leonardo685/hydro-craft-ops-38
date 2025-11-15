@@ -132,6 +132,59 @@ export default function Aprovados() {
       });
     }
   };
+
+  const retryWebhookFinalizada = async () => {
+    try {
+      // Buscar qualquer ordem finalizada
+      const ordem = ordensServico.find(o => o.status === 'finalizado' || o.status === 'concluido');
+      
+      if (!ordem) {
+        toast({
+          title: "Erro",
+          description: "Nenhuma ordem finalizada encontrada",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
+      const notaFiscalEntrada = ordem.recebimentos?.nota_fiscal || ordem.recebimentos?.chave_acesso_nfe;
+      const temRecebimento = !!ordem.recebimento_id;
+      
+      const tipoNotificacao = temRecebimento ? 'ordem_finalizada' : 'ordem_faturamento_sem_retorno';
+
+      const payload = {
+        tipo: tipoNotificacao,
+        numero_ordem: numeroOrdem,
+        cliente: ordem.recebimentos?.cliente_nome || ordem.cliente_nome,
+        equipamento: ordem.equipamento,
+        nota_fiscal_entrada: notaFiscalEntrada,
+        data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
+        data_aprovacao: ordem.updated_at ? format(new Date(ordem.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy')
+      };
+
+      console.log(`📤 Enviando webhook ${tipoNotificacao} para ${numeroOrdem}:`, payload);
+
+      const { data, error } = await supabase.functions.invoke('retry-webhook', {
+        body: payload
+      });
+
+      if (error) throw error;
+
+      console.log("✅ Webhook retry successful:", data);
+      toast({
+        title: "Sucesso",
+        description: `Webhook ${tipoNotificacao} reenviado para ${numeroOrdem}!`,
+      });
+    } catch (error) {
+      console.error("❌ Webhook retry failed:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao reenviar webhook: " + error.message,
+        variant: "destructive"
+      });
+    }
+  };
   const getSidebarColor = (ordem: any) => {
     // Verificar se existe prazo_entrega nos dados do recebimento ou na ordem
     const prazoEntrega = ordem.tempo_estimado || ordem.prazo_entrega;
@@ -210,6 +263,14 @@ export default function Aprovados() {
             >
               <RotateCw className="h-4 w-4" />
               🔧 Retry MH-044-25 (TEMP)
+            </Button>
+            <Button 
+              onClick={retryWebhookFinalizada}
+              variant="outline"
+              className="gap-2 border-green-500 text-green-600 hover:bg-green-50"
+            >
+              <RotateCw className="h-4 w-4" />
+              ✅ Retry Finalizada (TEMP)
             </Button>
             <Button variant="outline">
               <Package className="h-4 w-4 mr-2" />
