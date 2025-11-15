@@ -135,23 +135,41 @@ export default function Aprovados() {
 
   const retryWebhookFinalizada = async () => {
     try {
-      // Buscar qualquer ordem finalizada
-      const ordem = ordensServico.find(o => o.status === 'finalizado' || o.status === 'concluido');
+      // Buscar qualquer ordem com status 'faturado'
+      const { data: ordensFaturadas, error } = await supabase
+        .from('ordens_servico')
+        .select(`
+          *,
+          recebimentos (
+            numero_ordem,
+            cliente_nome,
+            tipo_equipamento,
+            nota_fiscal,
+            chave_acesso_nfe
+          )
+        `)
+        .eq('status', 'faturado')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      
+      const ordem = ordensFaturadas?.[0];
       
       if (!ordem) {
         toast({
           title: "Erro",
-          description: "Nenhuma ordem finalizada encontrada",
+          description: "Nenhuma ordem faturada encontrada",
           variant: "destructive"
         });
         return;
       }
 
-      const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
+      const numeroOrdem = ordem.recebimentos?.numero_ordem || 'Sem número';
       const notaFiscalEntrada = ordem.recebimentos?.nota_fiscal || ordem.recebimentos?.chave_acesso_nfe;
       const temRecebimento = !!ordem.recebimento_id;
       
-      const tipoNotificacao = temRecebimento ? 'ordem_finalizada' : 'ordem_faturamento_sem_retorno';
+      const tipoNotificacao = temRecebimento ? 'ordem_retorno' : 'ordem_faturamento_sem_retorno';
 
       const payload = {
         tipo: tipoNotificacao,
@@ -165,11 +183,11 @@ export default function Aprovados() {
 
       console.log(`📤 Enviando webhook ${tipoNotificacao} para ${numeroOrdem}:`, payload);
 
-      const { data, error } = await supabase.functions.invoke('retry-webhook', {
+      const { data, error: webhookError } = await supabase.functions.invoke('retry-webhook', {
         body: payload
       });
 
-      if (error) throw error;
+      if (webhookError) throw webhookError;
 
       console.log("✅ Webhook retry successful:", data);
       toast({
@@ -186,59 +204,6 @@ export default function Aprovados() {
     }
   };
 
-  const retryWebhookMH033 = async () => {
-    try {
-      const ordem = ordensServico.find(o => 
-        (o.recebimentos?.numero_ordem || o.numero_ordem) === 'MH-033-25'
-      );
-      
-      if (!ordem) {
-        toast({
-          title: "Erro",
-          description: "Ordem MH-033-25 não encontrada",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
-      const notaFiscalEntrada = ordem.recebimentos?.nota_fiscal || ordem.recebimentos?.chave_acesso_nfe;
-      const temRecebimento = !!ordem.recebimento_id;
-      
-      const tipoNotificacao = temRecebimento ? 'ordem_retorno' : 'ordem_faturamento_sem_retorno';
-
-      const payload = {
-        tipo: tipoNotificacao,
-        numero_ordem: numeroOrdem,
-        cliente: ordem.recebimentos?.cliente_nome || ordem.cliente_nome,
-        equipamento: ordem.equipamento,
-        nota_fiscal_entrada: notaFiscalEntrada,
-        data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
-        data_aprovacao: ordem.updated_at ? format(new Date(ordem.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy')
-      };
-
-      console.log(`📤 Enviando webhook ${tipoNotificacao} para MH-033-25:`, payload);
-
-      const { data, error } = await supabase.functions.invoke('retry-webhook', {
-        body: payload
-      });
-
-      if (error) throw error;
-
-      console.log("✅ Webhook retry successful:", data);
-      toast({
-        title: "Sucesso",
-        description: `Webhook ${tipoNotificacao} reenviado para MH-033-25!`,
-      });
-    } catch (error) {
-      console.error("❌ Webhook retry failed:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao reenviar webhook: " + error.message,
-        variant: "destructive"
-      });
-    }
-  };
   const getSidebarColor = (ordem: any) => {
     // Verificar se existe prazo_entrega nos dados do recebimento ou na ordem
     const prazoEntrega = ordem.tempo_estimado || ordem.prazo_entrega;
@@ -324,15 +289,7 @@ export default function Aprovados() {
               className="gap-2 border-green-500 text-green-600 hover:bg-green-50"
             >
               <RotateCw className="h-4 w-4" />
-              ✅ Retry Finalizada (TEMP)
-            </Button>
-            <Button 
-              onClick={retryWebhookMH033}
-              variant="outline"
-              className="gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
-            >
-              <RotateCw className="h-4 w-4" />
-              📦 Retry MH-033-25 (TEMP)
+              📦 Retry Ordem Faturada (TEMP)
             </Button>
             <Button variant="outline">
               <Package className="h-4 w-4 mr-2" />
