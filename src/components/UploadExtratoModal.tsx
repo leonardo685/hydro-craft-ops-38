@@ -8,7 +8,7 @@ import { Upload, FileSpreadsheet, FileText, AlertCircle, Loader2 } from "lucide-
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
 import { supabase } from "@/integrations/supabase/client";
-import { format, parse, isValid } from 'date-fns';
+import { format, parse, isValid, addDays, subDays } from 'date-fns';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
@@ -22,6 +22,11 @@ interface TransacaoExtrato {
   contaBancaria?: string;
   fornecedorCliente?: string;
   selecionada: boolean;
+  duplicata?: {
+    status: 'possivel' | 'confirmada';
+    origem: 'lancamentos' | 'contas_receber' | 'ambos';
+    registros: any[];
+  };
 }
 
 interface UploadExtratoModalProps {
@@ -72,6 +77,88 @@ export function UploadExtratoModal({
     }
 
     setArquivo(file);
+  };
+
+  // Verificar duplicatas nas transações
+  const verificarDuplicatas = async (transacoes: TransacaoExtrato[]) => {
+    console.log('🔍 Iniciando verificação de duplicatas...');
+    
+    for (const t of transacoes) {
+      try {
+        const registrosDuplicados: any[] = [];
+        
+        // Calcular range de datas (±3 dias)
+        const dataMin = subDays(t.data, 3).toISOString();
+        const dataMax = addDays(t.data, 3).toISOString();
+        
+        // Buscar em lancamentos_financeiros
+        const { data: lancs, error: errorLancs } = await supabase
+          .from('lancamentos_financeiros')
+          .select('*')
+          .eq('tipo', t.tipo)
+          .gte('data_esperada', dataMin)
+          .lte('data_esperada', dataMax)
+          .gte('valor', t.valor - 0.5)
+          .lte('valor', t.valor + 0.5);
+
+        if (errorLancs) {
+          console.error('Erro ao buscar lançamentos:', errorLancs);
+        } else if (lancs && lancs.length > 0) {
+          registrosDuplicados.push(...lancs.map(l => ({ ...l, _origem: 'lancamentos' })));
+        }
+
+        // Buscar em contas_receber (só para entradas)
+        if (t.tipo === 'entrada') {
+          const { data: contas, error: errorContas } = await supabase
+            .from('contas_receber')
+            .select('*')
+            .gte('data_vencimento', dataMin.split('T')[0])
+            .lte('data_vencimento', dataMax.split('T')[0])
+            .gte('valor', t.valor - 0.5)
+            .lte('valor', t.valor + 0.5);
+            
+          if (errorContas) {
+            console.error('Erro ao buscar contas a receber:', errorContas);
+          } else if (contas && contas.length > 0) {
+            registrosDuplicados.push(...contas.map(c => ({ ...c, _origem: 'contas_receber' })));
+          }
+        }
+
+        // Marcar como duplicata se encontrou registros
+        if (registrosDuplicados.length > 0) {
+          // Verificar se é duplicata confirmada (mesmo valor exato e data exata)
+          const duplicataExata = registrosDuplicados.some(r => {
+            const dataRegistro = new Date(r.data_esperada || r.data_vencimento);
+            const diferençaDias = Math.abs((dataRegistro.getTime() - t.data.getTime()) / (1000 * 60 * 60 * 24));
+            const valorExato = Math.abs(r.valor - t.valor) < 0.01;
+            return diferençaDias <= 1 && valorExato;
+          });
+
+          const origens = [...new Set(registrosDuplicados.map(r => r._origem))];
+          
+          t.duplicata = {
+            status: duplicataExata ? 'confirmada' : 'possivel',
+            origem: origens.length > 1 ? 'ambos' : origens[0] as any,
+            registros: registrosDuplicados
+          };
+
+          // Desmarcar duplicatas confirmadas automaticamente
+          if (duplicataExata) {
+            t.selecionada = false;
+          }
+          
+          console.log(`${duplicataExata ? '🔴' : '🟡'} Duplicata ${duplicataExata ? 'confirmada' : 'possível'} encontrada:`, {
+            transacao: `${format(t.data, 'dd/MM/yyyy')} - ${t.descricao} - R$ ${t.valor.toFixed(2)}`,
+            registros: registrosDuplicados.length,
+            status: t.duplicata.status
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao verificar duplicata:', error);
+      }
+    }
+    
+    console.log('✅ Verificação de duplicatas concluída');
   };
 
   const parseDate = (dateStr: any): Date => {
@@ -863,6 +950,12 @@ export function UploadExtratoModal({
         contaBancaria: bancoSelecionado
       }));
       
+      // Marcar todas como selecionadas inicialmente
+      transacoesComBanco.forEach(t => t.selecionada = true);
+      
+      // Verificar duplicatas
+      await verificarDuplicatas(transacoesComBanco);
+      
       setTransacoes(transacoesComBanco);
       setEtapa('categorizar');
       toast.success("Extrato processado", {
@@ -913,7 +1006,10 @@ export function UploadExtratoModal({
   };
 
   const importarTransacoes = async () => {
-    const selecionadas = transacoes.filter(t => t.selecionada);
+    // Filtrar selecionadas e excluir duplicatas confirmadas
+    const selecionadas = transacoes.filter(t => 
+      t.selecionada && (!t.duplicata || t.duplicata.status !== 'confirmada')
+    );
     
     // Validar
     const invalidas = selecionadas.filter(t => !t.categoria || !t.contaBancaria);
@@ -922,6 +1018,12 @@ export function UploadExtratoModal({
         description: "Todas as transações selecionadas devem ter categoria e conta bancária"
       });
       return;
+    }
+    
+    // Avisar sobre duplicatas possíveis que serão importadas
+    const duplicatasPossiveis = selecionadas.filter(t => t.duplicata?.status === 'possivel');
+    if (duplicatasPossiveis.length > 0) {
+      console.warn(`⚠️ Importando ${duplicatasPossiveis.length} transação(ões) com possível duplicata`);
     }
 
     setProcessando(true);
@@ -1083,6 +1185,7 @@ export function UploadExtratoModal({
                           onCheckedChange={toggleTodas}
                         />
                       </TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Data</TableHead>
                       <TableHead>Descrição</TableHead>
                       <TableHead>Tipo</TableHead>
@@ -1093,17 +1196,53 @@ export function UploadExtratoModal({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transacoes.map(transacao => (
-                      <TableRow key={transacao.id}>
-                        <TableCell>
-                          <Checkbox 
-                            checked={transacao.selecionada}
-                            onCheckedChange={() => toggleSelecao(transacao.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          {format(transacao.data, 'dd/MM/yyyy')}
-                        </TableCell>
+                    {transacoes.map(transacao => {
+                      const isDuplicata = transacao.duplicata;
+                      const isConfirmada = isDuplicata?.status === 'confirmada';
+                      const isPossivel = isDuplicata?.status === 'possivel';
+                      
+                      return (
+                        <TableRow 
+                          key={transacao.id}
+                          className={
+                            isConfirmada 
+                              ? 'bg-destructive/5 hover:bg-destructive/10' 
+                              : isPossivel 
+                              ? 'bg-yellow-500/5 hover:bg-yellow-500/10'
+                              : ''
+                          }
+                        >
+                          <TableCell>
+                            <Checkbox 
+                              checked={transacao.selecionada}
+                              onCheckedChange={() => toggleSelecao(transacao.id)}
+                              disabled={isConfirmada}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {!isDuplicata ? (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-700 dark:text-green-400">
+                                🟢 Novo
+                              </span>
+                            ) : isConfirmada ? (
+                              <span 
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-destructive/10 text-destructive cursor-help"
+                                title={`Duplicata confirmada - ${isDuplicata.registros.length} registro(s) similar(es) encontrado(s)`}
+                              >
+                                🔴 Duplicata
+                              </span>
+                            ) : (
+                              <span 
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 cursor-help"
+                                title={`Possível duplicata - ${isDuplicata.registros.length} registro(s) similar(es) encontrado(s)`}
+                              >
+                                🟡 Possível
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {format(transacao.data, 'dd/MM/yyyy')}
+                          </TableCell>
                         <TableCell className="max-w-[200px] truncate">
                           {transacao.descricao}
                         </TableCell>
@@ -1174,7 +1313,8 @@ export function UploadExtratoModal({
                           </Select>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
