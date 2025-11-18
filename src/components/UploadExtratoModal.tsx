@@ -1129,7 +1129,8 @@ export function UploadExtratoModal({
                             </SelectTrigger>
                             <SelectContent>
                               {categorias
-                                .filter(c => c.tipo === 'filha' && c.classificacao === transacao.tipo)
+                                .filter(c => c.classificacao === transacao.tipo)
+                                .sort((a, b) => a.codigo.localeCompare(b.codigo, undefined, { numeric: true }))
                                 .map(cat => (
                                   <SelectItem key={cat.id} value={cat.id}>
                                     {cat.codigo} - {cat.nome}
