@@ -1098,13 +1098,12 @@ export default function Financeiro() {
   });
 
   // Cálculos do extrato - usando dados filtrados
-  // Apenas lançamentos PAGOS com data realizada são contabilizados
   const totalEntradas = extratoFiltrado
-    .filter(item => item.tipo === 'entrada' && item.pago && item.dataRealizada)
+    .filter(item => item.tipo === 'entrada')
     .reduce((acc, item) => acc + item.valor, 0);
   
   const totalSaidas = extratoFiltrado
-    .filter(item => item.tipo === 'saida' && item.pago && item.dataRealizada)
+    .filter(item => item.tipo === 'saida')
     .reduce((acc, item) => acc + item.valor, 0);
 
   const saldoDia = totalEntradas - totalSaidas;
