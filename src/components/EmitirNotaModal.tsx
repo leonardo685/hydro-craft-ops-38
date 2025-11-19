@@ -30,7 +30,7 @@ export default function EmitirNotaModal({
   orcamento,
   onConfirm
 }: EmitirNotaModalProps) {
-  const { getCategoriasForSelect } = useCategoriasFinanceiras();
+  const { getCategoriasForSelect, categorias } = useCategoriasFinanceiras();
   const { getContasForSelect } = useContasBancarias();
   const [etapa, setEtapa] = useState<'dados' | 'nota_fiscal' | 'contas_receber'>('dados');
   const [numeroNF, setNumeroNF] = useState('');
@@ -84,6 +84,11 @@ export default function EmitirNotaModal({
   };
 
   const dadosAprovacao = orcamento ? extrairDadosAprovacao(orcamento.descricao || '') : { numeroPedido: 'N/A', prazoPagamento: 'A definir', anexoUrl: null };
+  
+  // Extrair tipo de ordem das observações
+  const tipoOrdemId = orcamento?.observacoes?.match(/Tipo:\s*([a-f0-9-]+)/i)?.[1] || '';
+  const tipoOrdem = categorias.find(cat => cat.id === tipoOrdemId);
+  const tipoOrdemNome = tipoOrdem ? `${tipoOrdem.codigo} - ${tipoOrdem.nome}` : 'Não especificado';
   
   console.log('URL do anexo final:', dadosAprovacao.anexoUrl);
 
@@ -570,6 +575,14 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                       Baixar Pedido (PDF)
                     </Button>
                   )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Tipo de Ordem</p>
+                    <p className="font-semibold">{tipoOrdemNome}</p>
+                  </div>
                 </div>
               </div>
 
