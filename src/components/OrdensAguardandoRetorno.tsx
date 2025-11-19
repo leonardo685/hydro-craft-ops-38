@@ -93,8 +93,8 @@ export function OrdensAguardandoRetorno({
     setOrdemSelecionada(ordem);
     setModalOpen(true);
   };
-  const handleVisualizarOrdem = (numeroOrdem: string) => {
-    navigate(`/ordem-servico/${numeroOrdem}`);
+  const handleVisualizarOrdem = (id: string) => {
+    navigate(`/visualizar-ordem-servico/${id}`);
   };
   const handleEmitirNotaRetorno = async (ordemId: string) => {
     try {
@@ -217,7 +217,7 @@ export function OrdensAguardandoRetorno({
                       <FileText className="h-4 w-4 mr-1" />
                       Emitir Nota de Retorno
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleVisualizarOrdem(ordem.numero_ordem)}>
+                    <Button variant="outline" size="sm" onClick={() => handleVisualizarOrdem(ordem.id)}>
                       <Eye className="h-4 w-4 mr-1" />
                       Visualizar Ordem
                     </Button>
