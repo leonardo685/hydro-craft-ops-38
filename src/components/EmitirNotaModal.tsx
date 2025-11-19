@@ -209,13 +209,17 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
       return;
     }
 
+    // Extrair categoria do tipo de ordem nas observações
+    const tipoOrdemMatch = orcamento.observacoes?.match(/Tipo:\s*([a-f0-9-]+)/i);
+    const categoriaId = tipoOrdemMatch?.[1] || '';
+
     // Pré-preencher formulário com dados do orçamento
     const novaDataEsperada = new Date(Date.now() + prazoDias * 24 * 60 * 60 * 1000);
     setLancamentoForm({
       tipo: 'entrada',
       valor: orcamento.valor?.toString() || '',
       descricao: `NF ${numeroNF} - Orçamento ${orcamento.numero} - Pedido ${dadosAprovacao.numeroPedido}`,
-      categoria: '',
+      categoria: categoriaId,
       conta: '',
       fornecedor: orcamento.cliente_nome,
       paga: false,
