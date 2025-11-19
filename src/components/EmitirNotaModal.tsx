@@ -13,6 +13,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
+import { useContasBancarias } from "@/hooks/use-contas-bancarias";
 import { Checkbox } from "@/components/ui/checkbox";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 
@@ -30,6 +31,7 @@ export default function EmitirNotaModal({
   onConfirm
 }: EmitirNotaModalProps) {
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
+  const { getContasForSelect } = useContasBancarias();
   const [etapa, setEtapa] = useState<'dados' | 'nota_fiscal' | 'contas_receber'>('dados');
   const [numeroNF, setNumeroNF] = useState('');
   const [anexoNota, setAnexoNota] = useState<File | null>(null);
@@ -47,7 +49,7 @@ export default function EmitirNotaModal({
     valor: '',
     descricao: '',
     categoria: '',
-    conta: 'conta_corrente',
+    conta: '',
     fornecedor: '',
     paga: false,
     dataEmissao: new Date(),
@@ -214,7 +216,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
       valor: orcamento.valor?.toString() || '',
       descricao: `NF ${numeroNF} - Orçamento ${orcamento.numero} - Pedido ${dadosAprovacao.numeroPedido}`,
       categoria: '',
-      conta: 'conta_corrente',
+      conta: '',
       fornecedor: orcamento.cliente_nome,
       paga: false,
       dataEmissao: new Date(),
@@ -237,7 +239,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
       valor: '',
       descricao: '',
       categoria: '',
-      conta: 'conta_corrente',
+      conta: '',
       fornecedor: '',
       paga: false,
       dataEmissao: new Date(),
@@ -431,7 +433,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
         valor: '',
         descricao: '',
         categoria: '',
-        conta: 'conta_corrente',
+        conta: '',
         fornecedor: '',
         paga: false,
         dataEmissao: new Date(),
@@ -511,13 +513,6 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
   const textoNota = `I - NF referente ao orçamento ${orcamento.numero}.
 II - NF referente ao pedido ${dadosAprovacao.numeroPedido}.
 III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
-
-  const contasBancarias = [
-    { id: 'conta_corrente', nome: 'Conta Corrente - Banco do Brasil' },
-    { id: 'conta_poupanca', nome: 'Poupança - Banco do Brasil' },
-    { id: 'conta_itau', nome: 'Conta Corrente - Itaú' },
-    { id: 'conta_caixa', nome: 'Conta Corrente - Caixa' }
-  ];
 
   return (
     <Dialog open={open} onOpenChange={handleFechar}>
@@ -760,8 +755,8 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {contasBancarias.map(conta => (
-                          <SelectItem key={conta.id} value={conta.id}>{conta.nome}</SelectItem>
+                        {getContasForSelect.map(conta => (
+                          <SelectItem key={conta.value} value={conta.value}>{conta.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
