@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, User, FileText, Settings, Camera } from "lucide-react";
+import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
 import { format } from "date-fns";
@@ -13,7 +14,16 @@ export default function DetalhesRecebimento() {
   const { id } = useParams();
   const { recebimentos, loading } = useRecebimentos();
   
-  const recebimento = recebimentos.find(r => r.id === Number(id));
+  const numericId = id && !isNaN(Number(id)) ? Number(id) : null;
+  const recebimento = numericId !== null
+    ? recebimentos.find(r => r.id === numericId)
+    : undefined;
+
+  useEffect(() => {
+    if (!loading && !recebimento && id && numericId === null) {
+      navigate(`/visualizar-ordem-servico/${id}`);
+    }
+  }, [loading, recebimento, id, navigate, numericId]);
 
   if (loading) {
     return (
