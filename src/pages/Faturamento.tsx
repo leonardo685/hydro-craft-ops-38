@@ -60,14 +60,35 @@ export default function Faturamento() {
     // Carregar ordens aguardando retorno, reprovadas E sem retorno (todas precisam de faturamento)
     const { data: ordensData, error: ordensError } = await supabase
       .from('ordens_servico')
-      .select('*')
+      .select(`
+        *,
+        recebimentos!left(nota_fiscal, numero_ordem),
+        orcamentos!ordem_servico_id(numero)
+      `)
       .in('status', ['aguardando_retorno', 'reprovada', 'aguardando_faturamento_sem_retorno'])
       .order('updated_at', { ascending: false });
 
     if (ordensError) {
       console.error('Erro ao carregar ordens:', ordensError);
     } else {
-      setOrdensRetorno(ordensData || []);
+      const ordensFormatadas = ordensData?.map(ordem => {
+        const recebimento = Array.isArray(ordem.recebimentos) 
+          ? ordem.recebimentos[0] 
+          : ordem.recebimentos;
+        
+        const orcamento = Array.isArray(ordem.orcamentos)
+          ? ordem.orcamentos[0]
+          : ordem.orcamentos;
+
+        return {
+          ...ordem,
+          numero_ordem: recebimento?.numero_ordem || ordem.numero_ordem,
+          nota_fiscal: recebimento?.nota_fiscal,
+          orcamento_vinculado: orcamento?.numero
+        };
+      }) || [];
+      
+      setOrdensRetorno(ordensFormatadas);
     }
 
     // Carregar orçamentos aprovados para a seção "Aguardando Faturamento"
