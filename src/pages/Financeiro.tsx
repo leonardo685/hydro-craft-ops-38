@@ -173,7 +173,7 @@ export default function Financeiro() {
     descricao: '',
     tipo: 'todos',
     status: 'todos',
-    fornecedor: 'todos'
+    fornecedor: [] as string[]
   });
 
   // Estados para os filtros do DRE
@@ -233,8 +233,8 @@ export default function Financeiro() {
 
   // Combinar clientes e fornecedores em uma lista
   const fornecedoresClientes = [
-    ...clientes.map(c => ({ id: c.id, nome: c.nome, tipo: 'cliente' as const })),
-    ...fornecedoresData.map(f => ({ id: f.id, nome: f.nome, tipo: 'fornecedor' as const }))
+    ...clientes.map(c => ({ id: c.id, nome: c.nome, tipo: 'cliente' as const, cnpj_cpf: c.cnpj_cpf })),
+    ...fornecedoresData.map(f => ({ id: f.id, nome: f.nome, tipo: 'fornecedor' as const, cnpj_cpf: f.cnpj_cpf }))
   ];
 
   const contasBancarias = [
@@ -854,18 +854,6 @@ export default function Financeiro() {
   const saldoInicial = 12500;
   const saldoFinal = saldoInicial + variacaoCaixa;
 
-  // Cálculos do extrato - usando dados reais do banco
-  // Apenas lançamentos PAGOS com data realizada são contabilizados
-  const totalEntradas = lancamentos
-    .filter(item => item.tipo === 'entrada' && item.pago && item.dataRealizada)
-    .reduce((acc, item) => acc + item.valor, 0);
-  
-  const totalSaidas = lancamentos
-    .filter(item => item.tipo === 'saida' && item.pago && item.dataRealizada)
-    .reduce((acc, item) => acc + item.valor, 0);
-
-  const saldoDia = totalEntradas - totalSaidas;
-
   // Cálculos do mês atual
   const entradasMesAtual = extratoMesAtual
     .filter(item => item.tipo === 'entrada')
@@ -1028,7 +1016,7 @@ export default function Financeiro() {
       descricao: '',
       tipo: 'todos',
       status: 'todos',
-      fornecedor: 'todos'
+      fornecedor: []
     });
   };
 
@@ -1055,7 +1043,7 @@ export default function Financeiro() {
     }
 
     // Filtro por fornecedor
-    if (filtrosExtrato.fornecedor !== 'todos' && item.fornecedorCliente !== filtrosExtrato.fornecedor) {
+    if (filtrosExtrato.fornecedor.length > 0 && !filtrosExtrato.fornecedor.includes(item.fornecedorCliente || '')) {
       return false;
     }
 
@@ -1108,6 +1096,18 @@ export default function Financeiro() {
 
     return true;
   });
+
+  // Cálculos do extrato - usando dados filtrados
+  // Apenas lançamentos PAGOS com data realizada são contabilizados
+  const totalEntradas = extratoFiltrado
+    .filter(item => item.tipo === 'entrada' && item.pago && item.dataRealizada)
+    .reduce((acc, item) => acc + item.valor, 0);
+  
+  const totalSaidas = extratoFiltrado
+    .filter(item => item.tipo === 'saida' && item.pago && item.dataRealizada)
+    .reduce((acc, item) => acc + item.valor, 0);
+
+  const saldoDia = totalEntradas - totalSaidas;
 
   const handleLancamento = async () => {
     if (!lancamentoForm.valor || !lancamentoForm.descricao) {
@@ -2819,30 +2819,38 @@ export default function Financeiro() {
 
                           {/* Fornecedor */}
                           <div>
-                            <Label className="text-xs">Fornecedor</Label>
-                            <Select value={filtrosExtrato.fornecedor} onValueChange={(value) => setFiltrosExtrato(prev => ({ ...prev, fornecedor: value }))}>
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Todos fornecedores" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="todos">Todos fornecedores</SelectItem>
-                                {fornecedoresClientes.map((fornecedor) => (
-                                  <SelectItem key={fornecedor.id} value={fornecedor.id}>
-                                    <div className="flex items-center gap-2">
-                                      <Badge 
-                                        variant={
-                                          fornecedor.tipo === 'cliente' ? 'default' : 'secondary'
-                                        }
-                                        className="text-xs"
-                                      >
-                                        {fornecedor.tipo === 'cliente' ? 'Cliente' : 'Fornecedor'}
-                                      </Badge>
-                                      <span className="text-xs">{fornecedor.nome}</span>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <Label className="text-xs">
+                              Fornecedor/Cliente
+                              {filtrosExtrato.fornecedor.length > 0 && (
+                                <span className="ml-2 text-primary">({filtrosExtrato.fornecedor.length} selecionado{filtrosExtrato.fornecedor.length > 1 ? 's' : ''})</span>
+                              )}
+                            </Label>
+                            <MultipleSelector
+                              value={filtrosExtrato.fornecedor.map(id => {
+                                const entity = fornecedoresClientes.find(f => f.id === id);
+                                return {
+                                  value: id,
+                                  label: entity ? `${entity.nome}${entity.cnpj_cpf ? ` (${entity.cnpj_cpf})` : ''}` : id
+                                };
+                              })}
+                              onChange={(options) => setFiltrosExtrato(prev => ({ 
+                                ...prev, 
+                                fornecedor: options.map(opt => opt.value) 
+                              }))}
+                              options={fornecedoresClientes.map(fornecedor => ({
+                                value: fornecedor.id,
+                                label: `${fornecedor.nome}${fornecedor.cnpj_cpf ? ` (${fornecedor.cnpj_cpf})` : ''}`,
+                                group: fornecedor.tipo === 'cliente' ? 'Clientes' : 'Fornecedores'
+                              }))}
+                              placeholder="Selecionar fornecedores/clientes..."
+                              emptyIndicator={
+                                <p className="text-center text-xs leading-10 text-muted-foreground">
+                                  Nenhum resultado encontrado
+                                </p>
+                              }
+                              className="h-8 text-xs"
+                              badgeClassName="text-xs"
+                            />
                           </div>
 
                           {/* Botões de Ação */}
