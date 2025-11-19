@@ -17,6 +17,7 @@ interface OrdemAguardandoRetorno {
   observacoes_tecnicas?: string;
   recebimento_id?: number;
   nota_fiscal?: string;
+  orcamento_vinculado?: string;
 }
 export function OrdensAguardandoRetorno({
   isExpanded = true,
@@ -53,7 +54,8 @@ export function OrdensAguardandoRetorno({
         error
       } = await supabase.from('ordens_servico').select(`
           *,
-          recebimentos!left(nota_fiscal, numero_ordem)
+          recebimentos!left(nota_fiscal, numero_ordem),
+          orcamentos!ordem_servico_id(numero)
         `).eq('status', 'aguardando_retorno').order('created_at', {
         ascending: false
       });
@@ -62,13 +64,17 @@ export function OrdensAguardandoRetorno({
       const ordensFormatadas = data?.map(ordem => {
         // Priorizar número do recebimento sempre
         const numeroExibicao = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
+        const orcamento = Array.isArray(ordem.orcamentos) 
+          ? ordem.orcamentos[0] 
+          : ordem.orcamentos;
         
         console.log(`✅ Ordem ${ordem.id}: OS número = ${ordem.numero_ordem}, Recebimento número = ${ordem.recebimentos?.numero_ordem}, Exibindo = ${numeroExibicao}`);
         
         return {
           ...ordem,
           numero_ordem: numeroExibicao,
-          nota_fiscal: ordem.recebimentos?.nota_fiscal
+          nota_fiscal: ordem.recebimentos?.nota_fiscal,
+          orcamento_vinculado: orcamento?.numero
         };
       }) || [];
       setOrdens(ordensFormatadas);
@@ -192,6 +198,13 @@ export function OrdensAguardandoRetorno({
                         <p className="font-medium">{ordem.nota_fiscal || '-'}</p>
                       </div>
                     </div>
+                    {ordem.orcamento_vinculado && (
+                      <div className="md:col-span-2">
+                        <Badge variant="outline" className="text-xs">
+                          Vinculado ao Orçamento: {ordem.orcamento_vinculado}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
 
                   {ordem.observacoes_tecnicas && <div className="p-3 bg-muted rounded-lg">
