@@ -133,6 +133,19 @@ export default function Dashboard() {
   const { contas, loading: loadingContas } = useContasBancarias();
   const { categorias } = useCategoriasFinanceiras();
   
+  const { data: orcamentos = [], isLoading: loadingOrcamentos } = useQuery({
+    queryKey: ['orcamentos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orcamentos')
+        .select('*')
+        .order('data_criacao', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+  
   const [dashboardPeriodType, setDashboardPeriodType] = useState<'mes' | 'trimestre' | 'ano'>('mes');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [selectedQuarter, setSelectedQuarter] = useState<string>('Q1');
@@ -465,6 +478,83 @@ export default function Dashboard() {
     ];
   }, [getLancamentosFiltrados, categorias, monthlyData, saldoAtual, impostosPagosPeriodo, investimentosPeriodo]);
 
+  // Cards de Vendas (Orçamentos Aprovados)
+  const vendasCards = useMemo(() => {
+    // Filtrar orçamentos aprovados no período selecionado
+    const orcamentosAprovados = orcamentos.filter(orc => {
+      // Considerar apenas status aprovado ou finalizado
+      if (orc.status !== 'aprovado' && orc.status !== 'finalizado') {
+        return false;
+      }
+      
+      // Aplicar filtro de período
+      const dataRef = new Date(orc.data_aprovacao || orc.data_criacao);
+      
+      if (dashboardPeriodType === 'mes') {
+        return dataRef.getMonth() === selectedMonth.getMonth() 
+          && dataRef.getFullYear() === selectedMonth.getFullYear();
+      } else if (dashboardPeriodType === 'trimestre') {
+        const ano = parseInt(selectedYear);
+        const quarterMonths = {
+          'Q1': [0, 1, 2],
+          'Q2': [3, 4, 5],
+          'Q3': [6, 7, 8],
+          'Q4': [9, 10, 11]
+        };
+        return quarterMonths[selectedQuarter as keyof typeof quarterMonths].includes(dataRef.getMonth())
+          && dataRef.getFullYear() === ano;
+      } else { // ano
+        return dataRef.getFullYear() === parseInt(selectedYear);
+      }
+    });
+    
+    // Calcular métricas
+    const totalVendas = orcamentosAprovados.reduce((acc, orc) => acc + (orc.valor || 0), 0);
+    const quantidadePedidos = orcamentosAprovados.length;
+    const ticketMedio = quantidadePedidos > 0 ? totalVendas / quantidadePedidos : 0;
+    
+    // Preparar dados dos mini gráficos (últimos 7 meses de vendas)
+    const last7MonthsVendas = monthlyData.slice(-7).map(m => {
+      const mesData = new Date(m.mes);
+      const vendasMes = orcamentos
+        .filter(orc => {
+          if (orc.status !== 'aprovado' && orc.status !== 'finalizado') return false;
+          const dataOrc = new Date(orc.data_aprovacao || orc.data_criacao);
+          return dataOrc.getMonth() === mesData.getMonth() && dataOrc.getFullYear() === mesData.getFullYear();
+        })
+        .reduce((acc, orc) => acc + (orc.valor || 0), 0);
+      
+      return { month: m.mes, value: vendasMes };
+    });
+    
+    return [
+      {
+        title: "Total de Vendas",
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalVendas),
+        change: "",
+        changeValue: 0,
+        icon: DollarSign,
+        chartData: last7MonthsVendas
+      },
+      {
+        title: "Quantidade de Pedidos",
+        value: quantidadePedidos.toString(),
+        change: "",
+        changeValue: 0,
+        icon: Activity,
+        chartData: last7MonthsVendas.map(m => ({ ...m, value: m.value > 0 ? 1 : 0 }))
+      },
+      {
+        title: "Ticket Médio",
+        value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(ticketMedio),
+        change: "",
+        changeValue: 0,
+        icon: TrendingUp,
+        chartData: last7MonthsVendas
+      }
+    ];
+  }, [orcamentos, dashboardPeriodType, selectedMonth, selectedQuarter, selectedYear, monthlyData]);
+
   // Dados para gráfico de pizza - Categorias de Faturamento (com filtro de período)
   const faturamentoPorCategoria = useMemo(() => {
     const categoriaMap = new Map<string, { valor: number; categoria: any }>();
@@ -690,6 +780,29 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
+
+        {/* Cards de Vendas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Métricas de Vendas - {getPeriodoLabel()}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {vendasCards.map((card, index) => (
+                <StatCard
+                  key={index}
+                  title={card.title}
+                  value={card.value}
+                  change={card.change}
+                  changeValue={card.changeValue}
+                  icon={card.icon}
+                  chartData={card.chartData}
+                  loading={loadingOrcamentos}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
