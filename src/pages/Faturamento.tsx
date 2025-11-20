@@ -214,7 +214,24 @@ export default function Faturamento() {
 
   const handleDownloadPdf = async (url: string, filename: string) => {
     try {
-      const response = await fetch(url);
+      const response = await fetch(
+        `https://fmbfkufkxvyncadunlhh.supabase.co/functions/v1/download-file`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fileUrl: url,
+            fileName: filename
+          })
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Erro ao baixar arquivo');
+      }
+      
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -233,7 +250,7 @@ export default function Faturamento() {
       console.error('Erro ao baixar PDF:', error);
       toast({
         title: "Erro",
-        description: "Erro ao baixar o PDF",
+        description: "Não foi possível baixar o PDF. Tente novamente.",
         variant: "destructive",
       });
     }
