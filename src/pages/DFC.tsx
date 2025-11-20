@@ -555,16 +555,15 @@ export default function DFC() {
   });
 
   // Cálculos dos cards - baseado nos lançamentos filtrados
-  // Apenas lançamentos PAGOS são contabilizados
   const totalEntradasFiltradas = useMemo(() => {
     return extratoFiltrado
-      .filter(item => item.tipo === 'entrada' && item.pago)
+      .filter(item => item.tipo === 'entrada')
       .reduce((acc, item) => acc + item.valor, 0);
   }, [extratoFiltrado]);
 
   const totalSaidasFiltradas = useMemo(() => {
     return extratoFiltrado
-      .filter(item => item.tipo === 'saida' && item.pago)
+      .filter(item => item.tipo === 'saida')
       .reduce((acc, item) => acc + item.valor, 0);
   }, [extratoFiltrado]);
 
