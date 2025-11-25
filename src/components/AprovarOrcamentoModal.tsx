@@ -214,6 +214,20 @@ export const AprovarOrcamentoModal = ({
         }
       }
 
+      // Buscar dados da ordem de serviço vinculada se houver
+      let ordemServicoNumero = null;
+      if (orcamento.ordem_servico_id) {
+        const { data: ordemData } = await supabase
+          .from('ordens_servico')
+          .select('numero_ordem')
+          .eq('id', orcamento.ordem_servico_id)
+          .single();
+        
+        if (ordemData) {
+          ordemServicoNumero = ordemData.numero_ordem;
+        }
+      }
+
       // Enviar notificação para o n8n/Telegram com retry
       const maxTentativas = 3;
       const intervaloRetry = 2000; // 2 segundos
@@ -225,7 +239,10 @@ export const AprovarOrcamentoModal = ({
         cliente: orcamento.cliente_nome,
         valor: formData.valorComDesconto,
         numeroPedido: formData.numeroPedido,
-        data_aprovacao: format(new Date(), 'dd-MM-yyyy')
+        data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
+        // Dados da ordem de serviço vinculada
+        ordem_servico_aprovada: orcamento.ordem_servico_id ? true : false,
+        numero_ordem: ordemServicoNumero
       };
 
       for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
