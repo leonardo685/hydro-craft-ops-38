@@ -34,7 +34,7 @@ Este workflow substitui as notificações do Telegram por mensagens do WhatsApp 
 **Body esperado**:
 ```json
 {
-  "tipo": "ordem_retorno | ordem_finalizada | orcamento_aprovado | ordem_faturamento_sem_retorno",
+  "tipo": "ordem_retorno | ordem_finalizada | orcamento_aprovado | ordem_aprovada | ordem_faturamento_sem_retorno",
   "numero_ordem": "OS-2024-001",
   "cliente_nome": "Empresa XYZ",
   "equipamento": "Cilindro Hidráulico",
@@ -61,6 +61,7 @@ const fluxoMap = {
   'ordem_retorno': 'fiscal',
   'ordem_finalizada': 'ordem_servico',
   'orcamento_aprovado': 'orcamento',
+  'ordem_aprovada': 'ordem_servico',  // ← NOVO: OS aprovada via orçamento
   'ordem_faturamento_sem_retorno': 'ordem_servico'
 };
 
@@ -211,6 +212,20 @@ Isso separa o array de aprovadores em itens individuais para processar um por ve
   "text": {
     "preview_url": false,
     "body": "🔔 *Nova Notificação - Orçamento*\n\n💰 *Orçamento Aprovado*\n\n👤 Cliente: {{ $('Set Variables').item.json.dados.cliente_nome }}\n📋 Número: {{ $('Set Variables').item.json.dados.numero_ordem }}\n🔧 Equipamento: {{ $('Set Variables').item.json.dados.equipamento }}\n💰 Valor: R$ {{ $('Set Variables').item.json.dados.valor }}\n📅 Data Aprovação: {{ $('Set Variables').item.json.dados.data_finalizacao }}\n\n✅ *Status:* Aguardando faturamento\n\n---\nSistema MecHidro"
+  }
+}
+```
+
+### 🔧 Template para Ordem Aprovada (via Orçamento)
+
+```json
+{
+  "messaging_product": "whatsapp",
+  "to": "={{ $json.telefone }}",
+  "type": "text",
+  "text": {
+    "preview_url": false,
+    "body": "🔔 *Nova Notificação - Ordem de Serviço*\n\n✅ *Ordem Aprovada*\n\n👤 Cliente: {{ $('Set Variables').item.json.dados.cliente_nome }}\n📋 OS: {{ $('Set Variables').item.json.dados.numero_ordem }}\n🔧 Equipamento: {{ $('Set Variables').item.json.dados.equipamento }}\n💰 Valor: R$ {{ $('Set Variables').item.json.dados.valor }}\n📄 Orçamento: {{ $('Set Variables').item.json.dados.orcamento_numero }}\n📅 Data Aprovação: {{ $('Set Variables').item.json.dados.data_aprovacao }}\n\n✅ *Status:* Ordem aprovada via orçamento\n\n---\nSistema MecHidro"
   }
 }
 ```

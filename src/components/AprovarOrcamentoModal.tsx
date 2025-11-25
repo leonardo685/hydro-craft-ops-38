@@ -285,6 +285,37 @@ export const AprovarOrcamentoModal = ({
         });
       }
 
+      // Se houver ordem de serviço vinculada, enviar webhook separado para aprovadores de OS
+      if (orcamento.ordem_servico_id && ordemServicoNumero) {
+        console.log('📤 Enviando webhook para aprovadores de ordem de serviço...');
+        
+        const payloadOrdem = {
+          tipo: 'ordem_aprovada',
+          numero_ordem: ordemServicoNumero,
+          cliente_nome: orcamento.cliente_nome,
+          equipamento: orcamento.equipamento || 'Equipamento',
+          valor: formData.valorComDesconto,
+          data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
+          orcamento_numero: orcamento.numero
+        };
+
+        try {
+          const responseOrdem = await fetch('https://primary-production-dc42.up.railway.app/webhook/f2cabfd9-4e4c-4dd0-802a-b27c4b0c9d17', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payloadOrdem)
+          });
+
+          if (responseOrdem.ok) {
+            console.log('✅ Webhook de ordem de serviço enviado com sucesso');
+          } else {
+            console.error('❌ Falha ao enviar webhook de ordem de serviço:', responseOrdem.status);
+          }
+        } catch (error) {
+          console.error('❌ Erro ao enviar webhook de ordem de serviço:', error);
+        }
+      }
+
       toast({
         title: "Sucesso",
         description: "Orçamento aprovado com sucesso!"
