@@ -292,7 +292,7 @@ export const AprovarOrcamentoModal = ({
         const payloadOrdem = {
           tipo: 'ordem_aprovada',
           numero_ordem: ordemServicoNumero,
-          cliente_nome: orcamento.cliente_nome,
+          cliente: orcamento.cliente_nome,
           equipamento: orcamento.equipamento || 'Equipamento',
           valor: formData.valorComDesconto,
           data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
