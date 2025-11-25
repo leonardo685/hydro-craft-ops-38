@@ -191,6 +191,29 @@ export const AprovarOrcamentoModal = ({
         return;
       }
 
+      // Atualizar ordem de serviço vinculada se houver
+      if (orcamento.ordem_servico_id) {
+        const { error: errorOrdem } = await supabase
+          .from('ordens_servico')
+          .update({
+            status: 'aprovada',
+            orcamento_id: orcamento.id,
+            valor_estimado: formData.valorComDesconto
+          })
+          .eq('id', orcamento.ordem_servico_id);
+
+        if (errorOrdem) {
+          console.error('Erro ao atualizar ordem de serviço:', errorOrdem);
+          toast({
+            title: "Aviso",
+            description: "Orçamento aprovado, mas houve erro ao atualizar a ordem de serviço vinculada",
+            variant: "destructive"
+          });
+        } else {
+          console.log('✅ Ordem de serviço atualizada para aprovada:', orcamento.ordem_servico_id);
+        }
+      }
+
       // Enviar notificação para o n8n/Telegram com retry
       const maxTentativas = 3;
       const intervaloRetry = 2000; // 2 segundos
