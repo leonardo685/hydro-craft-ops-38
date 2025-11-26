@@ -3255,6 +3255,7 @@ export default function NovoOrcamento() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="24">24 meses</SelectItem>
                     <SelectItem value="12">12 meses</SelectItem>
                     <SelectItem value="6">6 meses</SelectItem>
                     <SelectItem value="sem">Sem Garantia</SelectItem>
