@@ -614,13 +614,15 @@ export default function Orcamentos() {
       
       const assunto = orcamento.assunto_proposta || orcamento.equipamento || 'REFORMA/MANUTENÇÃO';
       const prazoEntrega = orcamento.prazo_entrega || '5 dias úteis';
-      const garantia = orcamento.garantia === 'sem' 
-        ? 'Sem Garantia'
-        : orcamento.garantia === '12'
-        ? '12 meses'
-        : orcamento.garantia === '6'
-        ? '6 meses'
-        : '12 meses';
+          const garantia = orcamento.garantia === 'sem' 
+            ? 'Sem Garantia'
+            : orcamento.garantia === '24'
+            ? '24 meses'
+            : orcamento.garantia === '12'
+            ? '12 meses'
+            : orcamento.garantia === '6'
+            ? '6 meses'
+            : '12 meses';
       const frete = orcamento.frete || 'CIF';
       
       doc.setFontSize(9);
