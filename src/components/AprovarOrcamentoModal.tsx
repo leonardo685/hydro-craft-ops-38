@@ -237,7 +237,7 @@ export const AprovarOrcamentoModal = ({
         tipo: 'orcamento_aprovado',
         numero: orcamento.numero,
         cliente: orcamento.cliente_nome,
-        valor: formData.valorComDesconto,
+        valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
         numeroPedido: formData.numeroPedido,
         data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
         // Dados da ordem de serviço vinculada
@@ -294,7 +294,7 @@ export const AprovarOrcamentoModal = ({
           numero_ordem: ordemServicoNumero,
           cliente: orcamento.cliente_nome,
           equipamento: orcamento.equipamento || 'Equipamento',
-          valor: formData.valorComDesconto,
+          valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
           orcamento_numero: orcamento.numero
         };
