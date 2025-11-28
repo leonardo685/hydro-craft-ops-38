@@ -1314,7 +1314,8 @@ const NovaOrdemServico = () => {
                 observacoes_tecnicas: formData.observacoes,
                 prioridade: formData.prioridade.toLowerCase(),
                 data_analise: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                equipamento: dadosTecnicos.tipoEquipamento || ''
               })
               .eq('id', ordemExistenteParaRecebimento.id)
               .select()
@@ -1356,8 +1357,8 @@ const NovaOrdemServico = () => {
               console.log('✅ Dados técnicos do recebimento atualizados com sucesso!', updatedRecebimento);
             }
           } else {
-            // Criar nova ordem
-            const numeroOrdem = `OS-${Date.now()}`;
+            // Criar nova ordem - usar o número do recebimento no formato MH-XXX-YY
+            const numeroOrdem = recebimento.numero_ordem;
             
             const { data: novaOrdem, error } = await supabase
               .from('ordens_servico')
@@ -1365,7 +1366,7 @@ const NovaOrdemServico = () => {
                 recebimento_id: recebimento.id,
                 numero_ordem: numeroOrdem,
                 cliente_nome: recebimento.cliente_nome || '',
-                equipamento: recebimento.tipo_equipamento || '',
+                equipamento: dadosTecnicos.tipoEquipamento || recebimento.tipo_equipamento || '',
                 tecnico: formData.tecnico,
                 data_entrada: recebimento.data_entrada || new Date().toISOString(),
                 data_analise: new Date().toISOString(),

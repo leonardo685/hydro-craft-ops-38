@@ -216,15 +216,25 @@ export const AprovarOrcamentoModal = ({
 
       // Buscar dados da ordem de serviço vinculada se houver
       let ordemServicoNumero = null;
+      let tipoEquipamento = null;
       if (orcamento.ordem_servico_id) {
         const { data: ordemData } = await supabase
           .from('ordens_servico')
-          .select('numero_ordem')
+          .select(`
+            numero_ordem,
+            equipamento,
+            recebimento_id,
+            recebimentos (
+              numero_ordem,
+              tipo_equipamento
+            )
+          `)
           .eq('id', orcamento.ordem_servico_id)
           .single();
         
         if (ordemData) {
-          ordemServicoNumero = ordemData.numero_ordem;
+          ordemServicoNumero = ordemData.recebimentos?.numero_ordem || ordemData.numero_ordem;
+          tipoEquipamento = ordemData.equipamento || ordemData.recebimentos?.tipo_equipamento;
         }
       }
 
@@ -293,7 +303,7 @@ export const AprovarOrcamentoModal = ({
           tipo: 'ordem_aprovada',
           numero_ordem: ordemServicoNumero,
           cliente: orcamento.cliente_nome,
-          equipamento: orcamento.equipamento || 'Equipamento',
+          equipamento: tipoEquipamento || orcamento.equipamento || 'Equipamento não especificado',
           valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
           orcamento_numero: orcamento.numero
