@@ -128,8 +128,17 @@ export default function LaudoPublico() {
 
         if (testeCheckError) throw testeCheckError;
 
-        // Se não existe laudo técnico nem nota de retorno, ordem não está pronta
-        if (!testeCheck && !pdfNotaRetorno) {
+        // Buscar fotos da ordem para verificar se existe alguma
+        const { data: fotosOrdemCheck } = await supabase
+          .from("fotos_equipamentos")
+          .select("id")
+          .eq("ordem_servico_id", ordem.id)
+          .limit(1);
+
+        const temFotos = fotosOrdemCheck && fotosOrdemCheck.length > 0;
+
+        // Se não existe laudo técnico, nota de retorno NEM fotos, ordem não está pronta
+        if (!testeCheck && !pdfNotaRetorno && !temFotos) {
           toast.error("Esta ordem ainda não foi finalizada");
           navigate("/");
           return;
@@ -150,16 +159,30 @@ export default function LaudoPublico() {
 
         setTeste(testeData);
 
-        // Buscar fotos do equipamento (se houver recebimento associado)
+        // Buscar fotos do equipamento (pelo recebimento E pela ordem de serviço)
         let fotosData = [];
+        
+        // Primeiro busca por recebimento_id
         if (recebimentoId) {
-          const { data: fotos, error: fotosError } = await supabase
+          const { data: fotos } = await supabase
             .from("fotos_equipamentos")
-            .select("id, arquivo_url, nome_arquivo")
+            .select("id, arquivo_url, nome_arquivo, legenda")
             .eq("recebimento_id", recebimentoId);
 
-          if (fotosError) throw fotosError;
           fotosData = fotos || [];
+        }
+
+        // Depois busca por ordem_servico_id (fotos de produção)
+        const { data: fotosOrdem } = await supabase
+          .from("fotos_equipamentos")
+          .select("id, arquivo_url, nome_arquivo, legenda")
+          .eq("ordem_servico_id", ordem.id);
+
+        if (fotosOrdem && fotosOrdem.length > 0) {
+          // Combinar arrays evitando duplicatas
+          fotosData = [...fotosData, ...fotosOrdem.filter(fo => 
+            !fotosData.some(fd => fd.id === fo.id)
+          )];
         }
 
         setFotos(fotosData);

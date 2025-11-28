@@ -3,13 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw } from "lucide-react";
+import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ItemSelectionModal } from "@/components/ItemSelectionModal";
 import { TesteModal } from "@/components/TesteModal";
 import { UploadProdutoProntoModal } from "@/components/UploadProdutoProntoModal";
+import { UploadFotosProducaoModal } from "@/components/UploadFotosProducaoModal";
 import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
@@ -39,7 +40,8 @@ export default function Aprovados() {
             cliente_nome,
             tipo_equipamento,
             nota_fiscal,
-            chave_acesso_nfe
+            chave_acesso_nfe,
+            categoria_equipamento
           )
         `).in('status', ['aprovada', 'em_producao', 'em_teste']).order('created_at', {
         ascending: false
@@ -241,12 +243,35 @@ export default function Aprovados() {
                         {ordem.status === 'aprovada' ? <Button variant="outline" size="sm" onClick={() => iniciarProducao(ordem.id)}>
                             <Play className="h-4 w-4 mr-2" />
                             Iniciar Produção
-                          </Button> : ordem.status === 'em_producao' ? <TesteModal ordem={ordem} onTesteIniciado={() => loadOrdensAprovadas()}>
-                            <Button variant="outline" size="sm">
-                              <Settings className="h-4 w-4 mr-2" />
-                              Iniciar Teste
-                            </Button>
-                          </TesteModal> : ordem.status === 'em_teste' ? <Button variant="outline" size="sm" onClick={() => {
+                          </Button> : ordem.status === 'em_producao' ? (
+                            ordem.recebimentos?.categoria_equipamento === 'cilindro' ? (
+                              <TesteModal ordem={ordem} onTesteIniciado={() => loadOrdensAprovadas()}>
+                                <Button variant="outline" size="sm">
+                                  <Settings className="h-4 w-4 mr-2" />
+                                  Iniciar Teste
+                                </Button>
+                              </TesteModal>
+                            ) : (
+                              <>
+                                <UploadFotosProducaoModal 
+                                  ordem={ordem} 
+                                  onUploadComplete={() => loadOrdensAprovadas()}
+                                >
+                                  <Button variant="outline" size="sm">
+                                    <Camera className="h-4 w-4 mr-2" />
+                                    Fotos do Equip.
+                                  </Button>
+                                </UploadFotosProducaoModal>
+                                <Button variant="outline" size="sm" onClick={() => {
+                                  setOrdemSelecionada(ordem);
+                                  setUploadModalOpen(true);
+                                }}>
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Finalizar
+                                </Button>
+                              </>
+                            )
+                          ) : ordem.status === 'em_teste' ? <Button variant="outline" size="sm" onClick={() => {
                   setOrdemSelecionada(ordem);
                   setUploadModalOpen(true);
                 }}>
