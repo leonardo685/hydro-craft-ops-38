@@ -128,6 +128,20 @@ export default function NovoOrcamento() {
   const [analiseData, setAnaliseData] = useState<any>(null);
   const [fotos, setFotos] = useState<Array<FotoEquipamento & { apresentar_orcamento?: boolean; legenda?: string }>>([]);
   const [uploadingFoto, setUploadingFoto] = useState(false);
+  const [dadosTecnicos, setDadosTecnicos] = useState<{
+    pressaoTrabalho: string;
+    temperaturaTrabalho: string;
+    fluidoTrabalho: string;
+    camisa: string;
+    hasteComprimento: string;
+    curso: string;
+    conexaoA: string;
+    conexaoB: string;
+    localInstalacao: string;
+    potencia: string;
+    ambienteTrabalho: string;
+    categoriaEquipamento: string;
+  } | null>(null);
   
   // Estados para histórico de orçamentos
   const [historicoOrcamento, setHistoricoOrcamento] = useState<any[]>([]);
@@ -457,6 +471,18 @@ export default function NovoOrcamento() {
                 cliente_nome,
                 cliente_cnpj,
                 cliente_id,
+                pressao_trabalho,
+                temperatura_trabalho,
+                fluido_trabalho,
+                camisa,
+                haste_comprimento,
+                curso,
+                conexao_a,
+                conexao_b,
+                local_instalacao,
+                potencia,
+                ambiente_trabalho,
+                categoria_equipamento,
                 fotos_equipamentos (
                   id,
                   arquivo_url,
@@ -565,6 +591,24 @@ export default function NovoOrcamento() {
             // Carregar fotos do equipamento
             if (ordemServico.recebimentos?.fotos_equipamentos) {
               setFotos(ordemServico.recebimentos.fotos_equipamentos);
+            }
+
+            // Carregar dados técnicos do recebimento
+            if (ordemServico.recebimentos) {
+              setDadosTecnicos({
+                pressaoTrabalho: ordemServico.recebimentos.pressao_trabalho || '',
+                temperaturaTrabalho: ordemServico.recebimentos.temperatura_trabalho || '',
+                fluidoTrabalho: ordemServico.recebimentos.fluido_trabalho || '',
+                camisa: ordemServico.recebimentos.camisa || '',
+                hasteComprimento: ordemServico.recebimentos.haste_comprimento || '',
+                curso: ordemServico.recebimentos.curso || '',
+                conexaoA: ordemServico.recebimentos.conexao_a || '',
+                conexaoB: ordemServico.recebimentos.conexao_b || '',
+                localInstalacao: ordemServico.recebimentos.local_instalacao || '',
+                potencia: ordemServico.recebimentos.potencia || '',
+                ambienteTrabalho: ordemServico.recebimentos.ambiente_trabalho || '',
+                categoriaEquipamento: ordemServico.recebimentos.categoria_equipamento || ''
+              });
             }
           }
         } catch (error) {
@@ -2844,6 +2888,97 @@ export default function NovoOrcamento() {
             )}
           </CardContent>
         </Card>
+
+        {/* Dados Técnicos - Apenas quando baseado em ordem de serviço */}
+        {ordemServicoId && dadosTecnicos && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-primary" />
+                Dados Técnicos do Equipamento
+              </CardTitle>
+              <CardDescription>
+                Dados técnicos registrados na ordem de serviço
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                {dadosTecnicos.pressaoTrabalho && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Pressão de Trabalho</Label>
+                    <p className="font-medium">{dadosTecnicos.pressaoTrabalho}</p>
+                  </div>
+                )}
+                {dadosTecnicos.temperaturaTrabalho && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Temperatura de Trabalho</Label>
+                    <p className="font-medium">{dadosTecnicos.temperaturaTrabalho}</p>
+                  </div>
+                )}
+                {dadosTecnicos.fluidoTrabalho && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Fluido de Trabalho</Label>
+                    <p className="font-medium">{dadosTecnicos.fluidoTrabalho}</p>
+                  </div>
+                )}
+                {dadosTecnicos.camisa && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Camisa</Label>
+                    <p className="font-medium">{dadosTecnicos.camisa}</p>
+                  </div>
+                )}
+                {dadosTecnicos.hasteComprimento && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Haste x Comprimento</Label>
+                    <p className="font-medium">{dadosTecnicos.hasteComprimento}</p>
+                  </div>
+                )}
+                {dadosTecnicos.curso && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Curso</Label>
+                    <p className="font-medium">{dadosTecnicos.curso}</p>
+                  </div>
+                )}
+                {dadosTecnicos.conexaoA && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Conexão A</Label>
+                    <p className="font-medium">{dadosTecnicos.conexaoA}</p>
+                  </div>
+                )}
+                {dadosTecnicos.conexaoB && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Conexão B</Label>
+                    <p className="font-medium">{dadosTecnicos.conexaoB}</p>
+                  </div>
+                )}
+                {dadosTecnicos.localInstalacao && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Local de Instalação</Label>
+                    <p className="font-medium">{dadosTecnicos.localInstalacao}</p>
+                  </div>
+                )}
+                {dadosTecnicos.potencia && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Potência</Label>
+                    <p className="font-medium">{dadosTecnicos.potencia}</p>
+                  </div>
+                )}
+                {dadosTecnicos.ambienteTrabalho && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Ambiente de Trabalho</Label>
+                    <p className="font-medium">{dadosTecnicos.ambienteTrabalho}</p>
+                  </div>
+                )}
+                {dadosTecnicos.categoriaEquipamento && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Categoria</Label>
+                    <p className="font-medium">{dadosTecnicos.categoriaEquipamento}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Fotos da Análise - apenas se vier de análise */}
         {analiseId && analiseData && (analiseData.fotosChegada || analiseData.fotosAnalise) && <Card>
