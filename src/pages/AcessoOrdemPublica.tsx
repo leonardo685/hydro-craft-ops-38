@@ -86,8 +86,17 @@ export default function AcessoOrdemPublica() {
 
       if (testeError) throw testeError;
 
-      // Se não existe laudo técnico nem nota de retorno, ordem não está pronta
-      if (!teste && !pdfNotaRetorno) {
+      // Buscar fotos da ordem para verificar se existe alguma
+      const { data: fotosOrdem } = await supabase
+        .from("fotos_equipamentos")
+        .select("id")
+        .eq("ordem_servico_id", ordemServico.id)
+        .limit(1);
+
+      const temFotos = fotosOrdem && fotosOrdem.length > 0;
+
+      // Se não existe laudo técnico, nota de retorno NEM fotos, ordem não está pronta
+      if (!teste && !pdfNotaRetorno && !temFotos) {
         toast.error("Esta ordem ainda não foi finalizada");
         navigate("/");
         return;
