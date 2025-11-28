@@ -155,10 +155,10 @@ export default function OrdensServico() {
       const intervaloRetry = 2000; // 2 segundos
       
       if (ordem) {
-        // Buscar o número correto da ordem no formato MH-XXX-YY
+        // Buscar o número correto da ordem e tipo de equipamento no formato MH-XXX-YY
         const { data: recebimento } = await supabase
           .from('recebimentos')
-          .select('numero_ordem')
+          .select('numero_ordem, tipo_equipamento')
           .eq('id', ordem.recebimento_id)
           .single();
 
@@ -166,7 +166,7 @@ export default function OrdensServico() {
           tipo: 'ordem_aprovada',
           numero_ordem: recebimento?.numero_ordem || ordem.numero_ordem,
           cliente: ordem.cliente_nome,
-          equipamento: ordem.equipamento,
+          equipamento: ordem.equipamento || recebimento?.tipo_equipamento || 'Equipamento não especificado',
           data_aprovacao: format(new Date(), 'dd-MM-yyyy')
         };
 
