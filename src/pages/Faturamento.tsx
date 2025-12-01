@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, DollarSign, Calendar, FileText, Download, Eye, Filter, ChevronUp, ChevronDown, QrCode } from "lucide-react";
+import { Receipt, DollarSign, Calendar, FileText, Download, Eye, Filter, ChevronUp, ChevronDown, QrCode, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getOrcamentosEmFaturamento, getOrcamentosFinalizados, emitirNotaFiscal, type Orcamento } from "@/lib/orcamento-utils";
@@ -45,12 +45,14 @@ export default function Faturamento() {
   const [dataFim, setDataFim] = useState("");
   const [tipoNota, setTipoNota] = useState<string>("todos");
   const [clienteFiltro, setClienteFiltro] = useState("");
+  const [numeroFiltro, setNumeroFiltro] = useState("");
 
   // Estados para filtros da aba Faturamento
   const [dataInicioFat, setDataInicioFat] = useState("");
   const [dataFimFat, setDataFimFat] = useState("");
   const [tipoDocumentoFat, setTipoDocumentoFat] = useState<string>("todos");
   const [clienteFiltroFat, setClienteFiltroFat] = useState("");
+  const [numeroFiltroFat, setNumeroFiltroFat] = useState("");
 
   useEffect(() => {
     loadData();
@@ -263,8 +265,8 @@ export default function Faturamento() {
   const totalNotasFiscais = totalNotasServico + totalNotasVenda;
 
   // Verificar se há algum filtro aplicado
-  const temFiltrosAtivos = dataInicio || dataFim || tipoNota !== "todos" || clienteFiltro;
-  const temFiltrosAtivosFat = dataInicioFat || dataFimFat || tipoDocumentoFat !== "todos" || clienteFiltroFat;
+  const temFiltrosAtivos = dataInicio || dataFim || tipoNota !== "todos" || clienteFiltro || numeroFiltro;
+  const temFiltrosAtivosFat = dataInicioFat || dataFimFat || tipoDocumentoFat !== "todos" || clienteFiltroFat || numeroFiltroFat;
 
   // Filtrar notas faturadas
   const notasFiltradas = notasFaturadas.filter(nota => {
@@ -302,6 +304,11 @@ export default function Faturamento() {
       passa = passa && nota.cliente_nome.toLowerCase().includes(clienteFiltro.toLowerCase());
     }
     
+    // Filtro de número de pedido
+    if (numeroFiltro) {
+      passa = passa && nota.numero_ordem?.toLowerCase().includes(numeroFiltro.toLowerCase());
+    }
+    
     return passa;
   });
 
@@ -331,6 +338,11 @@ export default function Faturamento() {
       passa = passa && ordem.cliente_nome.toLowerCase().includes(clienteFiltroFat.toLowerCase());
     }
     
+    // Filtro de número de pedido
+    if (numeroFiltroFat) {
+      passa = passa && ordem.numero_ordem?.toLowerCase().includes(numeroFiltroFat.toLowerCase());
+    }
+    
     return passa;
   });
 
@@ -358,6 +370,13 @@ export default function Faturamento() {
     
     if (clienteFiltroFat) {
       passa = passa && orcamento.cliente_nome.toLowerCase().includes(clienteFiltroFat.toLowerCase());
+    }
+    
+    // Filtro de número de pedido
+    if (numeroFiltroFat) {
+      const numeroMatch = orcamento.numero?.toLowerCase().includes(numeroFiltroFat.toLowerCase()) ||
+                          orcamento.ordem_numero?.toLowerCase().includes(numeroFiltroFat.toLowerCase());
+      if (!numeroMatch) passa = false;
     }
     
     return passa;
@@ -494,7 +513,20 @@ export default function Faturamento() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Número</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Buscar por número..."
+                        value={numeroFiltroFat}
+                        onChange={(e) => setNumeroFiltroFat(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <label className="text-sm text-muted-foreground mb-2 block">Data Início</label>
                     <Input
@@ -687,7 +719,20 @@ export default function Faturamento() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Número</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Buscar por número..."
+                        value={numeroFiltro}
+                        onChange={(e) => setNumeroFiltro(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <label className="text-sm text-muted-foreground mb-2 block">Data Início</label>
                     <Input
