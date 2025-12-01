@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ChevronRight, ChevronLeft, Package, FileText } from "lucide-react";
 import { ItemSelectionModal } from "@/components/ItemSelectionModal";
+import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import jsPDF from "jspdf";
 
 interface Compra {
@@ -24,8 +25,15 @@ interface Compra {
     cliente_nome: string;
     equipamento: string;
     pecas_necessarias: any[];
+    usinagem_necessaria: any[];
+    servicos_necessarios: any[];
+    recebimento_id: number | null;
+    observacoes_tecnicas: string | null;
+    updated_at: string;
     recebimentos: {
       cliente_nome: string;
+      numero_ordem: string;
+      tipo_equipamento: string;
     } | null;
   };
 }
@@ -46,8 +54,15 @@ export default function Compras() {
             cliente_nome,
             equipamento,
             pecas_necessarias,
+            usinagem_necessaria,
+            servicos_necessarios,
+            recebimento_id,
+            observacoes_tecnicas,
+            updated_at,
             recebimentos (
-              cliente_nome
+              cliente_nome,
+              numero_ordem,
+              tipo_equipamento
             )
           )
         `)
@@ -172,7 +187,11 @@ export default function Compras() {
                   <Card key={compra.id} className="border-2">
                     <CardContent className="pt-4 space-y-3">
                       <div>
-                        <div className="font-semibold text-lg">{compra.ordens_servico.numero_ordem}</div>
+                        <OrdemServicoModal ordem={compra.ordens_servico}>
+                          <button className="font-semibold text-lg text-primary hover:underline cursor-pointer">
+                            {compra.ordens_servico.numero_ordem}
+                          </button>
+                        </OrdemServicoModal>
                         <div className="text-sm text-muted-foreground">
                           {compra.ordens_servico.recebimentos?.cliente_nome || compra.ordens_servico.cliente_nome}
                         </div>
