@@ -219,6 +219,53 @@ export type Database = {
           },
         ]
       }
+      compras: {
+        Row: {
+          created_at: string
+          data_compra: string | null
+          data_cotacao: string | null
+          fornecedor: string | null
+          id: string
+          numero_pedido: string | null
+          observacoes: string | null
+          ordem_servico_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_compra?: string | null
+          data_cotacao?: string | null
+          fornecedor?: string | null
+          id?: string
+          numero_pedido?: string | null
+          observacoes?: string | null
+          ordem_servico_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_compra?: string | null
+          data_cotacao?: string | null
+          fornecedor?: string | null
+          id?: string
+          numero_pedido?: string | null
+          observacoes?: string | null
+          ordem_servico_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compras_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       configuracoes_sistema: {
         Row: {
           chave: string

@@ -45,7 +45,8 @@ import {
   ChevronDown,
   Target,
   Shield,
-  History
+  History,
+  ShoppingCart
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -74,6 +75,12 @@ const menuItems = [
     url: "/aprovados",
     icon: CheckCircle,
     permission: "aprovados",
+  },
+  {
+    title: "Compras",
+    url: "/compras",
+    icon: ShoppingCart,
+    permission: "compras",
   },
   {
     title: "Faturamento",
