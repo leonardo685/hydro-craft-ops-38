@@ -5,10 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ChevronRight, ChevronLeft, Package, FileText } from "lucide-react";
-import { ItemSelectionModal } from "@/components/ItemSelectionModal";
+import { ChevronRight, ChevronLeft, Package, Settings } from "lucide-react";
 import { OrdemServicoModal } from "@/components/OrdemServicoModal";
-import jsPDF from "jspdf";
+import { EditableItemsModal } from "@/components/EditableItemsModal";
 
 interface Compra {
   id: string;
@@ -107,61 +106,6 @@ export default function Compras() {
     }
   };
 
-  const gerarPDFPecas = (compra: Compra) => {
-    const pecas = compra.ordens_servico.pecas_necessarias || [];
-    if (pecas.length === 0) {
-      toast.error("Nenhuma peça cadastrada");
-      return;
-    }
-
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
-    // Cabeçalho
-    doc.setFontSize(18);
-    doc.text("LISTA DE PEÇAS PARA COMPRA", pageWidth / 2, 20, { align: "center" });
-    
-    doc.setFontSize(12);
-    doc.text(`Ordem: ${compra.ordens_servico.numero_ordem}`, 20, 35);
-    doc.text(`Cliente: ${compra.ordens_servico.recebimentos?.cliente_nome || compra.ordens_servico.cliente_nome}`, 20, 42);
-    doc.text(`Equipamento: ${compra.ordens_servico.equipamento}`, 20, 49);
-    
-    // Lista de peças
-    doc.setFontSize(14);
-    doc.text("Peças Necessárias:", 20, 62);
-    
-    let yPos = 72;
-    doc.setFontSize(11);
-    
-    pecas.forEach((peca, index) => {
-      if (yPos > 270) {
-        doc.addPage();
-        yPos = 20;
-      }
-      
-      doc.text(`${index + 1}. ${peca.descricao || 'Sem descrição'}`, 25, yPos);
-      yPos += 7;
-      
-      if (peca.codigo) {
-        doc.setFontSize(9);
-        doc.text(`   Código: ${peca.codigo}`, 25, yPos);
-        yPos += 6;
-        doc.setFontSize(11);
-      }
-      
-      doc.text(`   Quantidade: ${peca.quantidade || 1}`, 25, yPos);
-      yPos += 10;
-    });
-    
-    // Rodapé
-    const dataEmissao = new Date().toLocaleDateString("pt-BR");
-    doc.setFontSize(9);
-    doc.text(`Data de Emissão: ${dataEmissao}`, 20, doc.internal.pageSize.getHeight() - 10);
-    
-    doc.save(`pecas-${compra.ordens_servico.numero_ordem}.pdf`);
-    toast.success("PDF gerado com sucesso!");
-  };
-
   const renderColumn = (status: 'aprovado' | 'cotando' | 'comprado', title: string) => {
     const comprasStatus = compras.filter(c => c.status === status);
     
@@ -205,11 +149,11 @@ export default function Compras() {
                       </Badge>
                       
                       <div className="flex flex-wrap gap-2">
-                        <ItemSelectionModal
-                          title={`Peças - ${compra.ordens_servico.numero_ordem}`}
-                          items={compra.ordens_servico.pecas_necessarias || []}
+                        <EditableItemsModal
+                          title="Peças Necessárias"
                           type="pecas"
                           ordemId={compra.ordens_servico.id}
+                          onUpdate={loadCompras}
                         >
                           <Button
                             variant="outline"
@@ -219,17 +163,23 @@ export default function Compras() {
                             <Package className="h-4 w-4 mr-2" />
                             Peças
                           </Button>
-                        </ItemSelectionModal>
+                        </EditableItemsModal>
                         
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => gerarPDFPecas(compra)}
-                          className="flex-1"
+                        <EditableItemsModal
+                          title="Usinagem Necessária"
+                          type="usinagem"
+                          ordemId={compra.ordens_servico.id}
+                          onUpdate={loadCompras}
                         >
-                          <FileText className="h-4 w-4 mr-2" />
-                          PDF
-                        </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                          >
+                            <Settings className="h-4 w-4 mr-2" />
+                            Usinagem
+                          </Button>
+                        </EditableItemsModal>
                       </div>
                       
                       <div className="flex gap-2 pt-2">
