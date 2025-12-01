@@ -4,8 +4,9 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ChevronRight, ChevronLeft, Package, Settings } from "lucide-react";
+import { ChevronRight, ChevronLeft, Package, Settings, Search } from "lucide-react";
 import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import { EditableItemsModal } from "@/components/EditableItemsModal";
 
@@ -40,6 +41,7 @@ interface Compra {
 export default function Compras() {
   const [compras, setCompras] = useState<Compra[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filtroNumero, setFiltroNumero] = useState("");
 
   const loadCompras = async () => {
     try {
@@ -109,6 +111,11 @@ export default function Compras() {
   const renderColumn = (status: 'aprovado' | 'cotando' | 'comprado', title: string) => {
     const comprasStatus = compras.filter(c => {
       if (c.status !== status) return false;
+      
+      // Filtro por número de pedido
+      if (filtroNumero && !c.ordens_servico.numero_ordem.toLowerCase().includes(filtroNumero.toLowerCase())) {
+        return false;
+      }
       
       // Para coluna "Comprado", mostrar apenas itens das últimas 24 horas
       if (status === 'comprado' && c.data_compra) {
@@ -251,11 +258,22 @@ export default function Compras() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Compras</h1>
-          <p className="text-muted-foreground">
-            Gestão de compras de peças para ordens de serviço
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Compras</h1>
+            <p className="text-muted-foreground">
+              Gestão de compras de peças para ordens de serviço
+            </p>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por número..."
+              value={filtroNumero}
+              onChange={(e) => setFiltroNumero(e.target.value)}
+              className="pl-9"
+            />
+          </div>
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-4">
