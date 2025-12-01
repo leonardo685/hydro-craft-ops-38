@@ -308,7 +308,8 @@ export default function Faturamento() {
     if (numeroFiltro) {
       const nota_any = nota as any;
       const numeroMatch = nota.numero_ordem?.toLowerCase().includes(numeroFiltro.toLowerCase()) ||
-                          nota_any.ordem_referencia?.toLowerCase().includes(numeroFiltro.toLowerCase());
+                          nota_any.ordem_referencia?.toLowerCase().includes(numeroFiltro.toLowerCase()) ||
+                          nota_any.descricao?.toLowerCase().includes(numeroFiltro.toLowerCase());
       if (!numeroMatch) passa = false;
     }
     
@@ -343,7 +344,10 @@ export default function Faturamento() {
     
     // Filtro de número de pedido
     if (numeroFiltroFat) {
-      passa = passa && ordem.numero_ordem?.toLowerCase().includes(numeroFiltroFat.toLowerCase());
+      const ordem_any = ordem as any;
+      const numeroMatch = ordem.numero_ordem?.toLowerCase().includes(numeroFiltroFat.toLowerCase()) ||
+                          ordem_any.descricao?.toLowerCase().includes(numeroFiltroFat.toLowerCase());
+      if (!numeroMatch) passa = false;
     }
     
     return passa;
@@ -379,7 +383,8 @@ export default function Faturamento() {
     if (numeroFiltroFat) {
       const numeroMatch = orcamento.numero?.toLowerCase().includes(numeroFiltroFat.toLowerCase()) ||
                           orcamento.ordem_numero?.toLowerCase().includes(numeroFiltroFat.toLowerCase()) ||
-                          orcamento.ordem_referencia?.toLowerCase().includes(numeroFiltroFat.toLowerCase());
+                          orcamento.ordem_referencia?.toLowerCase().includes(numeroFiltroFat.toLowerCase()) ||
+                          orcamento.descricao?.toLowerCase().includes(numeroFiltroFat.toLowerCase());
       if (!numeroMatch) passa = false;
     }
     
