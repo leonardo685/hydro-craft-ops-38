@@ -119,7 +119,19 @@ export default function Compras() {
   };
 
   const renderColumn = (status: 'aprovado' | 'cotando' | 'comprado', title: string) => {
-    const comprasStatus = compras.filter(c => c.status === status);
+    const comprasStatus = compras.filter(c => {
+      if (c.status !== status) return false;
+      
+      // Para coluna "Comprado", mostrar apenas itens das últimas 24 horas
+      if (status === 'comprado' && c.data_compra) {
+        const dataCompra = new Date(c.data_compra);
+        const agora = new Date();
+        const diffHoras = (agora.getTime() - dataCompra.getTime()) / (1000 * 60 * 60);
+        return diffHoras <= 24;
+      }
+      
+      return true;
+    });
     
     return (
       <div className="flex-1 min-w-[320px]">
