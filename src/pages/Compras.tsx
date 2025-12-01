@@ -1,0 +1,288 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { ChevronRight, ChevronLeft, Package, FileText } from "lucide-react";
+import { ItemSelectionModal } from "@/components/ItemSelectionModal";
+import jsPDF from "jspdf";
+
+interface Compra {
+  id: string;
+  ordem_servico_id: string;
+  status: 'aprovado' | 'cotando' | 'comprado';
+  observacoes: string | null;
+  data_cotacao: string | null;
+  data_compra: string | null;
+  fornecedor: string | null;
+  numero_pedido: string | null;
+  ordens_servico: {
+    id: string;
+    numero_ordem: string;
+    cliente_nome: string;
+    equipamento: string;
+    pecas_necessarias: any[];
+    recebimentos: {
+      cliente_nome: string;
+    } | null;
+  };
+}
+
+export default function Compras() {
+  const [compras, setCompras] = useState<Compra[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadCompras = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("compras")
+        .select(`
+          *,
+          ordens_servico (
+            id,
+            numero_ordem,
+            cliente_nome,
+            equipamento,
+            pecas_necessarias,
+            recebimentos (
+              cliente_nome
+            )
+          )
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setCompras((data || []) as Compra[]);
+    } catch (error: any) {
+      toast.error("Erro ao carregar compras: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCompras();
+  }, []);
+
+  const updateStatus = async (compraId: string, newStatus: 'aprovado' | 'cotando' | 'comprado') => {
+    try {
+      const updates: any = { status: newStatus };
+      
+      if (newStatus === 'cotando' && !compras.find(c => c.id === compraId)?.data_cotacao) {
+        updates.data_cotacao = new Date().toISOString();
+      }
+      
+      if (newStatus === 'comprado') {
+        updates.data_compra = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from("compras")
+        .update(updates)
+        .eq("id", compraId);
+
+      if (error) throw error;
+      
+      toast.success("Status atualizado com sucesso!");
+      loadCompras();
+    } catch (error: any) {
+      toast.error("Erro ao atualizar status: " + error.message);
+    }
+  };
+
+  const gerarPDFPecas = (compra: Compra) => {
+    const pecas = compra.ordens_servico.pecas_necessarias || [];
+    if (pecas.length === 0) {
+      toast.error("Nenhuma peça cadastrada");
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Cabeçalho
+    doc.setFontSize(18);
+    doc.text("LISTA DE PEÇAS PARA COMPRA", pageWidth / 2, 20, { align: "center" });
+    
+    doc.setFontSize(12);
+    doc.text(`Ordem: ${compra.ordens_servico.numero_ordem}`, 20, 35);
+    doc.text(`Cliente: ${compra.ordens_servico.recebimentos?.cliente_nome || compra.ordens_servico.cliente_nome}`, 20, 42);
+    doc.text(`Equipamento: ${compra.ordens_servico.equipamento}`, 20, 49);
+    
+    // Lista de peças
+    doc.setFontSize(14);
+    doc.text("Peças Necessárias:", 20, 62);
+    
+    let yPos = 72;
+    doc.setFontSize(11);
+    
+    pecas.forEach((peca, index) => {
+      if (yPos > 270) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.text(`${index + 1}. ${peca.descricao || 'Sem descrição'}`, 25, yPos);
+      yPos += 7;
+      
+      if (peca.codigo) {
+        doc.setFontSize(9);
+        doc.text(`   Código: ${peca.codigo}`, 25, yPos);
+        yPos += 6;
+        doc.setFontSize(11);
+      }
+      
+      doc.text(`   Quantidade: ${peca.quantidade || 1}`, 25, yPos);
+      yPos += 10;
+    });
+    
+    // Rodapé
+    const dataEmissao = new Date().toLocaleDateString("pt-BR");
+    doc.setFontSize(9);
+    doc.text(`Data de Emissão: ${dataEmissao}`, 20, doc.internal.pageSize.getHeight() - 10);
+    
+    doc.save(`pecas-${compra.ordens_servico.numero_ordem}.pdf`);
+    toast.success("PDF gerado com sucesso!");
+  };
+
+  const renderColumn = (status: 'aprovado' | 'cotando' | 'comprado', title: string) => {
+    const comprasStatus = compras.filter(c => c.status === status);
+    
+    return (
+      <div className="flex-1 min-w-[320px]">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between">
+              <span>{title}</span>
+              <Badge variant="secondary">{comprasStatus.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {comprasStatus.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma compra neste status
+              </div>
+            ) : (
+              comprasStatus.map((compra) => {
+                const pecasCount = compra.ordens_servico.pecas_necessarias?.length || 0;
+                
+                return (
+                  <Card key={compra.id} className="border-2">
+                    <CardContent className="pt-4 space-y-3">
+                      <div>
+                        <div className="font-semibold text-lg">{compra.ordens_servico.numero_ordem}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {compra.ordens_servico.recebimentos?.cliente_nome || compra.ordens_servico.cliente_nome}
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {compra.ordens_servico.equipamento}
+                        </div>
+                      </div>
+                      
+                      <Badge variant="outline">
+                        {pecasCount} {pecasCount === 1 ? 'peça' : 'peças'}
+                      </Badge>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        <ItemSelectionModal
+                          title={`Peças - ${compra.ordens_servico.numero_ordem}`}
+                          items={compra.ordens_servico.pecas_necessarias || []}
+                          type="pecas"
+                          ordemId={compra.ordens_servico.id}
+                        >
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                          >
+                            <Package className="h-4 w-4 mr-2" />
+                            Peças
+                          </Button>
+                        </ItemSelectionModal>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => gerarPDFPecas(compra)}
+                          className="flex-1"
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          PDF
+                        </Button>
+                      </div>
+                      
+                      <div className="flex gap-2 pt-2">
+                        {status !== 'aprovado' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const prevStatus = status === 'cotando' ? 'aprovado' : 'cotando';
+                              updateStatus(compra.id, prevStatus);
+                            }}
+                            className="flex-1"
+                          >
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Voltar
+                          </Button>
+                        )}
+                        
+                        {status !== 'comprado' && (
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const nextStatus = status === 'aprovado' ? 'cotando' : 'comprado';
+                              updateStatus(compra.id, nextStatus);
+                            }}
+                            className="flex-1"
+                          >
+                            {status === 'aprovado' ? 'Iniciar Cotação' : 'Finalizar Compra'}
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Carregando compras...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Compras</h1>
+          <p className="text-muted-foreground">
+            Gestão de compras de peças para ordens de serviço
+          </p>
+        </div>
+
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {renderColumn('aprovado', 'Aprovado')}
+          {renderColumn('cotando', 'Cotando')}
+          {renderColumn('comprado', 'Comprado')}
+        </div>
+      </div>
+    </AppLayout>
+  );
+}

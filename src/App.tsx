@@ -18,6 +18,7 @@ import NovaOrdemDireta from "./pages/NovaOrdemDireta";
 import Orcamentos from "./pages/Orcamentos";
 import NovoOrcamento from "./pages/NovoOrcamento";
 import Aprovados from "./pages/Aprovados";
+import Compras from "./pages/Compras";
 import VisualizarOrdemServico from "./pages/VisualizarOrdemServico";
 import Faturamento from "./pages/Faturamento";
 import Cadastros from "./pages/Cadastros";
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/orcamentos" element={<ProtectedRoute requiredPermission="orcamentos"><Orcamentos /></ProtectedRoute>} />
             <Route path="/orcamentos/novo" element={<ProtectedRoute requiredPermission="orcamentos"><NovoOrcamento /></ProtectedRoute>} />
             <Route path="/aprovados" element={<ProtectedRoute requiredPermission="aprovados"><Aprovados /></ProtectedRoute>} />
+            <Route path="/compras" element={<ProtectedRoute requiredPermission="compras"><Compras /></ProtectedRoute>} />
             <Route path="/visualizar-ordem-servico/:id" element={<ProtectedRoute><VisualizarOrdemServico /></ProtectedRoute>} />
             <Route path="/faturamento" element={<ProtectedRoute requiredPermission="faturamento"><Faturamento /></ProtectedRoute>} />
             <Route path="/cadastros" element={<ProtectedRoute requiredPermission="cadastros"><Cadastros /></ProtectedRoute>} />
