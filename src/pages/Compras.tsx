@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ChevronRight, ChevronLeft, Package, Settings } from "lucide-react";
 import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import { EditableItemsModal } from "@/components/EditableItemsModal";
+import { fixComprasDuplicates } from "@/utils/fix-compras-duplicates";
 
 interface Compra {
   id: string;
@@ -40,6 +41,17 @@ interface Compra {
 export default function Compras() {
   const [compras, setCompras] = useState<Compra[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleFixDuplicates = async () => {
+    try {
+      const result = await fixComprasDuplicates();
+      toast.success(`${result.deletedCount} duplicatas removidas com sucesso!`);
+      loadCompras();
+    } catch (error) {
+      console.error("Erro ao remover duplicatas:", error);
+      toast.error("Erro ao remover duplicatas. Verifique o console.");
+    }
+  };
 
   const loadCompras = async () => {
     try {
@@ -239,11 +251,20 @@ export default function Compras() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Compras</h1>
-          <p className="text-muted-foreground">
-            Gestão de compras de peças para ordens de serviço
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Compras</h1>
+            <p className="text-muted-foreground">
+              Gestão de compras de peças para ordens de serviço
+            </p>
+          </div>
+          <Button 
+            onClick={handleFixDuplicates} 
+            variant="destructive" 
+            size="sm"
+          >
+            🔧 Corrigir Duplicatas
+          </Button>
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-4">
