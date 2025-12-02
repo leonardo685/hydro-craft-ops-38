@@ -173,6 +173,7 @@ export default function Compras() {
                           type="pecas"
                           ordemId={compra.ordens_servico.id}
                           onUpdate={loadCompras}
+                          compraStatus={compra.status}
                         >
                           <Button
                             variant="outline"
@@ -189,6 +190,7 @@ export default function Compras() {
                           type="usinagem"
                           ordemId={compra.ordens_servico.id}
                           onUpdate={loadCompras}
+                          compraStatus={compra.status}
                         >
                           <Button
                             variant="outline"
