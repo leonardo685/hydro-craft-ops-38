@@ -17,6 +17,7 @@ interface EditableItemsModalProps {
   ordemId: string;
   onUpdate: () => void;
   children: React.ReactNode;
+  compraStatus?: 'aprovado' | 'cotando' | 'comprado';
 }
 
 interface Item {
@@ -25,6 +26,7 @@ interface Item {
   trabalho?: string;
   quantidade: number;
   valor?: number;
+  comprado?: boolean;
 }
 
 interface OrdemData {
@@ -37,7 +39,7 @@ interface OrdemData {
   } | null;
 }
 
-export function EditableItemsModal({ title, type, ordemId, onUpdate, children }: EditableItemsModalProps) {
+export function EditableItemsModal({ title, type, ordemId, onUpdate, children, compraStatus }: EditableItemsModalProps) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -181,6 +183,16 @@ export function EditableItemsModal({ title, type, ordemId, onUpdate, children }:
         ? prev.filter(id => id !== itemId)
         : [...prev, itemId]
     );
+  };
+
+  const handleToggleComprado = async (itemId: string) => {
+    const updatedItems = items.map(item => 
+      item.id === itemId 
+        ? { ...item, comprado: !item.comprado }
+        : item
+    );
+    setItems(updatedItems);
+    await saveItems(updatedItems);
   };
 
   const generatePDF = async () => {
@@ -436,6 +448,22 @@ export function EditableItemsModal({ title, type, ordemId, onUpdate, children }:
                     Quantidade: {item.quantidade}
                     {type === 'pecas' && item.valor && ` • Valor: R$ ${item.valor.toFixed(2)}`}
                   </div>
+                  {compraStatus === 'cotando' && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <Checkbox
+                        id={`comprado-${item.id}`}
+                        checked={item.comprado || false}
+                        onCheckedChange={() => handleToggleComprado(item.id)}
+                        className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                      />
+                      <label 
+                        htmlFor={`comprado-${item.id}`}
+                        className={`text-sm cursor-pointer ${item.comprado ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}
+                      >
+                        Já comprado
+                      </label>
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-1">
                   <Button size="sm" variant="ghost" onClick={() => handleEdit(item)}>
