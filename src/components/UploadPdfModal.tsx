@@ -95,7 +95,10 @@ export function UploadPdfModal({
         if (ordem.recebimento_id) {
           const { error: updateError } = await supabase
             .from('recebimentos')
-            .update({ pdf_nota_retorno: urlData.publicUrl })
+            .update({ 
+              pdf_nota_retorno: urlData.publicUrl,
+              data_nota_retorno: new Date().toISOString()
+            })
             .eq('id', ordem.recebimento_id);
 
           if (updateError) throw updateError;

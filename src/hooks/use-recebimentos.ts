@@ -32,6 +32,7 @@ export interface Recebimento {
   data_analise?: string;
   pdf_nota_retorno?: string;
   pdf_nota_fiscal?: string;
+  data_nota_retorno?: string;
   fotos?: FotoEquipamento[];
   clientes?: {
     id: string;
