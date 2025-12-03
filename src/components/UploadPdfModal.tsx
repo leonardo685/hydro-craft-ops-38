@@ -24,6 +24,7 @@ export function UploadPdfModal({
 }: UploadPdfModalProps) {
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [numeroNotaRetorno, setNumeroNotaRetorno] = useState('');
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,6 +55,15 @@ export function UploadPdfModal({
       toast({
         title: "Erro",
         description: "Selecione um arquivo PDF",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (tipoUpload === 'nota_retorno' && !numeroNotaRetorno.trim()) {
+      toast({
+        title: "Erro",
+        description: "Informe o número da nota de retorno",
         variant: "destructive",
       });
       return;
@@ -97,7 +107,8 @@ export function UploadPdfModal({
             .from('recebimentos')
             .update({ 
               pdf_nota_retorno: urlData.publicUrl,
-              data_nota_retorno: new Date().toISOString()
+              data_nota_retorno: new Date().toISOString(),
+              numero_nota_retorno: numeroNotaRetorno.trim()
             })
             .eq('id', ordem.recebimento_id);
 
@@ -113,6 +124,7 @@ export function UploadPdfModal({
       onUploadComplete();
       onOpenChange(false);
       setArquivo(null);
+      setNumeroNotaRetorno('');
     } catch (error) {
       console.error('Erro no upload:', error);
       toast({
@@ -147,7 +159,7 @@ export function UploadPdfModal({
 
         <div className="space-y-6">
           <div className="bg-gradient-secondary p-4 rounded-lg">
-            <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
               <div>
                 <p className="text-sm font-medium">{getDescricao()}</p>
@@ -157,6 +169,18 @@ export function UploadPdfModal({
               </div>
             </div>
           </div>
+
+          {tipoUpload === 'nota_retorno' && (
+            <div className="space-y-2">
+              <Label htmlFor="numeroNotaRetorno">Número da Nota de Retorno *</Label>
+              <Input
+                id="numeroNotaRetorno"
+                value={numeroNotaRetorno}
+                onChange={(e) => setNumeroNotaRetorno(e.target.value)}
+                placeholder="Ex: 12345"
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="arquivo">Selecione o arquivo PDF</Label>
