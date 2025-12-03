@@ -55,6 +55,8 @@ export default function OrdensServico() {
         .neq('status', 'faturado')
         .neq('status', 'em_producao')
         .neq('status', 'em_teste')
+        .neq('status', 'finalizada')
+        .neq('status', 'aguardando_retorno')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -72,8 +74,9 @@ export default function OrdensServico() {
   };
 
   const getStatusDinamico = (ordem: any) => {
-    // Se já foi aprovada/reprovada/faturado, mantém o status atual
-    if (ordem.status === 'aprovada' || ordem.status === 'reprovada' || ordem.status === 'faturado') {
+    // Se já tem um status definido (aprovada/reprovada/faturado/finalizada/em_producao/em_teste/aguardando_retorno), mantém o status atual
+    const statusDefinidos = ['aprovada', 'reprovada', 'faturado', 'finalizada', 'em_producao', 'em_teste', 'aguardando_retorno'];
+    if (statusDefinidos.includes(ordem.status)) {
       return ordem.status;
     }
     
