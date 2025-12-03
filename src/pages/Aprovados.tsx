@@ -316,18 +316,19 @@ export default function Aprovados() {
         {/* Modal de Upload do Produto Pronto */}
         {ordemSelecionada && <UploadProdutoProntoModal open={uploadModalOpen} onOpenChange={setUploadModalOpen} ordem={ordemSelecionada} onConfirm={async () => {
         try {
-          // Determinar status baseado em orcamento_id e recebimento_id
+          // Determinar status baseado em recebimento_id (PRIORIDADE) e orcamento_id
+          // Equipamentos físicos SEMPRE precisam de nota de retorno
           let novoStatus = 'finalizada';
           
-          if (ordemSelecionada.orcamento_id) {
-            // Se tem orçamento vinculado, vai direto para finalizada
-            novoStatus = 'finalizada';
-          } else if (!ordemSelecionada.recebimento_id) {
-            // Sem orçamento e sem recebimento, vai para faturado (precisa emitir NF de retorno)
-            novoStatus = 'faturado';
-          } else {
-            // Com recebimento mas sem orçamento, vai para aguardando retorno
+          if (ordemSelecionada.recebimento_id) {
+            // Se tem recebimento (equipamento físico), SEMPRE precisa de nota de retorno
             novoStatus = 'aguardando_retorno';
+          } else if (ordemSelecionada.orcamento_id) {
+            // Orçamento avulso sem entrada de equipamento físico
+            novoStatus = 'finalizada';
+          } else {
+            // Sem orçamento e sem recebimento
+            novoStatus = 'faturado';
           }
           
           const {
@@ -343,10 +344,10 @@ export default function Aprovados() {
           let notificacaoEnviada = false;
 
           const notaFiscalEntrada = ordemSelecionada.recebimentos?.nota_fiscal || ordemSelecionada.recebimentos?.chave_acesso_nfe || 'n/a';
-          const tipoNotificacao = ordemSelecionada.orcamento_id 
-            ? 'ordem_finalizada' 
-            : ordemSelecionada.recebimento_id 
-              ? 'ordem_retorno' 
+          const tipoNotificacao = ordemSelecionada.recebimento_id 
+            ? 'ordem_retorno' 
+            : ordemSelecionada.orcamento_id 
+              ? 'ordem_finalizada' 
               : 'ordem_faturamento_sem_retorno';
           
           const payload = {
