@@ -1459,6 +1459,7 @@ export type Database = {
           na_empresa: boolean | null
           nota_fiscal: string | null
           nota_fiscal_id: string | null
+          numero_nota_retorno: string | null
           numero_ordem: string
           numero_serie: string | null
           observacoes: string | null
@@ -1493,6 +1494,7 @@ export type Database = {
           na_empresa?: boolean | null
           nota_fiscal?: string | null
           nota_fiscal_id?: string | null
+          numero_nota_retorno?: string | null
           numero_ordem: string
           numero_serie?: string | null
           observacoes?: string | null
@@ -1527,6 +1529,7 @@ export type Database = {
           na_empresa?: boolean | null
           nota_fiscal?: string | null
           nota_fiscal_id?: string | null
+          numero_nota_retorno?: string | null
           numero_ordem?: string
           numero_serie?: string | null
           observacoes?: string | null
