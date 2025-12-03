@@ -1451,6 +1451,7 @@ export type Database = {
           curso: string | null
           data_analise: string | null
           data_entrada: string
+          data_nota_retorno: string | null
           fluido_trabalho: string | null
           haste_comprimento: string | null
           id: number
@@ -1484,6 +1485,7 @@ export type Database = {
           curso?: string | null
           data_analise?: string | null
           data_entrada?: string
+          data_nota_retorno?: string | null
           fluido_trabalho?: string | null
           haste_comprimento?: string | null
           id?: number
@@ -1517,6 +1519,7 @@ export type Database = {
           curso?: string | null
           data_analise?: string | null
           data_entrada?: string
+          data_nota_retorno?: string | null
           fluido_trabalho?: string | null
           haste_comprimento?: string | null
           id?: number

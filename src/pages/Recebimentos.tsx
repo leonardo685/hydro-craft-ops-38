@@ -456,35 +456,22 @@ export default function Recebimentos() {
                     <TableHead className="w-[150px]">Nº da Ordem</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead className="w-[150px]">Data de Entrada</TableHead>
-                    <TableHead className="w-[120px]">Status</TableHead>
+                    <TableHead className="w-[150px]">Data NF Retorno</TableHead>
                     <TableHead className="w-[140px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {todosFinalizados.map((item, index) => {
-                    const getStatusBadge = (status: string) => {
-                      const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
-                        'recebido': { label: 'Recebida', variant: 'secondary' },
-                        'em_analise': { label: 'Em Análise', variant: 'default' },
-                        'aprovado': { label: 'Aprovada', variant: 'outline' },
-                        'aguardando_retorno': { label: 'Aguardando Retorno', variant: 'outline' },
-                        'retornado': { label: 'Retornada', variant: 'destructive' }
-                      };
-                      
-                      const statusInfo = statusMap[status] || { label: status, variant: 'secondary' as const };
-                      return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
-                    };
-
+                {todosFinalizados.map((item, index) => {
                     return (
                       <TableRow key={index} className="hover:bg-muted/50">
-              <TableCell className="font-medium">
-                <button
-                  onClick={() => navigate(`/recebimentos/${item.id}`)}
-                  className="text-primary hover:text-primary-hover underline font-medium"
-                >
-                  {item.numero_ordem}
-                </button>
-              </TableCell>
+                        <TableCell className="font-medium">
+                          <button
+                            onClick={() => navigate(`/recebimentos/${item.id}`)}
+                            className="text-primary hover:text-primary-hover underline font-medium"
+                          >
+                            {item.numero_ordem}
+                          </button>
+                        </TableCell>
                         <TableCell className="text-red-500 font-medium">
                           {item.clientes?.nome || item.cliente_nome || 'Cliente não encontrado'}
                         </TableCell>
@@ -492,7 +479,13 @@ export default function Recebimentos() {
                           {new Date(item.data_entrada).toLocaleDateString('pt-BR')}
                         </TableCell>
                         <TableCell>
-                          {getStatusBadge(item.status || 'retornado')}
+                          {item.data_nota_retorno ? (
+                            <span className="text-muted-foreground">
+                              {new Date(item.data_nota_retorno).toLocaleDateString('pt-BR')}
+                            </span>
+                          ) : (
+                            <Badge variant="outline">Pendente</Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
