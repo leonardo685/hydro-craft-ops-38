@@ -52,14 +52,13 @@ export default function Recebimentos() {
     localStorage.removeItem('notasFiscais');
   }, []);
 
-  // Carregar ordens finalizadas diretas (sem recebimento_id)
+  // Carregar ordens finalizadas (diretas e com recebimento)
   useEffect(() => {
     const loadOrdensFinalizadas = async () => {
       const { data, error } = await supabase
         .from('ordens_servico')
-        .select('*')
+        .select('*, recebimentos!ordens_servico_recebimento_id_fkey(*)')
         .in('status', ['finalizada', 'faturado'])
-        .is('recebimento_id', null)
         .order('updated_at', { ascending: false });
       
       if (error) {
@@ -99,6 +98,13 @@ export default function Recebimentos() {
 
   // Combinar recebimentos finalizados com ordens diretas
   const todosFinalizados = useMemo(() => {
+    // IDs de recebimentos que já estão vinculados a ordens finalizadas
+    const recebimentosIdsFinalizados = new Set(
+      ordensFinalizadas
+        .filter(ordem => ordem.recebimento_id)
+        .map(ordem => ordem.recebimento_id)
+    );
+
     // Recebimentos com nota de retorno
     const recebimentosComNota = recebimentos.filter(item => {
       if (!item.pdf_nota_retorno) return false;
@@ -114,10 +120,32 @@ export default function Recebimentos() {
       
       return matchCliente && matchNota && matchNotaFiscal;
     });
+
+    // Recebimentos cujas ordens estão finalizadas (sem nota de retorno ainda)
+    const recebimentosOrdemFinalizada = recebimentos.filter(item => {
+      // Já tem nota de retorno? Já está no recebimentosComNota
+      if (item.pdf_nota_retorno) return false;
+      // Não está na lista de finalizados? Pular
+      if (!recebimentosIdsFinalizados.has(item.id)) return false;
+      
+      const dataItem = new Date(item.data_entrada);
+      if (dataInicio && dataItem < dataInicio) return false;
+      if (dataFim && dataItem > dataFim) return false;
+      
+      const nomeCliente = item.clientes?.nome || item.cliente_nome || '';
+      const matchCliente = !filtroCliente || nomeCliente.toLowerCase().includes(filtroCliente.toLowerCase());
+      const matchNota = !filtroNotaEntrada || item.numero_ordem.includes(filtroNotaEntrada);
+      const matchNotaFiscal = !filtroNotaFiscal || (item.nota_fiscal && item.nota_fiscal.toLowerCase().includes(filtroNotaFiscal.toLowerCase()));
+      
+      return matchCliente && matchNota && matchNotaFiscal;
+    });
     
-    // Ordens diretas finalizadas (transformadas no mesmo formato)
+    // Ordens diretas finalizadas (SEM recebimento_id - transformadas no mesmo formato)
     const ordensTransformadas = ordensFinalizadas
       .filter(ordem => {
+        // Só incluir ordens diretas (sem recebimento_id)
+        if (ordem.recebimento_id) return false;
+        
         const dataItem = new Date(ordem.data_entrada);
         if (dataInicio && dataItem < dataInicio) return false;
         if (dataFim && dataItem > dataFim) return false;
@@ -133,7 +161,7 @@ export default function Recebimentos() {
         clientes: null
       }));
     
-    return [...recebimentosComNota, ...ordensTransformadas];
+    return [...recebimentosComNota, ...recebimentosOrdemFinalizada, ...ordensTransformadas];
   }, [recebimentos, ordensFinalizadas, dataInicio, dataFim, filtroCliente, filtroNotaEntrada, filtroNotaFiscal]);
 
   // Função para aplicar filtros e recarregar dados
