@@ -1553,9 +1553,10 @@ export default function Orcamentos() {
         </Card>
 
         <Tabs defaultValue="pendente" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="pendente">Aguardando Aprovação</TabsTrigger>
             <TabsTrigger value="aprovado">Aprovados</TabsTrigger>
+            <TabsTrigger value="finalizado">Finalizados</TabsTrigger>
             <TabsTrigger value="rejeitado">Reprovados</TabsTrigger>
           </TabsList>
 
@@ -1693,6 +1694,71 @@ export default function Orcamentos() {
                   </h3>
                   <p className="text-muted-foreground">
                     Não há orçamentos aprovados no momento
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="finalizado" className="space-y-4">
+            {aplicarFiltros(orcamentos.filter(o => o.status === 'finalizado')).length > 0 ? (
+              aplicarFiltros(orcamentos.filter(o => o.status === 'finalizado')).map((item) => (
+                <Card key={item.id} className="hover:shadow-md transition-smooth">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-foreground">
+                            Orçamento #{item.numero}
+                          </h3>
+                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                            Finalizado
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p><span className="font-medium">Cliente:</span> {item.cliente_nome}</p>
+                          <p><span className="font-medium">Equipamento:</span> {item.equipamento}</p>
+                          <p><span className="font-medium">Valor:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          {item.numero_nf && (
+                            <p><span className="font-medium">NF:</span> {item.numero_nf}</p>
+                          )}
+                          {item.forma_pagamento && (
+                            <p><span className="font-medium">Forma Pagamento:</span> {item.forma_pagamento}</p>
+                          )}
+                          {item.data_aprovacao && (
+                            <p><span className="font-medium">Data Aprovação:</span> {new Date(item.data_aprovacao).toLocaleDateString('pt-BR')}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => abrirPrecificacao(item)}
+                        >
+                          <DollarSign className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => gerarPDFOrcamento(item)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    Nenhum orçamento finalizado
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Não há orçamentos finalizados no momento
                   </p>
                 </CardContent>
               </Card>
