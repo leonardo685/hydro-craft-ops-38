@@ -755,6 +755,11 @@ export default function DFC() {
         // Excluir transferências (não entram no planejamento)
         if (l.tipo === 'transferencia') return false;
         
+        // Excluir registros "pai" de parcelamentos (exibir apenas parcelas individuais)
+        if (l.formaPagamento === 'parcelado' && l.numeroParcelas && !l.parcelaNumero) {
+          return false;
+        }
+        
         // Filtrar por data
         const dataLancamento = new Date(l.dataEsperada);
         
