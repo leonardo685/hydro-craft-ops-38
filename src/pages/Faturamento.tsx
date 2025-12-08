@@ -104,22 +104,24 @@ export default function Faturamento() {
       console.error('Erro ao carregar orçamentos aprovados:', orcamentosError);
       setOrcamentosEmFaturamento([]);
     } else if (orcamentosAprovados) {
-      // Buscar numero_ordem para cada orçamento que tem ordem_servico_id
+      // Buscar todas as OS vinculadas a cada orçamento
       const orcamentosComOS = await Promise.all(
         orcamentosAprovados.map(async (orc) => {
-          if (orc.ordem_servico_id) {
-            const { data: osData } = await supabase
-              .from('ordens_servico')
-              .select('recebimento_id, recebimentos(numero_ordem)')
-              .eq('id', orc.ordem_servico_id)
-              .single();
-            
-            return {
-              ...orc,
-              ordem_numero: osData?.recebimentos?.numero_ordem
-            };
-          }
-          return orc;
+          // Buscar todas as OS que têm esse orcamento_id
+          const { data: osVinculadas } = await supabase
+            .from('ordens_servico')
+            .select('id, numero_ordem, recebimento_id, recebimentos(numero_ordem)')
+            .eq('orcamento_id', orc.id);
+          
+          const ordensVinculadas = osVinculadas?.map(os => ({
+            id: os.id,
+            numero_ordem: os.recebimentos?.numero_ordem || os.numero_ordem
+          })) || [];
+          
+          return {
+            ...orc,
+            ordens_vinculadas: ordensVinculadas
+          };
         })
       );
       
@@ -651,11 +653,18 @@ export default function Faturamento() {
                 <Card key={item.id} className="shadow-soft hover:shadow-medium transition-smooth">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Receipt className="h-5 w-5 text-primary" />
-                          {item.numero}
-                        </CardTitle>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Receipt className="h-5 w-5 text-primary" />
+                            {item.numero}
+                          </CardTitle>
+                          {item.ordens_vinculadas?.map((ordem: any) => (
+                            <Badge key={ordem.id} variant="secondary" className="text-xs">
+                              OS: {ordem.numero_ordem}
+                            </Badge>
+                          ))}
+                        </div>
                         <CardDescription className="mt-1">
                           {item.equipamento} - {item.cliente_nome}
                         </CardDescription>
@@ -690,11 +699,6 @@ export default function Faturamento() {
                         <FileText className="h-4 w-4 mr-1" />
                         Emitir Nota Fiscal
                       </Button>
-                      {item.ordem_servico_id && (
-                        <Badge variant="outline" className="text-xs">
-                          Vinculado à OS: {item.ordem_numero || item.ordem_servico_id}
-                        </Badge>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
