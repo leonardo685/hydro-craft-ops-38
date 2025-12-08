@@ -112,8 +112,41 @@ export default function Orcamentos() {
         return;
       }
 
-      console.log('Orçamentos carregados:', data);
-      setOrcamentos(data || []);
+      // Buscar ordens de serviço vinculadas a cada orçamento
+      const { data: ordensVinculadas } = await supabase
+        .from('ordens_servico')
+        .select(`
+          id,
+          orcamento_id,
+          numero_ordem,
+          recebimentos:recebimento_id (
+            numero_ordem
+          )
+        `)
+        .not('orcamento_id', 'is', null);
+
+      // Mapear ordens vinculadas por orcamento_id
+      const ordensPorOrcamento: Record<string, any[]> = {};
+      ordensVinculadas?.forEach(ordem => {
+        if (ordem.orcamento_id) {
+          if (!ordensPorOrcamento[ordem.orcamento_id]) {
+            ordensPorOrcamento[ordem.orcamento_id] = [];
+          }
+          ordensPorOrcamento[ordem.orcamento_id].push({
+            id: ordem.id,
+            numero_ordem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem
+          });
+        }
+      });
+
+      // Adicionar ordens vinculadas aos orçamentos
+      const orcamentosComOrdens = data?.map(orc => ({
+        ...orc,
+        ordens_vinculadas: ordensPorOrcamento[orc.id] || []
+      })) || [];
+
+      console.log('Orçamentos carregados:', orcamentosComOrdens);
+      setOrcamentos(orcamentosComOrdens);
     } catch (error) {
       console.error('Erro ao carregar orçamentos:', error);
       toast.error('Erro ao carregar orçamentos');
@@ -1575,13 +1608,20 @@ export default function Orcamentos() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
                             Orçamento #{item.numero}
                           </h3>
                           <Badge className={getStatusColor(item.status)}>
                             {getStatusText(item.status)}
                           </Badge>
+                          {item.ordens_vinculadas && item.ordens_vinculadas.length > 0 && (
+                            item.ordens_vinculadas.map((ordem: any) => (
+                              <Badge key={ordem.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+                                OS: {ordem.numero_ordem}
+                              </Badge>
+                            ))
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">Cliente:</span> {item.cliente_nome}</p>
@@ -1660,13 +1700,20 @@ export default function Orcamentos() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
                             Orçamento #{item.numero}
                           </h3>
                           <Badge className={getStatusColor(item.status)}>
                             {getStatusText(item.status)}
                           </Badge>
+                          {item.ordens_vinculadas && item.ordens_vinculadas.length > 0 && (
+                            item.ordens_vinculadas.map((ordem: any) => (
+                              <Badge key={ordem.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+                                OS: {ordem.numero_ordem}
+                              </Badge>
+                            ))
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">Cliente:</span> {item.cliente_nome}</p>
@@ -1731,13 +1778,20 @@ export default function Orcamentos() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
                             Orçamento #{item.numero}
                           </h3>
                           <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                             Finalizado
                           </Badge>
+                          {item.ordens_vinculadas && item.ordens_vinculadas.length > 0 && (
+                            item.ordens_vinculadas.map((ordem: any) => (
+                              <Badge key={ordem.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+                                OS: {ordem.numero_ordem}
+                              </Badge>
+                            ))
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">Cliente:</span> {item.cliente_nome}</p>
@@ -1796,13 +1850,20 @@ export default function Orcamentos() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
                             Orçamento #{item.numero}
                           </h3>
                           <Badge className={getStatusColor(item.status)}>
                             {getStatusText(item.status)}
                           </Badge>
+                          {item.ordens_vinculadas && item.ordens_vinculadas.length > 0 && (
+                            item.ordens_vinculadas.map((ordem: any) => (
+                              <Badge key={ordem.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+                                OS: {ordem.numero_ordem}
+                              </Badge>
+                            ))
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">Cliente:</span> {item.cliente_nome}</p>
