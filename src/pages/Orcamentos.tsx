@@ -11,12 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck } from "lucide-react";
+import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2 } from "lucide-react";
 import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
+import { VincularOrdensModal } from "@/components/VincularOrdensModal";
 import jsPDF from "jspdf";
 import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
 import { format } from "date-fns";
@@ -150,6 +151,13 @@ export default function Orcamentos() {
   const [orcamentoParaAprovar, setOrcamentoParaAprovar] = useState<any>(null);
   const [showPrecificacaoModal, setShowPrecificacaoModal] = useState(false);
   const [orcamentoParaPrecificar, setOrcamentoParaPrecificar] = useState<any>(null);
+  const [showVincularModal, setShowVincularModal] = useState(false);
+  const [orcamentoParaVincular, setOrcamentoParaVincular] = useState<any>(null);
+
+  const handleVincularOrdens = (orcamento: any) => {
+    setOrcamentoParaVincular(orcamento);
+    setShowVincularModal(true);
+  };
 
   const handleAprovarOrcamento = (orcamento: any) => {
     setOrcamentoParaAprovar(orcamento);
@@ -1585,6 +1593,14 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => handleVincularOrdens(item)}
+                          title="Vincular Ordens de Serviço"
+                        >
+                          <Link2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => abrirPrecificacao(item)}
                         >
                           <DollarSign className="h-4 w-4" />
@@ -1659,6 +1675,14 @@ export default function Orcamentos() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleVincularOrdens(item)}
+                          title="Vincular Ordens de Serviço"
+                        >
+                          <Link2 className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -1842,6 +1866,13 @@ export default function Orcamentos() {
         onClose={() => setShowPrecificacaoModal(false)}
         orcamento={orcamentoParaPrecificar}
         onSave={carregarOrcamentos}
+      />
+
+      <VincularOrdensModal
+        open={showVincularModal}
+        onOpenChange={setShowVincularModal}
+        orcamento={orcamentoParaVincular}
+        onSuccess={carregarOrcamentos}
       />
     </AppLayout>
   );
