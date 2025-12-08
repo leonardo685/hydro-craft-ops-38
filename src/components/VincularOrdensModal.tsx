@@ -45,7 +45,8 @@ export function VincularOrdensModal({
         .select(`
           *,
           recebimentos:recebimento_id (
-            numero_ordem
+            numero_ordem,
+            tipo_equipamento
           )
         `)
         .eq('orcamento_id', orcamento.id)
@@ -60,7 +61,8 @@ export function VincularOrdensModal({
         .select(`
           *,
           recebimentos:recebimento_id (
-            numero_ordem
+            numero_ordem,
+            tipo_equipamento
           )
         `)
         .is('orcamento_id', null)
@@ -112,7 +114,7 @@ export function VincularOrdensModal({
     const intervaloRetry = 2000;
 
     const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
-    const tipoEquipamento = ordem.equipamento || 'Equipamento não especificado';
+    const tipoEquipamento = ordem.recebimentos?.tipo_equipamento || ordem.equipamento || 'Equipamento não especificado';
     const valorFormatado = `R$ ${(orcamento.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     const payload = {
