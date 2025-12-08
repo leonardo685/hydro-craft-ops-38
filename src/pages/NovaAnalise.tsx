@@ -1358,8 +1358,8 @@ const NovaOrdemServico = () => {
             }
           } else {
             // Criar nova ordem - usar o número do recebimento no formato MH-XXX-YY
-            // Se não existir numero_ordem, usar o ID do recebimento como fallback
-            const numeroOrdem = recebimento.numero_ordem || `MH-${String(recebimento.id).padStart(3, '0')}-${new Date().getFullYear().toString().slice(-2)}`;
+            // Usar numeroOrdem (camelCase) que é como está armazenado no estado
+            const numeroOrdem = recebimento.numeroOrdem || recebimento.numero_ordem;
             
             const { data: novaOrdem, error } = await supabase
               .from('ordens_servico')
