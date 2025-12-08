@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Search, Link2, Loader2, Unlink } from "lucide-react";
-
+import { format } from "date-fns";
 interface VincularOrdensModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -107,6 +107,55 @@ export function VincularOrdensModal({
     );
   };
 
+  const enviarWebhookOrdemAprovada = async (ordem: any) => {
+    const maxTentativas = 3;
+    const intervaloRetry = 2000;
+
+    const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
+    const tipoEquipamento = ordem.equipamento || 'Equipamento não especificado';
+    const valorFormatado = `R$ ${(orcamento.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const payload = {
+      tipo: 'ordem_aprovada',
+      numero_ordem: numeroOrdem,
+      cliente: orcamento.cliente_nome,
+      equipamento: tipoEquipamento,
+      valor: valorFormatado,
+      data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
+      orcamento_numero: orcamento.numero
+    };
+
+    for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+      try {
+        console.log(`📤 Tentativa ${tentativa}/${maxTentativas} de envio webhook para OS ${numeroOrdem}...`);
+        
+        const response = await fetch('https://primary-production-dc42.up.railway.app/webhook/f2cabfd9-4e4c-4dd0-802a-b27c4b0c9d17', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          console.log(`✅ Webhook enviado com sucesso para OS ${numeroOrdem}`);
+          return true;
+        } else {
+          console.error(`❌ Tentativa ${tentativa} falhou com status:`, response.status);
+          if (tentativa < maxTentativas) {
+            await new Promise(resolve => setTimeout(resolve, intervaloRetry));
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Erro na tentativa ${tentativa}:`, error);
+        if (tentativa < maxTentativas) {
+          await new Promise(resolve => setTimeout(resolve, intervaloRetry));
+        }
+      }
+    }
+    
+    console.error(`❌ Falha ao enviar webhook para OS ${numeroOrdem} após ${maxTentativas} tentativas`);
+    return false;
+  };
+
   const handleSalvar = async () => {
     if (ordensSelecionadas.length === 0 && ordensParaDesvincular.length === 0) {
       toast.error('Selecione pelo menos uma ordem para vincular ou desvincular');
@@ -130,6 +179,32 @@ export function VincularOrdensModal({
           .in('id', ordensSelecionadas);
 
         if (errorVincular) throw errorVincular;
+
+        // Se orçamento está aprovado, enviar webhooks para cada OS vinculada
+        if (isOrcamentoAprovado) {
+          const ordensParaNotificar = ordensDisponiveis.filter(o => ordensSelecionadas.includes(o.id));
+          
+          console.log(`📤 Enviando webhooks para ${ordensParaNotificar.length} ordem(ns) vinculada(s)...`);
+          
+          let webhooksEnviados = 0;
+          let webhooksFalharam = 0;
+          
+          for (const ordem of ordensParaNotificar) {
+            const sucesso = await enviarWebhookOrdemAprovada(ordem);
+            if (sucesso) {
+              webhooksEnviados++;
+            } else {
+              webhooksFalharam++;
+            }
+          }
+          
+          if (webhooksFalharam > 0) {
+            console.warn(`⚠️ ${webhooksFalharam} webhook(s) falharam ao enviar`);
+          }
+          if (webhooksEnviados > 0) {
+            console.log(`✅ ${webhooksEnviados} webhook(s) enviado(s) com sucesso`);
+          }
+        }
       }
 
       // Desvincular ordens marcadas
@@ -148,12 +223,15 @@ export function VincularOrdensModal({
       const mensagens = [];
       if (ordensSelecionadas.length > 0) {
         mensagens.push(`${ordensSelecionadas.length} ordem(ns) vinculada(s)`);
+        if (isOrcamentoAprovado) {
+          mensagens.push('e notificações enviadas');
+        }
       }
       if (ordensParaDesvincular.length > 0) {
         mensagens.push(`${ordensParaDesvincular.length} ordem(ns) desvinculada(s)`);
       }
 
-      toast.success(mensagens.join(' e '));
+      toast.success(mensagens.join(' '));
       
       setOrdensSelecionadas([]);
       setOrdensParaDesvincular([]);
