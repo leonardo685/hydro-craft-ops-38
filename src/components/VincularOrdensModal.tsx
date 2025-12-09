@@ -182,11 +182,13 @@ export function VincularOrdensModal({
 
         if (errorVincular) throw errorVincular;
 
-        // Se orçamento está aprovado, enviar webhooks para cada OS vinculada
+        // Se orçamento está aprovado, enviar webhooks apenas para OS que ainda NÃO estavam aprovadas
         if (isOrcamentoAprovado) {
-          const ordensParaNotificar = ordensDisponiveis.filter(o => ordensSelecionadas.includes(o.id));
+          const ordensParaNotificar = ordensDisponiveis.filter(o => 
+            ordensSelecionadas.includes(o.id) && o.status !== 'aprovada'
+          );
           
-          console.log(`📤 Enviando webhooks para ${ordensParaNotificar.length} ordem(ns) vinculada(s)...`);
+          console.log(`📤 Enviando webhooks para ${ordensParaNotificar.length} ordem(ns) recém-aprovada(s)...`);
           
           let webhooksEnviados = 0;
           let webhooksFalharam = 0;
