@@ -515,97 +515,86 @@ export default function Faturamento() {
           </TabsList>
 
           <TabsContent value="faturamento" className="space-y-6 mt-6">
-            {/* Filtros */}
-            <Card className="shadow-soft">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Filter className="h-5 w-5" />
-                  Filtros
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Número</label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {/* Sub-abas para separar Ordens e Orçamentos */}
+            <Tabs defaultValue="ordens-retorno" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="ordens-retorno">
+                  Ordens Aguardando Retorno ({ordensRetornoFiltradas.length})
+                </TabsTrigger>
+                <TabsTrigger value="orcamentos-faturamento">
+                  Orçamentos Aguardando Faturamento ({orcamentosEmFaturamentoFiltrados.length})
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Filtros (compartilhados) */}
+              <Card className="shadow-soft mt-4">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Filter className="h-5 w-5" />
+                    Filtros
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">Número</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="text"
+                          placeholder="Buscar por número..."
+                          value={numeroFiltroFat}
+                          onChange={(e) => setNumeroFiltroFat(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">Data Início</label>
                       <Input
-                        type="text"
-                        placeholder="Buscar por número..."
-                        value={numeroFiltroFat}
-                        onChange={(e) => setNumeroFiltroFat(e.target.value)}
-                        className="pl-9"
+                        type="date"
+                        value={dataInicioFat}
+                        onChange={(e) => setDataInicioFat(e.target.value)}
                       />
                     </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">Data Fim</label>
+                      <Input
+                        type="date"
+                        value={dataFimFat}
+                        onChange={(e) => setDataFimFat(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">Cliente</label>
+                      <Input
+                        type="text"
+                        placeholder="Buscar por cliente"
+                        value={clienteFiltroFat}
+                        onChange={(e) => setClienteFiltroFat(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setNumeroFiltroFat("");
+                          setDataInicioFat("");
+                          setDataFimFat("");
+                          setClienteFiltroFat("");
+                        }}
+                        className="w-full"
+                      >
+                        Limpar
+                      </Button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Data Início</label>
-                    <Input
-                      type="date"
-                      value={dataInicioFat}
-                      onChange={(e) => setDataInicioFat(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Data Fim</label>
-                    <Input
-                      type="date"
-                      value={dataFimFat}
-                      onChange={(e) => setDataFimFat(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Tipo de Nota</label>
-                    <Select value={tipoDocumentoFat} onValueChange={setTipoDocumentoFat}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">Todos</SelectItem>
-                        <SelectItem value="ordem">Ordem de Serviço</SelectItem>
-                        <SelectItem value="orcamento">Orçamento</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Cliente</label>
-                    <Input
-                      type="text"
-                      placeholder="Buscar por cliente"
-                      value={clienteFiltroFat}
-                      onChange={(e) => setClienteFiltroFat(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Ordens Aguardando Retorno */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">
-                  Ordens Aguardando Retorno ({ordensRetornoFiltradas.length})
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleSection('ordensRetorno')}
-                >
-                  {expandedSections.ordensRetorno ? (
-                    <>
-                      <ChevronUp className="h-4 w-4 mr-1" />
-                      Minimizar
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="h-4 w-4 mr-1" />
-                      Expandir
-                    </>
-                  )}
-                </Button>
-              </div>
-              {expandedSections.ordensRetorno && (
-                ordensRetornoFiltradas.length > 0 ? (
+              {/* Aba Ordens Aguardando Retorno */}
+              <TabsContent value="ordens-retorno" className="mt-4">
+                {ordensRetornoFiltradas.length > 0 ? (
                   <OrdensAguardandoRetorno ordensExternas={ordensRetornoFiltradas} />
                 ) : (
                   <Card>
@@ -619,107 +608,81 @@ export default function Faturamento() {
                       </p>
                     </CardContent>
                   </Card>
-                )
-              )}
-            </div>
+                )}
+              </TabsContent>
 
-            {/* Orçamentos Aguardando Faturamento */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">
-                  Orçamentos Aguardando Faturamento ({orcamentosEmFaturamentoFiltrados.length})
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleSection('orcamentosEmFaturamento')}
-                >
-                  {expandedSections.orcamentosEmFaturamento ? (
-                    <>
-                      <ChevronUp className="h-4 w-4 mr-1" />
-                      Minimizar
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="h-4 w-4 mr-1" />
-                      Expandir
-                    </>
-                  )}
-                </Button>
-              </div>
-              {expandedSections.orcamentosEmFaturamento && (
-                <div className="space-y-4">
-                  {orcamentosEmFaturamentoFiltrados.map((item) => (
-                <Card key={item.id} className="shadow-soft hover:shadow-medium transition-smooth">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <Receipt className="h-5 w-5 text-primary" />
-                            {item.numero}
-                          </CardTitle>
-                          {item.ordens_vinculadas?.map((ordem: any) => (
-                            <Badge key={ordem.id} variant="secondary" className="text-xs">
-                              OS: {ordem.numero_ordem}
-                            </Badge>
-                          ))}
+              {/* Aba Orçamentos Aguardando Faturamento */}
+              <TabsContent value="orcamentos-faturamento" className="mt-4 space-y-4">
+                {orcamentosEmFaturamentoFiltrados.length > 0 ? (
+                  orcamentosEmFaturamentoFiltrados.map((item) => (
+                    <Card key={item.id} className="shadow-soft hover:shadow-medium transition-smooth">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <CardTitle className="text-lg flex items-center gap-2">
+                                <Receipt className="h-5 w-5 text-primary" />
+                                {item.numero}
+                              </CardTitle>
+                              {item.ordens_vinculadas?.map((ordem: any) => (
+                                <Badge key={ordem.id} variant="secondary" className="text-xs">
+                                  OS: {ordem.numero_ordem}
+                                </Badge>
+                              ))}
+                            </div>
+                            <CardDescription className="mt-1">
+                              {item.equipamento} - {item.cliente_nome}
+                            </CardDescription>
+                          </div>
+                          <Badge className={getStatusColor(item.status)}>
+                            {getStatusText(item.status)}
+                          </Badge>
                         </div>
-                        <CardDescription className="mt-1">
-                          {item.equipamento} - {item.cliente_nome}
-                        </CardDescription>
-                      </div>
-                      <Badge className={getStatusColor(item.status)}>
-                        {getStatusText(item.status)}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Valor do Orçamento</p>
-                        <p className="text-xl font-bold text-primary">
-                          R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Data de Aprovação</p>
-                        <p className="text-lg font-semibold">
-                          {item.data_aprovacao ? new Date(item.data_aprovacao).toLocaleDateString('pt-BR') : '-'}
-                        </p>
-                      </div>
-                    </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-secondary rounded-lg">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Valor do Orçamento</p>
+                            <p className="text-xl font-bold text-primary">
+                              R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Data de Aprovação</p>
+                            <p className="text-lg font-semibold">
+                              {item.data_aprovacao ? new Date(item.data_aprovacao).toLocaleDateString('pt-BR') : '-'}
+                            </p>
+                          </div>
+                        </div>
 
-                    <div className="flex gap-2 pt-2">
-                      <Button 
-                        size="sm" 
-                        className="bg-gradient-primary"
-                        onClick={() => handleEmitirNF(item)}
-                      >
-                        <FileText className="h-4 w-4 mr-1" />
-                        Emitir Nota Fiscal
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-                  ))}
-                  
-                  {orcamentosEmFaturamentoFiltrados.length === 0 && (
-                    <Card>
-                      <CardContent className="p-12 text-center">
-                        <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                        <h3 className="text-lg font-medium text-foreground mb-2">
-                          Nenhum orçamento encontrado
-                        </h3>
-                        <p className="text-muted-foreground">
-                          {temFiltrosAtivosFat ? 'Ajuste os filtros para encontrar orçamentos' : 'Nenhum orçamento aguardando faturamento'}
-                        </p>
+                        <div className="flex gap-2 pt-2">
+                          <Button 
+                            size="sm" 
+                            className="bg-gradient-primary"
+                            onClick={() => handleEmitirNF(item)}
+                          >
+                            <FileText className="h-4 w-4 mr-1" />
+                            Emitir Nota Fiscal
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
-                  )}
-                </div>
-              )}
-            </div>
+                  ))
+                ) : (
+                  <Card>
+                    <CardContent className="p-12 text-center">
+                      <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">
+                        Nenhum orçamento encontrado
+                      </h3>
+                      <p className="text-muted-foreground">
+                        {temFiltrosAtivosFat ? 'Ajuste os filtros para encontrar orçamentos' : 'Nenhum orçamento aguardando faturamento'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="faturadas" className="space-y-6 mt-6">
