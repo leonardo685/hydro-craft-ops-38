@@ -241,7 +241,7 @@ export default function OrdensServico() {
       
       // Se vinculada à NF de entrada: vai para faturamento (nota de retorno)
       // Se NÃO vinculada: vai direto para finalizadas
-      const novoStatus = temNotaEntrada ? 'reprovada' : 'finalizado';
+      const novoStatus = temNotaEntrada ? 'aguardando_retorno' : 'finalizada';
       
       const { data, error } = await supabase
         .from('ordens_servico')
