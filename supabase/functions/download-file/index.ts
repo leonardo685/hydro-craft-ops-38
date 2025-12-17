@@ -15,12 +15,7 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role for private bucket access
     );
 
     const { fileUrl, fileName } = await req.json();
@@ -31,40 +26,67 @@ serve(async (req) => {
 
     console.log('Baixando arquivo:', fileUrl);
 
-    // Encode URL properly (keep the protocol and domain, encode the path)
-    let urlToFetch = fileUrl;
-    try {
-      const urlObj = new URL(fileUrl);
-      // Encode each path segment individually to handle special characters
-      const pathSegments = urlObj.pathname.split('/').map(segment => 
-        segment ? encodeURIComponent(decodeURIComponent(segment)) : segment
-      );
-      urlObj.pathname = pathSegments.join('/');
-      urlToFetch = urlObj.toString();
-      console.log('URL processada:', urlToFetch);
-    } catch (e) {
-      console.log('Usando URL original:', fileUrl);
-    }
-
-    // Fazer o download do arquivo
-    const response = await fetch(urlToFetch);
+    // Check if it's a Supabase Storage URL and extract bucket/path
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const isSupabaseStorageUrl = fileUrl.includes(supabaseUrl) && fileUrl.includes('/storage/v1/object/');
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erro HTTP:', response.status, response.statusText, errorText);
-      throw new Error(`Erro ao baixar arquivo: ${response.status} ${response.statusText}`);
+    let arrayBuffer: ArrayBuffer;
+    let contentType = 'application/octet-stream';
+
+    if (isSupabaseStorageUrl) {
+      // Parse Supabase storage URL to extract bucket and path
+      // Format: https://{project}.supabase.co/storage/v1/object/public/{bucket}/{path}
+      // or: https://{project}.supabase.co/storage/v1/object/{bucket}/{path}
+      const urlObj = new URL(fileUrl);
+      const pathMatch = urlObj.pathname.match(/\/storage\/v1\/object\/(?:public\/)?([^/]+)\/(.+)/);
+      
+      if (pathMatch) {
+        const bucket = pathMatch[1];
+        const filePath = decodeURIComponent(pathMatch[2]);
+        
+        console.log('Bucket:', bucket, 'Path:', filePath);
+        
+        // Download using Supabase Storage API (works for both public and private buckets)
+        const { data, error } = await supabaseClient.storage
+          .from(bucket)
+          .download(filePath);
+        
+        if (error) {
+          console.error('Erro Supabase Storage:', error);
+          throw new Error(`Erro ao baixar do storage: ${error.message}`);
+        }
+        
+        if (!data) {
+          throw new Error('Arquivo não encontrado no storage');
+        }
+        
+        arrayBuffer = await data.arrayBuffer();
+        contentType = data.type || 'application/octet-stream';
+        console.log('Arquivo baixado via Supabase Storage:', fileName);
+      } else {
+        throw new Error('URL de storage inválida');
+      }
+    } else {
+      // For external URLs, use regular fetch
+      const response = await fetch(fileUrl);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erro HTTP:', response.status, response.statusText, errorText);
+        throw new Error(`Erro ao baixar arquivo: ${response.status} ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      arrayBuffer = await blob.arrayBuffer();
+      contentType = blob.type || 'application/octet-stream';
+      console.log('Arquivo baixado via fetch:', fileName);
     }
-
-    const blob = await response.blob();
-    const arrayBuffer = await blob.arrayBuffer();
-
-    console.log('Arquivo baixado com sucesso:', fileName);
 
     // Retornar o arquivo com headers apropriados
     return new Response(arrayBuffer, {
       headers: {
         ...corsHeaders,
-        'Content-Type': blob.type || 'application/octet-stream',
+        'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="${fileName || 'download'}"`,
         'Content-Length': arrayBuffer.byteLength.toString(),
       },
