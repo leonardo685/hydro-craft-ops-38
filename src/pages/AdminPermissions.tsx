@@ -10,9 +10,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Shield, Users, FileText, ClipboardCheck, DollarSign, Plus, Pencil, X, Check } from 'lucide-react';
+import { Shield, Users, FileText, ClipboardCheck, DollarSign, Plus, Pencil, X, Check, Building2, ChevronDown, ChevronRight, UserPlus, Trash2, Crown } from 'lucide-react';
+import { ConvidarUsuarioModal } from '@/components/ConvidarUsuarioModal';
+import { CriarEmpresaModal } from '@/components/CriarEmpresaModal';
 
 type AppRole = 'admin' | 'gestor' | 'operador';
 
@@ -42,6 +45,27 @@ interface Aprovador {
   updated_at: string;
 }
 
+interface Empresa {
+  id: string;
+  nome: string;
+  cnpj: string | null;
+  ativo: boolean;
+}
+
+interface UserEmpresa {
+  id: string;
+  user_id: string;
+  empresa_id: string;
+  is_owner: boolean;
+  user_nome: string;
+  user_email: string;
+  user_role: AppRole | null;
+}
+
+interface EmpresaComUsuarios extends Empresa {
+  usuarios: UserEmpresa[];
+}
+
 const menuItems = [
   { id: 'recebimentos', label: 'Recebimentos' },
   { id: 'analise', label: 'Análise' },
@@ -60,6 +84,7 @@ export default function AdminPermissions() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [permissions, setPermissions] = useState<MenuPermission[]>([]);
   const [aprovadores, setAprovadores] = useState<Aprovador[]>([]);
+  const [empresasComUsuarios, setEmpresasComUsuarios] = useState<EmpresaComUsuarios[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogAprovadorOpen, setDialogAprovadorOpen] = useState(false);
   const [editandoAprovador, setEditandoAprovador] = useState<Aprovador | null>(null);
@@ -70,6 +95,10 @@ export default function AdminPermissions() {
     fluxo_permissao: 'fiscal' as FluxoPermissao,
     ativo: true
   });
+  const [empresasExpandidas, setEmpresasExpandidas] = useState<Record<string, boolean>>({});
+  const [convidarModalOpen, setConvidarModalOpen] = useState(false);
+  const [criarEmpresaModalOpen, setCriarEmpresaModalOpen] = useState(false);
+  const [empresaSelecionadaParaConvite, setEmpresaSelecionadaParaConvite] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     fetchData();
@@ -115,6 +144,45 @@ export default function AdminPermissions() {
 
       if (aprovadoresError) throw aprovadoresError;
       setAprovadores((aprovadoresData || []) as Aprovador[]);
+
+      // Buscar empresas com usuários
+      const { data: empresasData, error: empresasError } = await supabase
+        .from('empresas')
+        .select('id, nome, cnpj, ativo')
+        .order('nome');
+
+      if (empresasError) throw empresasError;
+
+      // Buscar vínculos user_empresas
+      const { data: userEmpresasData, error: userEmpresasError } = await supabase
+        .from('user_empresas')
+        .select('id, user_id, empresa_id, is_owner');
+
+      if (userEmpresasError) throw userEmpresasError;
+
+      // Combinar empresas com seus usuários
+      const empresasComUsuariosData: EmpresaComUsuarios[] = (empresasData || []).map(empresa => ({
+        ...empresa,
+        usuarios: (userEmpresasData || [])
+          .filter(ue => ue.empresa_id === empresa.id)
+          .map(ue => {
+            const profile = profilesData?.find(p => p.id === ue.user_id);
+            const role = rolesData?.find(r => r.user_id === ue.user_id)?.role || null;
+            return {
+              ...ue,
+              user_nome: profile?.nome || 'Usuário não encontrado',
+              user_email: profile?.email || '',
+              user_role: role
+            };
+          })
+      }));
+
+      setEmpresasComUsuarios(empresasComUsuariosData);
+
+      // Expandir primeira empresa por padrão
+      if (empresasComUsuariosData.length > 0 && Object.keys(empresasExpandidas).length === 0) {
+        setEmpresasExpandidas({ [empresasComUsuariosData[0].id]: true });
+      }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast.error('Erro ao carregar dados');
@@ -125,7 +193,6 @@ export default function AdminPermissions() {
 
   const updateUserRole = async (userId: string, newRole: AppRole) => {
     try {
-      // Verificar se já existe uma role
       const { data: existingRole } = await supabase
         .from('user_roles')
         .select('id')
@@ -133,7 +200,6 @@ export default function AdminPermissions() {
         .maybeSingle();
 
       if (existingRole) {
-        // Atualizar role existente
         const { error } = await supabase
           .from('user_roles')
           .update({ role: newRole })
@@ -141,7 +207,6 @@ export default function AdminPermissions() {
 
         if (error) throw error;
       } else {
-        // Inserir nova role
         const { error } = await supabase
           .from('user_roles')
           .insert({ user_id: userId, role: newRole });
@@ -277,6 +342,40 @@ export default function AdminPermissions() {
     }
   };
 
+  const toggleEmpresaExpandida = (empresaId: string) => {
+    setEmpresasExpandidas(prev => ({
+      ...prev,
+      [empresaId]: !prev[empresaId]
+    }));
+  };
+
+  const abrirConvidarModal = (empresaId?: string) => {
+    setEmpresaSelecionadaParaConvite(empresaId);
+    setConvidarModalOpen(true);
+  };
+
+  const removerUsuarioEmpresa = async (userEmpresaId: string, isOwner: boolean) => {
+    if (isOwner) {
+      toast.error('Não é possível remover o proprietário da empresa');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_empresas')
+        .delete()
+        .eq('id', userEmpresaId);
+
+      if (error) throw error;
+
+      toast.success('Usuário removido da empresa');
+      fetchData();
+    } catch (error) {
+      console.error('Erro ao remover usuário:', error);
+      toast.error('Erro ao remover usuário');
+    }
+  };
+
   const aprovadoresFiscal = aprovadores.filter(a => a.fluxo_permissao === 'fiscal');
   const aprovadoresOrdem = aprovadores.filter(a => a.fluxo_permissao === 'ordem_servico');
   const aprovadoresOrcamento = aprovadores.filter(a => a.fluxo_permissao === 'orcamento');
@@ -312,13 +411,14 @@ export default function AdminPermissions() {
             Gerenciamento de Permissões
           </h1>
           <p className="text-muted-foreground mt-2">
-            Gerencie roles, permissões e fluxo de aprovações
+            Gerencie roles, permissões, empresas e fluxo de aprovações
           </p>
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="users">Usuários e Roles</TabsTrigger>
+            <TabsTrigger value="empresas">Empresas</TabsTrigger>
             <TabsTrigger value="permissions">Permissões de Menu</TabsTrigger>
             <TabsTrigger value="approvals">Fluxo de Aprovações</TabsTrigger>
           </TabsList>
@@ -370,6 +470,144 @@ export default function AdminPermissions() {
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Aba: Empresas */}
+          <TabsContent value="empresas">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5" />
+                      Empresas e Usuários
+                    </CardTitle>
+                    <CardDescription>
+                      Gerencie empresas e seus usuários vinculados
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => abrirConvidarModal()}>
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Adicionar Usuário
+                    </Button>
+                    <Button onClick={() => setCriarEmpresaModalOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nova Empresa
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {empresasComUsuarios.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhuma empresa cadastrada
+                  </div>
+                ) : (
+                  empresasComUsuarios.map((empresa) => (
+                    <Collapsible 
+                      key={empresa.id}
+                      open={empresasExpandidas[empresa.id]}
+                      onOpenChange={() => toggleEmpresaExpandida(empresa.id)}
+                    >
+                      <div className="border rounded-lg">
+                        <CollapsibleTrigger asChild>
+                          <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50">
+                            <div className="flex items-center gap-3">
+                              {empresasExpandidas[empresa.id] ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                              <Building2 className="h-5 w-5 text-muted-foreground" />
+                              <div>
+                                <p className="font-medium">{empresa.nome}</p>
+                                {empresa.cnpj && (
+                                  <p className="text-sm text-muted-foreground">{empresa.cnpj}</p>
+                                )}
+                              </div>
+                              <Badge variant={empresa.ativo ? 'default' : 'secondary'} className="ml-2">
+                                {empresa.ativo ? 'Ativa' : 'Inativa'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">
+                                {empresa.usuarios.length} usuário(s)
+                              </span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  abrirConvidarModal(empresa.id);
+                                }}
+                              >
+                                <UserPlus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="border-t">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Nome</TableHead>
+                                  <TableHead>Email</TableHead>
+                                  <TableHead>Role</TableHead>
+                                  <TableHead>Tipo</TableHead>
+                                  <TableHead className="text-right">Ações</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {empresa.usuarios.length === 0 ? (
+                                  <TableRow>
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                                      Nenhum usuário vinculado
+                                    </TableCell>
+                                  </TableRow>
+                                ) : (
+                                  empresa.usuarios.map((usuario) => (
+                                    <TableRow key={usuario.id}>
+                                      <TableCell className="font-medium">
+                                        <div className="flex items-center gap-2">
+                                          {usuario.user_nome}
+                                          {usuario.is_owner && (
+                                            <Crown className="h-4 w-4 text-yellow-500" />
+                                          )}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>{usuario.user_email}</TableCell>
+                                      <TableCell>{getRoleBadge(usuario.user_role)}</TableCell>
+                                      <TableCell>
+                                        <Badge variant={usuario.is_owner ? 'default' : 'outline'}>
+                                          {usuario.is_owner ? 'Proprietário' : 'Membro'}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          onClick={() => removerUsuarioEmpresa(usuario.id, usuario.is_owner)}
+                                          disabled={usuario.is_owner}
+                                          title={usuario.is_owner ? 'Não é possível remover o proprietário' : 'Remover usuário da empresa'}
+                                        >
+                                          <Trash2 className={`h-4 w-4 ${usuario.is_owner ? 'text-muted-foreground' : 'text-destructive'}`} />
+                                        </Button>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+                  ))
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -699,6 +937,21 @@ export default function AdminPermissions() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Modal de Convidar Usuário */}
+        <ConvidarUsuarioModal 
+          open={convidarModalOpen}
+          onOpenChange={setConvidarModalOpen}
+          empresaId={empresaSelecionadaParaConvite}
+          onSuccess={fetchData}
+        />
+
+        {/* Modal de Criar Empresa */}
+        <CriarEmpresaModal 
+          open={criarEmpresaModalOpen}
+          onOpenChange={setCriarEmpresaModalOpen}
+          onSuccess={fetchData}
+        />
       </div>
     </AppLayout>
   );
