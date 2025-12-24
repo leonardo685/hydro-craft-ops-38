@@ -1167,7 +1167,7 @@ export default function Orcamentos() {
                        hover:-translate-y-1 cursor-pointer"
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-muted-foreground">Aguardando Aprovação</h3>
+              <h3 className="text-sm font-medium text-muted-foreground">{t('orcamentos.awaitingApproval')}</h3>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="mt-4 flex items-end justify-between">
@@ -1183,7 +1183,7 @@ export default function Orcamentos() {
                 <p className="text-xs text-muted-foreground mt-1">
                   {useMemo(() => {
                     return orcamentos.filter(o => o.status === 'pendente').length;
-                  }, [orcamentos])} orçamento(s)
+                  }, [orcamentos])} {t('orcamentos.quotes')}
                 </p>
               </div>
               <div className="h-12 w-28">
@@ -1251,7 +1251,7 @@ export default function Orcamentos() {
                        hover:-translate-y-1 cursor-pointer"
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-muted-foreground">Aprovados</h3>
+              <h3 className="text-sm font-medium text-muted-foreground">{t('orcamentos.approved')}</h3>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="mt-4 flex items-end justify-between">
@@ -1267,7 +1267,7 @@ export default function Orcamentos() {
                 <p className="text-xs text-muted-foreground mt-1">
                   {useMemo(() => {
                     return orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').length;
-                  }, [orcamentos])} orçamento(s)
+                  }, [orcamentos])} {t('orcamentos.quotes')}
                 </p>
               </div>
               <div className="h-12 w-28">
@@ -1335,7 +1335,7 @@ export default function Orcamentos() {
                        hover:-translate-y-1 cursor-pointer"
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-muted-foreground">Reprovados</h3>
+              <h3 className="text-sm font-medium text-muted-foreground">{t('orcamentos.rejected')}</h3>
               <XCircle className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="mt-4 flex items-end justify-between">
@@ -1351,7 +1351,7 @@ export default function Orcamentos() {
                 <p className="text-xs text-muted-foreground mt-1">
                   {useMemo(() => {
                     return orcamentos.filter(o => o.status === 'rejeitado').length;
-                  }, [orcamentos])} orçamento(s)
+                  }, [orcamentos])} {t('orcamentos.quotes')}
                 </p>
               </div>
               <div className="h-12 w-28">
@@ -1419,7 +1419,7 @@ export default function Orcamentos() {
                        hover:-translate-y-1 cursor-pointer"
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-muted-foreground">Total do Ano</h3>
+              <h3 className="text-sm font-medium text-muted-foreground">{t('orcamentos.totalYear')}</h3>
               <FileCheck className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="mt-4 flex items-end justify-between">
@@ -1434,7 +1434,7 @@ export default function Orcamentos() {
                   }, [orcamentos])}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  orçamentos em {new Date().getFullYear()}
+                  {t('orcamentos.quotesInYear')} {new Date().getFullYear()}
                 </p>
               </div>
               <div className="h-12 w-28">
@@ -1497,7 +1497,7 @@ export default function Orcamentos() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Filtro por Data Início */}
               <div className="space-y-2">
-                <Label htmlFor="data-inicio">Data Início</Label>
+                <Label htmlFor="data-inicio">{t('common.startDate')}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -1509,7 +1509,7 @@ export default function Orcamentos() {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dataInicio ? format(dataInicio, "PPP", { locale: ptBR }) : "Selecione..."}
+                      {dataInicio ? format(dataInicio, "PPP", { locale: ptBR }) : t('orcamentos.select')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -1525,7 +1525,7 @@ export default function Orcamentos() {
 
               {/* Filtro por Data Fim */}
               <div className="space-y-2">
-                <Label htmlFor="data-fim">Data Fim</Label>
+                <Label htmlFor="data-fim">{t('common.endDate')}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -1537,7 +1537,7 @@ export default function Orcamentos() {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dataFim ? format(dataFim, "PPP", { locale: ptBR }) : "Selecione..."}
+                      {dataFim ? format(dataFim, "PPP", { locale: ptBR }) : t('orcamentos.select')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -1553,10 +1553,10 @@ export default function Orcamentos() {
 
               {/* Filtro por Cliente */}
               <div className="space-y-2">
-                <Label htmlFor="filtro-cliente">Cliente</Label>
+                <Label htmlFor="filtro-cliente">{t('common.client')}</Label>
                 <Input
                   id="filtro-cliente"
-                  placeholder="Nome do cliente..."
+                  placeholder={t('orcamentos.clientName')}
                   value={filtroCliente}
                   onChange={(e) => setFiltroCliente(e.target.value)}
                 />
@@ -1564,10 +1564,10 @@ export default function Orcamentos() {
 
               {/* Filtro por Número */}
               <div className="space-y-2">
-                <Label htmlFor="filtro-numero">Número do Orçamento</Label>
+                <Label htmlFor="filtro-numero">{t('orcamentos.quoteNumber')}</Label>
                 <Input
                   id="filtro-numero"
-                  placeholder="Ex: 2024-001"
+                  placeholder={t('orcamentos.exampleNumber')}
                   value={filtroNumero}
                   onChange={(e) => setFiltroNumero(e.target.value)}
                 />
@@ -1588,7 +1588,7 @@ export default function Orcamentos() {
                   }}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Limpar Filtros
+                  {t('common.clearFilters')}
                 </Button>
               </div>
             )}
@@ -1597,10 +1597,10 @@ export default function Orcamentos() {
 
         <Tabs defaultValue="pendente" className="space-y-4">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="pendente">Aguardando Aprovação</TabsTrigger>
-            <TabsTrigger value="aprovado">Aprovados</TabsTrigger>
-            <TabsTrigger value="finalizado">Finalizados</TabsTrigger>
-            <TabsTrigger value="rejeitado">Reprovados</TabsTrigger>
+            <TabsTrigger value="pendente">{t('orcamentos.awaitingApproval')}</TabsTrigger>
+            <TabsTrigger value="aprovado">{t('orcamentos.approved')}</TabsTrigger>
+            <TabsTrigger value="finalizado">{t('orcamentos.finalized')}</TabsTrigger>
+            <TabsTrigger value="rejeitado">{t('orcamentos.rejected')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pendente" className="space-y-4">
