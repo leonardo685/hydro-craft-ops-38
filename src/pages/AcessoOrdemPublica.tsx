@@ -153,6 +153,7 @@ export default function AcessoOrdemPublica() {
             telefone: telefoneFormatado,
             ip_acesso: ipAcesso,
             user_agent: userAgent,
+            // empresa_id será null para acesso público
           });
 
         if (insertError) throw insertError;

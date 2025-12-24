@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Plus, Minus, FileDown, Upload, Image, Trash2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 import {
   calcularImpostos,
   calcularComissao,
@@ -28,6 +29,7 @@ interface PrecificacaoModalProps {
 }
 
 export function PrecificacaoModal({ open, onClose, orcamento, onSave }: PrecificacaoModalProps) {
+  const { empresaAtual } = useEmpresa();
   const [precoDesejado, setPrecoDesejado] = useState(0);
   const [descontoPercentual, setDescontoPercentual] = useState(0);
   const [impostosPercentual, setImpostosPercentual] = useState(16);
@@ -179,7 +181,8 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
             arquivo_url: uploadData.path,
             nome_arquivo: file.name,
             tipo: 'precificacao',
-            apresentar_orcamento: false
+            apresentar_orcamento: false,
+            empresa_id: empresaAtual?.id
           });
 
         if (dbError) throw dbError;
@@ -281,6 +284,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
             total_custos_variaveis: orcamentoAtual.total_custos_variaveis,
             margem_contribuicao: orcamentoAtual.margem_contribuicao,
             percentual_margem: orcamentoAtual.percentual_margem,
+            empresa_id: empresaAtual?.id
           });
         
         if (errorHistorico) {

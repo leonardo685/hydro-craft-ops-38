@@ -16,6 +16,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 
 interface Cliente {
   id: string;
@@ -50,6 +51,7 @@ interface Fornecedor {
 const Cadastros = () => {
   const location = useLocation();
   const { limparTodosLancamentos } = useLancamentosFinanceiros();
+  const { empresaAtual } = useEmpresa();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [showClienteForm, setShowClienteForm] = useState(false);
@@ -273,7 +275,8 @@ const Cadastros = () => {
           data_entrada: new Date().toISOString(),
           urgente: false,
           na_empresa: false,
-          status: 'placeholder'
+          status: 'placeholder',
+          empresa_id: empresaAtual?.id
         }]);
       if (placeholderError) throw placeholderError;
 
@@ -305,7 +308,7 @@ const Cadastros = () => {
       } else {
         const { error } = await supabase
           .from('clientes')
-          .insert([clienteForm]);
+          .insert([{ ...clienteForm, empresa_id: empresaAtual?.id }]);
         
         if (error) throw error;
         toast.success('Cliente cadastrado com sucesso');
@@ -337,7 +340,7 @@ const Cadastros = () => {
       } else {
         const { error } = await supabase
           .from('fornecedores')
-          .insert([fornecedorForm]);
+          .insert([{ ...fornecedorForm, empresa_id: empresaAtual?.id }]);
         
         if (error) throw error;
         toast.success('Fornecedor cadastrado com sucesso');
