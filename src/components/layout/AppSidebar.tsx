@@ -122,14 +122,14 @@ export function AppSidebar() {
           />
           <div>
             <h2 className="text-lg font-semibold text-sidebar-foreground">FixZys</h2>
-            <p className="text-sm text-sidebar-foreground/70">Sistema de Gestão</p>
+            <p className="text-sm text-sidebar-foreground/70">{t('menu.managementSystem')}</p>
           </div>
         </div>
       </SidebarHeader>
       
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Sistema de Gestão</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('menu.managementSystem')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredMenuItems.map((item) => (

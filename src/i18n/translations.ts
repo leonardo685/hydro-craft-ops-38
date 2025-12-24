@@ -12,11 +12,12 @@ export const translations = {
       lancamentos: 'Lançamentos',
       dfc: 'DFC',
       dre: 'DRE',
-      metaGastos: 'Meta de Gastos',
+      metaGastos: 'Planejamento',
       cadastros: 'Cadastros',
       permissoes: 'Gerenciar Permissões',
       configuracoes: 'Configurações',
       sair: 'Sair',
+      managementSystem: 'Sistema de Gestão',
     },
     // Common
     common: {
@@ -27,6 +28,7 @@ export const translations = {
       add: 'Adicionar',
       search: 'Buscar',
       filter: 'Filtrar',
+      filters: 'Filtros',
       export: 'Exportar',
       import: 'Importar',
       loading: 'Carregando...',
@@ -49,6 +51,13 @@ export const translations = {
       category: 'Categoria',
       client: 'Cliente',
       equipment: 'Equipamento',
+      clearFilters: 'Limpar Filtros',
+      new: 'Novo',
+      view: 'Visualizar',
+      details: 'Detalhes',
+      startDate: 'Data Início',
+      endDate: 'Data Fim',
+      selectDate: 'Selecionar data',
     },
     // Settings page
     settings: {
@@ -67,14 +76,32 @@ export const translations = {
       title: 'Dashboard',
       welcome: 'Bem-vindo ao FixZys',
       subtitle: 'Sistema de Gestão',
+      currentBalance: 'Saldo Atual',
+      revenue: 'Faturamento',
+      contributionMargin: 'Margem de Contribuição',
+      netProfit: 'Lucro Líquido',
+      period: 'Período',
+      month: 'Mês',
+      quarter: 'Trimestre',
+      year: 'Ano',
+      financialEvolution: 'Evolução Financeira',
+      selectMetrics: 'Selecione as métricas',
+      expensesByCategory: 'Despesas por Categoria',
+      quotesByStatus: 'Orçamentos por Status',
+      periodRevenue: 'Faturamento do Período',
     },
     // Recebimentos
     recebimentos: {
-      title: 'Recebimentos',
+      title: 'Estoque de Terceiros',
+      subtitle: 'Equipamentos em estoque para análise e reparo',
       new: 'Novo Recebimento',
-      orderNumber: 'Número da Ordem',
+      newInvoice: 'Nova Nota Fiscal',
+      orderNumber: 'Nº da Ordem',
       entryDate: 'Data de Entrada',
       equipmentType: 'Tipo de Equipamento',
+      orders: 'Ordens',
+      finished: 'Finalizadas',
+      invoices: 'Notas Fiscais',
     },
     // Análise
     analise: {
@@ -85,12 +112,20 @@ export const translations = {
     // Orçamentos
     orcamentos: {
       title: 'Orçamentos',
+      subtitle: 'Gerencie seus orçamentos',
       new: 'Novo Orçamento',
       number: 'Número',
       totalValue: 'Valor Total',
-      pending: 'Pendente',
-      approved: 'Aprovado',
-      rejected: 'Rejeitado',
+      pending: 'Pendentes',
+      approved: 'Aprovados',
+      rejected: 'Rejeitados',
+      inNegotiation: 'Em Negociação',
+      all: 'Todos',
+      createFromOrder: 'Criar a partir de Ordem',
+      createNew: 'Criar Novo',
+      selectOrder: 'Selecionar Ordem de Serviço',
+      searchOrder: 'Buscar ordem de serviço...',
+      linkedOrders: 'Ordens Vinculadas',
     },
     // Financeiro
     financeiro: {
@@ -103,6 +138,7 @@ export const translations = {
       dueDate: 'Data de Vencimento',
       paid: 'Pago',
       unpaid: 'Não Pago',
+      transfer: 'Transferência',
     },
     // Meta de Gastos
     metaGastos: {
@@ -149,6 +185,7 @@ export const translations = {
       permissoes: 'Manage Permissions',
       configuracoes: 'Settings',
       sair: 'Sign Out',
+      managementSystem: 'Management System',
     },
     // Common
     common: {
@@ -159,6 +196,7 @@ export const translations = {
       add: 'Add',
       search: 'Search',
       filter: 'Filter',
+      filters: 'Filters',
       export: 'Export',
       import: 'Import',
       loading: 'Loading...',
@@ -181,6 +219,13 @@ export const translations = {
       category: 'Category',
       client: 'Client',
       equipment: 'Equipment',
+      clearFilters: 'Clear Filters',
+      new: 'New',
+      view: 'View',
+      details: 'Details',
+      startDate: 'Start Date',
+      endDate: 'End Date',
+      selectDate: 'Select date',
     },
     // Settings page
     settings: {
@@ -199,14 +244,32 @@ export const translations = {
       title: 'Dashboard',
       welcome: 'Welcome to FixZys',
       subtitle: 'Management System',
+      currentBalance: 'Current Balance',
+      revenue: 'Revenue',
+      contributionMargin: 'Contribution Margin',
+      netProfit: 'Net Profit',
+      period: 'Period',
+      month: 'Month',
+      quarter: 'Quarter',
+      year: 'Year',
+      financialEvolution: 'Financial Evolution',
+      selectMetrics: 'Select metrics',
+      expensesByCategory: 'Expenses by Category',
+      quotesByStatus: 'Quotes by Status',
+      periodRevenue: 'Period Revenue',
     },
     // Recebimentos
     recebimentos: {
-      title: 'Receipts',
+      title: 'Third Party Stock',
+      subtitle: 'Equipment in stock for analysis and repair',
       new: 'New Receipt',
-      orderNumber: 'Order Number',
+      newInvoice: 'New Invoice',
+      orderNumber: 'Order #',
       entryDate: 'Entry Date',
       equipmentType: 'Equipment Type',
+      orders: 'Orders',
+      finished: 'Finished',
+      invoices: 'Invoices',
     },
     // Análise
     analise: {
@@ -217,12 +280,20 @@ export const translations = {
     // Orçamentos
     orcamentos: {
       title: 'Quotes',
+      subtitle: 'Manage your quotes',
       new: 'New Quote',
       number: 'Number',
       totalValue: 'Total Value',
       pending: 'Pending',
       approved: 'Approved',
       rejected: 'Rejected',
+      inNegotiation: 'In Negotiation',
+      all: 'All',
+      createFromOrder: 'Create from Order',
+      createNew: 'Create New',
+      selectOrder: 'Select Service Order',
+      searchOrder: 'Search service order...',
+      linkedOrders: 'Linked Orders',
     },
     // Financeiro
     financeiro: {
@@ -235,6 +306,7 @@ export const translations = {
       dueDate: 'Due Date',
       paid: 'Paid',
       unpaid: 'Unpaid',
+      transfer: 'Transfer',
     },
     // Meta de Gastos
     metaGastos: {
