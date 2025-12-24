@@ -14,6 +14,7 @@ import { useRecebimentos } from "@/hooks/use-recebimentos";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 
 const NovaOrdemServico = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const NovaOrdemServico = () => {
   const [recebimento, setRecebimento] = useState<any>(null);
   const [ordemExistente, setOrdemExistente] = useState<any>(null);
   const [isEdicao, setIsEdicao] = useState(false);
+  const { empresaAtual } = useEmpresa();
   
   const [formData, setFormData] = useState({
     tecnico: "",
@@ -1380,7 +1382,8 @@ const NovaOrdemServico = () => {
                 servicos_necessarios: servicosSelecionados,
                 usinagem_necessaria: usinagemSelecionada,
                 tempo_estimado: formData.prazoEstimado,
-                observacoes_tecnicas: formData.observacoes
+                observacoes_tecnicas: formData.observacoes,
+                empresa_id: empresaAtual?.id || null
               })
               .select()
               .single();
@@ -1492,7 +1495,8 @@ const NovaOrdemServico = () => {
                   recebimento_id: recebimento.id,
                   arquivo_url: publicUrl,
                   nome_arquivo: fileName,
-                  apresentar_orcamento: true
+                  apresentar_orcamento: true,
+                  empresa_id: empresaAtual?.id || null
                 });
               
               console.log(`Foto de chegada ${i + 1} salva com apresentar_orcamento = true`);
@@ -1572,7 +1576,8 @@ const NovaOrdemServico = () => {
                   recebimento_id: recebimento.id,
                   arquivo_url: publicUrl,
                   nome_arquivo: fileName,
-                  apresentar_orcamento: false
+                  apresentar_orcamento: false,
+                  empresa_id: empresaAtual?.id || null
                 });
               
               console.log(`Foto de análise ${i + 1} salva com sucesso!`);

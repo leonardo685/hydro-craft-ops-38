@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FotoEquipamento } from "@/hooks/use-recebimentos";
 import jsPDF from "jspdf";
 import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 interface ItemOrcamento {
   id: string;
   tipo: 'peca' | 'servico' | 'usinagem';
@@ -39,6 +40,7 @@ export default function NovoOrcamento() {
   const analiseId = searchParams.get('analiseId');
   const ordemServicoId = searchParams.get('ordemServicoId');
   const orcamentoParaEdicao = location.state?.orcamento;
+  const { empresaAtual } = useEmpresa();
   
   // Usar ref para persistir o orçamento e evitar perda de dados em re-renders
   const orcamentoRef = useRef(orcamentoParaEdicao);
@@ -1182,7 +1184,8 @@ export default function NovoOrcamento() {
         assunto_proposta: informacoesComerciais.assuntoProposta || null,
         frete: informacoesComerciais.frete || 'CIF',
         garantia: informacoesComerciais.garantia || null,
-        validade_proposta: informacoesComerciais.validadeProposta || null
+        validade_proposta: informacoesComerciais.validadeProposta || null,
+        empresa_id: empresaAtual?.id || null
       };
 
       let response;
@@ -1256,7 +1259,8 @@ export default function NovoOrcamento() {
         quantidade: item.quantidade,
         valor_unitario: item.valorUnitario,
         valor_total: item.valorTotal,
-        detalhes: item.detalhes || null
+        detalhes: item.detalhes || null,
+        empresa_id: empresaAtual?.id || null
       }));
 
       if (itensParaInserir.length > 0) {
@@ -1290,7 +1294,8 @@ export default function NovoOrcamento() {
           arquivo_url: foto.arquivo_url,
           nome_arquivo: foto.nome_arquivo,
           apresentar_orcamento: foto.apresentar_orcamento || false,
-          legenda: foto.legenda || null
+          legenda: foto.legenda || null,
+          empresa_id: empresaAtual?.id || null
         }));
 
         if (fotosParaInserir.length > 0) {

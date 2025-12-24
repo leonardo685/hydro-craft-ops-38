@@ -16,6 +16,7 @@ import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { useContasBancarias } from "@/hooks/use-contas-bancarias";
 import { Checkbox } from "@/components/ui/checkbox";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 
 interface EmitirNotaModalProps {
   open: boolean;
@@ -32,6 +33,7 @@ export default function EmitirNotaModal({
 }: EmitirNotaModalProps) {
   const { getCategoriasForSelect, categorias } = useCategoriasFinanceiras();
   const { getContasForSelect } = useContasBancarias();
+  const { empresaAtual } = useEmpresa();
   const [etapa, setEtapa] = useState<'dados' | 'nota_fiscal' | 'contas_receber'>('dados');
   const [numeroNF, setNumeroNF] = useState('');
   const [anexoNota, setAnexoNota] = useState<File | null>(null);
@@ -316,7 +318,8 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
               data_realizada: null,
               pago: false,
               fornecedor_cliente: lancamentoForm.fornecedor,
-              parcela_numero: i + 1
+              parcela_numero: i + 1,
+              empresa_id: empresaAtual?.id || null
             });
 
           if (lancamentoError) {
@@ -336,7 +339,8 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
               data_vencimento: dataVencimento.toISOString().split('T')[0],
               forma_pagamento: lancamentoForm.conta.includes('corrente') ? 'transferencia' : 'boleto',
               observacoes: descricaoParcela,
-              status: 'pendente'
+              status: 'pendente',
+              empresa_id: empresaAtual?.id || null
             });
 
           if (contaReceberError) {
@@ -364,7 +368,8 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
             data_esperada: lancamentoForm.dataEsperada.toISOString(),
             data_realizada: null,
             pago: false,
-            fornecedor_cliente: lancamentoForm.fornecedor
+            fornecedor_cliente: lancamentoForm.fornecedor,
+            empresa_id: empresaAtual?.id || null
           });
 
         if (lancamentoError) {
@@ -384,7 +389,8 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
             data_vencimento: lancamentoForm.dataEsperada.toISOString().split('T')[0],
             forma_pagamento: lancamentoForm.conta.includes('corrente') ? 'transferencia' : 'boleto',
             observacoes: lancamentoForm.descricao,
-            status: 'pendente'
+            status: 'pendente',
+            empresa_id: empresaAtual?.id || null
           });
 
         if (contaReceberError) {
