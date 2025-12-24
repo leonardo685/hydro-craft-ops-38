@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useEmpresaId } from '@/hooks/use-empresa-id';
 
 export interface ContaBancaria {
   id: string;
@@ -17,6 +18,7 @@ export interface ContaBancaria {
 export const useContasBancarias = () => {
   const [contas, setContas] = useState<ContaBancaria[]>([]);
   const [loading, setLoading] = useState(true);
+  const { empresaId } = useEmpresaId();
 
   const fetchContas = async () => {
     try {
@@ -44,7 +46,7 @@ export const useContasBancarias = () => {
     try {
       const { data, error } = await supabase
         .from('contas_bancarias')
-        .insert([conta])
+        .insert([{ ...conta, empresa_id: empresaId }])
         .select()
         .single();
 

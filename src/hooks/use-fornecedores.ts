@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useEmpresaId } from '@/hooks/use-empresa-id';
 
 export interface Fornecedor {
   id: string;
@@ -23,6 +24,7 @@ export const useFornecedores = () => {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { empresaId } = useEmpresaId();
 
   const carregarFornecedores = async () => {
     try {
@@ -48,7 +50,7 @@ export const useFornecedores = () => {
     try {
       const { data, error } = await supabase
         .from('fornecedores')
-        .insert([dadosFornecedor])
+        .insert([{ ...dadosFornecedor, empresa_id: empresaId }])
         .select()
         .single();
 

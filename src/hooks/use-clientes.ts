@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useEmpresaId } from '@/hooks/use-empresa-id';
 
 export interface Cliente {
   id: string;
@@ -23,6 +24,7 @@ export const useClientes = () => {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { empresaId } = useEmpresaId();
 
   const carregarClientes = async () => {
     try {
@@ -48,7 +50,7 @@ export const useClientes = () => {
     try {
       const { data, error } = await supabase
         .from('clientes')
-        .insert([dadosCliente])
+        .insert([{ ...dadosCliente, empresa_id: empresaId }])
         .select()
         .single();
 

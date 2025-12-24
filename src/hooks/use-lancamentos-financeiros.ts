@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useEmpresaId } from '@/hooks/use-empresa-id';
 
 export interface LancamentoFinanceiro {
   id: string;
@@ -27,6 +28,7 @@ export interface LancamentoFinanceiro {
 export const useLancamentosFinanceiros = () => {
   const [lancamentos, setLancamentos] = useState<LancamentoFinanceiro[]>([]);
   const [loading, setLoading] = useState(true);
+  const { empresaId } = useEmpresaId();
 
   const fetchLancamentos = async () => {
     try {
@@ -97,6 +99,7 @@ export const useLancamentosFinanceiros = () => {
           frequencia_repeticao: lancamento.frequenciaRepeticao || null,
           lancamento_pai_id: lancamento.lancamentoPaiId || null,
           meses_recorrencia: lancamento.mesesRecorrencia || null,
+          empresa_id: empresaId,
         })
         .select()
         .single();

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useEmpresaId } from '@/hooks/use-empresa-id';
 
 export interface MetaGasto {
   id: string;
@@ -16,6 +17,7 @@ export interface MetaGasto {
 export const useMetasGastos = (modeloGestao?: 'dre' | 'esperado' | 'realizado') => {
   const [metas, setMetas] = useState<MetaGasto[]>([]);
   const [loading, setLoading] = useState(true);
+  const { empresaId } = useEmpresaId();
 
   const fetchMetas = async () => {
     try {
@@ -70,7 +72,8 @@ export const useMetasGastos = (modeloGestao?: 'dre' | 'esperado' | 'realizado') 
           data_inicio: meta.dataInicio.toISOString(),
           data_fim: meta.dataFim.toISOString(),
           observacoes: meta.observacoes || null,
-          modelo_gestao: meta.modeloGestao
+          modelo_gestao: meta.modeloGestao,
+          empresa_id: empresaId
         });
 
       if (error) throw error;
