@@ -4,12 +4,15 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { ReactNode } from "react";
 import fixzysLogo from "@/assets/fixzys-logo.png";
 import { MorphPanel } from "@/components/ui/ai-input";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const { t } = useLanguage();
+
   return (
     <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen flex w-full bg-background">
@@ -29,7 +32,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     FixZys
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Sistema de Gestão
+                    {t('dashboard.subtitle')}
                   </p>
                 </div>
               </div>
