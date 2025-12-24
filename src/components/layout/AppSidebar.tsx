@@ -51,12 +51,15 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useEmpresa } from "@/contexts/EmpresaContext";
+import { EmpresaSelector } from "@/components/EmpresaSelector";
 
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { hasPermission, signOut, userRole } = useAuth();
   const { t } = useLanguage();
+  const { empresaAtual, empresas } = useEmpresa();
 
   const menuItems = [
     {
@@ -189,50 +192,59 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       
-      <SidebarFooter className="p-4 border-t border-sidebar-border">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-sidebar-accent transition-smooth">
-              <Building2 className="h-4 w-4 text-sidebar-foreground/70" />
-              <div className="text-sm text-sidebar-foreground/70 flex-1 text-left">
-                <p className="font-medium">Sua Empresa</p>
-                <p className="text-xs capitalize">{userRole || 'Sistema ERP'}</p>
-              </div>
-              <ChevronUp className="h-4 w-4 text-sidebar-foreground/70" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent 
-            side="top" 
-            align="start" 
-            className="w-56 mb-2"
-          >
-            {hasPermission('cadastros') && (
-              <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/cadastros')}>
-              <Users className="mr-2 h-4 w-4" />
-              <span>{t('menu.cadastros')}</span>
-            </DropdownMenuItem>
-            )}
-            {hasPermission('admin_permissions') && (
-              <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/admin/permissions')}>
-              <Shield className="mr-2 h-4 w-4" />
-              <span>{t('menu.permissoes')}</span>
-            </DropdownMenuItem>
-            )}
-            <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/historico-lancamentos')}>
-              <History className="mr-2 h-4 w-4" />
-              <span>Histórico de Lançamentos</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/configuracoes')}>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>{t('menu.configuracoes')}</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer text-destructive" onClick={signOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>{t('menu.sair')}</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <SidebarFooter className="border-t border-sidebar-border">
+        {/* Seletor de Empresa */}
+        {empresas.length > 0 && (
+          <div className="px-2 py-3 border-b border-sidebar-border">
+            <EmpresaSelector />
+          </div>
+        )}
+        
+        <div className="p-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-sidebar-accent transition-smooth">
+                <Building2 className="h-4 w-4 text-sidebar-foreground/70" />
+                <div className="text-sm text-sidebar-foreground/70 flex-1 text-left">
+                  <p className="font-medium truncate">{empresaAtual?.nome || 'Sua Empresa'}</p>
+                  <p className="text-xs capitalize">{userRole || 'Sistema ERP'}</p>
+                </div>
+                <ChevronUp className="h-4 w-4 text-sidebar-foreground/70" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              side="top" 
+              align="start" 
+              className="w-56 mb-2"
+            >
+              {hasPermission('cadastros') && (
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/cadastros')}>
+                <Users className="mr-2 h-4 w-4" />
+                <span>{t('menu.cadastros')}</span>
+              </DropdownMenuItem>
+              )}
+              {hasPermission('admin_permissions') && (
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/admin/permissions')}>
+                <Shield className="mr-2 h-4 w-4" />
+                <span>{t('menu.permissoes')}</span>
+              </DropdownMenuItem>
+              )}
+              <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/historico-lancamentos')}>
+                <History className="mr-2 h-4 w-4" />
+                <span>Histórico de Lançamentos</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/configuracoes')}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>{t('menu.configuracoes')}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer text-destructive" onClick={signOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>{t('menu.sair')}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
