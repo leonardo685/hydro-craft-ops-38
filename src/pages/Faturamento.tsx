@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface NotaFaturada {
   id: string;
@@ -26,6 +27,7 @@ interface NotaFaturada {
 }
 
 export default function Faturamento() {
+  const { t } = useLanguage();
   const [orcamentosEmFaturamento, setOrcamentosEmFaturamento] = useState<any[]>([]);
   const [orcamentosFinalizados, setOrcamentosFinalizados] = useState<Orcamento[]>([]);
   const [notasFaturadas, setNotasFaturadas] = useState<NotaFaturada[]>([]);
@@ -245,14 +247,14 @@ export default function Faturamento() {
       window.URL.revokeObjectURL(downloadUrl);
       
       toast({
-        title: "Download iniciado",
-        description: "O PDF está sendo baixado",
+        title: t('faturamento.downloadStarted'),
+        description: t('faturamento.pdfDownloading'),
       });
     } catch (error) {
       console.error('Erro ao baixar PDF:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível baixar o PDF. Tente novamente.",
+        title: t('messages.error'),
+        description: t('faturamento.downloadError'),
         variant: "destructive",
       });
     }
@@ -394,15 +396,15 @@ export default function Faturamento() {
   const getStatusText = (status: string) => {
     switch (status) {
       case "faturamento":
-        return "Aguardando NF";
+        return t('faturamento.awaitingInvoice');
       case "finalizado":
-        return "Nota Emitida";
+        return t('faturamento.invoiceIssued');
       case "pago":
-        return "Pago";
+        return t('faturamento.paid');
       case "pendente":
-        return "Pendente";
+        return t('faturamento.pending');
       case "vencido":
-        return "Vencido";
+        return t('faturamento.overdue');
       default:
         return status;
     }
@@ -413,9 +415,9 @@ export default function Faturamento() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Faturamento</h2>
+            <h2 className="text-2xl font-bold text-foreground">{t('faturamento.title')}</h2>
             <p className="text-muted-foreground">
-              Controle financeiro e emissão de notas fiscais
+              {t('faturamento.subtitle')}
             </p>
           </div>
         </div>
@@ -429,7 +431,7 @@ export default function Faturamento() {
                   <FileText className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total de Notas de Serviço</p>
+                  <p className="text-sm text-muted-foreground">{t('faturamento.totalServiceNotes')}</p>
                   <p className="text-lg font-semibold text-primary">
                     {totalNotasServico}
                   </p>
@@ -445,7 +447,7 @@ export default function Faturamento() {
                   <Receipt className="h-5 w-5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total de Notas de Venda</p>
+                  <p className="text-sm text-muted-foreground">{t('faturamento.totalSalesNotes')}</p>
                   <p className="text-lg font-semibold text-accent">
                     {totalNotasVenda}
                   </p>
@@ -461,7 +463,7 @@ export default function Faturamento() {
                   <Calendar className="h-5 w-5 text-warning" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Número de Notas de Retorno</p>
+                  <p className="text-sm text-muted-foreground">{t('faturamento.returnNotesCount')}</p>
                   <p className="text-lg font-semibold text-warning">
                     {numeroNotasRetorno}
                   </p>
@@ -477,7 +479,7 @@ export default function Faturamento() {
                   <FileText className="h-5 w-5 text-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Notas Fiscais</p>
+                  <p className="text-sm text-muted-foreground">{t('faturamento.invoices')}</p>
                   <p className="text-lg font-semibold">{totalNotasFiscais}</p>
                 </div>
               </div>

@@ -14,8 +14,10 @@ import { UploadFotosProducaoModal } from "@/components/UploadFotosProducaoModal"
 import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Aprovados() {
+  const { t } = useLanguage();
   const [ordensServico, setOrdensServico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [ordensEmProducao, setOrdensEmProducao] = useState<Set<string>>(new Set());
@@ -72,15 +74,15 @@ export default function Aprovados() {
       }).eq('id', ordemId);
       if (error) throw error;
       toast({
-        title: "Produção iniciada",
-        description: "Ordem de serviço está agora em produção"
+        title: t('aprovados.productionStarted'),
+        description: t('aprovados.orderInProduction')
       });
       loadOrdensAprovadas();
     } catch (error) {
       console.error('Erro ao iniciar produção:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao iniciar produção",
+        title: t('messages.error'),
+        description: t('messages.saveError'),
         variant: "destructive"
       });
     }
@@ -118,15 +120,15 @@ export default function Aprovados() {
   const getEtapaText = (etapa: string) => {
     switch (etapa) {
       case "aguardando_inicio":
-        return "Aguardando Início";
+        return t('aprovados.awaitingStart');
       case "em_producao":
-        return "Em Produção";
+        return t('aprovados.inProduction');
       case "em_teste":
-        return "Em Teste";
+        return t('aprovados.inTest');
       case "finalizado":
-        return "Finalizado";
+        return t('aprovados.finished');
       case "entregue":
-        return "Entregue";
+        return t('aprovados.delivered');
       default:
         return etapa;
     }
@@ -151,24 +153,24 @@ export default function Aprovados() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Ordens Aprovadas</h2>
+            <h2 className="text-2xl font-bold text-foreground">{t('aprovados.title')}</h2>
             <p className="text-muted-foreground">
-              Acompanhamento da produção, entrega e análises aprovadas
+              {t('aprovados.subtitle')}
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline">
               <Package className="h-4 w-4 mr-2" />
-              Relatório de Produção
+              {t('aprovados.productionReport')}
             </Button>
           </div>
         </div>
 
-        {loading ? <div className="text-center py-8">Carregando...</div> : <div className="space-y-4">
+        {loading ? <div className="text-center py-8">{t('common.loading')}</div> : <div className="space-y-4">
             <div>
-              <h3 className="text-xl font-semibold text-foreground">Ordens em Produção</h3>
+              <h3 className="text-xl font-semibold text-foreground">{t('aprovados.ordersInProduction')}</h3>
               <p className="text-muted-foreground">
-                Análises técnicas aprovadas e em diferentes etapas de produção ({ordensServico.length})
+                {t('aprovados.productionSubtitle')} ({ordensServico.length})
               </p>
             </div>
 
@@ -195,7 +197,7 @@ export default function Aprovados() {
                               </span>
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
-                                Aprovado em: {new Date(ordem.updated_at).toLocaleDateString('pt-BR')}
+                                {t('aprovados.approvedOn')}: {new Date(ordem.updated_at).toLocaleDateString('pt-BR')}
                               </span>
                             </CardDescription>
                           </div>
@@ -208,7 +210,7 @@ export default function Aprovados() {
                     <CardContent className="space-y-4">
                       <div className="grid md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
                         <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Prazo de Entrega</p>
+                          <p className="text-sm text-muted-foreground">{t('aprovados.deliveryDeadline')}</p>
                           <input type="date" className="text-lg font-semibold bg-transparent border-none text-center outline-none" defaultValue={ordem.tempo_estimado || ordem.prazo_entrega || ''} onChange={async e => {
                     // Salvar a data no banco
                     try {
@@ -227,28 +229,28 @@ export default function Aprovados() {
                   }} />
                         </div>
                         <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Técnico</p>
+                          <p className="text-sm text-muted-foreground">{t('aprovados.technician')}</p>
                           <p className="text-lg font-semibold">
-                            {ordem.tecnico || 'Não atribuído'}
+                            {ordem.tecnico || t('aprovados.notAssigned')}
                           </p>
                         </div>
                       </div>
 
                       {ordem.observacoes_tecnicas && <div className="p-3 bg-muted/50 rounded-lg">
-                          <h5 className="text-sm font-medium text-foreground mb-1">Observações Técnicas:</h5>
+                          <h5 className="text-sm font-medium text-foreground mb-1">{t('aprovados.technicalNotes')}:</h5>
                           <p className="text-sm text-muted-foreground">{ordem.observacoes_tecnicas}</p>
                         </div>}
 
                       <div className="flex flex-wrap gap-2 pt-2">
                         {ordem.status === 'aprovada' ? <Button variant="outline" size="sm" onClick={() => iniciarProducao(ordem.id)}>
                             <Play className="h-4 w-4 mr-2" />
-                            Iniciar Produção
+                            {t('aprovados.startProduction')}
                           </Button> : ordem.status === 'em_producao' ? (
                             ordem.recebimentos?.categoria_equipamento === 'cilindro' ? (
                               <TesteModal ordem={ordem} onTesteIniciado={() => loadOrdensAprovadas()}>
                                 <Button variant="outline" size="sm">
                                   <Settings className="h-4 w-4 mr-2" />
-                                  Iniciar Teste
+                                  {t('aprovados.startTest')}
                                 </Button>
                               </TesteModal>
                             ) : (
@@ -259,7 +261,7 @@ export default function Aprovados() {
                                 >
                                   <Button variant="outline" size="sm">
                                     <Camera className="h-4 w-4 mr-2" />
-                                    Fotos do Equip.
+                                    {t('aprovados.equipmentPhotos')}
                                   </Button>
                                 </UploadFotosProducaoModal>
                                 <Button variant="outline" size="sm" onClick={() => {
@@ -267,36 +269,36 @@ export default function Aprovados() {
                                   setUploadModalOpen(true);
                                 }}>
                                   <CheckCircle className="h-4 w-4 mr-2" />
-                                  Finalizar
+                                  {t('aprovados.finalize')}
                                 </Button>
                               </>
                             )
                           ) : ordem.status === 'em_teste' ? <Button variant="outline" size="sm" onClick={() => {
                   setOrdemSelecionada(ordem);
                   setUploadModalOpen(true);
-                }}>
+                        }}>
                             <CheckCircle className="h-4 w-4 mr-2" />
-                            Finalizar
+                            {t('aprovados.finalize')}
                           </Button> : null}
                         
-                        <ItemSelectionModal title="Peças Necessárias" items={ordem.pecas_necessarias || []} type="pecas" ordemId={ordem.id}>
+                        <ItemSelectionModal title={t('compras.partsNeeded')} items={ordem.pecas_necessarias || []} type="pecas" ordemId={ordem.id}>
                           <Button variant="outline" size="sm">
                             <Package className="h-4 w-4 mr-2" />
-                            Peças
+                            {t('aprovados.parts')}
                           </Button>
                         </ItemSelectionModal>
 
-                        <ItemSelectionModal title="Usinagem Necessária" items={ordem.usinagem_necessaria || []} type="usinagem" ordemId={ordem.id}>
+                        <ItemSelectionModal title={t('compras.machiningNeeded')} items={ordem.usinagem_necessaria || []} type="usinagem" ordemId={ordem.id}>
                           <Button variant="outline" size="sm">
                             <Settings className="h-4 w-4 mr-2" />
-                            Usinagem
+                            {t('aprovados.machining')}
                           </Button>
                         </ItemSelectionModal>
 
-                        <ItemSelectionModal title="Serviços Necessários" items={ordem.servicos_necessarios || []} type="servicos" ordemId={ordem.id}>
+                        <ItemSelectionModal title={t('aprovados.services')} items={ordem.servicos_necessarios || []} type="servicos" ordemId={ordem.id}>
                           <Button variant="outline" size="sm">
                             <Wrench className="h-4 w-4 mr-2" />
-                            Serviços
+                            {t('aprovados.services')}
                           </Button>
                         </ItemSelectionModal>
                       </div>
