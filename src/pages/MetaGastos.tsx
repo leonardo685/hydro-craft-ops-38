@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Target, Plus, Pencil, Trash2, TrendingUp, TrendingDown, AlertTriangle, ArrowUp, ArrowDown, Calculator, DollarSign, FileDown, Save } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
@@ -22,7 +22,7 @@ import { CalendarIcon } from "lucide-react";
 import { format, endOfMonth, addMonths, endOfYear, differenceInDays } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
-import { useMemo } from "react";
+
 import jsPDF from "jspdf";
 
 interface MetaGasto {
@@ -110,6 +110,28 @@ export default function MetaGastos() {
   const [calcTipo, setCalcTipo] = useState<'despesa' | 'faturamento' | 'despesaNaoOp' | 'investimento'>('despesa');
   const [calcValorBase, setCalcValorBase] = useState('');
   const [calcMultiplicador, setCalcMultiplicador] = useState('1');
+
+  // Carregar planejamento salvo do localStorage ao inicializar
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('planejamento_estrategico');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setPlanejamento({
+          despesasFixas: parsed.despesasFixas || [],
+          faturamentos: parsed.faturamentos || [],
+          despesasNaoOperacionais: parsed.despesasNaoOperacionais || [],
+          investimentos: parsed.investimentos || [],
+          ajusteFaturamento: parsed.ajusteFaturamento || 0,
+          ajusteDespesas: parsed.ajusteDespesas || 0,
+          ajusteMargemContribuicao: parsed.ajusteMargemContribuicao || 30
+        });
+        console.log('Planejamento carregado do localStorage:', parsed);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar planejamento do localStorage:', error);
+    }
+  }, []);
 
   // Calcular valor gasto para cada meta baseado no modelo de gestão selecionado
   const metasComGastos = useMemo(() => {
