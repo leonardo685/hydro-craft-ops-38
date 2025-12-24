@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 
 interface UploadProdutoProntoModalProps {
   open: boolean;
@@ -22,6 +23,7 @@ export function UploadProdutoProntoModal({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const { toast } = useToast();
+  const { empresaAtual } = useEmpresa();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -83,6 +85,7 @@ export function UploadProdutoProntoModal({
             arquivo_url: publicUrl,
             nome_arquivo: fileName,
             apresentar_orcamento: false, // Fotos do produto pronto
+            empresa_id: empresaAtual?.id
           });
 
         if (insertError) {
