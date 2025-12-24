@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ChevronRight, ChevronLeft, Package, Settings, Search } from "lucide-react";
 import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import { EditableItemsModal } from "@/components/EditableItemsModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Compra {
   id: string;
@@ -39,6 +40,7 @@ interface Compra {
 }
 
 export default function Compras() {
+  const { t } = useLanguage();
   const [compras, setCompras] = useState<Compra[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroNumero, setFiltroNumero] = useState("");
@@ -101,10 +103,10 @@ export default function Compras() {
 
       if (error) throw error;
       
-      toast.success("Status atualizado com sucesso!");
+      toast.success(t('compras.statusUpdated'));
       loadCompras();
     } catch (error: any) {
-      toast.error("Erro ao atualizar status: " + error.message);
+      toast.error(t('messages.error') + ": " + error.message);
     }
   };
 
@@ -140,7 +142,7 @@ export default function Compras() {
           <CardContent className="space-y-3">
             {comprasStatus.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Nenhuma compra neste status
+                {t('compras.noPurchasesInStatus')}
               </div>
             ) : (
               comprasStatus.map((compra) => {
@@ -164,12 +166,12 @@ export default function Compras() {
                       </div>
                       
                       <Badge variant="outline">
-                        {pecasCount} {pecasCount === 1 ? 'peça' : 'peças'}
+                        {pecasCount} {pecasCount === 1 ? t('compras.part') : t('compras.parts')}
                       </Badge>
                       
                       <div className="flex flex-wrap gap-2">
                         <EditableItemsModal
-                          title="Peças Necessárias"
+                          title={t('compras.partsNeeded')}
                           type="pecas"
                           ordemId={compra.ordens_servico.id}
                           onUpdate={loadCompras}
@@ -181,12 +183,12 @@ export default function Compras() {
                             className="flex-1"
                           >
                             <Package className="h-4 w-4 mr-2" />
-                            Peças
+                            {t('aprovados.parts')}
                           </Button>
                         </EditableItemsModal>
                         
                         <EditableItemsModal
-                          title="Usinagem Necessária"
+                          title={t('compras.machiningNeeded')}
                           type="usinagem"
                           ordemId={compra.ordens_servico.id}
                           onUpdate={loadCompras}
@@ -198,41 +200,41 @@ export default function Compras() {
                             className="flex-1"
                           >
                             <Settings className="h-4 w-4 mr-2" />
-                            Usinagem
+                            {t('aprovados.machining')}
                           </Button>
                         </EditableItemsModal>
                       </div>
                       
                       <div className="flex gap-2 pt-2">
                         {status !== 'aprovado' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const prevStatus = status === 'cotando' ? 'aprovado' : 'cotando';
-                              updateStatus(compra.id, prevStatus);
-                            }}
-                            className="flex-1"
-                          >
-                            <ChevronLeft className="h-4 w-4 mr-1" />
-                            Voltar
-                          </Button>
-                        )}
-                        
-                        {status !== 'comprado' && (
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              const nextStatus = status === 'aprovado' ? 'cotando' : 'comprado';
-                              updateStatus(compra.id, nextStatus);
-                            }}
-                            className="flex-1"
-                          >
-                            {status === 'aprovado' ? 'Iniciar Cotação' : 'Finalizar Compra'}
-                            <ChevronRight className="h-4 w-4 ml-1" />
-                          </Button>
-                        )}
-                      </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const prevStatus = status === 'cotando' ? 'aprovado' : 'cotando';
+                                updateStatus(compra.id, prevStatus);
+                              }}
+                              className="flex-1"
+                            >
+                              <ChevronLeft className="h-4 w-4 mr-1" />
+                              {t('compras.goBack')}
+                            </Button>
+                          )}
+                          
+                          {status !== 'comprado' && (
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                const nextStatus = status === 'aprovado' ? 'cotando' : 'comprado';
+                                updateStatus(compra.id, nextStatus);
+                              }}
+                              className="flex-1"
+                            >
+                              {status === 'aprovado' ? t('compras.startQuote') : t('compras.finalizePurchase')}
+                              <ChevronRight className="h-4 w-4 ml-1" />
+                            </Button>
+                          )}
+                        </div>
                     </CardContent>
                   </Card>
                 );
@@ -250,7 +252,7 @@ export default function Compras() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Carregando compras...</p>
+            <p className="text-muted-foreground">{t('compras.loadingPurchases')}</p>
           </div>
         </div>
       </AppLayout>
@@ -262,15 +264,15 @@ export default function Compras() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Compras</h1>
+            <h1 className="text-3xl font-bold">{t('compras.title')}</h1>
             <p className="text-muted-foreground">
-              Gestão de compras de peças para ordens de serviço
+              {t('compras.subtitle')}
             </p>
           </div>
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por número..."
+              placeholder={t('compras.searchByNumber')}
               value={filtroNumero}
               onChange={(e) => setFiltroNumero(e.target.value)}
               className="pl-9"
@@ -279,9 +281,9 @@ export default function Compras() {
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-4">
-          {renderColumn('aprovado', 'Aprovado')}
-          {renderColumn('cotando', 'Cotando')}
-          {renderColumn('comprado', 'Comprado')}
+          {renderColumn('aprovado', t('compras.approved'))}
+          {renderColumn('cotando', t('compras.quoting'))}
+          {renderColumn('comprado', t('compras.purchased'))}
         </div>
       </div>
     </AppLayout>
