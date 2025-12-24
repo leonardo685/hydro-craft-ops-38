@@ -50,62 +50,64 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-
-const menuItems = [
-  {
-    title: "Recebimentos",
-    url: "/recebimentos",
-    icon: ClipboardList,
-    permission: "recebimentos",
-  },
-  {
-    title: "Análise",
-    url: "/analise",
-    icon: Search,
-    permission: "analise",
-  },
-  {
-    title: "Orçamentos",
-    url: "/orcamentos",
-    icon: Calculator,
-    permission: "orcamentos",
-  },
-  {
-    title: "Aprovados",
-    url: "/aprovados",
-    icon: CheckCircle,
-    permission: "aprovados",
-  },
-  {
-    title: "Compras",
-    url: "/compras",
-    icon: ShoppingCart,
-    permission: "compras",
-  },
-  {
-    title: "Faturamento",
-    url: "/faturamento",
-    icon: Receipt,
-    permission: "faturamento",
-  },
-  {
-    title: "Financeiro",
-    url: "/financeiro/dashboard",
-    icon: CreditCard,
-    permission: "financeiro",
-    submenu: [
-      { title: "Dashboard", url: "/financeiro/dashboard", permission: "financeiro_dashboard" },
-      { title: "DRE", url: "/financeiro/dre", permission: "financeiro_dre" },
-      { title: "DFC", url: "/financeiro/dfc", permission: "financeiro_dfc" },
-      { title: "Planejamento", url: "/financeiro/meta-gastos", permission: "financeiro_metas" },
-    ]
-  },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { hasPermission, signOut, userRole } = useAuth();
+  const { t } = useLanguage();
+
+  const menuItems = [
+    {
+      title: t('menu.recebimentos'),
+      url: "/recebimentos",
+      icon: ClipboardList,
+      permission: "recebimentos",
+    },
+    {
+      title: t('menu.analise'),
+      url: "/analise",
+      icon: Search,
+      permission: "analise",
+    },
+    {
+      title: t('menu.orcamentos'),
+      url: "/orcamentos",
+      icon: Calculator,
+      permission: "orcamentos",
+    },
+    {
+      title: t('menu.aprovados'),
+      url: "/aprovados",
+      icon: CheckCircle,
+      permission: "aprovados",
+    },
+    {
+      title: t('menu.compras'),
+      url: "/compras",
+      icon: ShoppingCart,
+      permission: "compras",
+    },
+    {
+      title: t('menu.faturamento'),
+      url: "/faturamento",
+      icon: Receipt,
+      permission: "faturamento",
+    },
+    {
+      title: t('menu.financeiro'),
+      url: "/financeiro/dashboard",
+      icon: CreditCard,
+      permission: "financeiro",
+      submenu: [
+        { title: "Dashboard", url: "/financeiro/dashboard", permission: "financeiro_dashboard" },
+        { title: t('menu.dre'), url: "/financeiro/dre", permission: "financeiro_dre" },
+        { title: t('menu.dfc'), url: "/financeiro/dfc", permission: "financeiro_dfc" },
+        { title: t('menu.metaGastos'), url: "/financeiro/meta-gastos", permission: "financeiro_metas" },
+      ]
+    },
+  ];
 
   const filteredMenuItems = menuItems.filter(item => hasPermission(item.permission));
 
@@ -206,15 +208,15 @@ export function AppSidebar() {
           >
             {hasPermission('cadastros') && (
               <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/cadastros')}>
-                <Users className="mr-2 h-4 w-4" />
-                <span>Cadastros</span>
-              </DropdownMenuItem>
+              <Users className="mr-2 h-4 w-4" />
+              <span>{t('menu.cadastros')}</span>
+            </DropdownMenuItem>
             )}
             {hasPermission('admin_permissions') && (
               <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/admin/permissions')}>
-                <Shield className="mr-2 h-4 w-4" />
-                <span>Gerenciar Permissões</span>
-              </DropdownMenuItem>
+              <Shield className="mr-2 h-4 w-4" />
+              <span>{t('menu.permissoes')}</span>
+            </DropdownMenuItem>
             )}
             <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/historico-lancamentos')}>
               <History className="mr-2 h-4 w-4" />
@@ -222,12 +224,12 @@ export function AppSidebar() {
             </DropdownMenuItem>
             <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/configuracoes')}>
               <Settings className="mr-2 h-4 w-4" />
-              <span>Configurações</span>
+              <span>{t('menu.configuracoes')}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="cursor-pointer text-destructive" onClick={signOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Sair</span>
+              <span>{t('menu.sair')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
