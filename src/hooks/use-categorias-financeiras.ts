@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useEmpresaId } from '@/hooks/use-empresa-id';
 
 export interface CategoriaFinanceira {
   id: string;
@@ -23,6 +24,7 @@ const gerarCorAleatoria = (): string => {
 export const useCategoriasFinanceiras = () => {
   const [categorias, setCategorias] = useState<CategoriaFinanceira[]>([]);
   const [loading, setLoading] = useState(true);
+  const { empresaId } = useEmpresaId();
 
   // Buscar categorias do Supabase
   const fetchCategorias = async () => {
@@ -119,7 +121,8 @@ export const useCategoriasFinanceiras = () => {
           tipo: categoria.tipo,
           categoria_mae_id: categoria.categoriaMaeId || null,
           cor: cor,
-          classificacao: categoria.classificacao
+          classificacao: categoria.classificacao,
+          empresa_id: empresaId
         })
         .select()
         .single();
