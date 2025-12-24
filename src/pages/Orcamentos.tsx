@@ -24,6 +24,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { translations } from "@/i18n/translations";
 
 // Custom Tooltip for mini charts (valores monetários)
 const CustomTooltip = ({ active, payload }: any) => {
@@ -283,13 +284,26 @@ export default function Orcamentos() {
     });
   };
 
-  const gerarPDFOrcamento = async (orcamento: any) => {
+  const gerarPDFOrcamento = async (orcamento: any, language: 'pt-BR' | 'en' = 'pt-BR') => {
     try {
       const EMPRESA_INFO = {
         nome: "MEC-HIDRO MECANICA E HIDRAULICA LTDA",
         cnpj: "03.328.334/0001-87",
         telefone: "(19) 3026-6227",
         email: "contato@mechidro.com.br"
+      };
+
+      // Get translations based on language
+      const pdfT = translations[language].pdf;
+      const locale = language === 'en' ? 'en-US' : 'pt-BR';
+      const currency = language === 'en' ? 'USD' : 'BRL';
+      
+      const formatCurrency = (value: number) => {
+        return value.toLocaleString(locale, { style: 'currency', currency });
+      };
+      
+      const formatDate = (date: Date) => {
+        return date.toLocaleDateString(locale);
       };
 
       // Buscar dados do orçamento
@@ -355,8 +369,8 @@ export default function Orcamentos() {
         doc.setFontSize(8);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(100, 100, 100);
-        doc.text(`Página ${numeroPagina}`, pageWidth / 2, rodapeY, { align: "center" });
-        doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 20, rodapeY);
+        doc.text(`${pdfT.page} ${numeroPagina}`, pageWidth / 2, rodapeY, { align: "center" });
+        doc.text(`${pdfT.generatedOn}: ${formatDate(new Date())}`, 20, rodapeY);
         doc.setTextColor(0, 0, 0);
       };
 
@@ -530,7 +544,7 @@ export default function Orcamentos() {
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(220, 38, 38);
-      doc.text("PROPOSTA COMERCIAL", pageWidth / 2, yPosition, { align: "center" });
+      doc.text(pdfT.commercialProposal, pageWidth / 2, yPosition, { align: "center" });
       
       // Adicionar indicação de revisão no título (se houver)
       if (orcamento.numero_revisao) {
@@ -538,7 +552,7 @@ export default function Orcamentos() {
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(220, 38, 38);
-        doc.text(`(REVISÃO ${orcamento.numero_revisao})`, pageWidth / 2, yPosition, { align: "center" });
+        doc.text(`(${pdfT.revision} ${orcamento.numero_revisao})`, pageWidth / 2, yPosition, { align: "center" });
       }
       
       doc.setTextColor(0, 0, 0);
@@ -579,7 +593,7 @@ export default function Orcamentos() {
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 0, 0);
-      doc.text("Informações do Cliente", pageWidth / 2, yPosition + 7, { align: "center" });
+      doc.text(pdfT.clientInfo, pageWidth / 2, yPosition + 7, { align: "center" });
       yPosition += 10;
       
       doc.setFontSize(9);
@@ -595,15 +609,15 @@ export default function Orcamentos() {
       // Adicionar indicação de revisão no número do orçamento
       const numeroExibicao = orcamento.numero_revisao 
         ? `${orcamento.numero} REV${orcamento.numero_revisao}`
-        : orcamento.numero || 'N/A';
+        : orcamento.numero || pdfT.na;
       
-      doc.text(`Nº Orçamento: ${numeroExibicao}`, 22, yPosition + 5.5);
-      doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 22 + colWidth, yPosition + 5.5);
+      doc.text(`${pdfT.quoteNumber}: ${numeroExibicao}`, 22, yPosition + 5.5);
+      doc.text(`${pdfT.date}: ${formatDate(new Date())}`, 22 + colWidth, yPosition + 5.5);
       yPosition += 8;
       
       // Segunda linha: Nome do Cliente com quebra automática
       const alturaCliente = desenharCelulaComQuebraLinha(
-        `Nome do Cliente: ${orcamento.cliente_nome || 'N/A'}`,
+        `${pdfT.clientName}: ${orcamento.cliente_nome || pdfT.na}`,
         20,
         yPosition,
         pageWidth - 40
@@ -613,7 +627,7 @@ export default function Orcamentos() {
       // Terceira linha: CNPJ (altura fixa, geralmente curto)
       doc.setDrawColor(200, 200, 200);
       doc.rect(20, yPosition, pageWidth - 40, 8);
-      doc.text(`CNPJ: ${cnpjCliente || 'N/A'}`, 22, yPosition + 5.5);
+      doc.text(`${pdfT.taxId}: ${cnpjCliente || pdfT.na}`, 22, yPosition + 5.5);
       yPosition += 8;
 
       // Quarta linha: NF de Entrada e Ordem Referência (duas colunas) - sempre exibir
@@ -621,8 +635,8 @@ export default function Orcamentos() {
       doc.rect(20, yPosition, colWidth, 8);
       doc.rect(20 + colWidth, yPosition, colWidth, 8);
       
-      doc.text(`NF de Entrada: ${orcamento.numero_nota_entrada || 'N/A'}`, 22, yPosition + 5.5);
-      doc.text(`Ordem Referência: ${orcamento.ordem_referencia || 'N/A'}`, 22 + colWidth, yPosition + 5.5);
+      doc.text(`${pdfT.entryInvoice}: ${orcamento.numero_nota_entrada || pdfT.na}`, 22, yPosition + 5.5);
+      doc.text(`${pdfT.referenceOrder}: ${orcamento.ordem_referencia || pdfT.na}`, 22 + colWidth, yPosition + 5.5);
       
       yPosition += 8;
 
@@ -645,27 +659,26 @@ export default function Orcamentos() {
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 0, 0);
-      doc.text("Condições Comerciais", pageWidth / 2, yPosition + 7, { align: "center" });
+      doc.text(pdfT.commercialConditions, pageWidth / 2, yPosition + 7, { align: "center" });
       yPosition += 10;
       
-      const valorTotal = Number(orcamento.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-      const prazo = orcamento.condicao_pagamento || (orcamento.prazo_pagamento ? `${orcamento.prazo_pagamento} DDL` : 'A combinar');
-      const dataGeracao = new Date().toLocaleDateString('pt-BR');
+      const valorTotal = formatCurrency(Number(orcamento.valor || 0));
+      const prazo = orcamento.condicao_pagamento || (orcamento.prazo_pagamento ? `${orcamento.prazo_pagamento} DDL` : (language === 'en' ? 'To be arranged' : 'A combinar'));
       const validade = orcamento.validade_proposta 
-        ? `${orcamento.validade_proposta} dias`
-        : '30 dias';
+        ? `${orcamento.validade_proposta} ${pdfT.days}`
+        : `30 ${pdfT.days}`;
       
-      const assunto = orcamento.assunto_proposta || orcamento.equipamento || 'REFORMA/MANUTENÇÃO';
-      const prazoEntrega = orcamento.prazo_entrega || '5 dias úteis';
+      const assunto = orcamento.assunto_proposta || orcamento.equipamento || (language === 'en' ? 'REFORM/MAINTENANCE' : 'REFORMA/MANUTENÇÃO');
+      const prazoEntrega = orcamento.prazo_entrega || `5 ${pdfT.businessDays}`;
           const garantia = orcamento.garantia === 'sem' 
-            ? 'Sem Garantia'
+            ? pdfT.noWarranty
             : orcamento.garantia === '24'
-            ? '24 meses'
+            ? `24 ${pdfT.months}`
             : orcamento.garantia === '12'
-            ? '12 meses'
+            ? `12 ${pdfT.months}`
             : orcamento.garantia === '6'
-            ? '6 meses'
-            : '12 meses';
+            ? `6 ${pdfT.months}`
+            : `12 ${pdfT.months}`;
       const frete = orcamento.frete || 'CIF';
       
       doc.setFontSize(9);
@@ -673,7 +686,7 @@ export default function Orcamentos() {
       
       // Primeira linha: Assunto com quebra automática de linha
       const alturaAssunto = desenharCelulaComQuebraLinha(
-        `Assunto: ${assunto}`,
+        `${pdfT.subject}: ${assunto}`,
         20,
         yPosition,
         pageWidth - 40,
@@ -684,17 +697,17 @@ export default function Orcamentos() {
       // Segunda linha: Valor Total + Condição Pagamento + Prazo Entrega
       const col3Width = (pageWidth - 40) / 3;
       const alturaLinha2 = Math.max(
-        desenharCelulaComQuebraLinha(`Valor Total: ${valorTotal}`, 20, yPosition, col3Width, 8),
-        desenharCelulaComQuebraLinha(`Condição Pagamento: ${prazo}`, 20 + col3Width, yPosition, col3Width, 8),
-        desenharCelulaComQuebraLinha(`Prazo Entrega: ${prazoEntrega}`, 20 + col3Width * 2, yPosition, col3Width, 8)
+        desenharCelulaComQuebraLinha(`${pdfT.totalValue}: ${valorTotal}`, 20, yPosition, col3Width, 8),
+        desenharCelulaComQuebraLinha(`${pdfT.paymentTerms}: ${prazo}`, 20 + col3Width, yPosition, col3Width, 8),
+        desenharCelulaComQuebraLinha(`${pdfT.deliveryTime}: ${prazoEntrega}`, 20 + col3Width * 2, yPosition, col3Width, 8)
       );
       yPosition += alturaLinha2;
       
       // Terceira linha: Garantia + Frete + Validade Proposta
       const alturaLinha3 = Math.max(
-        desenharCelulaComQuebraLinha(`Garantia: ${garantia}`, 20, yPosition, col3Width, 8),
-        desenharCelulaComQuebraLinha(`Frete: ${frete}`, 20 + col3Width, yPosition, col3Width, 8),
-        desenharCelulaComQuebraLinha(`Validade Proposta: ${validade}`, 20 + col3Width * 2, yPosition, col3Width, 8)
+        desenharCelulaComQuebraLinha(`${pdfT.warranty}: ${garantia}`, 20, yPosition, col3Width, 8),
+        desenharCelulaComQuebraLinha(`${pdfT.freight}: ${frete}`, 20 + col3Width, yPosition, col3Width, 8),
+        desenharCelulaComQuebraLinha(`${pdfT.proposalValidity}: ${validade}`, 20 + col3Width * 2, yPosition, col3Width, 8)
       );
       yPosition += alturaLinha3;
 
@@ -714,7 +727,7 @@ export default function Orcamentos() {
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(220, 38, 38);
-        doc.text("OBSERVAÇÕES", 20, yPosition);
+        doc.text(pdfT.observations, 20, yPosition);
         doc.setTextColor(0, 0, 0);
         yPosition += 5;
         
@@ -759,7 +772,7 @@ export default function Orcamentos() {
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(220, 38, 38);
-        doc.text("PEÇAS NECESSÁRIAS", 20, yPosition);
+        doc.text(pdfT.requiredParts, 20, yPosition);
         doc.setTextColor(0, 0, 0);
         yPosition += 5;
 
@@ -770,13 +783,13 @@ export default function Orcamentos() {
             item.codigo || '-',
             item.descricao || '-',
             Number(item.quantidade || 0).toFixed(0),
-            valorUnit > 0 ? valorUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
-            valorTot > 0 ? valorTot.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
+            valorUnit > 0 ? formatCurrency(valorUnit) : '',
+            valorTot > 0 ? formatCurrency(valorTot) : ''
           ];
         });
 
         yPosition = criarTabela(
-          ['Código', 'Descrição', 'Qtd', 'Valor Unit.', 'Total'],
+          [pdfT.code, pdfT.description, pdfT.qty, pdfT.unitPrice, pdfT.total],
           pecasRows,
           yPosition,
           [20, 60, 15, 25, 25]
@@ -800,11 +813,11 @@ export default function Orcamentos() {
         doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
-        doc.text('Total de Peças', boxX + 2, yPosition + 5.5);
+        doc.text(pdfT.partsTotal, boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
-        const totalPecasTexto = totalPecas > 0 ? totalPecas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
+        const totalPecasTexto = totalPecas > 0 ? formatCurrency(totalPecas) : '';
         doc.text(totalPecasTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
         yPosition += 10;
@@ -825,7 +838,7 @@ export default function Orcamentos() {
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(220, 38, 38);
-        doc.text("SERVIÇOS A EXECUTAR", 20, yPosition);
+        doc.text(pdfT.servicesToPerform, 20, yPosition);
         doc.setTextColor(0, 0, 0);
         yPosition += 5;
 
@@ -836,13 +849,13 @@ export default function Orcamentos() {
             item.codigo || '-',
             item.descricao || '-',
             Number(item.quantidade || 0).toFixed(0),
-            valorUnit > 0 ? valorUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
-            valorTot > 0 ? valorTot.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
+            valorUnit > 0 ? formatCurrency(valorUnit) : '',
+            valorTot > 0 ? formatCurrency(valorTot) : ''
           ];
         });
 
         yPosition = criarTabela(
-          ['Código', 'Descrição', 'Qtd', 'Valor Unit.', 'Total'],
+          [pdfT.code, pdfT.description, pdfT.qty, pdfT.unitPrice, pdfT.total],
           servicosRows,
           yPosition,
           [20, 60, 15, 25, 25]
@@ -866,11 +879,11 @@ export default function Orcamentos() {
         doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
-        doc.text('Total de Serviços', boxX + 2, yPosition + 5.5);
+        doc.text(pdfT.servicesTotal, boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
-        const totalServicosTexto = totalServicos > 0 ? totalServicos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
+        const totalServicosTexto = totalServicos > 0 ? formatCurrency(totalServicos) : '';
         doc.text(totalServicosTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
         yPosition += 10;
@@ -891,7 +904,7 @@ export default function Orcamentos() {
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(220, 38, 38);
-        doc.text("USINAGEM NECESSÁRIA", 20, yPosition);
+        doc.text(pdfT.requiredMachining, 20, yPosition);
         doc.setTextColor(0, 0, 0);
         yPosition += 5;
 
@@ -902,13 +915,13 @@ export default function Orcamentos() {
             item.codigo || '-',
             item.descricao || '-',
             Number(item.quantidade || 0).toFixed(0),
-            valorUnit > 0 ? valorUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
-            valorTot > 0 ? valorTot.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
+            valorUnit > 0 ? formatCurrency(valorUnit) : '',
+            valorTot > 0 ? formatCurrency(valorTot) : ''
           ];
         });
 
         yPosition = criarTabela(
-          ['Código', 'Descrição', 'Qtd', 'Valor Unit.', 'Total'],
+          [pdfT.code, pdfT.description, pdfT.qty, pdfT.unitPrice, pdfT.total],
           usinagemRows,
           yPosition,
           [20, 60, 15, 25, 25]
@@ -932,11 +945,11 @@ export default function Orcamentos() {
         doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
-        doc.text('Total de Usinagem', boxX + 2, yPosition + 5.5);
+        doc.text(pdfT.machiningTotal, boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
-        const totalUsinagemTexto = totalUsinagem > 0 ? totalUsinagem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
+        const totalUsinagemTexto = totalUsinagem > 0 ? formatCurrency(totalUsinagem) : '';
         doc.text(totalUsinagemTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
         yPosition += 10;
@@ -952,7 +965,7 @@ export default function Orcamentos() {
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(220, 38, 38);
-        doc.text("EQUIPAMENTO - FOTOS", pageWidth / 2, yPosition, { align: "center" });
+        doc.text(pdfT.equipmentPhotos, pageWidth / 2, yPosition, { align: "center" });
         doc.setTextColor(0, 0, 0);
         yPosition += 15;
 
@@ -997,11 +1010,17 @@ export default function Orcamentos() {
         : `Orcamento_${orcamento.numero.replace(/\//g, '-')}.pdf`;
       
       doc.save(nomeArquivo);
-      toast.success('PDF gerado com sucesso!');
+      toast.success(pdfT.pdfSuccess);
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
-      toast.error('Erro ao gerar PDF');
+      toast.error(t('pdf.pdfError'));
     }
+  };
+
+  // Helper to get current language for PDF
+  const getCurrentLanguage = (): 'pt-BR' | 'en' => {
+    const stored = localStorage.getItem('language');
+    return (stored === 'en' ? 'en' : 'pt-BR') as 'pt-BR' | 'en';
   };
 
   const getStatusColor = (status: string) => {
