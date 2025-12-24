@@ -59,7 +59,7 @@ export default function Orcamentos() {
   const [selectedOrdemServico, setSelectedOrdemServico] = useState<any>(null);
   const [orcamentos, setOrcamentos] = useState<any[]>([]);
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // Estados para filtros
   const [dataInicio, setDataInicio] = useState<Date | undefined>();
@@ -1017,11 +1017,6 @@ export default function Orcamentos() {
     }
   };
 
-  // Helper to get current language for PDF
-  const getCurrentLanguage = (): 'pt-BR' | 'en' => {
-    const stored = localStorage.getItem('language');
-    return (stored === 'en' ? 'en' : 'pt-BR') as 'pt-BR' | 'en';
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -1676,7 +1671,7 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => gerarPDFOrcamento(item)}
+                          onClick={() => gerarPDFOrcamento(item, language)}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -1768,7 +1763,7 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => gerarPDFOrcamento(item)}
+                          onClick={() => gerarPDFOrcamento(item, language)}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -1840,7 +1835,7 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => gerarPDFOrcamento(item)}
+                          onClick={() => gerarPDFOrcamento(item, language)}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -1910,7 +1905,7 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => gerarPDFOrcamento(item)}
+                          onClick={() => gerarPDFOrcamento(item, language)}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
