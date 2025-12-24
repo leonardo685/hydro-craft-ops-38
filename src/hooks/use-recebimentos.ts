@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
+import { useEmpresaId } from '@/hooks/use-empresa-id';
 export interface Recebimento {
   id: number;
   numero_ordem: string;
@@ -81,6 +81,7 @@ export const useRecebimentos = () => {
   const [notasFiscais, setNotasFiscais] = useState<NotaFiscal[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { empresaId } = useEmpresaId();
 
   const carregarRecebimentos = async () => {
     try {
@@ -163,7 +164,7 @@ export const useRecebimentos = () => {
     try {
       const { data, error } = await supabase
         .from('recebimentos')
-        .insert([dadosRecebimento])
+        .insert([{ ...dadosRecebimento, empresa_id: empresaId }])
         .select()
         .single();
 
@@ -218,7 +219,7 @@ export const useRecebimentos = () => {
     try {
       const { data: notaData, error: notaError } = await supabase
         .from('notas_fiscais')
-        .insert([dadosNota])
+        .insert([{ ...dadosNota, empresa_id: empresaId }])
         .select()
         .single();
 
@@ -227,7 +228,8 @@ export const useRecebimentos = () => {
       if (itens.length > 0) {
         const itensComNotaId = itens.map(item => ({
           ...item,
-          nota_fiscal_id: notaData.id
+          nota_fiscal_id: notaData.id,
+          empresa_id: empresaId
         }));
 
         const { error: itensError } = await supabase
@@ -283,7 +285,8 @@ export const useRecebimentos = () => {
           recebimento_id: recebimentoId,
           arquivo_url: urlData.publicUrl,
           nome_arquivo: arquivo.name,
-          apresentar_orcamento: apresentarOrcamento
+          apresentar_orcamento: apresentarOrcamento,
+          empresa_id: empresaId
         }]);
 
       if (dbError) throw dbError;

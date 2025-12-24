@@ -12,11 +12,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClientes } from "@/hooks/use-clientes";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 
 const NovaOrdemDireta = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { clientes } = useClientes();
+  const { empresaAtual } = useEmpresa();
   
   const [formData, setFormData] = useState({
     cliente: "",
@@ -389,7 +391,8 @@ const NovaOrdemDireta = () => {
             ordem_servico_id: ordemId,
             arquivo_url: urlData.publicUrl,
             nome_arquivo: foto.file.name,
-            apresentar_orcamento: false
+            apresentar_orcamento: false,
+            empresa_id: empresaAtual?.id || null
           });
 
         if (dbError) throw dbError;
@@ -433,7 +436,8 @@ const NovaOrdemDireta = () => {
             arquivo_url: urlData.publicUrl,
             nome_arquivo: documento.file.name,
             tipo_arquivo: documento.tipo,
-            tamanho_bytes: documento.file.size
+            tamanho_bytes: documento.file.size,
+            empresa_id: empresaAtual?.id || null
           });
 
         if (dbError) throw dbError;
@@ -475,7 +479,8 @@ const NovaOrdemDireta = () => {
         orcamento_id: formData.orcamentoVinculado || null,
         pecas_necessarias: pecasUtilizadas,
         servicos_necessarios: montarServicos(),
-        usinagem_necessaria: montarUsinagem()
+        usinagem_necessaria: montarUsinagem(),
+        empresa_id: empresaAtual?.id || null
       };
 
       const { data, error } = await supabase
