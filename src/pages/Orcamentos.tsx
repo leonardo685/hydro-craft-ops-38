@@ -23,6 +23,7 @@ import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Custom Tooltip for mini charts (valores monetários)
 const CustomTooltip = ({ active, payload }: any) => {
@@ -57,6 +58,7 @@ export default function Orcamentos() {
   const [selectedOrdemServico, setSelectedOrdemServico] = useState<any>(null);
   const [orcamentos, setOrcamentos] = useState<any[]>([]);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   // Estados para filtros
   const [dataInicio, setDataInicio] = useState<Date | undefined>();
@@ -1018,11 +1020,11 @@ export default function Orcamentos() {
   const getStatusText = (status: string) => {
     switch (status) {
       case "pendente":
-        return "Pendente";
+        return t('orcamentos.pending');
       case "aprovado":
-        return "Aprovado";
+        return t('orcamentos.approved');
       case "rejeitado":
-        return "Rejeitado";
+        return t('orcamentos.rejected');
       default:
         return status;
     }
@@ -1033,9 +1035,9 @@ export default function Orcamentos() {
       <div className="container mx-auto py-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Orçamentos</h1>
+            <h1 className="text-3xl font-bold text-foreground">{t('orcamentos.title')}</h1>
             <p className="text-muted-foreground">
-              Gerencie e aprove orçamentos pendentes
+              {t('orcamentos.subtitle')}
             </p>
           </div>
           
@@ -1043,7 +1045,7 @@ export default function Orcamentos() {
             <SheetTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
-                Novo Orçamento
+                {t('orcamentos.new')}
               </Button>
             </SheetTrigger>
             <SheetContent className="sm:max-w-2xl">

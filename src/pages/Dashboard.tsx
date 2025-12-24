@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Custom Tooltip for mini charts
 const CustomTooltip = ({ active, payload }: any) => {
@@ -132,6 +133,7 @@ export default function Dashboard() {
   const { lancamentos, loading } = useLancamentosFinanceiros();
   const { contas, loading: loadingContas } = useContasBancarias();
   const { categorias } = useCategoriasFinanceiras();
+  const { t } = useLanguage();
   
   const { data: orcamentos = [], isLoading: loadingOrcamentos } = useQuery({
     queryKey: ['orcamentos'],
@@ -428,7 +430,7 @@ export default function Dashboard() {
     
     return [
       {
-        title: "Saldo Atual",
+        title: t('dashboard.currentBalance'),
         value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoAtual),
         change: "",
         changeValue: 0,
@@ -436,7 +438,7 @@ export default function Dashboard() {
         chartData: last7Months.map(m => ({ month: m.mes, value: saldoAtual }))
       },
       {
-        title: "Faturamento Total",
+        title: t('dashboard.revenue'),
         value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(receitasPeriodo),
         change: "",
         changeValue: 0,
@@ -444,7 +446,7 @@ export default function Dashboard() {
         chartData: last7Months.map(m => ({ month: m.mes, value: m.faturamento }))
       },
       {
-        title: "Margem de Contribuição",
+        title: t('dashboard.contributionMargin'),
         value: `${margemPercentual.toFixed(1)}%`,
         change: "",
         changeValue: 0,
@@ -452,7 +454,7 @@ export default function Dashboard() {
         chartData: last7Months.map(m => ({ month: m.mes, value: m.margemContribuicao }))
       },
       {
-        title: "Lucro Líquido",
+        title: t('dashboard.netProfit'),
         value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lucroLiquido),
         change: "",
         changeValue: 0,
@@ -476,7 +478,7 @@ export default function Dashboard() {
         chartData: last7Months.map(m => ({ month: m.mes, value: m.investimentos }))
       }
     ];
-  }, [getLancamentosFiltrados, categorias, monthlyData, saldoAtual, impostosPagosPeriodo, investimentosPeriodo]);
+  }, [getLancamentosFiltrados, categorias, monthlyData, saldoAtual, impostosPagosPeriodo, investimentosPeriodo, t]);
 
   // Cards de Vendas (Orçamentos Aprovados)
   const vendasCards = useMemo(() => {

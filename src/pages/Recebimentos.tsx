@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Removed localStorage function since we're now using Supabase data
 
@@ -30,6 +31,7 @@ export default function Recebimentos() {
   const navigate = useNavigate();
   const { recebimentos, notasFiscais, loading, recarregar } = useRecebimentos();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
   const [modalChaveAcesso, setModalChaveAcesso] = useState(false);
   const [notaFiscalSelecionada, setNotaFiscalSelecionada] = useState<any>(null);
@@ -216,9 +218,9 @@ export default function Recebimentos() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Estoque de Terceiros</h2>
+            <h2 className="text-2xl font-bold text-foreground">{t('recebimentos.title')}</h2>
             <p className="text-muted-foreground">
-              Equipamentos em estoque para análise e reparo
+              {t('recebimentos.subtitle')}
             </p>
           </div>
           <div className="flex gap-3">
@@ -228,14 +230,14 @@ export default function Recebimentos() {
               className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth shadow-medium"
             >
               <FileText className="h-4 w-4 mr-2" />
-              Nova Nota Fiscal
+              {t('recebimentos.newInvoice')}
             </Button>
             <Button 
               onClick={() => navigate("/recebimentos/novo")}
               className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Novo Recebimento
+              {t('recebimentos.new')}
             </Button>
           </div>
         </div>
@@ -247,7 +249,7 @@ export default function Recebimentos() {
               <Button variant="ghost" className="w-full flex items-center justify-between gap-2 mb-4 hover:bg-muted">
                 <div className="flex items-center gap-2">
                   <Filter className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Filtros</span>
+                  <span className="text-sm font-medium text-foreground">{t('common.filters')}</span>
                 </div>
                 <ChevronDown className={cn("h-4 w-4 transition-transform", filtrosExpanded && "rotate-180")} />
               </Button>
@@ -256,7 +258,7 @@ export default function Recebimentos() {
             <CollapsibleContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Data Início</label>
+              <label className="text-sm font-medium text-foreground">{t('common.startDate')}</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -267,7 +269,7 @@ export default function Recebimentos() {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dataInicio ? format(dataInicio, "dd/MM/yyyy") : "Selecionar data"}
+                    {dataInicio ? format(dataInicio, "dd/MM/yyyy") : t('common.selectDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -282,7 +284,7 @@ export default function Recebimentos() {
               </Popover>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Data Fim</label>
+              <label className="text-sm font-medium text-foreground">{t('common.endDate')}</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -293,7 +295,7 @@ export default function Recebimentos() {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dataFim ? format(dataFim, "dd/MM/yyyy") : "Selecionar data"}
+                    {dataFim ? format(dataFim, "dd/MM/yyyy") : t('common.selectDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -308,7 +310,7 @@ export default function Recebimentos() {
               </Popover>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Cliente</label>
+              <label className="text-sm font-medium text-foreground">{t('common.client')}</label>
               <Input
                 placeholder="Nome do cliente"
                 value={filtroCliente}
@@ -347,14 +349,14 @@ export default function Recebimentos() {
               className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium"
             >
               <Search className="h-4 w-4 mr-2" />
-              {aplicandoFiltros ? "Buscando..." : "Buscar"}
+              {aplicandoFiltros ? t('common.loading') : t('common.search')}
             </Button>
             <Button 
               onClick={handleLimparFiltros}
               variant="outline"
               className="border-muted-foreground text-muted-foreground hover:bg-muted hover:text-foreground transition-smooth"
             >
-              Limpar Filtros
+              {t('common.clearFilters')}
             </Button>
           </div>
             </CollapsibleContent>
@@ -363,9 +365,9 @@ export default function Recebimentos() {
 
         <Tabs defaultValue="ordens" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="ordens">Ordens</TabsTrigger>
-            <TabsTrigger value="finalizadas">Finalizadas</TabsTrigger>
-            <TabsTrigger value="notas-fiscais">Notas Fiscais</TabsTrigger>
+            <TabsTrigger value="ordens">{t('recebimentos.orders')}</TabsTrigger>
+            <TabsTrigger value="finalizadas">{t('recebimentos.finished')}</TabsTrigger>
+            <TabsTrigger value="notas-fiscais">{t('recebimentos.invoices')}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="ordens" className="mt-6">
@@ -373,11 +375,11 @@ export default function Recebimentos() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[150px]">Nº da Ordem</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead className="w-[150px]">Data de Entrada</TableHead>
-                    <TableHead className="w-[120px]">Status</TableHead>
-                    <TableHead className="w-[140px]">Ações</TableHead>
+                    <TableHead className="w-[150px]">{t('recebimentos.orderNumber')}</TableHead>
+                    <TableHead>{t('common.client')}</TableHead>
+                    <TableHead className="w-[150px]">{t('recebimentos.entryDate')}</TableHead>
+                    <TableHead className="w-[120px]">{t('common.status')}</TableHead>
+                    <TableHead className="w-[140px]">{t('common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
