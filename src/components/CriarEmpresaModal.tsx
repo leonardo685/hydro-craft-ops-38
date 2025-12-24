@@ -70,10 +70,14 @@ export function CriarEmpresaModal({ open, onOpenChange, onSuccess }: CriarEmpres
 
     setLoading(true);
     try {
-      // Criar a empresa
-      const { data: empresaData, error: empresaError } = await supabase
+      // Gerar UUID no cliente para evitar problema de RLS no SELECT após INSERT
+      const novoEmpresaId = crypto.randomUUID();
+
+      // Criar a empresa (sem .select() para evitar violação de RLS)
+      const { error: empresaError } = await supabase
         .from('empresas')
         .insert({
+          id: novoEmpresaId,
           nome: form.nome,
           razao_social: form.razao_social || null,
           cnpj: form.cnpj || null,
@@ -84,18 +88,16 @@ export function CriarEmpresaModal({ open, onOpenChange, onSuccess }: CriarEmpres
           estado: form.estado || null,
           cep: form.cep || null,
           ativo: true
-        })
-        .select()
-        .single();
+        });
 
       if (empresaError) throw empresaError;
 
-      // Vincular o owner à empresa
+      // Vincular o owner à empresa usando o ID gerado
       const { error: vinculoError } = await supabase
         .from('user_empresas')
         .insert({
           user_id: form.owner_id,
-          empresa_id: empresaData.id,
+          empresa_id: novoEmpresaId,
           is_owner: true
         });
 
