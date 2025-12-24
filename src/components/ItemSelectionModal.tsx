@@ -7,6 +7,7 @@ import { Download, Package, Settings, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 import mecHidroLogo from "@/assets/mec-hidro-logo-novo.jpg";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ItemSelectionModalProps {
   title: string;
@@ -17,6 +18,7 @@ interface ItemSelectionModalProps {
 }
 
 export function ItemSelectionModal({ title, items, type, children, ordemId }: ItemSelectionModalProps) {
+  const { t } = useLanguage();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [realItems, setRealItems] = useState<any[]>([]);
@@ -260,27 +262,27 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
           onCheckedChange={() => handleItemToggle(itemId)}
         />
         <div className="flex-1 space-y-1">
-          {type === 'pecas' && (
+      {type === 'pecas' && (
             <>
-              <p className="font-medium">{item.peca || item.descricao || 'Peça não especificada'}</p>
+              <p className="font-medium">{item.peca || item.descricao || t('modals.itemNotSpecified')}</p>
               <p className="text-sm text-muted-foreground">
-                Quantidade: {item.quantidade || 'N/A'} | Valor: R$ {item.valor?.toFixed(2) || '0,00'}
+                {t('modals.quantity')}: {item.quantidade || 'N/A'} | {t('common.value')}: R$ {item.valor?.toFixed(2) || '0,00'}
               </p>
             </>
           )}
           {type === 'usinagem' && (
             <>
-              <p className="font-medium">{item.trabalho || item.operacao || item.descricao || 'Operação não especificada'}</p>
+              <p className="font-medium">{item.trabalho || item.operacao || item.descricao || t('modals.itemNotSpecified')}</p>
               <p className="text-sm text-muted-foreground">
-                Quantidade: {item.quantidade || 'N/A'}
+                {t('modals.quantity')}: {item.quantidade || 'N/A'}
               </p>
             </>
           )}
           {type === 'servicos' && (
             <>
-              <p className="font-medium">{item.servico || item.descricao || 'Serviço não especificado'}</p>
+              <p className="font-medium">{item.servico || item.descricao || t('modals.itemNotSpecified')}</p>
               <p className="text-sm text-muted-foreground">
-                Quantidade: {item.quantidade || 'N/A'}
+                {t('modals.quantity')}: {item.quantidade || 'N/A'}
               </p>
             </>
           )}
@@ -304,7 +306,7 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
         
         <div className="space-y-4">
           {loading ? (
-            <div className="text-center py-8">Carregando...</div>
+            <div className="text-center py-8">{t('common.loading')}</div>
           ) : realItems.length > 0 ? (
             <>
               <div className="space-y-3">
@@ -313,7 +315,7 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
               
               <div className="flex justify-between items-center pt-4 border-t">
                 <p className="text-sm text-muted-foreground">
-                  {selectedItems.length} item(s) selecionado(s)
+                  {selectedItems.length} {t('modals.itemsSelected')}
                 </p>
                 <Button 
                   onClick={generatePDF}
@@ -321,7 +323,7 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
                   className="gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  Gerar PDF
+                  {t('modals.generatePdf')}
                 </Button>
               </div>
             </>
@@ -330,10 +332,10 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
               <CardContent className="p-8 text-center">
                 {getIcon()}
                 <h3 className="text-lg font-medium text-foreground mb-2 mt-4">
-                  Nenhum item encontrado
+                  {t('modals.noItemsFound')}
                 </h3>
                 <p className="text-muted-foreground">
-                  Não há {type} cadastradas para esta ordem de serviço.
+                  {t('modals.noItemsMessage')}
                 </p>
               </CardContent>
             </Card>

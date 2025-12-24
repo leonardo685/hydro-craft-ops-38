@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, Video, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface TesteModalProps {
   ordem: any;
@@ -18,6 +19,7 @@ interface TesteModalProps {
 }
 
 export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
@@ -49,8 +51,8 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
         const maxSize = 500 * 1024 * 1024; // 500MB em bytes
         if (file.size > maxSize) {
           toast({
-            title: "Arquivo muito grande",
-            description: "O vídeo deve ter no máximo 500MB. Tente comprimir o arquivo.",
+            title: t('modals.fileTooLarge'),
+            description: t('modals.videoMaxSize'),
             variant: "destructive",
           });
           return;
@@ -58,8 +60,8 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
         setVideoFile(file);
       } else {
         toast({
-          title: "Erro",
-          description: "Por favor, selecione apenas arquivos de vídeo",
+          title: t('messages.error'),
+          description: t('modals.selectVideoOnly'),
           variant: "destructive",
         });
       }
@@ -69,8 +71,8 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
   const handleSubmit = async () => {
     if (!formData.curso || !formData.qtdCiclos) {
       toast({
-        title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios",
+        title: t('messages.error'),
+        description: t('modals.fillRequiredFields'),
         variant: "destructive",
       });
       return;
@@ -91,8 +93,8 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
           if (uploadError) {
             console.warn('Erro no upload do vídeo:', uploadError);
             toast({
-              title: "Aviso",
-              description: "Teste salvo, mas o vídeo não pôde ser enviado. Arquivo muito grande ou erro de conexão.",
+              title: t('messages.warning'),
+              description: t('modals.testSavedNoVideo'),
               variant: "default",
             });
           } else {
@@ -136,8 +138,8 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
       if (error || !result?.success) throw error || new Error('Falha ao salvar teste');
 
       toast({
-        title: "Sucesso",
-        description: "Teste registrado com sucesso!",
+        title: t('messages.success'),
+        description: t('modals.testRegistered'),
       });
 
       setOpen(false);
@@ -166,8 +168,8 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
     } catch (error) {
       console.error('Erro ao salvar teste:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao salvar informações do teste",
+        title: t('messages.error'),
+        description: t('messages.saveError'),
         variant: "destructive",
       });
     } finally {
@@ -184,10 +186,10 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Video className="h-5 w-5" />
-            Testes Finais
+            {t('modals.finalTests')}
           </DialogTitle>
           <DialogDescription>
-            Preencha as informações do teste final do equipamento
+            {t('modals.fillTestInfo')}
           </DialogDescription>
         </DialogHeader>
 
@@ -195,18 +197,18 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
           {/* Informações do Equipamento */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Equipamento em Teste</CardTitle>
+              <CardTitle className="text-sm">{t('modals.equipmentInTest')}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="font-medium">Ordem:</span> {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
+                  <span className="font-medium">{t('modals.order')}:</span> {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
                 </div>
                 <div>
-                  <span className="font-medium">Cliente:</span> {ordem.cliente_nome || ordem.recebimentos?.cliente_nome}
+                  <span className="font-medium">{t('common.client')}:</span> {ordem.cliente_nome || ordem.recebimentos?.cliente_nome}
                 </div>
                 <div>
-                  <span className="font-medium">Equipamento:</span> {ordem.equipamento || ordem.recebimentos?.tipo_equipamento}
+                  <span className="font-medium">{t('common.equipment')}:</span> {ordem.equipamento || ordem.recebimentos?.tipo_equipamento}
                 </div>
               </div>
             </CardContent>
@@ -216,7 +218,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="curso">Curso *</Label>
+                <Label htmlFor="curso">{t('modals.stroke')} *</Label>
                 <Input
                   id="curso"
                   value={formData.curso}
@@ -225,7 +227,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                 />
               </div>
               <div>
-                <Label htmlFor="qtdCiclos">Qtd. Ciclos *</Label>
+                <Label htmlFor="qtdCiclos">{t('modals.cycles')} *</Label>
                 <Input
                   id="qtdCiclos"
                   value={formData.qtdCiclos}
@@ -237,7 +239,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="pressaoMaximaTrabalho">Pressão máxima de trabalho (bar)</Label>
+                <Label htmlFor="pressaoMaximaTrabalho">{t('modals.maxWorkPressure')}</Label>
                 <Input
                   id="pressaoMaximaTrabalho"
                   value={formData.pressaoMaximaTrabalho}
@@ -246,7 +248,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                 />
               </div>
               <div>
-                <Label htmlFor="tempoMinutos">Tempo (minutos)</Label>
+                <Label htmlFor="tempoMinutos">{t('modals.timeMinutes')}</Label>
                 <Input
                   id="tempoMinutos"
                   value={formData.tempoMinutos}
@@ -258,7 +260,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="pressaoAvanco">Pressão no avanço (bar)</Label>
+                <Label htmlFor="pressaoAvanco">{t('modals.advancePressure')}</Label>
                 <Input
                   id="pressaoAvanco"
                   value={formData.pressaoAvanco}
@@ -267,7 +269,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                 />
               </div>
               <div>
-                <Label htmlFor="pressaoRetorno">Pressão no retorno (bar)</Label>
+                <Label htmlFor="pressaoRetorno">{t('modals.returnPressure')}</Label>
                 <Input
                   id="pressaoRetorno"
                   value={formData.pressaoRetorno}
@@ -290,7 +292,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                   htmlFor="checkVazamentoPistao"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Verificar a ausência de vazamento de fluido na vedação do pistão
+                  {t('modals.checkPistonLeak')}
                 </label>
               </div>
 
@@ -306,7 +308,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                   htmlFor="checkVazamentoVedacoesEstaticas"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Verificar a ausência de vazamento de fluido em todas as vedações estáticas
+                  {t('modals.checkStaticSeals')}
                 </label>
               </div>
 
@@ -322,13 +324,13 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                   htmlFor="checkVazamentoHaste"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Observar o vazamento do fluido na vedação da haste
+                  {t('modals.checkStemLeak')}
                 </label>
               </div>
             </div>
 
             <div>
-              <Label htmlFor="testePerformancePR004">Teste de performance realizado de acordo com procedimento interno PR-004</Label>
+              <Label htmlFor="testePerformancePR004">{t('modals.performanceTest')}</Label>
               <Input
                 id="testePerformancePR004"
                 value={formData.testePerformancePR004}
@@ -339,7 +341,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
 
             <div className="grid grid-cols-2 gap-4 items-end">
               <div>
-                <Label htmlFor="espessuraCamada">Espessura da camada</Label>
+                <Label htmlFor="espessuraCamada">{t('modals.layerThickness')}</Label>
                 <Input
                   id="espessuraCamada"
                   value={formData.espessuraCamada}
@@ -365,7 +367,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
             </div>
 
             <div>
-              <Label htmlFor="resultadoTeste">Resultado do Teste *</Label>
+              <Label htmlFor="resultadoTeste">{t('modals.testResult')} *</Label>
               <Select
                 value={formData.resultadoTeste}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, resultadoTeste: value }))}
@@ -374,14 +376,14 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                   <SelectValue placeholder="Selecione o resultado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="aprovado">Aprovado</SelectItem>
-                  <SelectItem value="reprovado">Reprovado</SelectItem>
+                  <SelectItem value="aprovado">{t('modals.testApproved')}</SelectItem>
+                  <SelectItem value="reprovado">{t('modals.testRejected')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label htmlFor="observacao">Observação</Label>
+              <Label htmlFor="observacao">{t('modals.observation')}</Label>
               <Textarea
                 id="observacao"
                 value={formData.observacao}
@@ -393,7 +395,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
 
             {/* Upload de Vídeo */}
             <div>
-              <Label htmlFor="videoTeste">Vídeo do Teste (Opcional - máx. 500MB)</Label>
+              <Label htmlFor="videoTeste">{t('modals.testVideo')}</Label>
               <div className="mt-2 space-y-2">
                 <div className="flex items-center gap-4">
                   <Input
@@ -413,7 +415,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  O vídeo é opcional. Se for muito grande, o teste será salvo sem o vídeo.
+                  {t('modals.videoOptional')}
                 </p>
               </div>
             </div>
@@ -422,7 +424,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
           {/* Botões */}
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancelar
+              {t('common.cancel')}
             </Button>
             <Button 
               onClick={handleSubmit} 
@@ -430,11 +432,11 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
               className="flex items-center gap-2"
             >
               {uploading ? (
-                "Salvando..."
+                t('modals.saving')
               ) : (
                 <>
                   <FileText className="h-4 w-4" />
-                  Registrar Teste
+                  {t('modals.registerTest')}
                 </>
               )}
             </Button>

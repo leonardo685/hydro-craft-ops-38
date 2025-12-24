@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { User, Calendar, Package, Settings, Wrench, FileText, Camera, MapPin, Thermometer, Gauge, Ruler } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface OrdemServicoModalProps {
   ordem: any;
@@ -12,6 +13,7 @@ interface OrdemServicoModalProps {
 }
 
 export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [recebimento, setRecebimento] = useState<any>(null);
   const [fotos, setFotos] = useState<any[]>([]);
@@ -63,12 +65,12 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
         <CardContent className="space-y-2">
           {items.map((item, index) => (
             <div key={index} className="p-3 bg-muted/50 rounded-lg">
-              <div className="font-medium">{item.descricao || item.nome || 'Item não especificado'}</div>
+              <div className="font-medium">{item.descricao || item.nome || t('modals.itemNotSpecified')}</div>
               {item.quantidade && (
-                <div className="text-sm text-muted-foreground">Quantidade: {item.quantidade}</div>
+                <div className="text-sm text-muted-foreground">{t('modals.quantity')}: {item.quantidade}</div>
               )}
               {item.observacoes && (
-                <div className="text-sm text-muted-foreground">Obs: {item.observacoes}</div>
+                <div className="text-sm text-muted-foreground">{t('modals.obs')}: {item.observacoes}</div>
               )}
             </div>
           ))}
@@ -86,7 +88,7 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Ordem de Serviço - {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
+            {t('modals.serviceOrder')} - {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
           </DialogTitle>
         </DialogHeader>
 
@@ -94,29 +96,29 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
           {/* Informações Básicas */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Informações Gerais</CardTitle>
+              <CardTitle className="text-lg">{t('modals.generalInfo')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Cliente:</span>
+                  <span className="font-medium">{t('common.client')}:</span>
                   <span>{ordem.recebimentos?.cliente_nome || ordem.cliente_nome}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Package className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Equipamento:</span>
+                  <span className="font-medium">{t('common.equipment')}:</span>
                   <span>{ordem.recebimentos?.tipo_equipamento || ordem.equipamento}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Data de Aprovação:</span>
+                  <span className="font-medium">{t('modals.approvalDate')}:</span>
                   <span>{new Date(ordem.updated_at).toLocaleDateString('pt-BR')}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">Status:</span>
+                  <span className="font-medium">{t('common.status')}:</span>
                   <Badge className="bg-green-100 text-green-700 border-green-200">
-                    Aprovada
+                    {t('modals.approved')}
                   </Badge>
                 </div>
               </div>
@@ -125,7 +127,7 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
                 <>
                   <Separator />
                   <div>
-                    <h4 className="font-medium mb-2">Observações Técnicas:</h4>
+                    <h4 className="font-medium mb-2">{t('aprovados.technicalNotes')}:</h4>
                     <p className="text-muted-foreground bg-muted/50 p-3 rounded-lg">
                       {ordem.observacoes_tecnicas}
                     </p>
@@ -138,21 +140,21 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
           {/* Peças Necessárias */}
           {renderItems(
             ordem.pecas_necessarias,
-            "Peças Necessárias",
+            t('compras.partsNeeded'),
             <Package className="h-4 w-4" />
           )}
 
           {/* Usinagem Necessária */}
           {renderItems(
             ordem.usinagem_necessaria,
-            "Usinagem Necessária",
+            t('compras.machiningNeeded'),
             <Settings className="h-4 w-4" />
           )}
 
           {/* Serviços Necessários */}
           {renderItems(
             ordem.servicos_necessarios,
-            "Serviços Necessários",
+            t('aprovados.services'),
             <Wrench className="h-4 w-4" />
           )}
 
@@ -162,111 +164,111 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Dados da Perícia
+                  {t('modals.expertiseData')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">Data de Entrada:</span>
+                    <span className="font-medium">{t('recebimentos.entryDate')}:</span>
                     <span>{new Date(recebimento.data_entrada).toLocaleDateString('pt-BR')}</span>
                   </div>
                   {recebimento.nota_fiscal && (
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Nota de Entrada:</span>
+                      <span className="font-medium">{t('modals.entryInvoice')}:</span>
                       <span>{recebimento.nota_fiscal}</span>
                     </div>
                   )}
                   {recebimento.numero_serie && (
                     <div className="flex items-center gap-2">
                       <Package className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Número de Série:</span>
+                      <span className="font-medium">{t('modals.serialNumber')}:</span>
                       <span>{recebimento.numero_serie}</span>
                     </div>
                   )}
                   {recebimento.curso && (
                     <div className="flex items-center gap-2">
                       <Ruler className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Curso:</span>
+                      <span className="font-medium">{t('modals.stroke')}:</span>
                       <span>{recebimento.curso}</span>
                     </div>
                   )}
                   {recebimento.camisa && (
                     <div className="flex items-center gap-2">
                       <Ruler className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Camisa:</span>
+                      <span className="font-medium">{t('modals.shirt')}:</span>
                       <span>{recebimento.camisa}</span>
                     </div>
                   )}
                   {recebimento.haste_comprimento && (
                     <div className="flex items-center gap-2">
                       <Ruler className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Comprimento da Haste:</span>
+                      <span className="font-medium">{t('modals.stemLength')}:</span>
                       <span>{recebimento.haste_comprimento}</span>
                     </div>
                   )}
                   {recebimento.conexao_a && (
                     <div className="flex items-center gap-2">
                       <Settings className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Conexão A:</span>
+                      <span className="font-medium">{t('modals.connectionA')}:</span>
                       <span>{recebimento.conexao_a}</span>
                     </div>
                   )}
                   {recebimento.conexao_b && (
                     <div className="flex items-center gap-2">
                       <Settings className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Conexão B:</span>
+                      <span className="font-medium">{t('modals.connectionB')}:</span>
                       <span>{recebimento.conexao_b}</span>
                     </div>
                   )}
                   {recebimento.potencia && (
                     <div className="flex items-center gap-2">
                       <Gauge className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Potência:</span>
+                      <span className="font-medium">{t('modals.power')}:</span>
                       <span>{recebimento.potencia}</span>
                     </div>
                   )}
                   {recebimento.pressao_trabalho && (
                     <div className="flex items-center gap-2">
                       <Gauge className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Pressão de Trabalho:</span>
+                      <span className="font-medium">{t('modals.workPressure')}:</span>
                       <span>{recebimento.pressao_trabalho}</span>
                     </div>
                   )}
                   {recebimento.temperatura_trabalho && (
                     <div className="flex items-center gap-2">
                       <Thermometer className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Temperatura de Trabalho:</span>
+                      <span className="font-medium">{t('modals.workTemperature')}:</span>
                       <span>{recebimento.temperatura_trabalho}</span>
                     </div>
                   )}
                   {recebimento.fluido_trabalho && (
                     <div className="flex items-center gap-2">
                       <Package className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Fluido de Trabalho:</span>
+                      <span className="font-medium">{t('modals.workFluid')}:</span>
                       <span>{recebimento.fluido_trabalho}</span>
                     </div>
                   )}
                   {recebimento.ambiente_trabalho && (
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Ambiente de Trabalho:</span>
+                      <span className="font-medium">{t('modals.workEnvironment')}:</span>
                       <span>{recebimento.ambiente_trabalho}</span>
                     </div>
                   )}
                   {recebimento.local_instalacao && (
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Local de Instalação:</span>
+                      <span className="font-medium">{t('modals.installationLocation')}:</span>
                       <span>{recebimento.local_instalacao}</span>
                     </div>
                   )}
                   {recebimento.urgente && (
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">Urgente:</span>
-                      <Badge variant="destructive">SIM</Badge>
+                      <span className="font-medium">{t('modals.urgent')}:</span>
+                      <Badge variant="destructive">{t('common.yes').toUpperCase()}</Badge>
                     </div>
                   )}
                 </div>
@@ -275,7 +277,7 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
                   <>
                     <Separator />
                     <div>
-                      <h4 className="font-medium mb-2">Observações:</h4>
+                      <h4 className="font-medium mb-2">{t('modals.observations')}:</h4>
                       <p className="text-muted-foreground bg-muted/50 p-3 rounded-lg">
                         {recebimento.observacoes}
                       </p>
@@ -292,7 +294,7 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Camera className="h-5 w-5" />
-                  Fotos do Equipamento
+                  {t('modals.equipmentPhotos')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
