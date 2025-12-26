@@ -258,7 +258,7 @@ export default function Configuracoes() {
                     <Input
                       id="cnpj"
                       value={cnpj}
-                      onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
+                      onChange={(e) => setCnpj(e.target.value)}
                       disabled={!canEdit}
                       placeholder="00.000.000/0000-00"
                     />
