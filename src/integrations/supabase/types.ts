@@ -166,6 +166,7 @@ export type Database = {
           nome: string
           observacoes: string | null
           telefone: string | null
+          tipo_identificacao: string | null
           updated_at: string
         }
         Insert: {
@@ -183,6 +184,7 @@ export type Database = {
           nome: string
           observacoes?: string | null
           telefone?: string | null
+          tipo_identificacao?: string | null
           updated_at?: string
         }
         Update: {
@@ -200,6 +202,7 @@ export type Database = {
           nome?: string
           observacoes?: string | null
           telefone?: string | null
+          tipo_identificacao?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -683,6 +686,7 @@ export type Database = {
           nome: string
           observacoes: string | null
           telefone: string | null
+          tipo_identificacao: string | null
           updated_at: string
         }
         Insert: {
@@ -700,6 +704,7 @@ export type Database = {
           nome: string
           observacoes?: string | null
           telefone?: string | null
+          tipo_identificacao?: string | null
           updated_at?: string
         }
         Update: {
@@ -717,6 +722,7 @@ export type Database = {
           nome?: string
           observacoes?: string | null
           telefone?: string | null
+          tipo_identificacao?: string | null
           updated_at?: string
         }
         Relationships: [
