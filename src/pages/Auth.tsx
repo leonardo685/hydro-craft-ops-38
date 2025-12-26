@@ -190,45 +190,26 @@ export default function Auth() {
         return;
       }
 
-      // 2. Vincular usuário à empresa
-      const { error: vinculoError } = await supabase
-        .from('user_empresas')
-        .insert({
+      // 2. Chamar edge function para vincular usuário (usa service_role para bypass RLS)
+      const { data: aceitarData, error: aceitarError } = await supabase.functions.invoke('aceitar-convite', {
+        body: {
           user_id: authData.user.id,
+          convite_id: convite.id,
           empresa_id: convite.empresa_id,
-          is_owner: false
-        });
+          role: convite.role
+        }
+      });
 
-      if (vinculoError) {
-        console.error('Erro ao vincular usuário à empresa:', vinculoError);
+      if (aceitarError) {
+        console.error('Erro ao aceitar convite:', aceitarError);
+        toast.error('Erro ao vincular conta. Entre em contato com o administrador.');
+        return;
       }
 
-      // 3. Atribuir role ao usuário
-      const roleToInsert: { user_id: string; role: 'admin' | 'gestor' | 'operador' } = {
-        user_id: authData.user.id,
-        role: convite.role as 'admin' | 'gestor' | 'operador'
-      };
-      
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert(roleToInsert);
-
-      if (roleError) {
-        console.error('Erro ao atribuir role:', roleError);
-      }
-
-      // 4. Marcar convite como usado
-      const { error: updateError } = await supabase
-        .from('convites_empresa')
-        .update({
-          used: true,
-          used_at: new Date().toISOString(),
-          used_by: authData.user.id
-        })
-        .eq('id', convite.id);
-
-      if (updateError) {
-        console.error('Erro ao marcar convite como usado:', updateError);
+      if (aceitarData?.error) {
+        console.error('Erro retornado pela edge function:', aceitarData.error);
+        toast.error(aceitarData.error);
+        return;
       }
 
       setConviteSuccess(true);
