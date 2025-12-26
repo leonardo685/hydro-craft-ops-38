@@ -17,10 +17,12 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function OrdensServico() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t, language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [ordensServico, setOrdensServico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,8 +66,8 @@ export default function OrdensServico() {
     } catch (error) {
       console.error('Erro ao carregar ordens de serviço:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao carregar ordens de serviço",
+        title: t('messages.error'),
+        description: t('analise.errorLoadingOrders'),
         variant: "destructive",
       });
     } finally {
@@ -207,24 +209,24 @@ export default function OrdensServico() {
 
         if (!notificacaoEnviada) {
           toast({
-            title: "Aviso",
-            description: `Ordem aprovada, mas notificação não foi enviada após ${maxTentativas} tentativas. Verifique o webhook.`,
+            title: t('messages.warning'),
+            description: t('analise.approvedWarning').replace('{attempts}', String(maxTentativas)),
             variant: "destructive"
           });
         }
       }
       
       toast({
-        title: "Sucesso",
-        description: "Ordem de serviço aprovada com sucesso!",
+        title: t('messages.success'),
+        description: t('analise.approvedSuccess'),
       });
       
       loadOrdensServico();
     } catch (error) {
       console.error('Erro ao aprovar ordem:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao aprovar ordem de serviço",
+        title: t('messages.error'),
+        description: t('analise.errorApproving'),
         variant: "destructive",
       });
     }
@@ -260,18 +262,18 @@ export default function OrdensServico() {
       console.log('Ordem reprovada com sucesso:', data);
       
       toast({
-        title: "Ordem reprovada",
+        title: t('analise.orderRejected'),
         description: temNotaEntrada 
-          ? "A ordem foi movida para faturamento para emissão de nota de retorno."
-          : "A ordem foi movida para finalizadas.",
+          ? t('analise.rejectedToInvoice')
+          : t('analise.rejectedToFinished'),
       });
       
       loadOrdensServico();
     } catch (error: any) {
       console.error('Erro ao reprovar ordem:', error);
       toast({
-        title: "Erro",
-        description: error?.message || "Erro ao reprovar ordem de serviço",
+        title: t('messages.error'),
+        description: error?.message || t('analise.errorRejecting'),
         variant: "destructive",
       });
     }
@@ -644,14 +646,18 @@ export default function OrdensServico() {
 
   const getStatusTexto = (status: string) => {
     const statusMap: Record<string, string> = {
-      'aguardando_orcamento': 'Aguardando Orçamento',
-      'aguardando_aprovacao': 'Aguardando Aprovação',
-      'em_andamento': 'Em Andamento',
-      'concluida': 'Concluída',
-      'aguardando_pecas': 'Aguardando Peças',
-      'aprovada': 'Aprovada',
-      'reprovada': 'Reprovada',
-      'faturado': 'Faturado'
+      'aguardando_orcamento': t('analise.awaitingQuote'),
+      'aguardando_aprovacao': t('analise.awaitingApproval'),
+      'em_andamento': language === 'en' ? 'In Progress' : 'Em Andamento',
+      'concluida': language === 'en' ? 'Completed' : 'Concluída',
+      'aguardando_pecas': language === 'en' ? 'Awaiting Parts' : 'Aguardando Peças',
+      'aprovada': t('analise.approved'),
+      'reprovada': t('analise.rejected'),
+      'faturado': t('analise.billed'),
+      'em_producao': t('analise.inProduction'),
+      'em_teste': t('analise.inTest'),
+      'finalizada': t('analise.finished'),
+      'aguardando_retorno': t('analise.awaitingReturn')
     };
     
     return statusMap[status] || status;
@@ -751,9 +757,9 @@ export default function OrdensServico() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Ordens de Serviço</h2>
+            <h2 className="text-2xl font-bold text-foreground">{t('analise.pageTitle')}</h2>
             <p className="text-muted-foreground">
-              Gerencie todas as ordens de serviço de equipamentos
+              {t('analise.pageSubtitle')}
             </p>
           </div>
           <Button 
@@ -761,18 +767,18 @@ export default function OrdensServico() {
             onClick={() => navigate('/analise/novo-ordem-direta')}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Nova Ordem de Serviço
+            {t('analise.newServiceOrder')}
           </Button>
         </div>
 
         <Card className="shadow-soft">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Lista de Ordens de Serviço</CardTitle>
+            <CardTitle className="text-lg">{t('analise.serviceOrderList')}</CardTitle>
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por cliente, ordem ou equipamento..."
+                placeholder={t('analise.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -784,13 +790,13 @@ export default function OrdensServico() {
               className="gap-2"
             >
               <FileText className="h-4 w-4" />
-              Exportar PDF
+              {t('analise.exportPdf')}
             </Button>
           </div>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8">Carregando...</div>
+              <div className="text-center py-8">{t('common.loading')}</div>
             ) : (
               <div className="rounded-md border">
                 <Table>
@@ -801,7 +807,7 @@ export default function OrdensServico() {
                          onClick={() => handleSort('numero_ordem')}
                        >
                          <div className="flex items-center gap-2">
-                           Nº da Ordem
+                           {t('analise.orderNumber')}
                            {sortConfig?.key === 'numero_ordem' && (
                              sortConfig.direction === 'asc' ? '↑' : '↓'
                            )}
@@ -812,7 +818,7 @@ export default function OrdensServico() {
                          onClick={() => handleSort('cliente')}
                        >
                          <div className="flex items-center gap-2">
-                           Cliente
+                           {t('analise.client')}
                            {sortConfig?.key === 'cliente' && (
                              sortConfig.direction === 'asc' ? '↑' : '↓'
                            )}
@@ -823,7 +829,7 @@ export default function OrdensServico() {
                          onClick={() => handleSort('equipamento')}
                        >
                          <div className="flex items-center gap-2">
-                           Equipamento
+                           {t('analise.equipment')}
                            {sortConfig?.key === 'equipamento' && (
                              sortConfig.direction === 'asc' ? '↑' : '↓'
                            )}
@@ -834,7 +840,7 @@ export default function OrdensServico() {
                          onClick={() => handleSort('status')}
                        >
                          <div className="flex items-center gap-2">
-                           Status
+                           {t('analise.status')}
                            {sortConfig?.key === 'status' && (
                              sortConfig.direction === 'asc' ? '↑' : '↓'
                            )}
@@ -845,20 +851,20 @@ export default function OrdensServico() {
                          onClick={() => handleSort('data_entrada')}
                        >
                          <div className="flex items-center gap-2">
-                           Data de Entrada
+                           {t('analise.entryDate')}
                            {sortConfig?.key === 'data_entrada' && (
                              sortConfig.direction === 'asc' ? '↑' : '↓'
                            )}
                          </div>
                        </TableHead>
-                       <TableHead className="font-semibold text-foreground text-right">Ações</TableHead>
+                       <TableHead className="font-semibold text-foreground text-right">{t('analise.actions')}</TableHead>
                      </TableRow>
                    </TableHeader>
                   <TableBody>
                      {filteredOrdensServico.length === 0 ? (
                        <TableRow>
                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                           Nenhuma ordem de serviço encontrada
+                           {t('analise.noOrdersFound')}
                          </TableCell>
                        </TableRow>
                      ) : (
@@ -879,7 +885,7 @@ export default function OrdensServico() {
                              </Badge>
                            </TableCell>
                            <TableCell className="text-muted-foreground">
-                             {new Date(ordem.data_entrada).toLocaleDateString('pt-BR')}
+                             {new Date(ordem.data_entrada).toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR')}
                            </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
@@ -889,7 +895,7 @@ export default function OrdensServico() {
                                         variant="ghost" 
                                         size="sm" 
                                         className="h-8 w-8 p-0"
-                                        title="Ações"
+                                        title={t('analise.actions')}
                                       >
                                         <Settings className="h-4 w-4" />
                                       </Button>
@@ -897,15 +903,15 @@ export default function OrdensServico() {
                                     <DropdownMenuContent align="end" className="w-48 bg-popover z-50">
                                       <DropdownMenuItem onClick={() => handleOpenLabel(ordem)}>
                                         <Tag className="h-4 w-4 mr-2" />
-                                        Imprimir Etiqueta
+                                        {t('analise.printLabel')}
                                       </DropdownMenuItem>
                                       <DropdownMenuItem onClick={() => navigate(`/analise/novo/${encodeURIComponent(ordem.numero_ordem)}`)}>
                                         <Edit className="h-4 w-4 mr-2" />
-                                        Editar
+                                        {t('analise.edit')}
                                       </DropdownMenuItem>
                                       <DropdownMenuItem onClick={() => handleExportPDF(ordem)}>
                                         <Download className="h-4 w-4 mr-2" />
-                                        Baixar PDF
+                                        {t('analise.downloadPdf')}
                                       </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
@@ -914,7 +920,7 @@ export default function OrdensServico() {
                                     size="sm" 
                                     className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
                                     onClick={() => handleApprove(ordem.id)}
-                                    title="Aprovar"
+                                    title={t('analise.approve')}
                                   >
                                     <ThumbsUp className="h-4 w-4" />
                                   </Button>
@@ -923,7 +929,7 @@ export default function OrdensServico() {
                                     size="sm" 
                                     className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                                     onClick={() => handleReject(ordem.id)}
-                                    title="Rejeitar"
+                                    title={t('analise.reject')}
                                   >
                                     <ThumbsDown className="h-4 w-4" />
                                   </Button>
