@@ -14,6 +14,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, nome: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   hasPermission: (menuItem: string) => boolean;
+  refetchUserRole: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -241,6 +242,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return hasAccess;
   }, [userRole, menuPermissions]);
 
+  const refetchUserRole = useCallback(async () => {
+    if (user) {
+      console.log('[AuthContext] 🔄 Refetching user role...');
+      await fetchUserRoleAndPermissions(user.id);
+    }
+  }, [user, fetchUserRoleAndPermissions]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -252,6 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signOut,
         hasPermission,
+        refetchUserRole,
       }}
     >
       {children}

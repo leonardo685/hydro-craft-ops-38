@@ -42,7 +42,7 @@ interface ConviteData {
 }
 
 export default function Auth() {
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, user, refetchUserRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -211,6 +211,9 @@ export default function Auth() {
         toast.error(aceitarData.error);
         return;
       }
+
+      // 3. Recarregar a role do usuário após vincular
+      await refetchUserRole();
 
       setConviteSuccess(true);
       toast.success('Conta criada com sucesso!');
