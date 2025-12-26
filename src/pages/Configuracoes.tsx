@@ -5,12 +5,14 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Settings, Globe, Building2, Upload, Loader2 } from "lucide-react";
+import { Settings, Globe, Building2, Upload, Loader2, Search } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+type TipoIdentificacao = 'cnpj' | 'ein';
 
 export default function Configuracoes() {
   const { language, setLanguage, t } = useLanguage();
@@ -22,8 +24,10 @@ export default function Configuracoes() {
   
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [searchingCNPJ, setSearchingCNPJ] = useState(false);
   
   // Form state
+  const [tipoIdentificacao, setTipoIdentificacao] = useState<TipoIdentificacao>('cnpj');
   const [nome, setNome] = useState("");
   const [razaoSocial, setRazaoSocial] = useState("");
   const [cnpj, setCnpj] = useState("");
@@ -38,6 +42,9 @@ export default function Configuracoes() {
   // Load empresa data
   useEffect(() => {
     if (empresaAtual) {
+      // Type assertion para acessar tipo_identificacao
+      const empresa = empresaAtual as typeof empresaAtual & { tipo_identificacao?: string };
+      setTipoIdentificacao((empresa.tipo_identificacao as TipoIdentificacao) || 'cnpj');
       setNome(empresaAtual.nome || "");
       setRazaoSocial(empresaAtual.razao_social || "");
       setCnpj(empresaAtual.cnpj || "");
@@ -56,6 +63,7 @@ export default function Configuracoes() {
     toast.success(t('settings.saved'));
   };
 
+  // Formatadores para Brasil
   const formatCNPJ = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     return numbers
@@ -66,7 +74,7 @@ export default function Configuracoes() {
       .slice(0, 18);
   };
 
-  const formatTelefone = (value: string) => {
+  const formatTelefoneBR = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     if (numbers.length <= 10) {
       return numbers
@@ -82,6 +90,106 @@ export default function Configuracoes() {
   const formatCEP = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     return numbers.replace(/^(\d{5})(\d)/, '$1-$2').slice(0, 9);
+  };
+
+  // Formatadores para EUA
+  const formatEIN = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    return numbers.replace(/^(\d{2})(\d)/, '$1-$2').slice(0, 10);
+  };
+
+  const formatTelefoneUS = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 6) return `(${numbers.slice(0, 3)}) ${numbers.slice(3)}`;
+    return `(${numbers.slice(0, 3)}) ${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
+  };
+
+  const formatZIPCode = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 5) return numbers;
+    return `${numbers.slice(0, 5)}-${numbers.slice(5, 9)}`;
+  };
+
+  // Handler dinâmico baseado no tipo
+  const handleIdentificacaoChange = (value: string) => {
+    if (tipoIdentificacao === 'cnpj') {
+      setCnpj(formatCNPJ(value));
+    } else {
+      setCnpj(formatEIN(value));
+    }
+  };
+
+  const handleTelefoneChange = (value: string) => {
+    if (tipoIdentificacao === 'cnpj') {
+      setTelefone(formatTelefoneBR(value));
+    } else {
+      setTelefone(formatTelefoneUS(value));
+    }
+  };
+
+  const handleCodigoPostalChange = (value: string) => {
+    if (tipoIdentificacao === 'cnpj') {
+      setCep(formatCEP(value));
+    } else {
+      setCep(formatZIPCode(value));
+    }
+  };
+
+  const handleEstadoChange = (value: string) => {
+    if (tipoIdentificacao === 'cnpj') {
+      setEstado(value.toUpperCase().slice(0, 2));
+    } else {
+      // EUA: permite abreviação de 2 letras
+      setEstado(value.toUpperCase().slice(0, 2));
+    }
+  };
+
+  // Busca dados do CNPJ via ReceitaWS
+  const handleSearchCNPJ = async () => {
+    const cleanCNPJ = cnpj.replace(/\D/g, '');
+    
+    if (cleanCNPJ.length !== 14) {
+      toast.error("CNPJ deve ter 14 dígitos");
+      return;
+    }
+
+    setSearchingCNPJ(true);
+    try {
+      // Usando proxy para evitar CORS
+      const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCNPJ}`);
+      
+      if (!response.ok) {
+        throw new Error("CNPJ não encontrado");
+      }
+
+      const data = await response.json();
+      
+      // Preenche os campos com os dados retornados
+      if (data.razao_social) setRazaoSocial(data.razao_social);
+      if (data.nome_fantasia) setNome(data.nome_fantasia || data.razao_social);
+      if (data.email) setEmail(data.email);
+      if (data.ddd_telefone_1) setTelefone(formatTelefoneBR(data.ddd_telefone_1));
+      if (data.cep) setCep(formatCEP(data.cep));
+      if (data.logradouro) {
+        const enderecoCompleto = [
+          data.logradouro,
+          data.numero,
+          data.complemento,
+          data.bairro
+        ].filter(Boolean).join(', ');
+        setEndereco(enderecoCompleto);
+      }
+      if (data.municipio) setCidade(data.municipio);
+      if (data.uf) setEstado(data.uf);
+      
+      toast.success("Dados do CNPJ carregados com sucesso!");
+    } catch (error: any) {
+      console.error("Erro ao buscar CNPJ:", error);
+      toast.error("Não foi possível buscar os dados do CNPJ");
+    } finally {
+      setSearchingCNPJ(false);
+    }
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,8 +249,9 @@ export default function Configuracoes() {
           estado: estado || null,
           cep: cep || null,
           logo_url: logoUrl || null,
+          tipo_identificacao: tipoIdentificacao,
           updated_at: new Date().toISOString(),
-        })
+        } as any)
         .eq('id', empresaAtual.id);
 
       if (error) throw error;
@@ -155,6 +264,18 @@ export default function Configuracoes() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Labels dinâmicos baseados no tipo de identificação
+  const labels = {
+    identificacao: tipoIdentificacao === 'cnpj' ? 'CNPJ' : 'EIN',
+    placeholderIdentificacao: tipoIdentificacao === 'cnpj' ? '00.000.000/0000-00' : '00-0000000',
+    codigoPostal: tipoIdentificacao === 'cnpj' ? 'CEP' : 'ZIP Code',
+    placeholderCodigoPostal: tipoIdentificacao === 'cnpj' ? '00000-000' : '00000 ou 00000-0000',
+    placeholderTelefone: tipoIdentificacao === 'cnpj' ? '(00) 00000-0000' : '(000) 000-0000',
+    placeholderEstado: tipoIdentificacao === 'cnpj' ? 'UF' : 'State',
+    razaoSocial: tipoIdentificacao === 'cnpj' ? 'Razão Social' : 'Legal Name',
+    nomeFantasia: tipoIdentificacao === 'cnpj' ? 'Nome Fantasia' : 'Trade Name',
   };
 
   return (
@@ -186,6 +307,40 @@ export default function Configuracoes() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Tipo de Identificação */}
+                {canEdit && (
+                  <div className="space-y-2">
+                    <Label>País / Tipo de Identificação</Label>
+                    <RadioGroup
+                      value={tipoIdentificacao}
+                      onValueChange={(value) => {
+                        setTipoIdentificacao(value as TipoIdentificacao);
+                        // Limpa o campo de identificação ao trocar
+                        setCnpj("");
+                        setTelefone("");
+                        setCep("");
+                      }}
+                      className="flex gap-4"
+                      disabled={!canEdit}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="cnpj" id="tipo-cnpj" />
+                        <Label htmlFor="tipo-cnpj" className="flex items-center gap-2 cursor-pointer">
+                          <span>🇧🇷</span>
+                          Brasil (CNPJ)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="ein" id="tipo-ein" />
+                        <Label htmlFor="tipo-ein" className="flex items-center gap-2 cursor-pointer">
+                          <span>🇺🇸</span>
+                          EUA (EIN)
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                )}
+
                 {/* Logo */}
                 <div className="space-y-2">
                   <Label>Logo da Empresa</Label>
@@ -232,7 +387,7 @@ export default function Configuracoes() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="nome">Nome Fantasia</Label>
+                    <Label htmlFor="nome">{labels.nomeFantasia}</Label>
                     <Input
                       id="nome"
                       value={nome}
@@ -243,25 +398,49 @@ export default function Configuracoes() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="razaoSocial">Razão Social</Label>
+                    <Label htmlFor="razaoSocial">{labels.razaoSocial}</Label>
                     <Input
                       id="razaoSocial"
                       value={razaoSocial}
                       onChange={(e) => setRazaoSocial(e.target.value)}
                       disabled={!canEdit}
-                      placeholder="Razão social"
+                      placeholder={tipoIdentificacao === 'cnpj' ? "Razão social" : "Legal name"}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cnpj">CNPJ</Label>
-                    <Input
-                      id="cnpj"
-                      value={cnpj}
-                      onChange={(e) => setCnpj(e.target.value)}
-                      disabled={!canEdit}
-                      placeholder="00.000.000/0000-00"
-                    />
+                    <Label htmlFor="cnpj">{labels.identificacao}</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="cnpj"
+                        value={cnpj}
+                        onChange={(e) => handleIdentificacaoChange(e.target.value)}
+                        disabled={!canEdit}
+                        placeholder={labels.placeholderIdentificacao}
+                        className="flex-1"
+                      />
+                      {tipoIdentificacao === 'cnpj' && canEdit && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={handleSearchCNPJ}
+                          disabled={searchingCNPJ || cnpj.replace(/\D/g, '').length !== 14}
+                          title="Buscar dados do CNPJ"
+                        >
+                          {searchingCNPJ ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Search className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                    {tipoIdentificacao === 'cnpj' && (
+                      <p className="text-xs text-muted-foreground">
+                        Clique na lupa para buscar dados automaticamente
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -281,53 +460,53 @@ export default function Configuracoes() {
                     <Input
                       id="telefone"
                       value={telefone}
-                      onChange={(e) => setTelefone(formatTelefone(e.target.value))}
+                      onChange={(e) => handleTelefoneChange(e.target.value)}
                       disabled={!canEdit}
-                      placeholder="(00) 00000-0000"
+                      placeholder={labels.placeholderTelefone}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cep">CEP</Label>
+                    <Label htmlFor="cep">{labels.codigoPostal}</Label>
                     <Input
                       id="cep"
                       value={cep}
-                      onChange={(e) => setCep(formatCEP(e.target.value))}
+                      onChange={(e) => handleCodigoPostalChange(e.target.value)}
                       disabled={!canEdit}
-                      placeholder="00000-000"
+                      placeholder={labels.placeholderCodigoPostal}
                     />
                   </div>
 
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="endereco">Endereço</Label>
+                    <Label htmlFor="endereco">Endereço / Address</Label>
                     <Input
                       id="endereco"
                       value={endereco}
                       onChange={(e) => setEndereco(e.target.value)}
                       disabled={!canEdit}
-                      placeholder="Rua, número, complemento"
+                      placeholder={tipoIdentificacao === 'cnpj' ? "Rua, número, complemento" : "Street, number, suite"}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cidade">Cidade</Label>
+                    <Label htmlFor="cidade">{tipoIdentificacao === 'cnpj' ? 'Cidade' : 'City'}</Label>
                     <Input
                       id="cidade"
                       value={cidade}
                       onChange={(e) => setCidade(e.target.value)}
                       disabled={!canEdit}
-                      placeholder="Cidade"
+                      placeholder={tipoIdentificacao === 'cnpj' ? "Cidade" : "City"}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="estado">Estado</Label>
+                    <Label htmlFor="estado">{tipoIdentificacao === 'cnpj' ? 'Estado' : 'State'}</Label>
                     <Input
                       id="estado"
                       value={estado}
-                      onChange={(e) => setEstado(e.target.value.toUpperCase().slice(0, 2))}
+                      onChange={(e) => handleEstadoChange(e.target.value)}
                       disabled={!canEdit}
-                      placeholder="UF"
+                      placeholder={labels.placeholderEstado}
                       maxLength={2}
                     />
                   </div>
