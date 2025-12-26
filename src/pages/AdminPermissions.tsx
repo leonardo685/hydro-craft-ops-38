@@ -451,14 +451,23 @@ export default function AdminPermissions() {
           {/* Aba: Usuários e Roles */}
           <TabsContent value="users">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Usuários e Roles
-                </CardTitle>
-                <CardDescription>
-                  Defina o papel de cada usuário da sua empresa
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Usuários e Roles
+                  </CardTitle>
+                  <CardDescription>
+                    Defina o papel de cada usuário da sua empresa
+                  </CardDescription>
+                </div>
+                <Button onClick={() => {
+                  setEmpresaSelecionadaParaConvite(empresaId || undefined);
+                  setConvidarModalOpen(true);
+                }}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Convidar Usuário
+                </Button>
               </CardHeader>
               <CardContent>
                 {usersEmpresaAtual.length === 0 ? (
