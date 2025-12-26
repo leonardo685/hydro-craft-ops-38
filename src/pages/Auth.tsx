@@ -14,7 +14,14 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import fixzysLogo from '@/assets/hydrofix-logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Building2, Loader2, CheckCircle2, Ticket } from 'lucide-react';
+import { Building2, Loader2, CheckCircle2, Ticket, ArrowLeft, Mail } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -39,6 +46,12 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+  
+  // Estados para recuperação de senha
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
   
   // Estados para fluxo de convite
   const [tokenInput, setTokenInput] = useState('');
@@ -225,6 +238,41 @@ export default function Auth() {
     setIsLoading(false);
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!resetEmail.trim()) {
+      toast.error('Por favor, insira seu email');
+      return;
+    }
+
+    setResetLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth?type=recovery`,
+      });
+
+      if (error) {
+        toast.error('Erro ao enviar email: ' + error.message);
+        return;
+      }
+
+      setResetSuccess(true);
+      toast.success('Email de recuperação enviado!');
+    } catch (err) {
+      console.error('Erro ao enviar email de recuperação:', err);
+      toast.error('Erro ao enviar email. Tente novamente.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const closeResetModal = () => {
+    setResetPasswordOpen(false);
+    setResetEmail('');
+    setResetSuccess(false);
+  };
 
   const resetConvite = () => {
     setConvite(null);
@@ -323,6 +371,17 @@ export default function Auth() {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Entrando...' : 'Entrar'}
                   </Button>
+                  
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-sm text-muted-foreground hover:text-primary"
+                      onClick={() => setResetPasswordOpen(true)}
+                    >
+                      Esqueceu a senha?
+                    </Button>
+                  </div>
                 </form>
               </Form>
             </TabsContent>
@@ -451,6 +510,75 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Modal de Recuperação de Senha */}
+      <Dialog open={resetPasswordOpen} onOpenChange={closeResetModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Recuperar Senha
+            </DialogTitle>
+            <DialogDescription>
+              {resetSuccess 
+                ? 'Verifique sua caixa de entrada para redefinir sua senha.'
+                : 'Digite seu email para receber um link de recuperação de senha.'
+              }
+            </DialogDescription>
+          </DialogHeader>
+
+          {resetSuccess ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-center p-4">
+                <div className="h-16 w-16 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <CheckCircle2 className="h-8 w-8 text-green-500" />
+                </div>
+              </div>
+              <p className="text-center text-sm text-muted-foreground">
+                Enviamos um email para <strong>{resetEmail}</strong> com instruções para redefinir sua senha.
+              </p>
+              <Button className="w-full" onClick={closeResetModal}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar ao Login
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Email</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  required
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={closeResetModal}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" className="flex-1" disabled={resetLoading}>
+                  {resetLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    'Enviar'
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
