@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableRow, TableHeader } from "@
 import { Plus, Users, Building, Tag, Edit, Trash2, AlertTriangle } from "lucide-react";
 import { CategoriasFinanceiras } from "@/components/CategoriasFinanceiras";
 import { ContasBancarias } from "@/components/ContasBancarias";
-import { CNPJInput } from "@/components/CNPJInput";
+import { IdentificacaoInput, TipoIdentificacao, getLabels, formatTelefoneBR, formatTelefoneUS, formatCEP, formatZIPCode } from "@/components/IdentificacaoInput";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
@@ -31,6 +31,7 @@ interface Cliente {
   inscricao_estadual?: string;
   inscricao_municipal?: string;
   observacoes?: string;
+  tipo_identificacao?: string;
 }
 
 interface Fornecedor {
@@ -46,6 +47,7 @@ interface Fornecedor {
   inscricao_estadual?: string;
   inscricao_municipal?: string;
   observacoes?: string;
+  tipo_identificacao?: string;
 }
 
 const Cadastros = () => {
@@ -60,6 +62,10 @@ const Cadastros = () => {
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [isConfirmDeleteOrdensOpen, setIsConfirmDeleteOrdensOpen] = useState(false);
+
+  // Tipo de identificação para os formulários
+  const [clienteTipoId, setClienteTipoId] = useState<TipoIdentificacao>('cnpj');
+  const [fornecedorTipoId, setFornecedorTipoId] = useState<TipoIdentificacao>('cnpj');
 
   // Formulário de cliente
   const [clienteForm, setClienteForm] = useState({
@@ -95,7 +101,6 @@ const Cadastros = () => {
     loadClientes();
     loadFornecedores();
     
-    // Verificar se há dados para preenchimento automático vindos da NFe
     if (location.state?.autoFill && location.state?.clienteData) {
       const clienteData = location.state.clienteData;
       setClienteForm(prev => ({
@@ -104,8 +109,6 @@ const Cadastros = () => {
         nome: clienteData.nome || ''
       }));
       setShowClienteForm(true);
-      
-      // Limpar o state para não interferir em navegações futuras
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -154,11 +157,12 @@ const Cadastros = () => {
       inscricao_municipal: "",
       observacoes: ""
     });
+    setClienteTipoId('cnpj');
     setEditingCliente(null);
     setShowClienteForm(false);
   };
 
-  const handleClienteCNPJDataFetch = (data: any) => {
+  const handleClienteDataFetch = (data: any) => {
     setClienteForm({
       ...clienteForm,
       ...data
@@ -179,92 +183,101 @@ const Cadastros = () => {
       inscricao_municipal: "",
       observacoes: ""
     });
+    setFornecedorTipoId('cnpj');
     setEditingFornecedor(null);
     setShowFornecedorForm(false);
   };
 
-  const handleFornecedorCNPJDataFetch = (data: any) => {
+  const handleFornecedorDataFetch = (data: any) => {
     setFornecedorForm({
       ...fornecedorForm,
       ...data
     });
   };
 
+  // Handlers para formatação dinâmica
+  const handleClienteTelefoneChange = (value: string) => {
+    const formatted = clienteTipoId === 'cnpj' ? formatTelefoneBR(value) : formatTelefoneUS(value);
+    setClienteForm({ ...clienteForm, telefone: formatted });
+  };
+
+  const handleClienteCepChange = (value: string) => {
+    const formatted = clienteTipoId === 'cnpj' ? formatCEP(value) : formatZIPCode(value);
+    setClienteForm({ ...clienteForm, cep: formatted });
+  };
+
+  const handleFornecedorTelefoneChange = (value: string) => {
+    const formatted = fornecedorTipoId === 'cnpj' ? formatTelefoneBR(value) : formatTelefoneUS(value);
+    setFornecedorForm({ ...fornecedorForm, telefone: formatted });
+  };
+
+  const handleFornecedorCepChange = (value: string) => {
+    const formatted = fornecedorTipoId === 'cnpj' ? formatCEP(value) : formatZIPCode(value);
+    setFornecedorForm({ ...fornecedorForm, cep: formatted });
+  };
+
   const limparTodasOrdens = async () => {
     try {
-      // Deletar na ordem correta para respeitar foreign keys
-      
-      // 1. Deletar fotos de orçamentos
       const { error: fotosOrcError } = await supabase
         .from('fotos_orcamento')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
       if (fotosOrcError) throw fotosOrcError;
 
-      // 2. Deletar itens de orçamentos
       const { error: itensOrcError } = await supabase
         .from('itens_orcamento')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
       if (itensOrcError) throw itensOrcError;
 
-      // 3. Deletar contas a receber
       const { error: contasRecError } = await supabase
         .from('contas_receber')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
       if (contasRecError) throw contasRecError;
 
-      // 4. Deletar orçamentos
       const { error: orcamentosError } = await supabase
         .from('orcamentos')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
       if (orcamentosError) throw orcamentosError;
 
-      // 5. Deletar testes de equipamentos
       const { error: testesError } = await supabase
         .from('testes_equipamentos')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
       if (testesError) throw testesError;
 
-      // 6. Deletar ordens de serviço
       const { error: ordensError } = await supabase
         .from('ordens_servico')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
       if (ordensError) throw ordensError;
 
-      // 7. Deletar fotos de equipamentos
       const { error: fotosError } = await supabase
         .from('fotos_equipamentos')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
       if (fotosError) throw fotosError;
 
-      // 8. Deletar itens de NFe
       const { error: itensNFeError } = await supabase
         .from('itens_nfe')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
       if (itensNFeError) throw itensNFeError;
 
-      // 9. Deletar recebimentos
       const { error: recebimentosError } = await supabase
         .from('recebimentos')
         .delete()
         .neq('id', 0);
       if (recebimentosError) throw recebimentosError;
 
-      // 10. Deletar notas fiscais
       const { error: notasError } = await supabase
         .from('notas_fiscais')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000');
       if (notasError) throw notasError;
 
-      // 11. Criar um recebimento placeholder com MH-011-25 para que o próximo seja MH-012-25
       const anoAbreviado = new Date().getFullYear().toString().slice(-2);
       const { error: placeholderError } = await supabase
         .from('recebimentos')
@@ -281,8 +294,6 @@ const Cadastros = () => {
       if (placeholderError) throw placeholderError;
 
       toast.success("Todos os dados de ordens foram removidos. Próxima ordem: MH-012-25");
-
-      // Recarregar dados
       setTimeout(() => window.location.reload(), 1500);
     } catch (error) {
       console.error('Erro ao limpar ordens:', error);
@@ -297,10 +308,15 @@ const Cadastros = () => {
     }
 
     try {
+      const dataToSave = {
+        ...clienteForm,
+        tipo_identificacao: clienteTipoId
+      };
+
       if (editingCliente) {
         const { error } = await supabase
           .from('clientes')
-          .update(clienteForm)
+          .update(dataToSave as any)
           .eq('id', editingCliente.id);
         
         if (error) throw error;
@@ -308,7 +324,7 @@ const Cadastros = () => {
       } else {
         const { error } = await supabase
           .from('clientes')
-          .insert([{ ...clienteForm, empresa_id: empresaAtual?.id }]);
+          .insert([{ ...dataToSave, empresa_id: empresaAtual?.id } as any]);
         
         if (error) throw error;
         toast.success('Cliente cadastrado com sucesso');
@@ -329,10 +345,15 @@ const Cadastros = () => {
     }
 
     try {
+      const dataToSave = {
+        ...fornecedorForm,
+        tipo_identificacao: fornecedorTipoId
+      };
+
       if (editingFornecedor) {
         const { error } = await supabase
           .from('fornecedores')
-          .update(fornecedorForm)
+          .update(dataToSave as any)
           .eq('id', editingFornecedor.id);
         
         if (error) throw error;
@@ -340,7 +361,7 @@ const Cadastros = () => {
       } else {
         const { error } = await supabase
           .from('fornecedores')
-          .insert([{ ...fornecedorForm, empresa_id: empresaAtual?.id }]);
+          .insert([{ ...dataToSave, empresa_id: empresaAtual?.id } as any]);
         
         if (error) throw error;
         toast.success('Fornecedor cadastrado com sucesso');
@@ -368,6 +389,7 @@ const Cadastros = () => {
       inscricao_municipal: cliente.inscricao_municipal || "",
       observacoes: cliente.observacoes || ""
     });
+    setClienteTipoId((cliente.tipo_identificacao as TipoIdentificacao) || 'cnpj');
     setEditingCliente(cliente);
     setShowClienteForm(true);
   };
@@ -386,6 +408,7 @@ const Cadastros = () => {
       inscricao_municipal: fornecedor.inscricao_municipal || "",
       observacoes: fornecedor.observacoes || ""
     });
+    setFornecedorTipoId((fornecedor.tipo_identificacao as TipoIdentificacao) || 'cnpj');
     setEditingFornecedor(fornecedor);
     setShowFornecedorForm(true);
   };
@@ -425,6 +448,10 @@ const Cadastros = () => {
       toast.error('Erro ao excluir fornecedor');
     }
   };
+
+  // Labels dinâmicos
+  const clienteLabels = getLabels(clienteTipoId);
+  const fornecedorLabels = getLabels(fornecedorTipoId);
 
   return (
     <AppLayout>
@@ -481,15 +508,25 @@ const Cadastros = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                      {/* Componente de Identificação com seletor Brasil/EUA */}
+                      <IdentificacaoInput
+                        tipoIdentificacao={clienteTipoId}
+                        onTipoChange={(tipo) => {
+                          setClienteTipoId(tipo);
+                          // Limpa campos que mudam de formato
+                          setClienteForm({
+                            ...clienteForm,
+                            cnpj_cpf: '',
+                            telefone: '',
+                            cep: ''
+                          });
+                        }}
+                        value={clienteForm.cnpj_cpf}
+                        onChange={(value) => setClienteForm({ ...clienteForm, cnpj_cpf: value })}
+                        onDataFetch={handleClienteDataFetch}
+                      />
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                          <Label htmlFor="cnpj_cpf">CNPJ *</Label>
-                          <CNPJInput
-                            value={clienteForm.cnpj_cpf}
-                            onChange={(value) => setClienteForm({ ...clienteForm, cnpj_cpf: value })}
-                            onDataFetch={handleClienteCNPJDataFetch}
-                          />
-                        </div>
                         <div>
                           <Label htmlFor="nome">Nome *</Label>
                           <Input
@@ -514,62 +551,63 @@ const Cadastros = () => {
                           <Input
                             id="telefone"
                             value={clienteForm.telefone}
-                            onChange={(e) => setClienteForm({ ...clienteForm, telefone: e.target.value })}
-                            placeholder="(11) 99999-9999"
+                            onChange={(e) => handleClienteTelefoneChange(e.target.value)}
+                            placeholder={clienteLabels.placeholderTelefone}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="inscricao_estadual">Inscrição Estadual</Label>
+                          <Label htmlFor="inscricao_estadual">{clienteLabels.inscricaoEstadual}</Label>
                           <Input
                             id="inscricao_estadual"
                             value={clienteForm.inscricao_estadual}
                             onChange={(e) => setClienteForm({ ...clienteForm, inscricao_estadual: e.target.value })}
-                            placeholder="123.456.789.000"
+                            placeholder={clienteTipoId === 'cnpj' ? "123.456.789.000" : "State Tax ID"}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="inscricao_municipal">Inscrição Municipal</Label>
+                          <Label htmlFor="inscricao_municipal">{clienteLabels.inscricaoMunicipal}</Label>
                           <Input
                             id="inscricao_municipal"
                             value={clienteForm.inscricao_municipal}
                             onChange={(e) => setClienteForm({ ...clienteForm, inscricao_municipal: e.target.value })}
-                            placeholder="12345678"
+                            placeholder={clienteTipoId === 'cnpj' ? "12345678" : "City Tax ID"}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="endereco">Endereço</Label>
+                          <Label htmlFor="endereco">{clienteLabels.endereco}</Label>
                           <Input
                             id="endereco"
                             value={clienteForm.endereco}
                             onChange={(e) => setClienteForm({ ...clienteForm, endereco: e.target.value })}
-                            placeholder="Rua, Número, Bairro"
+                            placeholder={clienteLabels.placeholderEndereco}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="cidade">Cidade</Label>
+                          <Label htmlFor="cidade">{clienteLabels.cidade}</Label>
                           <Input
                             id="cidade"
                             value={clienteForm.cidade}
                             onChange={(e) => setClienteForm({ ...clienteForm, cidade: e.target.value })}
-                            placeholder="São Paulo"
+                            placeholder={clienteTipoId === 'cnpj' ? "São Paulo" : "New York"}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="estado">Estado</Label>
+                          <Label htmlFor="estado">{clienteLabels.estado}</Label>
                           <Input
                             id="estado"
                             value={clienteForm.estado}
-                            onChange={(e) => setClienteForm({ ...clienteForm, estado: e.target.value })}
-                            placeholder="SP"
+                            onChange={(e) => setClienteForm({ ...clienteForm, estado: e.target.value.toUpperCase().slice(0, 2) })}
+                            placeholder={clienteLabels.placeholderEstado}
+                            maxLength={2}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="cep">CEP</Label>
+                          <Label htmlFor="cep">{clienteLabels.codigoPostal}</Label>
                           <Input
                             id="cep"
                             value={clienteForm.cep}
-                            onChange={(e) => setClienteForm({ ...clienteForm, cep: e.target.value })}
-                            placeholder="00000-000"
+                            onChange={(e) => handleClienteCepChange(e.target.value)}
+                            placeholder={clienteLabels.placeholderCodigoPostal}
                           />
                         </div>
                       </div>
@@ -602,9 +640,8 @@ const Cadastros = () => {
                         <TableHead>Nome</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Telefone</TableHead>
-                        <TableHead>CNPJ/CPF</TableHead>
-                        <TableHead>Inscrição Estadual</TableHead>
-                        <TableHead>Inscrição Municipal</TableHead>
+                        <TableHead>CNPJ/EIN</TableHead>
+                        <TableHead>País</TableHead>
                         <TableHead>Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -615,8 +652,9 @@ const Cadastros = () => {
                           <TableCell>{cliente.email || '-'}</TableCell>
                           <TableCell>{cliente.telefone || '-'}</TableCell>
                           <TableCell>{cliente.cnpj_cpf || '-'}</TableCell>
-                          <TableCell>{cliente.inscricao_estadual || '-'}</TableCell>
-                          <TableCell>{cliente.inscricao_municipal || '-'}</TableCell>
+                          <TableCell>
+                            {cliente.tipo_identificacao === 'ein' ? '🇺🇸 EUA' : '🇧🇷 Brasil'}
+                          </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
                               <Button
@@ -639,7 +677,7 @@ const Cadastros = () => {
                       ))}
                       {clientes.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground">
+                          <TableCell colSpan={6} className="text-center text-muted-foreground">
                             Nenhum cliente cadastrado
                           </TableCell>
                         </TableRow>
@@ -682,15 +720,24 @@ const Cadastros = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                      {/* Componente de Identificação com seletor Brasil/EUA */}
+                      <IdentificacaoInput
+                        tipoIdentificacao={fornecedorTipoId}
+                        onTipoChange={(tipo) => {
+                          setFornecedorTipoId(tipo);
+                          setFornecedorForm({
+                            ...fornecedorForm,
+                            cnpj_cpf: '',
+                            telefone: '',
+                            cep: ''
+                          });
+                        }}
+                        value={fornecedorForm.cnpj_cpf}
+                        onChange={(value) => setFornecedorForm({ ...fornecedorForm, cnpj_cpf: value })}
+                        onDataFetch={handleFornecedorDataFetch}
+                      />
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                          <Label htmlFor="fornecedor-cnpj_cpf">CNPJ *</Label>
-                          <CNPJInput
-                            value={fornecedorForm.cnpj_cpf}
-                            onChange={(value) => setFornecedorForm({ ...fornecedorForm, cnpj_cpf: value })}
-                            onDataFetch={handleFornecedorCNPJDataFetch}
-                          />
-                        </div>
                         <div>
                           <Label htmlFor="fornecedor-nome">Nome *</Label>
                           <Input
@@ -715,62 +762,63 @@ const Cadastros = () => {
                           <Input
                             id="fornecedor-telefone"
                             value={fornecedorForm.telefone}
-                            onChange={(e) => setFornecedorForm({ ...fornecedorForm, telefone: e.target.value })}
-                            placeholder="(11) 99999-9999"
+                            onChange={(e) => handleFornecedorTelefoneChange(e.target.value)}
+                            placeholder={fornecedorLabels.placeholderTelefone}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="fornecedor-inscricao_estadual">Inscrição Estadual</Label>
+                          <Label htmlFor="fornecedor-inscricao_estadual">{fornecedorLabels.inscricaoEstadual}</Label>
                           <Input
                             id="fornecedor-inscricao_estadual"
                             value={fornecedorForm.inscricao_estadual}
                             onChange={(e) => setFornecedorForm({ ...fornecedorForm, inscricao_estadual: e.target.value })}
-                            placeholder="123.456.789.000"
+                            placeholder={fornecedorTipoId === 'cnpj' ? "123.456.789.000" : "State Tax ID"}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="fornecedor-inscricao_municipal">Inscrição Municipal</Label>
+                          <Label htmlFor="fornecedor-inscricao_municipal">{fornecedorLabels.inscricaoMunicipal}</Label>
                           <Input
                             id="fornecedor-inscricao_municipal"
                             value={fornecedorForm.inscricao_municipal}
                             onChange={(e) => setFornecedorForm({ ...fornecedorForm, inscricao_municipal: e.target.value })}
-                            placeholder="12345678"
+                            placeholder={fornecedorTipoId === 'cnpj' ? "12345678" : "City Tax ID"}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="fornecedor-endereco">Endereço</Label>
+                          <Label htmlFor="fornecedor-endereco">{fornecedorLabels.endereco}</Label>
                           <Input
                             id="fornecedor-endereco"
                             value={fornecedorForm.endereco}
                             onChange={(e) => setFornecedorForm({ ...fornecedorForm, endereco: e.target.value })}
-                            placeholder="Rua, Número, Bairro"
+                            placeholder={fornecedorLabels.placeholderEndereco}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="fornecedor-cidade">Cidade</Label>
+                          <Label htmlFor="fornecedor-cidade">{fornecedorLabels.cidade}</Label>
                           <Input
                             id="fornecedor-cidade"
                             value={fornecedorForm.cidade}
                             onChange={(e) => setFornecedorForm({ ...fornecedorForm, cidade: e.target.value })}
-                            placeholder="São Paulo"
+                            placeholder={fornecedorTipoId === 'cnpj' ? "São Paulo" : "New York"}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="fornecedor-estado">Estado</Label>
+                          <Label htmlFor="fornecedor-estado">{fornecedorLabels.estado}</Label>
                           <Input
                             id="fornecedor-estado"
                             value={fornecedorForm.estado}
-                            onChange={(e) => setFornecedorForm({ ...fornecedorForm, estado: e.target.value })}
-                            placeholder="SP"
+                            onChange={(e) => setFornecedorForm({ ...fornecedorForm, estado: e.target.value.toUpperCase().slice(0, 2) })}
+                            placeholder={fornecedorLabels.placeholderEstado}
+                            maxLength={2}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="fornecedor-cep">CEP</Label>
+                          <Label htmlFor="fornecedor-cep">{fornecedorLabels.codigoPostal}</Label>
                           <Input
                             id="fornecedor-cep"
                             value={fornecedorForm.cep}
-                            onChange={(e) => setFornecedorForm({ ...fornecedorForm, cep: e.target.value })}
-                            placeholder="00000-000"
+                            onChange={(e) => handleFornecedorCepChange(e.target.value)}
+                            placeholder={fornecedorLabels.placeholderCodigoPostal}
                           />
                         </div>
                       </div>
@@ -803,9 +851,8 @@ const Cadastros = () => {
                         <TableHead>Nome</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Telefone</TableHead>
-                        <TableHead>CNPJ/CPF</TableHead>
-                        <TableHead>Inscrição Estadual</TableHead>
-                        <TableHead>Inscrição Municipal</TableHead>
+                        <TableHead>CNPJ/EIN</TableHead>
+                        <TableHead>País</TableHead>
                         <TableHead>Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -816,8 +863,9 @@ const Cadastros = () => {
                           <TableCell>{fornecedor.email || '-'}</TableCell>
                           <TableCell>{fornecedor.telefone || '-'}</TableCell>
                           <TableCell>{fornecedor.cnpj_cpf || '-'}</TableCell>
-                          <TableCell>{fornecedor.inscricao_estadual || '-'}</TableCell>
-                          <TableCell>{fornecedor.inscricao_municipal || '-'}</TableCell>
+                          <TableCell>
+                            {fornecedor.tipo_identificacao === 'ein' ? '🇺🇸 EUA' : '🇧🇷 Brasil'}
+                          </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
                               <Button
@@ -840,7 +888,7 @@ const Cadastros = () => {
                       ))}
                       {fornecedores.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground">
+                          <TableCell colSpan={6} className="text-center text-muted-foreground">
                             Nenhum fornecedor cadastrado
                           </TableCell>
                         </TableRow>
