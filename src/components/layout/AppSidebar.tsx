@@ -193,13 +193,6 @@ export function AppSidebar() {
       </SidebarContent>
       
       <SidebarFooter className="border-t border-sidebar-border">
-        {/* Seletor de Empresa */}
-        {empresas.length > 0 && (
-          <div className="px-2 py-3 border-b border-sidebar-border">
-            <EmpresaSelector />
-          </div>
-        )}
-        
         <div className="p-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
