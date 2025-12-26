@@ -8,12 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Settings, Globe, Building2, Upload, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function Configuracoes() {
   const { language, setLanguage, t } = useLanguage();
   const { empresaAtual, isOwner, recarregarEmpresas } = useEmpresa();
+  const { userRole } = useAuth();
+  
+  // Owner ou Admin podem editar
+  const canEdit = isOwner || userRole === 'admin';
   
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -175,7 +180,7 @@ export default function Configuracoes() {
                   Informações da Empresa
                 </CardTitle>
                 <CardDescription>
-                  {isOwner 
+                  {canEdit 
                     ? "Gerencie as informações da sua empresa"
                     : "Visualize as informações da empresa"}
                 </CardDescription>
@@ -196,7 +201,7 @@ export default function Configuracoes() {
                         <Building2 className="h-8 w-8 text-muted-foreground" />
                       </div>
                     )}
-                    {isOwner && (
+                    {canEdit && (
                       <div>
                         <Label 
                           htmlFor="logo-upload" 
@@ -232,7 +237,7 @@ export default function Configuracoes() {
                       id="nome"
                       value={nome}
                       onChange={(e) => setNome(e.target.value)}
-                      disabled={!isOwner}
+                      disabled={!canEdit}
                       placeholder="Nome da empresa"
                     />
                   </div>
@@ -243,7 +248,7 @@ export default function Configuracoes() {
                       id="razaoSocial"
                       value={razaoSocial}
                       onChange={(e) => setRazaoSocial(e.target.value)}
-                      disabled={!isOwner}
+                      disabled={!canEdit}
                       placeholder="Razão social"
                     />
                   </div>
@@ -254,7 +259,7 @@ export default function Configuracoes() {
                       id="cnpj"
                       value={cnpj}
                       onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
-                      disabled={!isOwner}
+                      disabled={!canEdit}
                       placeholder="00.000.000/0000-00"
                     />
                   </div>
@@ -266,7 +271,7 @@ export default function Configuracoes() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      disabled={!isOwner}
+                      disabled={!canEdit}
                       placeholder="contato@empresa.com"
                     />
                   </div>
@@ -277,7 +282,7 @@ export default function Configuracoes() {
                       id="telefone"
                       value={telefone}
                       onChange={(e) => setTelefone(formatTelefone(e.target.value))}
-                      disabled={!isOwner}
+                      disabled={!canEdit}
                       placeholder="(00) 00000-0000"
                     />
                   </div>
@@ -288,7 +293,7 @@ export default function Configuracoes() {
                       id="cep"
                       value={cep}
                       onChange={(e) => setCep(formatCEP(e.target.value))}
-                      disabled={!isOwner}
+                      disabled={!canEdit}
                       placeholder="00000-000"
                     />
                   </div>
@@ -299,7 +304,7 @@ export default function Configuracoes() {
                       id="endereco"
                       value={endereco}
                       onChange={(e) => setEndereco(e.target.value)}
-                      disabled={!isOwner}
+                      disabled={!canEdit}
                       placeholder="Rua, número, complemento"
                     />
                   </div>
@@ -310,7 +315,7 @@ export default function Configuracoes() {
                       id="cidade"
                       value={cidade}
                       onChange={(e) => setCidade(e.target.value)}
-                      disabled={!isOwner}
+                      disabled={!canEdit}
                       placeholder="Cidade"
                     />
                   </div>
@@ -321,14 +326,14 @@ export default function Configuracoes() {
                       id="estado"
                       value={estado}
                       onChange={(e) => setEstado(e.target.value.toUpperCase().slice(0, 2))}
-                      disabled={!isOwner}
+                      disabled={!canEdit}
                       placeholder="UF"
                       maxLength={2}
                     />
                   </div>
                 </div>
 
-                {isOwner && (
+                {canEdit && (
                   <div className="pt-4">
                     <Button 
                       onClick={handleSaveEmpresa} 
