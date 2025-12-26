@@ -16,6 +16,8 @@ import { toast } from 'sonner';
 import { Shield, Users, FileText, ClipboardCheck, DollarSign, Plus, Pencil, X, Check, Building2, ChevronDown, ChevronRight, UserPlus, Trash2, Crown } from 'lucide-react';
 import { ConvidarUsuarioModal } from '@/components/ConvidarUsuarioModal';
 import { CriarEmpresaModal } from '@/components/CriarEmpresaModal';
+import { useEmpresaId } from '@/hooks/use-empresa-id';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 type AppRole = 'admin' | 'gestor' | 'operador';
 
@@ -81,7 +83,9 @@ const menuItems = [
 ];
 
 export default function AdminPermissions() {
+  const { empresaId } = useEmpresaId();
   const [users, setUsers] = useState<UserData[]>([]);
+  const [usersEmpresaAtual, setUsersEmpresaAtual] = useState<(UserData & { userEmpresaId: string; isOwner: boolean })[]>([]);
   const [permissions, setPermissions] = useState<MenuPermission[]>([]);
   const [aprovadores, setAprovadores] = useState<Aprovador[]>([]);
   const [empresasComUsuarios, setEmpresasComUsuarios] = useState<EmpresaComUsuarios[]>([]);
@@ -102,7 +106,7 @@ export default function AdminPermissions() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [empresaId]);
 
   const fetchData = async () => {
     try {
@@ -178,6 +182,27 @@ export default function AdminPermissions() {
       }));
 
       setEmpresasComUsuarios(empresasComUsuariosData);
+
+      // Filtrar usuários da empresa atual
+      if (empresaId) {
+        const usuariosEmpresaAtualData = (userEmpresasData || [])
+          .filter(ue => ue.empresa_id === empresaId)
+          .map(ue => {
+            const profile = profilesData?.find(p => p.id === ue.user_id);
+            const role = rolesData?.find(r => r.user_id === ue.user_id)?.role || null;
+            return {
+              id: ue.user_id,
+              nome: profile?.nome || 'Usuário não encontrado',
+              email: profile?.email || '',
+              role: role,
+              userEmpresaId: ue.id,
+              isOwner: ue.is_owner || false
+            };
+          });
+        setUsersEmpresaAtual(usuariosEmpresaAtualData);
+      } else {
+        setUsersEmpresaAtual([]);
+      }
 
       // Expandir primeira empresa por padrão
       if (empresasComUsuariosData.length > 0 && Object.keys(empresasExpandidas).length === 0) {
@@ -432,44 +457,89 @@ export default function AdminPermissions() {
                   Usuários e Roles
                 </CardTitle>
                 <CardDescription>
-                  Defina o papel de cada usuário no sistema
+                  Defina o papel de cada usuário da sua empresa
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role Atual</TableHead>
-                      <TableHead>Alterar Role</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.nome}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{getRoleBadge(user.role)}</TableCell>
-                        <TableCell>
-                          <Select
-                            value={user.role || ''}
-                            onValueChange={(value) => updateUserRole(user.id, value as AppRole)}
-                          >
-                            <SelectTrigger className="w-[180px]">
-                              <SelectValue placeholder="Selecionar role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="gestor">Gestor</SelectItem>
-                              <SelectItem value="operador">Operador</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
+                {usersEmpresaAtual.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhum usuário vinculado a esta empresa
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role Atual</TableHead>
+                        <TableHead>Alterar Role</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {usersEmpresaAtual.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {user.nome}
+                              {user.isOwner && (
+                                <Crown className="h-4 w-4 text-yellow-500" />
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>{getRoleBadge(user.role)}</TableCell>
+                          <TableCell>
+                            <Select
+                              value={user.role || ''}
+                              onValueChange={(value) => updateUserRole(user.id, value as AppRole)}
+                            >
+                              <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Selecionar role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="gestor">Gestor</SelectItem>
+                                <SelectItem value="operador">Operador</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  disabled={user.isOwner}
+                                  title={user.isOwner ? 'Não é possível remover o proprietário' : 'Remover usuário da empresa'}
+                                >
+                                  <Trash2 className={`h-4 w-4 ${user.isOwner ? 'text-muted-foreground' : 'text-destructive'}`} />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Remover usuário</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza que deseja remover <strong>{user.nome}</strong> ({user.email}) desta empresa? Esta ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => removerUsuarioEmpresa(user.userEmpresaId, user.isOwner)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Remover
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
