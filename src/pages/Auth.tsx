@@ -21,15 +21,6 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
 });
 
-const registerSchema = z.object({
-  nome: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
-  email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'As senhas não coincidem',
-  path: ['confirmPassword'],
-});
 
 interface ConviteData {
   id: string;
@@ -71,15 +62,6 @@ export default function Auth() {
     },
   });
 
-  const registerForm = useForm({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      nome: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-    },
-  });
 
   // Verificar se há token na URL
   useEffect(() => {
@@ -243,21 +225,6 @@ export default function Auth() {
     setIsLoading(false);
   };
 
-  const onRegister = async (values: z.infer<typeof registerSchema>) => {
-    setIsLoading(true);
-    const { error } = await signUp(values.email, values.password, values.nome);
-    
-    if (error) {
-      if (error.message.includes('User already registered')) {
-        toast.error('Este email já está cadastrado');
-      } else {
-        toast.error('Erro ao criar conta: ' + error.message);
-      }
-    } else {
-      toast.success('Conta criada! Aguarde aprovação do administrador para definir suas permissões.');
-    }
-    setIsLoading(false);
-  };
 
   const resetConvite = () => {
     setConvite(null);
@@ -316,9 +283,8 @@ export default function Auth() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Cadastro</TabsTrigger>
               <TabsTrigger value="convite" className="flex items-center gap-1">
                 <Ticket className="h-3 w-3" />
                 Convite
@@ -361,67 +327,6 @@ export default function Auth() {
               </Form>
             </TabsContent>
 
-            <TabsContent value="register">
-              <Form {...registerForm}>
-                <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
-                  <FormField
-                    control={registerForm.control}
-                    name="nome"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome Completo</FormLabel>
-                        <FormControl>
-                          <Input placeholder="João Silva" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={registerForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="seu@email.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={registerForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Senha</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={registerForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirmar Senha</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Criando conta...' : 'Criar conta'}
-                  </Button>
-                </form>
-              </Form>
-            </TabsContent>
 
             <TabsContent value="convite">
               {!convite ? (
