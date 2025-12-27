@@ -2902,83 +2902,83 @@ export default function NovoOrcamento() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5 text-primary" />
-                Dados Técnicos do Equipamento
+                {t('novoOrcamento.technicalData')}
               </CardTitle>
               <CardDescription>
-                Dados técnicos registrados na ordem de serviço
+                {t('novoOrcamento.technicalDataDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-4">
                 {dadosTecnicos.pressaoTrabalho && (
                   <div>
-                    <Label className="text-muted-foreground text-sm">Pressão de Trabalho</Label>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.workPressure')}</Label>
                     <p className="font-medium">{dadosTecnicos.pressaoTrabalho}</p>
                   </div>
                 )}
                 {dadosTecnicos.temperaturaTrabalho && (
                   <div>
-                    <Label className="text-muted-foreground text-sm">Temperatura de Trabalho</Label>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.workTemperature')}</Label>
                     <p className="font-medium">{dadosTecnicos.temperaturaTrabalho}</p>
                   </div>
                 )}
                 {dadosTecnicos.fluidoTrabalho && (
                   <div>
-                    <Label className="text-muted-foreground text-sm">Fluido de Trabalho</Label>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.workFluid')}</Label>
                     <p className="font-medium">{dadosTecnicos.fluidoTrabalho}</p>
                   </div>
                 )}
                 {dadosTecnicos.camisa && (
                   <div>
-                    <Label className="text-muted-foreground text-sm">Camisa</Label>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.shirt')}</Label>
                     <p className="font-medium">{dadosTecnicos.camisa}</p>
                   </div>
                 )}
                 {dadosTecnicos.hasteComprimento && (
                   <div>
-                    <Label className="text-muted-foreground text-sm">Haste x Comprimento</Label>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.rodLength')}</Label>
                     <p className="font-medium">{dadosTecnicos.hasteComprimento}</p>
                   </div>
                 )}
                 {dadosTecnicos.curso && (
                   <div>
-                    <Label className="text-muted-foreground text-sm">Curso</Label>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.stroke')}</Label>
                     <p className="font-medium">{dadosTecnicos.curso}</p>
                   </div>
                 )}
                 {dadosTecnicos.conexaoA && (
                   <div>
-                    <Label className="text-muted-foreground text-sm">Conexão A</Label>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.connectionA')}</Label>
                     <p className="font-medium">{dadosTecnicos.conexaoA}</p>
                   </div>
                 )}
                 {dadosTecnicos.conexaoB && (
                   <div>
-                    <Label className="text-muted-foreground text-sm">Conexão B</Label>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.connectionB')}</Label>
                     <p className="font-medium">{dadosTecnicos.conexaoB}</p>
                   </div>
                 )}
                 {dadosTecnicos.localInstalacao && (
                   <div>
-                    <Label className="text-muted-foreground text-sm">Local de Instalação</Label>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.installationLocation')}</Label>
                     <p className="font-medium">{dadosTecnicos.localInstalacao}</p>
                   </div>
                 )}
                 {dadosTecnicos.potencia && (
                   <div>
-                    <Label className="text-muted-foreground text-sm">Potência</Label>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.power')}</Label>
                     <p className="font-medium">{dadosTecnicos.potencia}</p>
                   </div>
                 )}
                 {dadosTecnicos.ambienteTrabalho && (
                   <div>
-                    <Label className="text-muted-foreground text-sm">Ambiente de Trabalho</Label>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.workEnvironment')}</Label>
                     <p className="font-medium">{dadosTecnicos.ambienteTrabalho}</p>
                   </div>
                 )}
                 {dadosTecnicos.categoriaEquipamento && (
                   <div>
-                    <Label className="text-muted-foreground text-sm">Categoria</Label>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.equipmentCategory')}</Label>
                     <p className="font-medium">{dadosTecnicos.categoriaEquipamento}</p>
                   </div>
                 )}
@@ -3035,10 +3035,10 @@ export default function NovoOrcamento() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
-              Peças
+              {t('novoOrcamento.parts')}
             </CardTitle>
             <CardDescription>
-              {analiseId ? 'Defina os valores para cada peça da análise' : 'Adicione as peças necessárias'}
+              {analiseId ? t('novoOrcamento.partsDescAnalysis') : t('novoOrcamento.partsDescNew')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -3046,18 +3046,18 @@ export default function NovoOrcamento() {
                 <Table>
                   <TableHeader>
                       <TableRow>
-                      <TableHead>Peça</TableHead>
-                      <TableHead>Código</TableHead>
-                      <TableHead className="text-center">Qtd</TableHead>
-                      <TableHead className="text-right">Valor Unit. (R$)</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="text-center">Ações</TableHead>
+                      <TableHead>{t('novoOrcamento.part')}</TableHead>
+                      <TableHead>{t('novoOrcamento.code')}</TableHead>
+                      <TableHead className="text-center">{t('novoOrcamento.qty')}</TableHead>
+                      <TableHead className="text-right">{t('novoOrcamento.unitValue')}</TableHead>
+                      <TableHead className="text-right">{t('novoOrcamento.total')}</TableHead>
+                      <TableHead className="text-center">{t('novoOrcamento.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {itensAnalise.pecas.map(peca => <TableRow key={peca.id}>
                         <TableCell>
-                          <Input value={peca.descricao} onChange={e => atualizarDescricaoItem('pecas', peca.id, e.target.value)} placeholder="Descrição da peça" className="min-w-[200px]" />
+                          <Input value={peca.descricao} onChange={e => atualizarDescricaoItem('pecas', peca.id, e.target.value)} placeholder={t('novoOrcamento.partDescPlaceholder')} className="min-w-[200px]" />
                         </TableCell>
                         <TableCell>
                           <Input 
@@ -3070,7 +3070,7 @@ export default function NovoOrcamento() {
                                   : p
                               )
                             }))} 
-                            placeholder="Código" 
+                            placeholder={t('novoOrcamento.codePlaceholder')} 
                             className="min-w-[100px]" 
                           />
                         </TableCell>
@@ -3096,21 +3096,21 @@ export default function NovoOrcamento() {
                 {itensAnalise.pecas.length > 0 && (
                   <div className="mt-4 pt-4 border-t flex justify-end">
                     <div className="text-lg font-bold">
-                      Total de Peças: R$ {itensAnalise.pecas.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {t('novoOrcamento.partsTotal')}: R$ {itensAnalise.pecas.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                 )}
                 <div className="mt-4 pt-4 border-t">
                   <Button variant="outline" onClick={() => adicionarItemAdicional('pecas')} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
-                    Adicionar Peça
+                    {t('novoOrcamento.addPart')}
                   </Button>
                 </div>
               </> : <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">Nenhuma peça adicionada</p>
+                <p className="text-muted-foreground mb-4">{t('novoOrcamento.noPartsAdded')}</p>
                 <Button variant="outline" onClick={() => adicionarItemAdicional('pecas')} className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
-                  Adicionar Primeira Peça
+                  {t('novoOrcamento.addFirstPart')}
                 </Button>
               </div>}
           </CardContent>
@@ -3121,10 +3121,10 @@ export default function NovoOrcamento() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wrench className="h-5 w-5 text-primary" />
-              Serviços
+              {t('novoOrcamento.services')}
             </CardTitle>
             <CardDescription>
-              {analiseId ? 'Defina os valores para cada serviço da análise' : 'Adicione os serviços necessários'}
+              {analiseId ? t('novoOrcamento.servicesDescAnalysis') : t('novoOrcamento.servicesDescNew')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -3132,18 +3132,18 @@ export default function NovoOrcamento() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Serviço</TableHead>
-                      <TableHead>Código</TableHead>
-                      <TableHead className="text-center">Qtd</TableHead>
-                      <TableHead className="text-right">Valor Unit. (R$)</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="text-center">Ações</TableHead>
+                      <TableHead>{t('novoOrcamento.service')}</TableHead>
+                      <TableHead>{t('novoOrcamento.code')}</TableHead>
+                      <TableHead className="text-center">{t('novoOrcamento.qty')}</TableHead>
+                      <TableHead className="text-right">{t('novoOrcamento.unitValue')}</TableHead>
+                      <TableHead className="text-right">{t('novoOrcamento.total')}</TableHead>
+                      <TableHead className="text-center">{t('novoOrcamento.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {itensAnalise.servicos.map(servico => <TableRow key={servico.id}>
                         <TableCell>
-                          <Input value={servico.descricao} onChange={e => atualizarDescricaoItem('servicos', servico.id, e.target.value)} placeholder="Descrição do serviço" className="min-w-[250px]" />
+                          <Input value={servico.descricao} onChange={e => atualizarDescricaoItem('servicos', servico.id, e.target.value)} placeholder={t('novoOrcamento.serviceDescPlaceholder')} className="min-w-[250px]" />
                         </TableCell>
                         <TableCell>
                           <Input value={servico.codigo || ''} onChange={e => setItensAnalise(prev => ({
@@ -3152,7 +3152,7 @@ export default function NovoOrcamento() {
                         ...s,
                         codigo: e.target.value
                       } : s)
-                    }))} placeholder="Código" className="min-w-[100px]" />
+                    }))} placeholder={t('novoOrcamento.codePlaceholder')} className="min-w-[100px]" />
                         </TableCell>
                         <TableCell className="text-center">
                           <Input type="number" min="1" value={servico.quantidade} onChange={e => atualizarQuantidadeItem('servicos', servico.id, parseInt(e.target.value) || 1)} className="w-16 text-center" />
@@ -3176,21 +3176,21 @@ export default function NovoOrcamento() {
                 {itensAnalise.servicos.length > 0 && (
                   <div className="mt-4 pt-4 border-t flex justify-end">
                     <div className="text-lg font-bold">
-                      Total de Serviços: R$ {itensAnalise.servicos.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {t('novoOrcamento.servicesTotal')}: R$ {itensAnalise.servicos.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                 )}
                 <div className="mt-4 pt-4 border-t">
                   <Button variant="outline" onClick={() => adicionarItemAdicional('servicos')} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
-                    Adicionar Serviço
+                    {t('novoOrcamento.addService')}
                   </Button>
                 </div>
               </> : <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">Nenhum serviço adicionado</p>
+                <p className="text-muted-foreground mb-4">{t('novoOrcamento.noServicesAdded')}</p>
                 <Button variant="outline" onClick={() => adicionarItemAdicional('servicos')} className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
-                  Adicionar Primeiro Serviço
+                  {t('novoOrcamento.addFirstService')}
                 </Button>
               </div>}
           </CardContent>
@@ -3201,10 +3201,10 @@ export default function NovoOrcamento() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-primary" />
-              Usinagem
+              {t('novoOrcamento.machining')}
             </CardTitle>
             <CardDescription>
-              {analiseId ? 'Defina os valores para cada usinagem da análise' : 'Adicione os trabalhos de usinagem necessários'}
+              {analiseId ? t('novoOrcamento.machiningDescAnalysis') : t('novoOrcamento.machiningDescNew')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -3212,18 +3212,18 @@ export default function NovoOrcamento() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Usinagem</TableHead>
-                      <TableHead>Código</TableHead>
-                      <TableHead className="text-center">Qtd</TableHead>
-                      <TableHead className="text-right">Valor Unit. (R$)</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="text-center">Ações</TableHead>
+                      <TableHead>{t('novoOrcamento.machining')}</TableHead>
+                      <TableHead>{t('novoOrcamento.code')}</TableHead>
+                      <TableHead className="text-center">{t('novoOrcamento.qty')}</TableHead>
+                      <TableHead className="text-right">{t('novoOrcamento.unitValue')}</TableHead>
+                      <TableHead className="text-right">{t('novoOrcamento.total')}</TableHead>
+                      <TableHead className="text-center">{t('novoOrcamento.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {itensAnalise.usinagem.map(usinagem => <TableRow key={usinagem.id}>
                         <TableCell>
-                          <Input value={usinagem.descricao} onChange={e => atualizarDescricaoItem('usinagem', usinagem.id, e.target.value)} placeholder="Descrição da usinagem" className="min-w-[250px]" />
+                          <Input value={usinagem.descricao} onChange={e => atualizarDescricaoItem('usinagem', usinagem.id, e.target.value)} placeholder={t('novoOrcamento.machiningDescPlaceholder')} className="min-w-[250px]" />
                         </TableCell>
                         <TableCell>
                           <Input value={usinagem.codigo || ''} onChange={e => setItensAnalise(prev => ({
@@ -3232,7 +3232,7 @@ export default function NovoOrcamento() {
                         ...u,
                         codigo: e.target.value
                       } : u)
-                    }))} placeholder="Código" className="min-w-[100px]" />
+                    }))} placeholder={t('novoOrcamento.codePlaceholder')} className="min-w-[100px]" />
                         </TableCell>
                         <TableCell className="text-center">
                           <Input type="number" min="1" value={usinagem.quantidade} onChange={e => atualizarQuantidadeItem('usinagem', usinagem.id, parseInt(e.target.value) || 1)} className="w-16 text-center" />
@@ -3256,21 +3256,21 @@ export default function NovoOrcamento() {
                 {itensAnalise.usinagem.length > 0 && (
                   <div className="mt-4 pt-4 border-t flex justify-end">
                     <div className="text-lg font-bold">
-                      Total de Usinagem: R$ {itensAnalise.usinagem.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {t('novoOrcamento.machiningTotal')}: R$ {itensAnalise.usinagem.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                 )}
                 <div className="mt-4 pt-4 border-t">
                   <Button variant="outline" onClick={() => adicionarItemAdicional('usinagem')} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
-                    Adicionar Usinagem
+                    {t('novoOrcamento.addMachining')}
                   </Button>
                 </div>
               </> : <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">Nenhuma usinagem adicionada</p>
+                <p className="text-muted-foreground mb-4">{t('novoOrcamento.noMachiningAdded')}</p>
                 <Button variant="outline" onClick={() => adicionarItemAdicional('usinagem')} className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
-                  Adicionar Primeira Usinagem
+                  {t('novoOrcamento.addFirstMachining')}
                 </Button>
               </div>}
           </CardContent>
@@ -3281,16 +3281,16 @@ export default function NovoOrcamento() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-primary" />
-              Informações Comerciais
+              {t('novoOrcamento.commercialInfo')}
             </CardTitle>
             <CardDescription>
-              Configure as condições comerciais da proposta
+              {t('novoOrcamento.commercialInfoDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="valorOrcamento">Valor do Orçamento</Label>
+                <Label htmlFor="valorOrcamento">{t('novoOrcamento.quoteValue')}</Label>
                 <div className="flex gap-2">
                   <Input 
                     id="valorOrcamento" 
@@ -3315,8 +3315,8 @@ export default function NovoOrcamento() {
                         valorTotal: totalCalculado
                       }));
                       toast({
-                        title: "Valor recalculado",
-                        description: `Valor atualizado para R$ ${totalCalculado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                        title: t('novoOrcamento.valueRecalculated'),
+                        description: `${t('novoOrcamento.valueUpdatedTo')} R$ ${totalCalculado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                       });
                     }}
                     className="whitespace-nowrap"
@@ -3326,14 +3326,14 @@ export default function NovoOrcamento() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="desconto">% Desconto</Label>
+                <Label htmlFor="desconto">{t('novoOrcamento.discount')}</Label>
                 <Input id="desconto" type="number" min="0" max="100" step="0.5" value={informacoesComerciais.desconto} onChange={e => setInformacoesComerciais(prev => ({
                 ...prev,
                 desconto: parseFloat(e.target.value) || 0
               }))} />
               </div>
               <div>
-                <Label htmlFor="valorComDesconto">Valor com Desconto</Label>
+                <Label htmlFor="valorComDesconto">{t('novoOrcamento.valueWithDiscount')}</Label>
                 <Input id="valorComDesconto" value={`R$ ${calcularValorComDesconto().toLocaleString('pt-BR', {
                 minimumFractionDigits: 2
               })}`} disabled className="bg-muted font-medium" />
@@ -3342,14 +3342,14 @@ export default function NovoOrcamento() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="assuntoProposta">Assunto da Proposta</Label>
+                <Label htmlFor="assuntoProposta">{t('novoOrcamento.proposalSubject')}</Label>
                 <Input id="assuntoProposta" value={informacoesComerciais.assuntoProposta} onChange={e => setInformacoesComerciais(prev => ({
                 ...prev,
                 assuntoProposta: e.target.value
-              }))} placeholder="Ex: REFORMA CILINDRO HIDRÁULICO" maxLength={100} />
+              }))} placeholder={t('novoOrcamento.proposalSubjectPlaceholder')} maxLength={100} />
               </div>
               <div>
-                <Label htmlFor="frete">Tipo de Frete</Label>
+                <Label htmlFor="frete">{t('novoOrcamento.freightType')}</Label>
                 <Select value={informacoesComerciais.frete} onValueChange={value => setInformacoesComerciais(prev => ({
                 ...prev,
                 frete: value
@@ -3358,9 +3358,9 @@ export default function NovoOrcamento() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="CIF">CIF (Custo, Seguro e Frete)</SelectItem>
-                    <SelectItem value="FOB">FOB (Free On Board)</SelectItem>
-                    <SelectItem value="EXW">EXW (Ex Works)</SelectItem>
+                    <SelectItem value="CIF">{t('novoOrcamento.freightCIF')}</SelectItem>
+                    <SelectItem value="FOB">{t('novoOrcamento.freightFOB')}</SelectItem>
+                    <SelectItem value="EXW">{t('novoOrcamento.freightEXW')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -3368,14 +3368,14 @@ export default function NovoOrcamento() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="condicaoPagamento">Condição de Pagamento</Label>
+                <Label htmlFor="condicaoPagamento">{t('novoOrcamento.paymentCondition')}</Label>
                 <Input id="condicaoPagamento" value={informacoesComerciais.condicaoPagamento} onChange={e => setInformacoesComerciais(prev => ({
                 ...prev,
                 condicaoPagamento: e.target.value
-              }))} placeholder="Ex: 21 DDL" />
+              }))} placeholder={t('novoOrcamento.paymentConditionPlaceholder')} />
               </div>
               <div>
-                <Label htmlFor="prazoEntrega">Prazo de Entrega (dias)</Label>
+                <Label htmlFor="prazoEntrega">{t('novoOrcamento.deliveryTime')}</Label>
                 <Input 
                   id="prazoEntrega" 
                   type="text"
@@ -3384,11 +3384,11 @@ export default function NovoOrcamento() {
                     ...prev,
                     prazoEntrega: e.target.value
                   }))} 
-                  placeholder="Ex: 5 dias ou 1 semana"
+                  placeholder={t('novoOrcamento.deliveryTimePlaceholder')}
                 />
               </div>
               <div>
-                <Label htmlFor="garantia">Garantia</Label>
+                <Label htmlFor="garantia">{t('novoOrcamento.warranty')}</Label>
                 <Select value={informacoesComerciais.garantia} onValueChange={value => setInformacoesComerciais(prev => ({
                 ...prev,
                 garantia: value
@@ -3397,15 +3397,15 @@ export default function NovoOrcamento() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="24">24 meses</SelectItem>
-                    <SelectItem value="12">12 meses</SelectItem>
-                    <SelectItem value="6">6 meses</SelectItem>
-                    <SelectItem value="sem">Sem Garantia</SelectItem>
+                    <SelectItem value="24">{t('novoOrcamento.warranty24')}</SelectItem>
+                    <SelectItem value="12">{t('novoOrcamento.warranty12')}</SelectItem>
+                    <SelectItem value="6">{t('novoOrcamento.warranty6')}</SelectItem>
+                    <SelectItem value="sem">{t('novoOrcamento.noWarranty')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="validadeProposta">Validade da Proposta (dias)</Label>
+                <Label htmlFor="validadeProposta">{t('novoOrcamento.proposalValidity')}</Label>
                 <Input 
                   id="validadeProposta" 
                   type="number"
@@ -3415,17 +3415,17 @@ export default function NovoOrcamento() {
                     ...prev,
                     validadeProposta: e.target.value
                   }))} 
-                  placeholder="Ex: 30"
+                  placeholder={t('novoOrcamento.proposalValidityPlaceholder')}
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="observacoes">Observações</Label>
+              <Label htmlFor="observacoes">{t('novoOrcamento.observations')}</Label>
               <Textarea id="observacoes" value={dadosOrcamento.observacoes} onChange={e => setDadosOrcamento(prev => ({
               ...prev,
               observacoes: e.target.value
-            }))} placeholder="Observações adicionais sobre o orçamento..." rows={3} />
+            }))} placeholder={t('novoOrcamento.observationsPlaceholder')} rows={3} />
             </div>
           </CardContent>
         </Card>
@@ -3436,20 +3436,20 @@ export default function NovoOrcamento() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                📚 Histórico de Revisões do Orçamento
+                📚 {t('novoOrcamento.revisionHistory')}
               </CardTitle>
               <CardDescription>
-                Versões anteriores deste orçamento
+                {t('novoOrcamento.revisionHistoryDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {carregandoHistorico ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Carregando histórico...
+                  {t('novoOrcamento.loadingHistory')}
                 </p>
               ) : historicoOrcamento.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhuma revisão anterior encontrada
+                  {t('novoOrcamento.noRevisionsFound')}
                 </p>
               ) : (
                 <div className="space-y-2 max-h-80 overflow-y-auto">
@@ -3488,7 +3488,7 @@ export default function NovoOrcamento() {
                         onClick={() => handleBaixarPDFRevisao(revisao)}
                       >
                         <Download className="h-4 w-4 mr-1" />
-                        Baixar PDF
+                        {t('novoOrcamento.downloadPdf')}
                       </Button>
                     </div>
                   ))}
