@@ -2516,8 +2516,15 @@ export default function NovoOrcamento() {
       const adicionarFotosGrade = async (fotos: any[], titulo: string) => {
         if (fotos.length === 0) return;
         
-        // Calcular espaço necessário: título (10) + uma linha de fotos (~75mm)
-        const espacoMinimoFotos = 85;
+        const fotosPorPagina = 4;
+        const maxFotoWidth = 80;
+        const maxFotoHeight = 55;
+        const espacoHorizontal = 12;
+        const espacoVertical = 20; // Espaço para legendas
+        const alturaLinhaFoto = maxFotoHeight + espacoVertical;
+        
+        // Calcular espaço necessário: título (10) + uma linha de fotos
+        const espacoMinimoFotos = 10 + alturaLinhaFoto;
         
         // Verificar se há espaço suficiente na página atual
         if (yPosition + espacoMinimoFotos > pageHeight - 30) {
@@ -2535,14 +2542,22 @@ export default function NovoOrcamento() {
         doc.setTextColor(0, 0, 0);
         yPosFotos += 10;
         
-        const fotosPorPagina = 4;
-        const maxFotoWidth = 80;
-        const maxFotoHeight = 55;
-        const espacoHorizontal = 12;
-        const espacoVertical = 18; // Aumentado para acomodar legendas
+        // Função para processar imagem com canvas (corrige orientação EXIF)
+        const processarImagem = (img: HTMLImageElement): string => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return img.src;
+          
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          ctx.drawImage(img, 0, 0);
+          
+          return canvas.toDataURL('image/jpeg', 0.85);
+        };
         
         for (let i = 0; i < fotos.length; i += fotosPorPagina) {
           if (i > 0) {
+            adicionarRodape();
             doc.addPage();
             yPosFotos = 20;
             doc.setFont('helvetica', 'bold');
@@ -2559,14 +2574,17 @@ export default function NovoOrcamento() {
             const col = j % 2;
             const row = Math.floor(j / 2);
             const xPos = 20 + col * (maxFotoWidth + espacoHorizontal);
-            const yPos = yPosFotos + row * (maxFotoHeight + espacoVertical);
+            const yPos = yPosFotos + row * alturaLinhaFoto;
             
             try {
               await new Promise<void>((resolve) => {
                 const img = new Image();
                 img.crossOrigin = 'anonymous';
                 img.onload = () => {
-                  const imgAspectRatio = img.width / img.height;
+                  // Processar imagem via canvas para corrigir orientação
+                  const imagemProcessada = processarImagem(img);
+                  
+                  const imgAspectRatio = img.naturalWidth / img.naturalHeight;
                   const maxAspectRatio = maxFotoWidth / maxFotoHeight;
                   
                   let finalWidth = maxFotoWidth;
@@ -2581,7 +2599,7 @@ export default function NovoOrcamento() {
                   const xOffset = (maxFotoWidth - finalWidth) / 2;
                   const yOffset = (maxFotoHeight - finalHeight) / 2;
                   
-                  doc.addImage(img, 'JPEG', xPos + xOffset, yPos + yOffset, finalWidth, finalHeight);
+                  doc.addImage(imagemProcessada, 'JPEG', xPos + xOffset, yPos + yOffset, finalWidth, finalHeight);
                   
                   // Adicionar legenda abaixo da foto se existir
                   if (fotosPagina[j].legenda) {
@@ -2589,8 +2607,11 @@ export default function NovoOrcamento() {
                     doc.setFontSize(8);
                     doc.setTextColor(80, 80, 80);
                     
-                    const legendaY = yPos + finalHeight + yOffset + 3;
-                    const legendaTexto = fotosPagina[j].legenda.substring(0, 50);
+                    // Legenda sempre na mesma posição, abaixo do espaço reservado para a foto
+                    const legendaY = yPos + maxFotoHeight + 5;
+                    const legendaTexto = fotosPagina[j].legenda.length > 60 
+                      ? fotosPagina[j].legenda.substring(0, 57) + '...' 
+                      : fotosPagina[j].legenda;
                     doc.text(legendaTexto, xPos + (maxFotoWidth / 2), legendaY, { 
                       align: 'center',
                       maxWidth: maxFotoWidth - 4
@@ -2608,6 +2629,10 @@ export default function NovoOrcamento() {
               console.error('Erro ao adicionar foto:', error);
             }
           }
+          
+          // Atualizar yPosition após cada grupo de fotos
+          const linhasNestaPagina = Math.ceil(fotosPagina.length / 2);
+          yPosition = yPosFotos + (linhasNestaPagina * alturaLinhaFoto);
         }
       };
       
