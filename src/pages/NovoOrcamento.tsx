@@ -2516,9 +2516,17 @@ export default function NovoOrcamento() {
       const adicionarFotosGrade = async (fotos: any[], titulo: string) => {
         if (fotos.length === 0) return;
         
-        // SEMPRE começar fotos em nova página para evitar sobreposição
-        doc.addPage();
-        let yPosFotos = 20;
+        // Calcular espaço necessário: título (10) + uma linha de fotos (~75mm)
+        const espacoMinimoFotos = 85;
+        
+        // Verificar se há espaço suficiente na página atual
+        if (yPosition + espacoMinimoFotos > pageHeight - 30) {
+          adicionarRodape();
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        let yPosFotos = yPosition;
         
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(12);
