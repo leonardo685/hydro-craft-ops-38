@@ -18,7 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FotoEquipamento } from "@/hooks/use-recebimentos";
 import jsPDF from "jspdf";
-import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
+import defaultLogo from "@/assets/mec-hidro-logo.jpg";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations } from "@/i18n/translations";
@@ -1459,16 +1459,26 @@ export default function NovoOrcamento() {
         }
       };
 
-      // Adicionar logo
+      // Adicionar logo dinâmico
+      const logoSrc = empresaAtual?.logo_url || defaultLogo;
       try {
         const logoImg = new Image();
-        logoImg.src = mecHidroLogo;
+        logoImg.crossOrigin = 'anonymous';
+        logoImg.src = logoSrc;
         await new Promise<void>((resolve) => {
           logoImg.onload = () => {
             doc.addImage(logoImg, 'JPEG', pageWidth - 50, 8, 35, 20);
             resolve();
           };
-          logoImg.onerror = () => resolve();
+          logoImg.onerror = () => {
+            const fallbackImg = new Image();
+            fallbackImg.src = defaultLogo;
+            fallbackImg.onload = () => {
+              doc.addImage(fallbackImg, 'JPEG', pageWidth - 50, 8, 35, 20);
+              resolve();
+            };
+            fallbackImg.onerror = () => resolve();
+          };
         });
       } catch (error) {
         console.error('Erro ao adicionar logo:', error);
@@ -2052,16 +2062,26 @@ export default function NovoOrcamento() {
       yPosition += 10;
     };
 
-    // Adicionar logo MEC-HIDRO
+    // Adicionar logo dinâmico
+    const logoSrc = empresaAtual?.logo_url || defaultLogo;
     try {
       const logoImg = new Image();
-      logoImg.src = mecHidroLogo;
+      logoImg.crossOrigin = 'anonymous';
+      logoImg.src = logoSrc;
       await new Promise<void>((resolve) => {
         logoImg.onload = () => {
           doc.addImage(logoImg, 'JPEG', pageWidth - 50, 8, 35, 20);
           resolve();
         };
-        logoImg.onerror = () => resolve();
+        logoImg.onerror = () => {
+          const fallbackImg = new Image();
+          fallbackImg.src = defaultLogo;
+          fallbackImg.onload = () => {
+            doc.addImage(fallbackImg, 'JPEG', pageWidth - 50, 8, 35, 20);
+            resolve();
+          };
+          fallbackImg.onerror = () => resolve();
+        };
       });
     } catch (error) {
       console.error('Erro ao adicionar logo:', error);

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import mecHidroLogo from "@/assets/mec-hidro-logo-novo.jpg";
+import defaultLogo from "@/assets/mec-hidro-logo-novo.jpg";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -278,8 +278,8 @@ export default function LaudoPublico() {
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
               <img 
-                src={mecHidroLogo} 
-                alt="MEC-HIDRO Logo" 
+                src={defaultLogo} 
+                alt="Logo" 
                 className="h-16 object-contain"
               />
             </div>
