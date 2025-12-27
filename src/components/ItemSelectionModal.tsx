@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Package, Settings, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
-import mecHidroLogo from "@/assets/mec-hidro-logo-novo.jpg";
+import defaultLogo from "@/assets/mec-hidro-logo-novo.jpg";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 
@@ -113,16 +113,26 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
       }
     };
 
-    // Adicionar logo MEC-HIDRO
+    // Adicionar logo dinâmico
+    const logoSrc = empresaAtual?.logo_url || defaultLogo;
     try {
       const logoImg = new Image();
-      logoImg.src = mecHidroLogo;
+      logoImg.crossOrigin = 'anonymous';
+      logoImg.src = logoSrc;
       await new Promise<void>((resolve) => {
         logoImg.onload = () => {
           doc.addImage(logoImg, 'JPEG', pageWidth - 50, 8, 35, 20);
           resolve();
         };
-        logoImg.onerror = () => resolve();
+        logoImg.onerror = () => {
+          const fallbackImg = new Image();
+          fallbackImg.src = defaultLogo;
+          fallbackImg.onload = () => {
+            doc.addImage(fallbackImg, 'JPEG', pageWidth - 50, 8, 35, 20);
+            resolve();
+          };
+          fallbackImg.onerror = () => resolve();
+        };
       });
     } catch (error) {
       console.error('Erro ao adicionar logo:', error);
