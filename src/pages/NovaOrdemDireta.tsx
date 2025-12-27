@@ -13,12 +13,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClientes } from "@/hooks/use-clientes";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const NovaOrdemDireta = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { clientes } = useClientes();
   const { empresaAtual } = useEmpresa();
+  const { t } = useLanguage();
   
   const [formData, setFormData] = useState({
     cliente: "",
@@ -80,11 +82,11 @@ const NovaOrdemDireta = () => {
   });
 
   const [servicosNomes, setServicosNomes] = useState({
-    desmontagem: "Desmontagem e Montagem",
-    limpeza: "Limpeza do Equipamento",
-    teste: "Teste de Performance ISO 10100",
-    pintura: "Pintura do Equipamento",
-    recondicionamento: "Recondicionamento de Roscas"
+    desmontagem: t('analise.disassemblyAssembly'),
+    limpeza: t('analise.equipmentCleaning'),
+    teste: t('analise.performanceTest'),
+    pintura: t('analise.equipmentPainting'),
+    recondicionamento: t('analise.threadReconditioning')
   });
 
   const [servicosAdicionais, setServicosAdicionais] = useState<Array<{ quantidade: number; nome: string; codigo?: string }>>([]);
@@ -108,11 +110,11 @@ const NovaOrdemDireta = () => {
   });
 
   const [usinagemNomes, setUsinagemNomes] = useState({
-    usinagemHaste: "Usinagem de haste",
-    usinagemTampaGuia: "Usinagem de tampa guia",
-    usinagemEmbolo: "Usinagem de êmbolo",
-    usinagemCabecoteDianteiro: "Usinagem de cabeçote dianteiro canal do oring",
-    usinagemCabecoteTraseiro: "Usinagem cabeçote traseiro canal do oring"
+    usinagemHaste: t('analise.rodMachining'),
+    usinagemTampaGuia: t('analise.guideCapMachining'),
+    usinagemEmbolo: t('analise.pistonMachining'),
+    usinagemCabecoteDianteiro: t('analise.frontHeadMachining'),
+    usinagemCabecoteTraseiro: t('analise.rearHeadMachining')
   });
 
   const [usinagemAdicional, setUsinagemAdicional] = useState<Array<{ quantidade: number; nome: string; codigo?: string }>>([]);
