@@ -24,7 +24,7 @@ const gerarCorAleatoria = (): string => {
 export const useCategoriasFinanceiras = () => {
   const [categorias, setCategorias] = useState<CategoriaFinanceira[]>([]);
   const [loading, setLoading] = useState(true);
-  const { empresaId } = useEmpresaId();
+  const { empresaId, loading: loadingEmpresa } = useEmpresaId();
 
   // Buscar categorias do Supabase
   const fetchCategorias = async () => {
@@ -102,6 +102,11 @@ export const useCategoriasFinanceiras = () => {
     categoria: Omit<CategoriaFinanceira, 'id' | 'codigo' | 'cor'>
   ): Promise<CategoriaFinanceira | null> => {
     try {
+      if (!empresaId) {
+        toast.error('Empresa não selecionada. Por favor, selecione uma empresa primeiro.');
+        return null;
+      }
+
       const novoCodigo = gerarProximoCodigo(categoria.tipo, categoria.categoriaMaeId);
       
       // Se for filha, pega a cor da mãe, senão gera uma nova cor
@@ -304,7 +309,7 @@ export const useCategoriasFinanceiras = () => {
   return {
     categorias: categoriasOrdenadas,
     categoriasMae,
-    loading,
+    loading: loading || loadingEmpresa,
     gerarProximoCodigo,
     adicionarCategoria,
     atualizarCategoria,
