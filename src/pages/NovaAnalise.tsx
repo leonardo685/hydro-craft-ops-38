@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const NovaOrdemServico = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ const NovaOrdemServico = () => {
   const [ordemExistente, setOrdemExistente] = useState<any>(null);
   const [isEdicao, setIsEdicao] = useState(false);
   const { empresaAtual } = useEmpresa();
+  const { t, language } = useLanguage();
   
   const [formData, setFormData] = useState({
     tecnico: "",
@@ -1592,16 +1594,16 @@ const NovaOrdemServico = () => {
 
       console.log('Salvamento completo!');
       toast({
-        title: isEdicao ? "Ordem de serviço atualizada!" : "Ordem de serviço criada!",
-        description: isEdicao ? "A ordem de serviço foi atualizada com sucesso." : "A ordem de serviço foi criada com sucesso.",
+        title: isEdicao ? t('novaAnalise.orderUpdated') : t('novaAnalise.orderCreated'),
+        description: isEdicao ? t('novaAnalise.orderUpdatedDesc') : t('novaAnalise.orderCreatedDesc'),
       });
 
       navigate('/analise');
     } catch (error) {
       console.error('Erro ao salvar ordem de serviço:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao salvar a ordem de serviço. Tente novamente.",
+        title: t('novaAnalise.error'),
+        description: t('novaAnalise.errorSaving'),
         variant: "destructive",
       });
     }
@@ -1613,7 +1615,7 @@ const NovaOrdemServico = () => {
         <div className="container mx-auto p-6">
           <Card>
             <CardContent className="p-6">
-              <p>Carregando...</p>
+              <p>{t('novaAnalise.loading')}</p>
             </CardContent>
           </Card>
         </div>
@@ -1627,10 +1629,10 @@ const NovaOrdemServico = () => {
         <div className="container mx-auto p-6">
           <Card>
             <CardContent className="p-6">
-              <p>Recebimento não encontrado.</p>
+              <p>{t('novaAnalise.notFound')}</p>
               <Button onClick={() => navigate('/recebimentos')} className="mt-4">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar para Recebimentos
+                {t('novaAnalise.backToReceipts')}
               </Button>
             </CardContent>
           </Card>
@@ -1649,13 +1651,13 @@ const NovaOrdemServico = () => {
             className="mb-4"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar
+            {t('novaAnalise.back')}
           </Button>
           <h1 className="text-2xl font-bold">
-            {isEdicao ? 'Editar Análise Técnica' : 'Nova Análise Técnica'}
+            {isEdicao ? t('novaAnalise.editPageTitle') : t('novaAnalise.pageTitle')}
           </h1>
           <p className="text-muted-foreground">
-            {isEdicao ? 'Editando análise para:' : 'Criar análise para:'} {recebimento.equipamento} - {recebimento.cliente}
+            {isEdicao ? t('novaAnalise.editingFor') : t('novaAnalise.creatingFor')} {recebimento.equipamento} - {recebimento.cliente}
           </p>
         </div>
 
@@ -1663,34 +1665,34 @@ const NovaOrdemServico = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                📋 Informações Básicas
+                📋 {t('novaAnalise.basicInfo')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Cliente</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.client')}</Label>
                   <p className="font-semibold text-primary">{recebimento.cliente_nome}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Data de Entrada</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.entryDate')}</Label>
                   <p className="font-medium">{recebimento.dataEntrada}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Nota Fiscal</Label>
-                  <p className="font-medium">{recebimento.nota_fiscal || 'Não informada'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.invoice')}</Label>
+                  <p className="font-medium">{recebimento.nota_fiscal || t('novaAnalise.notInformed')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Nº da Ordem</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.orderNumber')}</Label>
                   <p className="font-medium">{recebimento.numeroOrdem}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Tipo de Equipamento</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.equipmentType')}</Label>
                   <p className="font-medium">{recebimento.equipamento}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Nº de Série</Label>
-                  <p className="font-medium">{recebimento.numero_serie || 'Não informado'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.serialNumber')}</Label>
+                  <p className="font-medium">{recebimento.numero_serie || t('novaAnalise.notInformedM')}</p>
                 </div>
               </div>
             </CardContent>
@@ -1699,7 +1701,7 @@ const NovaOrdemServico = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                📷 Fotos da Chegada do Equipamento
+                📷 {t('novaAnalise.arrivalPhotos')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1734,7 +1736,7 @@ const NovaOrdemServico = () => {
                         ) : (
                           <div className="text-center">
                             <Camera className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">Adicionar Foto</p>
+                            <p className="text-sm text-muted-foreground">{t('novaAnalise.addPhoto')}</p>
                           </div>
                         )}
                       </CardContent>
@@ -1748,13 +1750,13 @@ const NovaOrdemServico = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                ⚙️ Dados Técnicos (Editáveis)
+                ⚙️ {t('novaAnalise.technicalData')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="tipoEquipamento">Tipo Equipamento</Label>
+                  <Label htmlFor="tipoEquipamento">{t('novaAnalise.equipmentTypeLabel')}</Label>
                   <Input
                     id="tipoEquipamento"
                     value={dadosTecnicos.tipoEquipamento}
@@ -1763,7 +1765,7 @@ const NovaOrdemServico = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="pressaoTrabalho">Pressão de Trabalho</Label>
+                  <Label htmlFor="pressaoTrabalho">{t('novaAnalise.workPressure')}</Label>
                   <Input
                     id="pressaoTrabalho"
                     value={dadosTecnicos.pressaoTrabalho}
@@ -1772,7 +1774,7 @@ const NovaOrdemServico = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="camisa">Camisa</Label>
+                  <Label htmlFor="camisa">{t('novaAnalise.shirt')}</Label>
                   <Input
                     id="camisa"
                     value={dadosTecnicos.camisa}
@@ -1781,7 +1783,7 @@ const NovaOrdemServico = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="hasteComprimento">Haste x Comprimento</Label>
+                  <Label htmlFor="hasteComprimento">{t('novaAnalise.rodLength')}</Label>
                   <Input
                     id="hasteComprimento"
                     value={dadosTecnicos.hasteComprimento}
@@ -1790,7 +1792,7 @@ const NovaOrdemServico = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="curso">Curso</Label>
+                  <Label htmlFor="curso">{t('novaAnalise.stroke')}</Label>
                   <Input
                     id="curso"
                     value={dadosTecnicos.curso}
@@ -1799,7 +1801,7 @@ const NovaOrdemServico = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="conexaoA">Conexão A</Label>
+                  <Label htmlFor="conexaoA">{t('novaAnalise.connectionA')}</Label>
                   <Input
                     id="conexaoA"
                     value={dadosTecnicos.conexaoA}
@@ -1808,7 +1810,7 @@ const NovaOrdemServico = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="conexaoB">Conexão B</Label>
+                  <Label htmlFor="conexaoB">{t('novaAnalise.connectionB')}</Label>
                   <Input
                     id="conexaoB"
                     value={dadosTecnicos.conexaoB}
@@ -1824,9 +1826,9 @@ const NovaOrdemServico = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  📝 Observações
+                  📝 {t('novaAnalise.observations')}
                 </CardTitle>
-                <CardDescription>Observações de Entrada</CardDescription>
+                <CardDescription>{t('novaAnalise.entryObservations')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="bg-muted/50 p-4 rounded-lg">
@@ -1838,31 +1840,31 @@ const NovaOrdemServico = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Dados de Peritagem</CardTitle>
+              <CardTitle>{t('novaAnalise.expertiseData')}</CardTitle>
               <CardDescription>
-                Informações da peritagem técnica
+                {t('novaAnalise.expertiseInfo')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="problemas">Problemas Identificados</Label>
+                <Label htmlFor="problemas">{t('novaAnalise.identifiedProblems')}</Label>
                 <Textarea
                   id="problemas"
                   value={formData.problemas}
                   onChange={(e) => setFormData({ ...formData, problemas: e.target.value })}
-                  placeholder="Descreva os problemas encontrados no equipamento..."
+                  placeholder={t('novaAnalise.identifiedProblemsPlaceholder')}
                   rows={4}
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="observacoes">Observações Adicionais</Label>
+                <Label htmlFor="observacoes">{t('novaAnalise.additionalObservations')}</Label>
                 <Textarea
                   id="observacoes"
                   value={formData.observacoes}
                   onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                  placeholder="Observações gerais sobre o equipamento ou análise..."
+                  placeholder={t('novaAnalise.additionalObservationsPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -1873,10 +1875,10 @@ const NovaOrdemServico = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                📸 Fotos da Peritagem
+                📸 {t('novaAnalise.expertisePhotos')}
               </CardTitle>
               <CardDescription>
-                Fotos capturadas durante a análise técnica do equipamento
+                {t('novaAnalise.expertisePhotosDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1884,7 +1886,7 @@ const NovaOrdemServico = () => {
             {Array.from({ length: 8 }, (_, index) => (
               <Card key={index}>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm">Foto {index + 1}</CardTitle>
+                  <CardTitle className="text-sm">{t('novaAnalise.photo')} {index + 1}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {previewsAnalise[index] ? (
@@ -1923,7 +1925,7 @@ const NovaOrdemServico = () => {
                       />
                       <label htmlFor={`foto-analise-${index}`} className="cursor-pointer flex flex-col items-center gap-2">
                         <Upload className="h-6 w-6 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Upload</p>
+                        <p className="text-xs text-muted-foreground">{t('novaAnalise.upload')}</p>
                       </label>
                     </div>
                   )}
@@ -1937,10 +1939,10 @@ const NovaOrdemServico = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                ⚙️ Serviços
+                ⚙️ {t('novaAnalise.services')}
               </CardTitle>
               <CardDescription>
-                Selecione os serviços realizados
+                {t('novaAnalise.selectServices')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1953,7 +1955,7 @@ const NovaOrdemServico = () => {
                       setServicosPreDeterminados({...servicosPreDeterminados, desmontagem: checked as boolean})
                     }
                   />
-                  <Label htmlFor="desmontagem">Desmontagem e Montagem</Label>
+                  <Label htmlFor="desmontagem">{t('novaAnalise.disassemblyAssembly')}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -1963,7 +1965,7 @@ const NovaOrdemServico = () => {
                       setServicosPreDeterminados({...servicosPreDeterminados, limpeza: checked as boolean})
                     }
                   />
-                  <Label htmlFor="limpeza">Limpeza do Equipamento</Label>
+                  <Label htmlFor="limpeza">{t('novaAnalise.equipmentCleaning')}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -1973,7 +1975,7 @@ const NovaOrdemServico = () => {
                       setServicosPreDeterminados({...servicosPreDeterminados, teste: checked as boolean})
                     }
                   />
-                  <Label htmlFor="teste">Teste de Performance ISO 10100</Label>
+                  <Label htmlFor="teste">{t('novaAnalise.performanceTest')}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -1983,7 +1985,7 @@ const NovaOrdemServico = () => {
                       setServicosPreDeterminados({...servicosPreDeterminados, pintura: checked as boolean})
                     }
                   />
-                  <Label htmlFor="pintura">Pintura do Equipamento</Label>
+                  <Label htmlFor="pintura">{t('novaAnalise.equipmentPainting')}</Label>
                 </div>
                 <div className="flex items-center space-x-2 md:col-span-2">
                   <Checkbox 
@@ -1993,12 +1995,12 @@ const NovaOrdemServico = () => {
                       setServicosPreDeterminados({...servicosPreDeterminados, recondicionamento: checked as boolean})
                     }
                   />
-                  <Label htmlFor="recondicionamento">Recondicionamento de Roscas</Label>
+                  <Label htmlFor="recondicionamento">{t('novaAnalise.threadReconditioning')}</Label>
                 </div>
               </div>
               
               <div>
-                <Label htmlFor="servicosPersonalizados">Serviços Adicionais</Label>
+                <Label htmlFor="servicosPersonalizados">{t('novaAnalise.additionalServices')}</Label>
                 <div className="space-y-2">
                   <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-2 items-end p-3 bg-background rounded-lg border">
                     <div>
@@ -3093,7 +3095,7 @@ const NovaOrdemServico = () => {
               variant="outline"
               onClick={() => navigate('/analise')}
             >
-              Cancelar
+              {t('novaAnalise.cancel')}
             </Button>
             <Button 
               type="button"
@@ -3102,11 +3104,11 @@ const NovaOrdemServico = () => {
               onClick={() => exportToPDF(ordemExistente, recebimento)}
             >
               <FileText className="mr-2 h-4 w-4" />
-              Exportar PDF
+              {t('novaAnalise.exportPdf')}
             </Button>
             <Button type="submit">
               <Save className="mr-2 h-4 w-4" />
-              {isEdicao ? 'Salvar Alterações' : 'Criar Ordem de Serviço'}
+              {isEdicao ? t('novaAnalise.saveChanges') : t('novaAnalise.createServiceOrder')}
             </Button>
           </div>
         </form>
