@@ -76,6 +76,7 @@ export default function LaudoPublico() {
   const [ordemServico, setOrdemServico] = useState<OrdemServico | null>(null);
   const [teste, setTeste] = useState<TesteEquipamento | null>(null);
   const [fotos, setFotos] = useState<FotoEquipamento[]>([]);
+  const [empresaLogo, setEmpresaLogo] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -186,6 +187,19 @@ export default function LaudoPublico() {
         }
 
         setFotos(fotosData);
+
+        // Buscar logo da empresa
+        if (ordem.empresa_id) {
+          const { data: empresaData } = await supabase
+            .from("empresas")
+            .select("logo_url")
+            .eq("id", ordem.empresa_id)
+            .maybeSingle();
+          
+          if (empresaData?.logo_url) {
+            setEmpresaLogo(empresaData.logo_url);
+          }
+        }
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
         toast.error("Erro ao carregar laudo");
@@ -278,9 +292,10 @@ export default function LaudoPublico() {
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
               <img 
-                src={defaultLogo} 
+                src={empresaLogo || defaultLogo} 
                 alt="Logo" 
                 className="h-16 object-contain"
+                crossOrigin="anonymous"
               />
             </div>
             <div>

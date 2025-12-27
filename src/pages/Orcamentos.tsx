@@ -19,7 +19,7 @@ import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 import { VincularOrdensModal } from "@/components/VincularOrdensModal";
 import jsPDF from "jspdf";
-import defaultLogo from "@/assets/mec-hidro-logo.jpg";
+import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -522,30 +522,7 @@ export default function Orcamentos() {
 
       // === CABEÇALHO ===
       // Logo dinâmico
-      const logoSrc = empresaAtual?.logo_url || defaultLogo;
-      try {
-        const logoImg = new Image();
-        logoImg.crossOrigin = 'anonymous';
-        logoImg.src = logoSrc;
-        await new Promise<void>((resolve) => {
-          logoImg.onload = () => {
-            doc.addImage(logoImg, 'JPEG', pageWidth - 50, 8, 35, 20);
-            resolve();
-          };
-          logoImg.onerror = () => {
-            // Fallback para logo padrão se URL externa falhar
-            const fallbackImg = new Image();
-            fallbackImg.src = defaultLogo;
-            fallbackImg.onload = () => {
-              doc.addImage(fallbackImg, 'JPEG', pageWidth - 50, 8, 35, 20);
-              resolve();
-            };
-            fallbackImg.onerror = () => resolve();
-          };
-        });
-      } catch (error) {
-        console.error('Erro ao carregar logo:', error);
-      }
+      await addLogoToPDF(doc, empresaAtual?.logo_url, pageWidth - 50, 8, 35, 20);
 
       // Informações da empresa (lado esquerdo)
       doc.setFontSize(12);
