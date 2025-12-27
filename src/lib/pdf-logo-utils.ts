@@ -1,4 +1,4 @@
-import defaultLogo from "@/assets/mec-hidro-logo.jpg";
+import defaultLogo from "@/assets/mec-hydro-logo-novo.jpg";
 
 /**
  * Carrega uma imagem de logo para uso no jsPDF
