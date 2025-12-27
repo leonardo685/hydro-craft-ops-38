@@ -957,6 +957,9 @@ export default function Orcamentos() {
 
       // === FOTOS (se houver) ===
       if (fotosData.length > 0) {
+        // Adicionar espaçamento antes das fotos
+        yPosition += 10;
+        
         const alturaLinhaFotoCalc = 75; // altura da foto + legenda
         const espacoMinimoFotos = 20 + alturaLinhaFotoCalc; // título + uma linha de fotos
         
