@@ -19,6 +19,7 @@ export interface Empresa {
   ativo: boolean;
   created_at: string;
   updated_at: string;
+  tipo_identificacao: string | null;
 }
 
 export interface UserEmpresa {

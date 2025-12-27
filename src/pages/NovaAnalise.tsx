@@ -168,11 +168,15 @@ const NovaOrdemServico = () => {
     const dadosRecebimento = recebimentoData || recebimento;
     const jsPDF = (await import('jspdf')).default;
     
+    const tipoIdentificacao = empresaAtual?.tipo_identificacao || 'cnpj';
+    const labelIdentificacao = tipoIdentificacao === 'ein' ? 'EIN' : tipoIdentificacao === 'ssn' ? 'SSN' : 'CNPJ';
+    
     const EMPRESA_INFO = {
-      nome: "MEC-HIDRO MECANICA E HIDRAULICA LTDA",
-      cnpj: "03.328.334/0001-87",
-      telefone: "(19) 3026-6227",
-      email: "contato@mechidro.com.br"
+      nome: empresaAtual?.razao_social || empresaAtual?.nome || "N/A",
+      cnpj: empresaAtual?.cnpj || "",
+      telefone: empresaAtual?.telefone || "",
+      email: empresaAtual?.email || "",
+      labelIdentificacao
     };
     
     const doc = new jsPDF();
@@ -235,7 +239,7 @@ const NovaOrdemServico = () => {
     doc.text(EMPRESA_INFO.nome, 20, yPosition + 5);
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(`CNPJ: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
+    doc.text(`${EMPRESA_INFO.labelIdentificacao}: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
     doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
     doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
     

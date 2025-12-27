@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 import mecHidroLogo from "@/assets/mec-hidro-logo-novo.jpg";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 
 interface ItemSelectionModalProps {
   title: string;
@@ -19,6 +20,7 @@ interface ItemSelectionModalProps {
 
 export function ItemSelectionModal({ title, items, type, children, ordemId }: ItemSelectionModalProps) {
   const { t } = useLanguage();
+  const { empresaAtual } = useEmpresa();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [realItems, setRealItems] = useState<any[]>([]);
@@ -72,11 +74,15 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
   };
 
   const generatePDF = async () => {
+    const tipoIdentificacao = empresaAtual?.tipo_identificacao || 'cnpj';
+    const labelIdentificacao = tipoIdentificacao === 'ein' ? 'EIN' : tipoIdentificacao === 'ssn' ? 'SSN' : 'CNPJ';
+    
     const EMPRESA_INFO = {
-      nome: "MEC-HIDRO MECANICA E HIDRAULICA LTDA",
-      cnpj: "03.328.334/0001-87",
-      telefone: "(19) 3026-6227",
-      email: "contato@mechidro.com.br"
+      nome: empresaAtual?.razao_social || empresaAtual?.nome || "N/A",
+      cnpj: empresaAtual?.cnpj || "",
+      telefone: empresaAtual?.telefone || "",
+      email: empresaAtual?.email || "",
+      labelIdentificacao
     };
 
     const doc = new jsPDF();
@@ -128,7 +134,7 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
     doc.text(EMPRESA_INFO.nome, 20, yPosition + 5);
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(`CNPJ: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
+    doc.text(`${EMPRESA_INFO.labelIdentificacao}: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
     doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
     doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
     

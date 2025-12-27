@@ -25,6 +25,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations } from "@/i18n/translations";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 
 // Custom Tooltip for mini charts (valores monetários)
 const CustomTooltip = ({ active, payload }: any) => {
@@ -60,6 +61,7 @@ export default function Orcamentos() {
   const [orcamentos, setOrcamentos] = useState<any[]>([]);
   const navigate = useNavigate();
   const { t, language } = useLanguage();
+  const { empresaAtual } = useEmpresa();
 
   // Estados para filtros
   const [dataInicio, setDataInicio] = useState<Date | undefined>();
@@ -286,11 +288,15 @@ export default function Orcamentos() {
 
   const gerarPDFOrcamento = async (orcamento: any, language: 'pt-BR' | 'en' = 'pt-BR') => {
     try {
+      const tipoIdentificacao = empresaAtual?.tipo_identificacao || 'cnpj';
+      const labelIdentificacao = tipoIdentificacao === 'ein' ? 'EIN' : tipoIdentificacao === 'ssn' ? 'SSN' : 'CNPJ';
+      
       const EMPRESA_INFO = {
-        nome: "MEC-HIDRO MECANICA E HIDRAULICA LTDA",
-        cnpj: "03.328.334/0001-87",
-        telefone: "(19) 3026-6227",
-        email: "contato@mechidro.com.br"
+        nome: empresaAtual?.razao_social || empresaAtual?.nome || "N/A",
+        cnpj: empresaAtual?.cnpj || "",
+        telefone: empresaAtual?.telefone || "",
+        email: empresaAtual?.email || "",
+        labelIdentificacao
       };
 
       // Get translations based on language
@@ -528,7 +534,7 @@ export default function Orcamentos() {
       doc.text(EMPRESA_INFO.nome, 20, 15);
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      doc.text(`CNPJ: ${EMPRESA_INFO.cnpj}`, 20, 20);
+      doc.text(`${EMPRESA_INFO.labelIdentificacao}: ${EMPRESA_INFO.cnpj}`, 20, 20);
       doc.text(`Tel: ${EMPRESA_INFO.telefone} | Email: ${EMPRESA_INFO.email}`, 20, 24);
 
       // Linha vermelha decorativa
