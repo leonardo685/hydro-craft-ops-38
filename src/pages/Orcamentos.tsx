@@ -957,10 +957,16 @@ export default function Orcamentos() {
 
       // === FOTOS (se houver) ===
       if (fotosData.length > 0) {
-        adicionarRodape(currentPage);
-        doc.addPage();
-        currentPage++;
-        yPosition = 20;
+        const alturaLinhaFotoCalc = 75; // altura da foto + legenda
+        const espacoMinimoFotos = 20 + alturaLinhaFotoCalc; // título + uma linha de fotos
+        
+        // Verificar se há espaço suficiente na página atual
+        if (yPosition + espacoMinimoFotos > pageHeight - 30) {
+          adicionarRodape(currentPage);
+          doc.addPage();
+          currentPage++;
+          yPosition = 20;
+        }
 
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
