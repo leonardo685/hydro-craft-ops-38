@@ -20,7 +20,7 @@ const NovaOrdemDireta = () => {
   const { toast } = useToast();
   const { clientes } = useClientes();
   const { empresaAtual } = useEmpresa();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const [formData, setFormData] = useState({
     cliente: "",
@@ -82,11 +82,11 @@ const NovaOrdemDireta = () => {
   });
 
   const [servicosNomes, setServicosNomes] = useState({
-    desmontagem: t('analise.disassemblyAssembly'),
-    limpeza: t('analise.equipmentCleaning'),
-    teste: t('analise.performanceTest'),
-    pintura: t('analise.equipmentPainting'),
-    recondicionamento: t('analise.threadReconditioning')
+    desmontagem: t('novaAnalise.disassemblyAssembly'),
+    limpeza: t('novaAnalise.equipmentCleaning'),
+    teste: t('novaAnalise.performanceTest'),
+    pintura: t('novaAnalise.equipmentPainting'),
+    recondicionamento: t('novaAnalise.threadReconditioning')
   });
 
   const [servicosAdicionais, setServicosAdicionais] = useState<Array<{ quantidade: number; nome: string; codigo?: string }>>([]);
@@ -110,12 +110,30 @@ const NovaOrdemDireta = () => {
   });
 
   const [usinagemNomes, setUsinagemNomes] = useState({
-    usinagemHaste: t('analise.rodMachining'),
-    usinagemTampaGuia: t('analise.guideCapMachining'),
-    usinagemEmbolo: t('analise.pistonMachining'),
-    usinagemCabecoteDianteiro: t('analise.frontHeadMachining'),
-    usinagemCabecoteTraseiro: t('analise.rearHeadMachining')
+    usinagemHaste: t('novaAnalise.rodMachining'),
+    usinagemTampaGuia: t('novaAnalise.guideCapMachining'),
+    usinagemEmbolo: t('novaAnalise.pistonMachining'),
+    usinagemCabecoteDianteiro: t('novaAnalise.frontHeadMachining'),
+    usinagemCabecoteTraseiro: t('novaAnalise.rearHeadMachining')
   });
+
+  // Atualizar nomes quando o idioma mudar
+  useEffect(() => {
+    setServicosNomes({
+      desmontagem: t('novaAnalise.disassemblyAssembly'),
+      limpeza: t('novaAnalise.equipmentCleaning'),
+      teste: t('novaAnalise.performanceTest'),
+      pintura: t('novaAnalise.equipmentPainting'),
+      recondicionamento: t('novaAnalise.threadReconditioning')
+    });
+    setUsinagemNomes({
+      usinagemHaste: t('novaAnalise.rodMachining'),
+      usinagemTampaGuia: t('novaAnalise.guideCapMachining'),
+      usinagemEmbolo: t('novaAnalise.pistonMachining'),
+      usinagemCabecoteDianteiro: t('novaAnalise.frontHeadMachining'),
+      usinagemCabecoteTraseiro: t('novaAnalise.rearHeadMachining')
+    });
+  }, [language, t]);
 
   const [usinagemAdicional, setUsinagemAdicional] = useState<Array<{ quantidade: number; nome: string; codigo?: string }>>([]);
   const [novaUsinagemAdicional, setNovaUsinagemAdicional] = useState({ quantidade: 1, nome: "", codigo: "" });
