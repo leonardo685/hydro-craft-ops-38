@@ -20,6 +20,7 @@ import { FotoEquipamento } from "@/hooks/use-recebimentos";
 import jsPDF from "jspdf";
 import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 interface ItemOrcamento {
   id: string;
   tipo: 'peca' | 'servico' | 'usinagem';
@@ -41,6 +42,7 @@ export default function NovoOrcamento() {
   const ordemServicoId = searchParams.get('ordemServicoId');
   const orcamentoParaEdicao = location.state?.orcamento;
   const { empresaAtual } = useEmpresa();
+  const { t } = useLanguage();
   
   // Usar ref para persistir o orçamento e evitar perda de dados em re-renders
   const orcamentoRef = useRef(orcamentoParaEdicao);
@@ -2619,15 +2621,15 @@ export default function NovoOrcamento() {
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" onClick={() => navigate('/orcamentos')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
+            {t('novoOrcamento.back')}
           </Button>
           <div>
             <h2 className="text-2xl font-bold text-foreground">
-              {ordemServicoId ? 'Novo Orçamento - Baseado em Ordem de Serviço' : 
-               analiseId ? 'Novo Orçamento - Baseado em Análise' : 'Novo Orçamento'}
+              {ordemServicoId ? t('novoOrcamento.pageTitleServiceOrder') : 
+               analiseId ? t('novoOrcamento.pageTitleAnalysis') : t('novoOrcamento.pageTitle')}
             </h2>
             <p className="text-muted-foreground">
-              Crie e edite a proposta comercial
+              {t('novoOrcamento.pageSubtitle')}
             </p>
           </div>
         </div>
@@ -2638,16 +2640,16 @@ export default function NovoOrcamento() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" />
-                Dados do Orçamento
+                {t('novoOrcamento.quoteData')}
               </CardTitle>
               <CardDescription>
-                Informações básicas da proposta
+                {t('novoOrcamento.quoteDataDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="numeroOrdem">Nº do Orçamento *</Label>
+                  <Label htmlFor="numeroOrdem">{t('novoOrcamento.quoteNumber')} *</Label>
                   <Input 
                     id="numeroOrdem" 
                     value={dadosOrcamento.numeroOrdem} 
@@ -2658,11 +2660,11 @@ export default function NovoOrcamento() {
                     className="bg-muted" 
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Número gerado automaticamente
+                    {t('novoOrcamento.quoteNumberAuto')}
                   </p>
                 </div>
                 <div>
-                  <Label htmlFor="tipoOrdem">Tipo Ordem *</Label>
+                  <Label htmlFor="tipoOrdem">{t('novoOrcamento.orderType')} *</Label>
                   <Select 
                     value={dadosOrcamento.tipoOrdem} 
                     onValueChange={value => setDadosOrcamento(prev => ({
@@ -2672,12 +2674,12 @@ export default function NovoOrcamento() {
                     disabled={loadingCategorias}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
+                      <SelectValue placeholder={t('novoOrcamento.selectPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       {receitasOperacionais.length === 0 ? (
                         <SelectItem value="sem_categoria" disabled>
-                          Nenhuma receita cadastrada
+                          {t('novoOrcamento.noRevenueCategories')}
                         </SelectItem>
                       ) : (
                         receitasOperacionais.map(categoria => (
@@ -2689,7 +2691,7 @@ export default function NovoOrcamento() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Categorias de receita operacional
+                    {t('novoOrcamento.operationalRevenueCategories')}
                   </p>
                 </div>
                 
@@ -2697,7 +2699,7 @@ export default function NovoOrcamento() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="cliente">Cliente *</Label>
+                  <Label htmlFor="cliente">{t('novoOrcamento.client')} *</Label>
                   {ordemServicoId ? (
                     <Input 
                       id="cliente" 
@@ -2716,7 +2718,7 @@ export default function NovoOrcamento() {
                         }));
                       }}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione..." />
+                          <SelectValue placeholder={t('novoOrcamento.selectPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                           {clientes.map(cliente => <SelectItem key={cliente.id} value={cliente.id}>
@@ -2732,51 +2734,51 @@ export default function NovoOrcamento() {
                         className="w-full mt-2"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Cadastrar Novo Cliente
+                        {t('novoOrcamento.registerNewClient')}
                       </Button>
                     </>
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="solicitante">Solicitante</Label>
+                  <Label htmlFor="solicitante">{t('novoOrcamento.requester')}</Label>
                   <Input id="solicitante" value={dadosOrcamento.solicitante} onChange={e => setDadosOrcamento(prev => ({
                   ...prev,
                   solicitante: e.target.value
-                }))} placeholder="Nome do solicitante" />
+                }))} placeholder={t('novoOrcamento.requesterPlaceholder')} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="dataAbertura">Data de Abertura *</Label>
+                  <Label htmlFor="dataAbertura">{t('novoOrcamento.openingDate')} *</Label>
                   <Input id="dataAbertura" type="date" value={dadosOrcamento.dataAbertura} onChange={e => setDadosOrcamento(prev => ({
                   ...prev,
                   dataAbertura: e.target.value
                 }))} />
                 </div>
                 <div>
-                  <Label htmlFor="numeroNota">Nº da Nota *</Label>
+                  <Label htmlFor="numeroNota">{t('novoOrcamento.invoiceNumber')} *</Label>
                   <Input id="numeroNota" value={dadosOrcamento.numeroNota} onChange={e => setDadosOrcamento(prev => ({
                   ...prev,
                   numeroNota: e.target.value
-                }))} placeholder="Número da nota fiscal" />
+                }))} placeholder={t('novoOrcamento.invoicePlaceholder')} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="numeroSerie">Ordem Referência (Automático)</Label>
+                  <Label htmlFor="numeroSerie">{t('novoOrcamento.referenceOrder')}</Label>
                   <Input id="numeroSerie" value={dadosOrcamento.numeroSerie} onChange={e => setDadosOrcamento(prev => ({
                   ...prev,
                   numeroSerie: e.target.value
-                }))} placeholder="Gerada apenas para orçamentos baseados em ordens de serviço" className="bg-muted" disabled />
+                }))} placeholder={t('novoOrcamento.referenceOrderPlaceholder')} className="bg-muted" disabled />
                 </div>
                 <div>
-                  <Label htmlFor="tag">TAG</Label>
+                  <Label htmlFor="tag">{t('novoOrcamento.tag')}</Label>
                   <Input id="tag" value={dadosOrcamento.tag} onChange={e => setDadosOrcamento(prev => ({
                   ...prev,
                   tag: e.target.value
-                }))} placeholder="TAG do equipamento" />
+                }))} placeholder={t('novoOrcamento.tagPlaceholder')} />
                 </div>
               </div>
             </CardContent>
@@ -2788,10 +2790,10 @@ export default function NovoOrcamento() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Camera className="h-5 w-5 text-primary" />
-              Fotos do Equipamento
+              {t('novoOrcamento.equipmentPhotos')}
             </CardTitle>
             <CardDescription>
-              Faça upload de fotos do equipamento
+              {t('novoOrcamento.equipmentPhotosDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -2810,14 +2812,14 @@ export default function NovoOrcamento() {
                 <label htmlFor="upload-fotos" className="cursor-pointer block">
                   <Upload className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                   <p className="text-primary font-medium mb-1">
-                    Clique para fazer upload de fotos
+                    {t('novoOrcamento.clickToUpload')}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    PNG, JPG até 10MB
+                    {t('novoOrcamento.uploadFormats')}
                   </p>
                 </label>
                 {uploadingFoto && (
-                  <p className="text-sm text-primary mt-3 animate-pulse">Enviando...</p>
+                  <p className="text-sm text-primary mt-3 animate-pulse">{t('novoOrcamento.uploading')}</p>
                 )}
               </div>
             )}
@@ -2855,12 +2857,12 @@ export default function NovoOrcamento() {
                           htmlFor={`apresentar-${foto.id}`}
                           className="text-xs text-foreground cursor-pointer select-none"
                         >
-                          Apresentar Orçamento
+                          {t('novoOrcamento.presentInQuote')}
                         </label>
                       </div>
                       <div className="px-1">
                         <Input
-                          placeholder="Legenda da foto..."
+                          placeholder={t('novoOrcamento.photoCaption')}
                           value={foto.legenda || ''}
                           onChange={(e) => atualizarLegenda(foto.id, e.target.value)}
                           className="text-xs h-8"
@@ -2884,7 +2886,7 @@ export default function NovoOrcamento() {
                     <label htmlFor="upload-fotos-additional" className="cursor-pointer block">
                       <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                       <p className="text-primary font-medium text-sm">
-                        Adicionar mais fotos
+                        {t('novoOrcamento.addMorePhotos')}
                       </p>
                     </label>
                   </div>
@@ -3499,15 +3501,15 @@ export default function NovoOrcamento() {
         {/* Botões de Ação */}
         <div className="flex justify-end gap-4 pt-6">
           <Button variant="outline" onClick={() => navigate("/orcamentos")}>
-            Cancelar
+            {t('novoOrcamento.cancel')}
           </Button>
           <Button onClick={exportarPDF} variant="outline" className="flex items-center gap-2">
             <Download className="h-4 w-4" />
-            Exportar PDF
+            {t('novoOrcamento.exportPdf')}
           </Button>
           <Button onClick={salvarOrcamento} className="flex items-center gap-2 bg-gradient-primary hover:bg-primary-hover">
             <Save className="h-4 w-4" />
-            Salvar Orçamento
+            {t('novoOrcamento.saveQuote')}
           </Button>
         </div>
       </div>
@@ -3516,25 +3518,25 @@ export default function NovoOrcamento() {
       <Dialog open={modalNovoCliente} onOpenChange={setModalNovoCliente}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
+            <DialogTitle>{t('novoOrcamento.registerClient')}</DialogTitle>
             <DialogDescription>
-              Preencha os dados do novo cliente
+              {t('novoOrcamento.registerClientDesc')}
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4">
             <div>
-              <Label>Nome / Razão Social *</Label>
+              <Label>{t('novoOrcamento.nameRazaoSocial')} *</Label>
               <Input 
                 value={novoClienteData.nome}
                 onChange={(e) => setNovoClienteData(prev => ({ ...prev, nome: e.target.value }))}
-                placeholder="Digite o nome do cliente"
+                placeholder={t('novoOrcamento.nameRazaoSocialPlaceholder')}
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>CNPJ / CPF</Label>
+                <Label>{t('novoOrcamento.cnpjCpf')}</Label>
                 <Input 
                   value={novoClienteData.cnpj_cpf}
                   onChange={(e) => setNovoClienteData(prev => ({ ...prev, cnpj_cpf: e.target.value }))}
@@ -3542,7 +3544,7 @@ export default function NovoOrcamento() {
                 />
               </div>
               <div>
-                <Label>Telefone</Label>
+                <Label>{t('novoOrcamento.phone')}</Label>
                 <Input 
                   value={novoClienteData.telefone}
                   onChange={(e) => setNovoClienteData(prev => ({ ...prev, telefone: e.target.value }))}
@@ -3601,11 +3603,11 @@ export default function NovoOrcamento() {
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalNovoCliente(false)}>
-              Cancelar
+              {t('novoOrcamento.cancel')}
             </Button>
             <Button onClick={handleSalvarNovoCliente}>
               <Plus className="h-4 w-4 mr-2" />
-              Salvar Cliente
+              {t('novoOrcamento.saveClient')}
             </Button>
           </DialogFooter>
         </DialogContent>
