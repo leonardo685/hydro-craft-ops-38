@@ -86,7 +86,7 @@ export default function Orcamentos() {
 
       if (error) {
         console.error('Erro ao carregar ordens de serviço:', error);
-        toast.error('Erro ao carregar ordens de serviço');
+        toast.error(t('orcamentos.errorLoadingOrders'));
         return;
       }
 
@@ -95,7 +95,7 @@ export default function Orcamentos() {
       setOrdensFiltered(data || []);
     } catch (error) {
       console.error('Erro ao carregar ordens de serviço:', error);
-      toast.error('Erro ao carregar ordens de serviço');
+      toast.error(t('orcamentos.errorLoadingOrders'));
     }
   };
 
@@ -111,7 +111,7 @@ export default function Orcamentos() {
 
       if (error) {
         console.error('Erro ao carregar orçamentos:', error);
-        toast.error('Erro ao carregar orçamentos');
+        toast.error(t('orcamentos.errorLoadingQuotes'));
         return;
       }
 
@@ -152,7 +152,7 @@ export default function Orcamentos() {
       setOrcamentos(orcamentosComOrdens);
     } catch (error) {
       console.error('Erro ao carregar orçamentos:', error);
-      toast.error('Erro ao carregar orçamentos');
+      toast.error(t('orcamentos.errorLoadingQuotes'));
     }
   };
 
@@ -174,7 +174,7 @@ export default function Orcamentos() {
       navigate(`/orcamentos/novo?ordemServicoId=${selectedOrdemServico.id}`);
       setIsSheetOpen(false);
     } else {
-      toast.error("Selecione uma ordem de serviço primeiro");
+      toast.error(t('orcamentos.selectOrderFirst'));
     }
   };
 
@@ -224,12 +224,12 @@ export default function Orcamentos() {
       }
 
       await carregarOrcamentos();
-      toast("Orçamento reprovado", {
-        description: "O orçamento foi marcado como rejeitado.",
+      toast(t('orcamentos.quoteRejected'), {
+        description: t('orcamentos.quoteRejectedDesc'),
       });
     } catch (error) {
       console.error('Erro ao reprovar orçamento:', error);
-      toast.error('Erro ao reprovar orçamento');
+      toast.error(t('orcamentos.errorRejectingQuote'));
     }
   };
 
@@ -1064,7 +1064,7 @@ export default function Orcamentos() {
             </SheetTrigger>
             <SheetContent className="sm:max-w-2xl">
               <SheetHeader>
-                <SheetTitle>Criar Novo Orçamento</SheetTitle>
+                <SheetTitle>{t('orcamentos.createNewQuote')}</SheetTitle>
               </SheetHeader>
               
               <div className="py-6 space-y-6">
@@ -1075,9 +1075,9 @@ export default function Orcamentos() {
                         <Plus className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg">Orçamento em Branco</CardTitle>
+                        <CardTitle className="text-lg">{t('orcamentos.blankQuote')}</CardTitle>
                         <CardDescription>
-                          Criar um novo orçamento do zero
+                          {t('orcamentos.createFromScratch')}
                         </CardDescription>
                       </div>
                     </div>
@@ -1091,21 +1091,21 @@ export default function Orcamentos() {
                         <Copy className="h-5 w-5 text-accent" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg">Baseado em Ordem de Serviço</CardTitle>
+                        <CardTitle className="text-lg">{t('orcamentos.basedOnOrder')}</CardTitle>
                         <CardDescription>
-                          Criar orçamento com base em uma ordem de serviço existente
+                          {t('orcamentos.createBasedOnOrder')}
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0 space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="search-ordem">Buscar Ordem de Serviço</Label>
+                      <Label htmlFor="search-ordem">{t('orcamentos.searchOrder')}</Label>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="search-ordem"
-                          placeholder="Busque por cliente, equipamento ou número..."
+                          placeholder={t('orcamentos.searchOrderPlaceholder')}
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="pl-10"
@@ -1114,10 +1114,10 @@ export default function Orcamentos() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Selecionar Ordem de Serviço</Label>
+                      <Label>{t('orcamentos.selectOrderLabel')}</Label>
                       <Select onValueChange={(value) => setSelectedOrdemServico(ordensFiltered.find(o => o.id === value))}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma ordem de serviço..." />
+                          <SelectValue placeholder={t('orcamentos.selectOrderPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent className="max-h-60">
                           {ordensFiltered.length > 0 ? (
@@ -1135,7 +1135,7 @@ export default function Orcamentos() {
                             <SelectItem value="no-ordens" disabled>
                               <div className="text-center text-muted-foreground">
                                 <FileText className="h-4 w-4 mx-auto mb-1 opacity-50" />
-                                <p>Nenhuma ordem de serviço encontrada</p>
+                                <p>{t('orcamentos.noOrdersFound')}</p>
                               </div>
                             </SelectItem>
                           )}
@@ -1161,7 +1161,7 @@ export default function Orcamentos() {
                       disabled={!selectedOrdemServico}
                       className="w-full"
                     >
-                      Criar Orçamento da Ordem de Serviço
+                      {t('orcamentos.createFromOrderButton')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -1626,7 +1626,7 @@ export default function Orcamentos() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
-                            Orçamento #{item.numero}
+                            {t('orcamentos.quote')} #{item.numero}
                           </h3>
                           <Badge className={getStatusColor(item.status)}>
                             {getStatusText(item.status)}
@@ -1640,9 +1640,9 @@ export default function Orcamentos() {
                           )}
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
-                          <p><span className="font-medium">Cliente:</span> {item.cliente_nome}</p>
-                          <p><span className="font-medium">Equipamento:</span> {item.equipamento}</p>
-                          <p><span className="font-medium">Valor:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
+                          <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
+                          <p><span className="font-medium">{t('orcamentos.value')}:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1650,7 +1650,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleVincularOrdens(item)}
-                          title="Vincular Ordens de Serviço"
+                          title={t('orcamentos.linkOrders')}
                         >
                           <Link2 className="h-4 w-4" />
                         </Button>
@@ -1699,10 +1699,10 @@ export default function Orcamentos() {
                 <CardContent className="p-12 text-center">
                   <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                   <h3 className="text-lg font-medium text-foreground mb-2">
-                    Nenhum orçamento aguardando aprovação
+                    {t('orcamentos.noQuotesAwaitingApproval')}
                   </h3>
                   <p className="text-muted-foreground">
-                    Não há orçamentos pendentes no momento
+                    {t('orcamentos.noQuotesPending')}
                   </p>
                 </CardContent>
               </Card>
@@ -1718,7 +1718,7 @@ export default function Orcamentos() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
-                            Orçamento #{item.numero}
+                            {t('orcamentos.quote')} #{item.numero}
                           </h3>
                           <Badge className={getStatusColor(item.status)}>
                             {getStatusText(item.status)}
@@ -1732,9 +1732,9 @@ export default function Orcamentos() {
                           )}
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
-                          <p><span className="font-medium">Cliente:</span> {item.cliente_nome}</p>
-                          <p><span className="font-medium">Equipamento:</span> {item.equipamento}</p>
-                          <p><span className="font-medium">Valor:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
+                          <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
+                          <p><span className="font-medium">{t('orcamentos.value')}:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1742,7 +1742,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleVincularOrdens(item)}
-                          title="Vincular Ordens de Serviço"
+                          title={t('orcamentos.linkOrders')}
                         >
                           <Link2 className="h-4 w-4" />
                         </Button>
@@ -1777,10 +1777,10 @@ export default function Orcamentos() {
                 <CardContent className="p-12 text-center">
                   <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                   <h3 className="text-lg font-medium text-foreground mb-2">
-                    Nenhum orçamento aprovado
+                    {t('orcamentos.noQuotesApproved')}
                   </h3>
                   <p className="text-muted-foreground">
-                    Não há orçamentos aprovados no momento
+                    {t('orcamentos.noQuotesApprovedNow')}
                   </p>
                 </CardContent>
               </Card>
@@ -1796,10 +1796,10 @@ export default function Orcamentos() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
-                            Orçamento #{item.numero}
+                            {t('orcamentos.quote')} #{item.numero}
                           </h3>
                           <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            Finalizado
+                            {t('orcamentos.finalized')}
                           </Badge>
                           {item.ordens_vinculadas && item.ordens_vinculadas.length > 0 && (
                             item.ordens_vinculadas.map((ordem: any) => (
@@ -1810,17 +1810,17 @@ export default function Orcamentos() {
                           )}
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
-                          <p><span className="font-medium">Cliente:</span> {item.cliente_nome}</p>
-                          <p><span className="font-medium">Equipamento:</span> {item.equipamento}</p>
-                          <p><span className="font-medium">Valor:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
+                          <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
+                          <p><span className="font-medium">{t('orcamentos.value')}:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                           {item.numero_nf && (
-                            <p><span className="font-medium">NF:</span> {item.numero_nf}</p>
+                            <p><span className="font-medium">{t('orcamentos.invoiceNumber')}:</span> {item.numero_nf}</p>
                           )}
                           {item.forma_pagamento && (
-                            <p><span className="font-medium">Forma Pagamento:</span> {item.forma_pagamento}</p>
+                            <p><span className="font-medium">{t('orcamentos.paymentMethod')}:</span> {item.forma_pagamento}</p>
                           )}
                           {item.data_aprovacao && (
-                            <p><span className="font-medium">Data Aprovação:</span> {new Date(item.data_aprovacao).toLocaleDateString('pt-BR')}</p>
+                            <p><span className="font-medium">{t('orcamentos.approvalDate')}:</span> {new Date(item.data_aprovacao).toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR')}</p>
                           )}
                         </div>
                       </div>
@@ -1849,10 +1849,10 @@ export default function Orcamentos() {
                 <CardContent className="p-12 text-center">
                   <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                   <h3 className="text-lg font-medium text-foreground mb-2">
-                    Nenhum orçamento finalizado
+                    {t('orcamentos.noQuotesFinalized')}
                   </h3>
                   <p className="text-muted-foreground">
-                    Não há orçamentos finalizados no momento
+                    {t('orcamentos.noQuotesFinalizedNow')}
                   </p>
                 </CardContent>
               </Card>
@@ -1868,7 +1868,7 @@ export default function Orcamentos() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
-                            Orçamento #{item.numero}
+                            {t('orcamentos.quote')} #{item.numero}
                           </h3>
                           <Badge className={getStatusColor(item.status)}>
                             {getStatusText(item.status)}
@@ -1882,9 +1882,9 @@ export default function Orcamentos() {
                           )}
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
-                          <p><span className="font-medium">Cliente:</span> {item.cliente_nome}</p>
-                          <p><span className="font-medium">Equipamento:</span> {item.equipamento}</p>
-                          <p><span className="font-medium">Valor:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
+                          <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
+                          <p><span className="font-medium">{t('orcamentos.value')}:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1919,10 +1919,10 @@ export default function Orcamentos() {
                 <CardContent className="p-12 text-center">
                   <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                   <h3 className="text-lg font-medium text-foreground mb-2">
-                    Nenhum orçamento reprovado
+                    {t('orcamentos.noQuotesRejected')}
                   </h3>
                   <p className="text-muted-foreground">
-                    Não há orçamentos reprovados no momento
+                    {t('orcamentos.noQuotesRejectedNow')}
                   </p>
                 </CardContent>
               </Card>
