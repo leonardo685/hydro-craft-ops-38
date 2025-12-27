@@ -113,11 +113,11 @@ const NovaOrdemServico = () => {
   });
 
   const [servicosNomes, setServicosNomes] = useState({
-    desmontagem: t('analise.disassemblyAssembly'),
-    limpeza: t('analise.equipmentCleaning'),
-    teste: t('analise.performanceTest'),
-    pintura: t('analise.equipmentPainting'),
-    recondicionamento: t('analise.threadReconditioning')
+    desmontagem: t('novaAnalise.disassemblyAssembly'),
+    limpeza: t('novaAnalise.equipmentCleaning'),
+    teste: t('novaAnalise.performanceTest'),
+    pintura: t('novaAnalise.equipmentPainting'),
+    recondicionamento: t('novaAnalise.threadReconditioning')
   });
 
   // Estados para quantidades e nomes editáveis das usinagens
@@ -131,12 +131,30 @@ const NovaOrdemServico = () => {
   });
 
   const [usinagemNomes, setUsinagemNomes] = useState({
-    usinagemHaste: t('analise.rodMachining'),
-    usinagemTampaGuia: t('analise.guideCapMachining'),
-    usinagemEmbolo: t('analise.pistonMachining'),
-    usinagemCabecoteDianteiro: t('analise.frontHeadMachining'),
-    usinagemCabecoteTraseiro: t('analise.rearHeadMachining')
+    usinagemHaste: t('novaAnalise.rodMachining'),
+    usinagemTampaGuia: t('novaAnalise.guideCapMachining'),
+    usinagemEmbolo: t('novaAnalise.pistonMachining'),
+    usinagemCabecoteDianteiro: t('novaAnalise.frontHeadMachining'),
+    usinagemCabecoteTraseiro: t('novaAnalise.rearHeadMachining')
   });
+
+  // Atualizar nomes quando o idioma mudar
+  useEffect(() => {
+    setServicosNomes({
+      desmontagem: t('novaAnalise.disassemblyAssembly'),
+      limpeza: t('novaAnalise.equipmentCleaning'),
+      teste: t('novaAnalise.performanceTest'),
+      pintura: t('novaAnalise.equipmentPainting'),
+      recondicionamento: t('novaAnalise.threadReconditioning')
+    });
+    setUsinagemNomes({
+      usinagemHaste: t('novaAnalise.rodMachining'),
+      usinagemTampaGuia: t('novaAnalise.guideCapMachining'),
+      usinagemEmbolo: t('novaAnalise.pistonMachining'),
+      usinagemCabecoteDianteiro: t('novaAnalise.frontHeadMachining'),
+      usinagemCabecoteTraseiro: t('novaAnalise.rearHeadMachining')
+    });
+  }, [language, t]);
 
 
   // Função para exportar PDF
