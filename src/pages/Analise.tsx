@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
-import defaultLogo from "@/assets/mec-hidro-logo.jpg";
+import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 
 export default function OrdensServico() {
   const navigate = useNavigate();
@@ -320,29 +320,7 @@ export default function OrdensServico() {
       let yPosition = 10;
       
       // Adicionar logo dinâmico
-      const logoSrc = empresaAtual?.logo_url || defaultLogo;
-      try {
-        const logoImg = new Image();
-        logoImg.crossOrigin = 'anonymous';
-        logoImg.src = logoSrc;
-        await new Promise<void>((resolve) => {
-          logoImg.onload = () => {
-            doc.addImage(logoImg, 'JPEG', pageWidth - 50, 8, 35, 20);
-            resolve();
-          };
-          logoImg.onerror = () => {
-            const fallbackImg = new Image();
-            fallbackImg.src = defaultLogo;
-            fallbackImg.onload = () => {
-              doc.addImage(fallbackImg, 'JPEG', pageWidth - 50, 8, 35, 20);
-              resolve();
-            };
-            fallbackImg.onerror = () => resolve();
-          };
-        });
-      } catch (error) {
-        console.error('Erro ao adicionar logo:', error);
-      }
+      await addLogoToPDF(doc, empresaAtual?.logo_url, pageWidth - 50, 8, 35, 20);
       
       // Cabeçalho
       doc.setFontSize(14);

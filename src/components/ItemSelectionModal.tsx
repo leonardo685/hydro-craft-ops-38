@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Package, Settings, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
-import defaultLogo from "@/assets/mec-hidro-logo-novo.jpg";
+import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 
@@ -114,29 +114,7 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
     };
 
     // Adicionar logo dinâmico
-    const logoSrc = empresaAtual?.logo_url || defaultLogo;
-    try {
-      const logoImg = new Image();
-      logoImg.crossOrigin = 'anonymous';
-      logoImg.src = logoSrc;
-      await new Promise<void>((resolve) => {
-        logoImg.onload = () => {
-          doc.addImage(logoImg, 'JPEG', pageWidth - 50, 8, 35, 20);
-          resolve();
-        };
-        logoImg.onerror = () => {
-          const fallbackImg = new Image();
-          fallbackImg.src = defaultLogo;
-          fallbackImg.onload = () => {
-            doc.addImage(fallbackImg, 'JPEG', pageWidth - 50, 8, 35, 20);
-            resolve();
-          };
-          fallbackImg.onerror = () => resolve();
-        };
-      });
-    } catch (error) {
-      console.error('Erro ao adicionar logo:', error);
-    }
+    await addLogoToPDF(doc, empresaAtual?.logo_url, pageWidth - 50, 8, 35, 20);
 
     // Cabeçalho com informações da empresa
     doc.setFontSize(14);
