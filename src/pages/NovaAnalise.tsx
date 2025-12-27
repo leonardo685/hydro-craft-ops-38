@@ -113,11 +113,11 @@ const NovaOrdemServico = () => {
   });
 
   const [servicosNomes, setServicosNomes] = useState({
-    desmontagem: "Desmontagem e Montagem",
-    limpeza: "Limpeza do Equipamento",
-    teste: "Teste de Performance ISO 10100",
-    pintura: "Pintura do Equipamento",
-    recondicionamento: "Recondicionamento de Roscas"
+    desmontagem: t('analise.disassemblyAssembly'),
+    limpeza: t('analise.equipmentCleaning'),
+    teste: t('analise.performanceTest'),
+    pintura: t('analise.equipmentPainting'),
+    recondicionamento: t('analise.threadReconditioning')
   });
 
   // Estados para quantidades e nomes editáveis das usinagens
@@ -131,11 +131,11 @@ const NovaOrdemServico = () => {
   });
 
   const [usinagemNomes, setUsinagemNomes] = useState({
-    usinagemHaste: "Usinagem de haste",
-    usinagemTampaGuia: "Usinagem de tampa guia",
-    usinagemEmbolo: "Usinagem de êmbolo",
-    usinagemCabecoteDianteiro: "Usinagem de cabeçote dianteiro canal do oring",
-    usinagemCabecoteTraseiro: "Usinagem cabeçote traseiro canal do oring"
+    usinagemHaste: t('analise.rodMachining'),
+    usinagemTampaGuia: t('analise.guideCapMachining'),
+    usinagemEmbolo: t('analise.pistonMachining'),
+    usinagemCabecoteDianteiro: t('analise.frontHeadMachining'),
+    usinagemCabecoteTraseiro: t('analise.rearHeadMachining')
   });
 
 
