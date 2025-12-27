@@ -21,6 +21,7 @@ import jsPDF from "jspdf";
 import mecHidroLogo from "@/assets/mec-hidro-logo.jpg";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { translations } from "@/i18n/translations";
 interface ItemOrcamento {
   id: string;
   tipo: 'peca' | 'servico' | 'usinagem';
@@ -42,7 +43,7 @@ export default function NovoOrcamento() {
   const ordemServicoId = searchParams.get('ordemServicoId');
   const orcamentoParaEdicao = location.state?.orcamento;
   const { empresaAtual } = useEmpresa();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   // Usar ref para persistir o orçamento e evitar perda de dados em re-renders
   const orcamentoRef = useRef(orcamentoParaEdicao);
@@ -2080,10 +2081,13 @@ export default function NovoOrcamento() {
     yPosition = 48;
     
     // Título "PROPOSTA COMERCIAL" em vermelho
+    // Obter traduções do PDF
+    const pdfT = translations[language as keyof typeof translations]?.pdf || translations['pt-BR'].pdf;
+    
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(220, 38, 38);
-    doc.text("PROPOSTA COMERCIAL", pageWidth / 2, yPosition, { align: "center" });
+    doc.text(pdfT.commercialProposal, pageWidth / 2, yPosition, { align: "center" });
     doc.setTextColor(0, 0, 0);
     
     yPosition = 65;
@@ -2129,7 +2133,7 @@ export default function NovoOrcamento() {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 0, 0);
-    doc.text("Informações do Cliente", pageWidth / 2, yPosition + 7, { align: "center" });
+    doc.text(pdfT.clientInfo, pageWidth / 2, yPosition + 7, { align: "center" });
     yPosition += 10;
     
     doc.setFontSize(9);
@@ -2141,18 +2145,18 @@ export default function NovoOrcamento() {
     doc.setDrawColor(200, 200, 200);
     doc.rect(20, yPosition, colWidth, 8);
     doc.rect(20 + colWidth, yPosition, colWidth, 8);
-    doc.text(`Nº Orçamento: ${dadosOrcamento.numeroOrdem || 'N/A'}`, 22, yPosition + 5.5);
-    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 22 + colWidth, yPosition + 5.5);
+    doc.text(`${pdfT.quoteNumber}: ${dadosOrcamento.numeroOrdem || 'N/A'}`, 22, yPosition + 5.5);
+    doc.text(`${pdfT.date}: ${new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR')}`, 22 + colWidth, yPosition + 5.5);
     yPosition += 8;
     
     // Segunda linha: Nome do Cliente (linha inteira)
     doc.rect(20, yPosition, pageWidth - 40, 8);
-    doc.text(`Nome do Cliente: ${dadosOrcamento.cliente || 'N/A'}`, 22, yPosition + 5.5);
+    doc.text(`${pdfT.clientName}: ${dadosOrcamento.cliente || 'N/A'}`, 22, yPosition + 5.5);
     yPosition += 8;
     
     // Terceira linha: CNPJ (linha inteira)
     doc.rect(20, yPosition, pageWidth - 40, 8);
-    doc.text(`CNPJ: ${cnpjCliente || 'N/A'}`, 22, yPosition + 5.5);
+    doc.text(`${pdfT.taxId}: ${cnpjCliente || 'N/A'}`, 22, yPosition + 5.5);
     yPosition += 8;
     
     yPosition += 10;
@@ -2178,7 +2182,7 @@ export default function NovoOrcamento() {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 0, 0);
-    doc.text("Condições Comerciais", pageWidth / 2, yPosition + 7, { align: "center" });
+    doc.text(pdfT.commercialConditions, pageWidth / 2, yPosition + 7, { align: "center" });
     yPosition += 10;
     
     const valorTotalFormatado = `R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
@@ -2205,7 +2209,7 @@ export default function NovoOrcamento() {
     // Primeira linha: Assunto (span full width)
     doc.setDrawColor(200, 200, 200);
     doc.rect(20, yPosition, pageWidth - 40, 8);
-    doc.text(`Assunto: ${assunto}`, 22, yPosition + 5.5);
+    doc.text(`${pdfT.subject}: ${assunto}`, 22, yPosition + 5.5);
     yPosition += 8;
     
     // Segunda linha: Valor Total + Condição Pagamento + Prazo Entrega
@@ -2214,18 +2218,18 @@ export default function NovoOrcamento() {
     doc.rect(20, yPosition, col3Width, 8);
     doc.rect(20 + col3Width, yPosition, col3Width, 8);
     doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
-    doc.text(`Valor Total: ${valorTotalFormatado}`, 22, yPosition + 5.5);
-    doc.text(`Condição Pagamento: ${condicaoPagamento}`, 22 + col3Width, yPosition + 5.5);
-    doc.text(`Prazo Entrega: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
+    doc.text(`${pdfT.totalValue}: ${valorTotalFormatado}`, 22, yPosition + 5.5);
+    doc.text(`${pdfT.paymentTerms}: ${condicaoPagamento}`, 22 + col3Width, yPosition + 5.5);
+    doc.text(`${pdfT.deliveryTime}: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
     yPosition += 8;
     
     // Terceira linha: Garantia + Frete + Validade Proposta
     doc.rect(20, yPosition, col3Width, 8);
     doc.rect(20 + col3Width, yPosition, col3Width, 8);
     doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
-    doc.text(`Garantia: ${garantia}`, 22, yPosition + 5.5);
-    doc.text(`Frete: ${frete}`, 22 + col3Width, yPosition + 5.5);
-    doc.text(`Validade Proposta: ${validadeProposta}`, 22 + col3Width * 2, yPosition + 5.5);
+    doc.text(`${pdfT.warranty}: ${garantia}`, 22, yPosition + 5.5);
+    doc.text(`${pdfT.freight}: ${frete}`, 22 + col3Width, yPosition + 5.5);
+    doc.text(`${pdfT.proposalValidity}: ${validadeProposta}`, 22 + col3Width * 2, yPosition + 5.5);
     yPosition += 8;
 
     // Tabela: Peças Necessárias (com código)
@@ -2238,7 +2242,7 @@ export default function NovoOrcamento() {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(220, 38, 38);
-      doc.text('PEÇAS NECESSÁRIAS', 20, yPosition);
+      doc.text(pdfT.requiredParts, 20, yPosition);
       doc.setTextColor(0, 0, 0);
       yPosition += 10;
 
@@ -2250,12 +2254,12 @@ export default function NovoOrcamento() {
       doc.setDrawColor(200, 200, 200);
       doc.rect(20, yPosition, pageWidth - 40, 8);
 
-      doc.text('Descrição', colDescricao + 2, yPosition + 5.5);
-      doc.text('Qtd.', colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
-      doc.text('Codigo', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
+      doc.text(pdfT.description, colDescricao + 2, yPosition + 5.5);
+      doc.text(pdfT.qty, colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
+      doc.text(pdfT.code, colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
       if (informacoesComerciais.mostrarValores !== false) {
-        doc.text('Valor Unitario', colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
-        doc.text('Valor Total', colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
+        doc.text(pdfT.unitPrice, colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
+        doc.text(pdfT.total, colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
       }
       yPosition += 8;
 
@@ -2307,7 +2311,7 @@ export default function NovoOrcamento() {
         doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        doc.text('Total de Peças', boxX + 2, yPosition + 5.5);
+        doc.text(pdfT.partsTotal, boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
@@ -2331,7 +2335,7 @@ export default function NovoOrcamento() {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(220, 38, 38);
-      doc.text('SERVIÇOS A EXECUTAR', 20, yPosition);
+      doc.text(pdfT.servicesToPerform, 20, yPosition);
       doc.setTextColor(0, 0, 0);
       yPosition += 10;
 
@@ -2343,12 +2347,12 @@ export default function NovoOrcamento() {
       doc.setDrawColor(200, 200, 200);
       doc.rect(20, yPosition, pageWidth - 40, 8);
 
-      doc.text('Descrição', colDescricao + 2, yPosition + 5.5);
-      doc.text('Qtd.', colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
-      doc.text('Codigo', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
+      doc.text(pdfT.description, colDescricao + 2, yPosition + 5.5);
+      doc.text(pdfT.qty, colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
+      doc.text(pdfT.code, colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
       if (informacoesComerciais.mostrarValores !== false) {
-        doc.text('Valor Unitario', colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
-        doc.text('Valor Total', colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
+        doc.text(pdfT.unitPrice, colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
+        doc.text(pdfT.total, colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
       }
       yPosition += 8;
 
@@ -2402,7 +2406,7 @@ export default function NovoOrcamento() {
         doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        doc.text('Total de Serviços', boxX + 2, yPosition + 5.5);
+        doc.text(pdfT.servicesTotal, boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
@@ -2426,7 +2430,7 @@ export default function NovoOrcamento() {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(220, 38, 38);
-      doc.text('USINAGEM NECESSÁRIA', 20, yPosition);
+      doc.text(pdfT.requiredMachining, 20, yPosition);
       doc.setTextColor(0, 0, 0);
       yPosition += 10;
 
@@ -2438,12 +2442,12 @@ export default function NovoOrcamento() {
       doc.setDrawColor(200, 200, 200);
       doc.rect(20, yPosition, pageWidth - 40, 8);
 
-      doc.text('Descrição', colDescricao + 2, yPosition + 5.5);
-      doc.text('Qtd.', colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
-      doc.text('Codigo', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
+      doc.text(pdfT.description, colDescricao + 2, yPosition + 5.5);
+      doc.text(pdfT.qty, colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
+      doc.text(pdfT.code, colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
       if (informacoesComerciais.mostrarValores !== false) {
-        doc.text('Valor Unitario', colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
-        doc.text('Valor Total', colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
+        doc.text(pdfT.unitPrice, colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
+        doc.text(pdfT.total, colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
       }
       yPosition += 8;
 
@@ -2497,7 +2501,7 @@ export default function NovoOrcamento() {
         doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        doc.text('Total de Usinagem', boxX + 2, yPosition + 5.5);
+        doc.text(pdfT.machiningTotal, boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
@@ -2636,7 +2640,7 @@ export default function NovoOrcamento() {
         }
       };
       
-      await adicionarFotosGrade(fotosApresentacao, 'Fotos do Orçamento');
+      await adicionarFotosGrade(fotosApresentacao, pdfT.equipmentPhotos);
     }
 
     // Adicionar rodapés a todas as páginas

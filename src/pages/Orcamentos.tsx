@@ -969,6 +969,25 @@ export default function Orcamentos() {
         doc.setTextColor(0, 0, 0);
         yPosition += 15;
 
+        // Função para processar imagem com canvas (corrige orientação EXIF)
+        const processarImagem = (img: HTMLImageElement): string => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return img.src;
+          
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          ctx.drawImage(img, 0, 0);
+          
+          return canvas.toDataURL('image/jpeg', 0.85);
+        };
+
+        const maxFotoWidth = 80;
+        const maxFotoHeight = 55;
+        const espacoHorizontal = 10;
+        const espacoVertical = 20; // Espaço para legendas
+        const alturaLinhaFoto = maxFotoHeight + espacoVertical;
+
         // Grade 2x2
         for (let i = 0; i < fotosData.length; i += 4) {
           if (i > 0) {
@@ -982,18 +1001,57 @@ export default function Orcamentos() {
           for (let j = 0; j < fotosPagina.length; j++) {
             const col = j % 2;
             const row = Math.floor(j / 2);
-            const xPos = 20 + col * 90;
-            const yPos = yPosition + row * 70;
+            const xPos = 20 + col * (maxFotoWidth + espacoHorizontal);
+            const yPos = yPosition + row * alturaLinhaFoto;
 
             try {
-              const img = new Image();
-              img.crossOrigin = "anonymous";
-              img.src = fotosPagina[j].arquivo_url;
-              await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = reject;
+              await new Promise<void>((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                  // Processar imagem via canvas para corrigir orientação
+                  const imagemProcessada = processarImagem(img);
+                  
+                  const imgAspectRatio = img.naturalWidth / img.naturalHeight;
+                  const maxAspectRatio = maxFotoWidth / maxFotoHeight;
+                  
+                  let finalWidth = maxFotoWidth;
+                  let finalHeight = maxFotoHeight;
+                  
+                  if (imgAspectRatio > maxAspectRatio) {
+                    finalHeight = maxFotoWidth / imgAspectRatio;
+                  } else {
+                    finalWidth = maxFotoHeight * imgAspectRatio;
+                  }
+                  
+                  const xOffset = (maxFotoWidth - finalWidth) / 2;
+                  const yOffset = (maxFotoHeight - finalHeight) / 2;
+                  
+                  doc.addImage(imagemProcessada, 'JPEG', xPos + xOffset, yPos + yOffset, finalWidth, finalHeight);
+                  
+                  // Adicionar legenda abaixo da foto se existir
+                  if (fotosPagina[j].legenda) {
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(8);
+                    doc.setTextColor(80, 80, 80);
+                    
+                    const legendaY = yPos + maxFotoHeight + 5;
+                    const legendaTexto = fotosPagina[j].legenda.length > 60 
+                      ? fotosPagina[j].legenda.substring(0, 57) + '...' 
+                      : fotosPagina[j].legenda;
+                    doc.text(legendaTexto, xPos + (maxFotoWidth / 2), legendaY, { 
+                      align: 'center',
+                      maxWidth: maxFotoWidth - 4
+                    });
+                    
+                    doc.setTextColor(0, 0, 0);
+                  }
+                  
+                  resolve();
+                };
+                img.onerror = () => resolve();
+                img.src = fotosPagina[j].arquivo_url;
               });
-              doc.addImage(img, 'JPEG', xPos, yPos, 80, 60);
             } catch (error) {
               console.error('Erro ao carregar imagem:', error);
             }
