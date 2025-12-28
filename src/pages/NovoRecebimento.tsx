@@ -50,6 +50,7 @@ export default function NovoRecebimento() {
     conexaoA: "",
     conexaoB: "",
     observacoesPeritagem: "",
+    ordemAnterior: "",
     fotos: [null, null, null, null] as (File | null)[]
   });
 
@@ -135,6 +136,7 @@ export default function NovoRecebimento() {
         curso: formData.categoriaEquipamento === 'cilindro' ? formData.curso : null,
         conexao_a: formData.categoriaEquipamento === 'cilindro' ? formData.conexaoA : null,
         conexao_b: formData.categoriaEquipamento === 'cilindro' ? formData.conexaoB : null,
+        ordem_anterior: formData.ordemAnterior || null,
       };
 
       // Criar recebimento no Supabase
@@ -277,6 +279,19 @@ export default function NovoRecebimento() {
                   value={formData.numeroSerie}
                   onChange={(e) => setFormData({...formData, numeroSerie: e.target.value})}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ordemAnterior">OS Anterior (Rastreabilidade)</Label>
+                <Input 
+                  id="ordemAnterior"
+                  value={formData.ordemAnterior}
+                  onChange={(e) => setFormData({...formData, ordemAnterior: e.target.value})}
+                  placeholder="Ex: MH-001-25"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Informe o número da OS anterior para rastrear o histórico de manutenções
+                </p>
               </div>
 
               {/* Seção Manutenção */}
