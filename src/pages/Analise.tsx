@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, ThumbsUp, ThumbsDown, Edit, FileText, Download, Tag, Settings } from "lucide-react";
+import { Search, Plus, ThumbsUp, ThumbsDown, Edit, FileText, Download, Tag, Settings, History } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
+import { HistoricoManutencaoModal } from "@/components/HistoricoManutencaoModal";
 
 export default function OrdensServico() {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ export default function OrdensServico() {
     direction: 'asc' | 'desc';
   } | null>(null);
   const [selectedOrdemForLabel, setSelectedOrdemForLabel] = useState<any>(null);
+  const [historicoModalOpen, setHistoricoModalOpen] = useState(false);
 
   useEffect(() => {
     loadOrdensServico();
@@ -772,13 +774,22 @@ export default function OrdensServico() {
               {t('analise.pageSubtitle')}
             </p>
           </div>
-          <Button 
-            className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium"
-            onClick={() => navigate('/analise/novo-ordem-direta')}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {t('analise.newServiceOrder')}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setHistoricoModalOpen(true)}
+            >
+              <History className="h-4 w-4 mr-2" />
+              Histórico de Manutenção
+            </Button>
+            <Button 
+              className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium"
+              onClick={() => navigate('/analise/novo-ordem-direta')}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {t('analise.newServiceOrder')}
+            </Button>
+          </div>
         </div>
 
         <Card className="shadow-soft">

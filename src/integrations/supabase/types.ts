@@ -1660,10 +1660,12 @@ export type Database = {
           created_at: string
           data_analise: string | null
           data_entrada: string
+          data_finalizacao: string | null
           descricao_problema: string | null
           empresa_id: string | null
           equipamento: string
           id: string
+          motivo_falha: string | null
           numero_ordem: string
           observacoes_tecnicas: string | null
           orcamento_id: string | null
@@ -1686,10 +1688,12 @@ export type Database = {
           created_at?: string
           data_analise?: string | null
           data_entrada: string
+          data_finalizacao?: string | null
           descricao_problema?: string | null
           empresa_id?: string | null
           equipamento: string
           id?: string
+          motivo_falha?: string | null
           numero_ordem: string
           observacoes_tecnicas?: string | null
           orcamento_id?: string | null
@@ -1712,10 +1716,12 @@ export type Database = {
           created_at?: string
           data_analise?: string | null
           data_entrada?: string
+          data_finalizacao?: string | null
           descricao_problema?: string | null
           empresa_id?: string | null
           equipamento?: string
           id?: string
+          motivo_falha?: string | null
           numero_ordem?: string
           observacoes_tecnicas?: string | null
           orcamento_id?: string | null
@@ -1847,6 +1853,7 @@ export type Database = {
           numero_ordem: string
           numero_serie: string | null
           observacoes: string | null
+          ordem_anterior: string | null
           pdf_nota_retorno: string | null
           potencia: string | null
           pressao_trabalho: string | null
@@ -1883,6 +1890,7 @@ export type Database = {
           numero_ordem: string
           numero_serie?: string | null
           observacoes?: string | null
+          ordem_anterior?: string | null
           pdf_nota_retorno?: string | null
           potencia?: string | null
           pressao_trabalho?: string | null
@@ -1919,6 +1927,7 @@ export type Database = {
           numero_ordem?: string
           numero_serie?: string | null
           observacoes?: string | null
+          ordem_anterior?: string | null
           pdf_nota_retorno?: string | null
           potencia?: string | null
           pressao_trabalho?: string | null

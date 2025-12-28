@@ -33,7 +33,8 @@ const NovaOrdemServico = () => {
     problemas: "",
     prazoEstimado: "",
     prioridade: "Média",
-    observacoes: ""
+    observacoes: "",
+    motivoFalha: ""
   });
 
   const [dadosTecnicos, setDadosTecnicos] = useState({
@@ -748,7 +749,8 @@ const NovaOrdemServico = () => {
             prazoEstimado: ordem.tempo_estimado || "",
             prioridade: ordem.prioridade === 'alta' ? 'Alta' : 
                        ordem.prioridade === 'baixa' ? 'Baixa' : 'Média',
-            observacoes: ordem.observacoes_tecnicas || ""
+            observacoes: ordem.observacoes_tecnicas || "",
+            motivoFalha: ordem.motivo_falha || ""
           });
 
           // Carregar peças se existirem
@@ -904,7 +906,8 @@ const NovaOrdemServico = () => {
               prazoEstimado: ordem.tempo_estimado || "",
               prioridade: ordem.prioridade === 'alta' ? 'Alta' : 
                          ordem.prioridade === 'baixa' ? 'Baixa' : 'Média',
-              observacoes: ordem.observacoes_tecnicas || ""
+              observacoes: ordem.observacoes_tecnicas || "",
+              motivoFalha: ordem.motivo_falha || ""
             });
 
             // Dados técnicos básicos
@@ -1239,6 +1242,7 @@ const NovaOrdemServico = () => {
             usinagem_necessaria: usinagemSelecionada,
             tempo_estimado: formData.prazoEstimado,
             observacoes_tecnicas: formData.observacoes,
+            motivo_falha: formData.motivoFalha || null,
             prioridade: formData.prioridade.toLowerCase(),
             data_analise: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -1864,6 +1868,17 @@ const NovaOrdemServico = () => {
                   placeholder={t('novaAnalise.identifiedProblemsPlaceholder')}
                   rows={4}
                   required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="motivoFalha">Motivo da Falha / Diagnóstico</Label>
+                <Textarea
+                  id="motivoFalha"
+                  value={formData.motivoFalha}
+                  onChange={(e) => setFormData({ ...formData, motivoFalha: e.target.value })}
+                  placeholder="Descreva a causa raiz da falha do equipamento..."
+                  rows={3}
                 />
               </div>
 
