@@ -977,6 +977,11 @@ export default function OrdensServico() {
           onClose={() => setSelectedOrdemForLabel(null)}
         />
       )}
+
+      <HistoricoManutencaoModal 
+        open={historicoModalOpen} 
+        onOpenChange={setHistoricoModalOpen} 
+      />
     </AppLayout>
   );
 }
