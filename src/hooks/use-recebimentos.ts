@@ -308,6 +308,30 @@ export const useRecebimentos = () => {
     }
   };
 
+  const validarOrdemExistente = async (numeroOrdem: string): Promise<boolean> => {
+    if (!numeroOrdem || numeroOrdem.trim() === '') {
+      return false;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('ordens_servico')
+        .select('id')
+        .eq('numero_ordem', numeroOrdem.trim())
+        .maybeSingle();
+
+      if (error) {
+        console.error('Erro ao validar ordem:', error);
+        return false;
+      }
+
+      return data !== null;
+    } catch (error) {
+      console.error('Erro ao validar ordem existente:', error);
+      return false;
+    }
+  };
+
   const gerarNumeroOrdem = async () => {
     try {
       const anoAtual = new Date().getFullYear();
@@ -379,6 +403,7 @@ export const useRecebimentos = () => {
     criarNotaFiscal,
     uploadFoto,
     gerarNumeroOrdem,
+    validarOrdemExistente,
     recarregar: () => Promise.all([carregarRecebimentos(), carregarNotasFiscais()])
   };
 };
