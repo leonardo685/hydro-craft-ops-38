@@ -6,9 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Upload, Camera, UserPlus } from "lucide-react";
+import { ArrowLeft, Upload, Camera, UserPlus, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useClientes } from "@/hooks/use-clientes";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
 
@@ -16,9 +16,11 @@ export default function NovoRecebimento() {
   const navigate = useNavigate();
   const location = useLocation();
   const { clientes } = useClientes();
-  const { criarRecebimento, gerarNumeroOrdem, uploadFoto } = useRecebimentos();
+  const { criarRecebimento, gerarNumeroOrdem, uploadFoto, validarOrdemExistente } = useRecebimentos();
   
   const [numeroOrdem, setNumeroOrdem] = useState("");
+  const [osAnteriorStatus, setOsAnteriorStatus] = useState<'idle' | 'validando' | 'valida' | 'invalida'>('idle');
+  const [validandoTimeout, setValidandoTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Gerar número da ordem ao carregar
   useEffect(() => {
@@ -80,6 +82,38 @@ export default function NovoRecebimento() {
       }));
     }
   }, [location.state, clientes]);
+
+  // Validar OS Anterior com debounce
+  const validarOsAnterior = useCallback(async (valor: string) => {
+    if (!valor || valor.trim() === '') {
+      setOsAnteriorStatus('idle');
+      return;
+    }
+
+    setOsAnteriorStatus('validando');
+    const existe = await validarOrdemExistente(valor);
+    setOsAnteriorStatus(existe ? 'valida' : 'invalida');
+  }, [validarOrdemExistente]);
+
+  const handleOrdemAnteriorChange = (valor: string) => {
+    setFormData({...formData, ordemAnterior: valor});
+    
+    // Limpar timeout anterior
+    if (validandoTimeout) {
+      clearTimeout(validandoTimeout);
+    }
+
+    if (!valor || valor.trim() === '') {
+      setOsAnteriorStatus('idle');
+      return;
+    }
+
+    // Debounce de 500ms
+    const timeout = setTimeout(() => {
+      validarOsAnterior(valor);
+    }, 500);
+    setValidandoTimeout(timeout);
+  };
 
   // Função para lidar com o upload de fotos
   const handlePhotoUpload = (index: number, file: File | null) => {
@@ -283,15 +317,49 @@ export default function NovoRecebimento() {
 
               <div className="space-y-2">
                 <Label htmlFor="ordemAnterior">OS Anterior (Rastreabilidade)</Label>
-                <Input 
-                  id="ordemAnterior"
-                  value={formData.ordemAnterior}
-                  onChange={(e) => setFormData({...formData, ordemAnterior: e.target.value})}
-                  placeholder="Ex: MH-001-25"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Informe o número da OS anterior para rastrear o histórico de manutenções
-                </p>
+                <div className="relative">
+                  <Input 
+                    id="ordemAnterior"
+                    value={formData.ordemAnterior}
+                    onChange={(e) => handleOrdemAnteriorChange(e.target.value)}
+                    placeholder="Ex: MH-001-25"
+                    className={
+                      osAnteriorStatus === 'valida' 
+                        ? 'border-green-500 pr-10' 
+                        : osAnteriorStatus === 'invalida' 
+                        ? 'border-destructive pr-10' 
+                        : 'pr-10'
+                    }
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {osAnteriorStatus === 'validando' && (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                    {osAnteriorStatus === 'valida' && (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    )}
+                    {osAnteriorStatus === 'invalida' && (
+                      <AlertCircle className="h-4 w-4 text-destructive" />
+                    )}
+                  </div>
+                </div>
+                {osAnteriorStatus === 'valida' && (
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    OS encontrada no sistema
+                  </p>
+                )}
+                {osAnteriorStatus === 'invalida' && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    OS não encontrada no sistema. Verifique o número informado.
+                  </p>
+                )}
+                {osAnteriorStatus === 'idle' && (
+                  <p className="text-xs text-muted-foreground">
+                    Informe o número da OS anterior para rastrear o histórico de manutenções
+                  </p>
+                )}
               </div>
 
               {/* Seção Manutenção */}
