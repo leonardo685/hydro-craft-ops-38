@@ -139,6 +139,11 @@ export default function NovoRecebimento() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Bloquear envio se a OS Anterior for inválida
+    if (osAnteriorStatus === 'invalida') {
+      return;
+    }
+    
     try {
       // Verificar se há nota fiscal vinculada
       const notaFiscal = location.state?.notaFiscal;
