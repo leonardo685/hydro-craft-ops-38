@@ -1852,11 +1852,11 @@ export type Database = {
           numero_nota_retorno: string | null
           numero_ordem: string
           numero_serie: string | null
-          observacoes: string | null
           ordem_anterior: string | null
           pdf_nota_retorno: string | null
           potencia: string | null
           pressao_trabalho: string | null
+          problemas_apresentados: string | null
           status: string | null
           temperatura_trabalho: string | null
           tipo_equipamento: string
@@ -1889,11 +1889,11 @@ export type Database = {
           numero_nota_retorno?: string | null
           numero_ordem: string
           numero_serie?: string | null
-          observacoes?: string | null
           ordem_anterior?: string | null
           pdf_nota_retorno?: string | null
           potencia?: string | null
           pressao_trabalho?: string | null
+          problemas_apresentados?: string | null
           status?: string | null
           temperatura_trabalho?: string | null
           tipo_equipamento: string
@@ -1926,11 +1926,11 @@ export type Database = {
           numero_nota_retorno?: string | null
           numero_ordem?: string
           numero_serie?: string | null
-          observacoes?: string | null
           ordem_anterior?: string | null
           pdf_nota_retorno?: string | null
           potencia?: string | null
           pressao_trabalho?: string | null
+          problemas_apresentados?: string | null
           status?: string | null
           temperatura_trabalho?: string | null
           tipo_equipamento?: string

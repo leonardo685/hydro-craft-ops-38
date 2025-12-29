@@ -169,7 +169,7 @@ export default function NovoRecebimento() {
         status: 'recebido',
         pressao_trabalho: formData.pressaoTrabalho,
         ambiente_trabalho: formData.ambienteTrabalho,
-        observacoes: formData.observacoesEntrada,
+        problemas_apresentados: formData.observacoesEntrada,
         camisa: formData.categoriaEquipamento === 'cilindro' ? formData.camisa : null,
         haste_comprimento: formData.categoriaEquipamento === 'cilindro' ? formData.hasteComprimento : null,
         curso: formData.categoriaEquipamento === 'cilindro' ? formData.curso : null,

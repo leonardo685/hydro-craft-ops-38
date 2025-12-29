@@ -588,28 +588,28 @@ const VisualizarOrdemServico = () => {
         </Card>
 
         {/* Observações */}
-        {(ordem.observacoes_tecnicas || recebimento?.observacoes) && (
+        {(ordem.observacoes_tecnicas || recebimento?.problemas_apresentados) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                📝 Observações
+                📝 Problemas / Observações
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {ordem.observacoes_tecnicas && (
+                {recebimento?.problemas_apresentados && (
                   <div>
-                    <Label>Observações de Entrada</Label>
+                    <Label>Problemas Apresentados</Label>
                     <div className="p-3 bg-muted/50 rounded-lg">
-                      {ordem.observacoes_tecnicas}
+                      {recebimento.problemas_apresentados}
                     </div>
                   </div>
                 )}
-                {recebimento?.observacoes && (
+                {ordem.observacoes_tecnicas && (
                   <div>
-                    <Label>Observações Adicionais</Label>
+                    <Label>Observações Técnicas</Label>
                     <div className="p-3 bg-muted/50 rounded-lg">
-                      {recebimento.observacoes}
+                      {ordem.observacoes_tecnicas}
                     </div>
                   </div>
                 )}

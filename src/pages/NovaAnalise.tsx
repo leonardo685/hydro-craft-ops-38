@@ -700,7 +700,7 @@ const NovaOrdemServico = () => {
               data_entrada,
               nota_fiscal,
               numero_serie,
-              observacoes,
+              problemas_apresentados,
               pressao_trabalho,
               temperatura_trabalho,
               fluido_trabalho,
@@ -738,7 +738,7 @@ const NovaOrdemServico = () => {
             numeroOrdem: recebimentoData.numero_ordem,
             nota_fiscal: recebimentoData.nota_fiscal,
             numero_serie: recebimentoData.numero_serie,
-            observacoes: recebimentoData.observacoes,
+            problemas_apresentados: recebimentoData.problemas_apresentados,
             fotos: recebimentoData.fotos_equipamentos || []
           });
 
@@ -1835,17 +1835,17 @@ const NovaOrdemServico = () => {
             </CardContent>
           </Card>
 
-          {recebimento.observacoes && (
+          {recebimento.problemas_apresentados && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  📝 {t('novaAnalise.observations')}
+                  ⚠️ Problemas Apresentados
                 </CardTitle>
-                <CardDescription>{t('novaAnalise.entryObservations')}</CardDescription>
+                <CardDescription>Problemas informados na entrada do equipamento</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="bg-muted/50 p-4 rounded-lg">
-                  <p className="text-sm">{recebimento.observacoes}</p>
+                  <p className="text-sm">{recebimento.problemas_apresentados}</p>
                 </div>
               </CardContent>
             </Card>
