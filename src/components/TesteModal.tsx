@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { Upload, Video, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +41,44 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
     dataHoraTeste: new Date().toISOString().slice(0, 16)
   });
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
+
+  const uploadWithProgress = (file: File, fileName: string): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const supabaseUrl = 'https://fmbfkufkxvyncadunlhh.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtYmZrdWZreHZ5bmNhZHVubGhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwOTM1NDYsImV4cCI6MjA3MjY2OTU0Nn0.A3-H5fOxRJMx_q4Vj3qvM0vxjZgSF-VXxZYBdZT-Tbs';
+      
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percentComplete);
+        }
+      });
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const publicUrl = `${supabaseUrl}/storage/v1/object/public/videos-teste/${fileName}`;
+          resolve(publicUrl);
+        } else {
+          console.error('Upload failed:', xhr.status, xhr.responseText);
+          resolve(null);
+        }
+      });
+      
+      xhr.addEventListener('error', () => {
+        console.error('Upload error');
+        resolve(null);
+      });
+      
+      xhr.open('POST', `${supabaseUrl}/storage/v1/object/videos-teste/${fileName}`);
+      xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`);
+      xhr.setRequestHeader('x-upsert', 'false');
+      xhr.send(file);
+    });
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,6 +117,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
     }
 
     setUploading(true);
+    setUploadProgress(0);
     try {
       let videoUrl = null;
 
@@ -92,30 +131,18 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
           });
           
           const fileName = `teste_${ordem.id}_${Date.now()}_${videoFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('videos-teste')
-            .upload(fileName, videoFile, {
-              cacheControl: '3600',
-              upsert: false
-            });
-
-          if (uploadError) {
-            console.error('Erro no upload do vídeo:', uploadError);
-            const errorMessage = uploadError.message || 'Erro desconhecido no upload';
+          
+          // Upload com barra de progresso
+          videoUrl = await uploadWithProgress(videoFile, fileName);
+          
+          if (!videoUrl) {
             toast({
               title: t('messages.warning'),
-              description: `${t('modals.testSavedNoVideo')} (${errorMessage})`,
+              description: t('modals.testSavedNoVideo'),
               variant: "default",
             });
           } else {
-            console.log('Upload concluído com sucesso:', uploadData);
-            // Obter URL pública do vídeo
-            const { data: urlData } = supabase.storage
-              .from('videos-teste')
-              .getPublicUrl(fileName);
-            
-            videoUrl = urlData.publicUrl;
-            console.log('URL do vídeo:', videoUrl);
+            console.log('Upload concluído com sucesso:', videoUrl);
           }
         } catch (videoError: any) {
           console.error('Exceção no upload do vídeo:', videoError);
@@ -421,6 +448,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                     accept="video/*"
                     onChange={handleFileChange}
                     className="flex-1"
+                    disabled={uploading}
                   />
                   <Upload className="h-5 w-5 text-muted-foreground" />
                 </div>
@@ -429,6 +457,15 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                     <Video className="h-4 w-4" />
                     <span>{videoFile.name}</span>
                     <span>({(videoFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                  </div>
+                )}
+                {uploading && videoFile && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Enviando vídeo...</span>
+                      <span className="font-medium">{uploadProgress}%</span>
+                    </div>
+                    <Progress value={uploadProgress} className="h-2" />
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
