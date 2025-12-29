@@ -8,10 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { Upload, Video, FileText } from "lucide-react";
+import { Upload, Video, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useVideoCompression } from "@/hooks/useVideoCompression";
 
 interface TesteModalProps {
   ordem: any;
@@ -23,6 +24,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [originalVideoSize, setOriginalVideoSize] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     curso: '',
     qtdCiclos: '',
@@ -43,6 +45,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
+  const { compressVideo, isCompressing, compressionProgress, shouldCompress } = useVideoCompression();
 
   const uploadWithProgress = (file: File, fileName: string): Promise<string | null> => {
     return new Promise((resolve) => {
@@ -80,12 +83,12 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
     });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       // Verificar se é um arquivo de vídeo
       if (file.type.startsWith('video/')) {
-        // Verificar tamanho do arquivo (máximo 50MB)
+        // Verificar tamanho do arquivo (máximo 500MB)
         const maxSize = 500 * 1024 * 1024; // 500MB em bytes
         if (file.size > maxSize) {
           toast({
@@ -95,7 +98,36 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
           });
           return;
         }
-        setVideoFile(file);
+        
+        setOriginalVideoSize(file.size);
+        
+        // Comprimir se necessário (> 50MB)
+        if (shouldCompress(file)) {
+          toast({
+            title: "Comprimindo vídeo...",
+            description: "Vídeo grande detectado. Iniciando compressão automática.",
+          });
+          
+          try {
+            const result = await compressVideo(file);
+            setVideoFile(result.file);
+            toast({
+              title: "Vídeo comprimido!",
+              description: `Redução de ${result.compressionRatio}% (${(result.originalSize / 1024 / 1024).toFixed(1)}MB → ${(result.compressedSize / 1024 / 1024).toFixed(1)}MB)`,
+            });
+          } catch (error) {
+            console.error('Erro na compressão:', error);
+            // Se a compressão falhar, usar o arquivo original
+            setVideoFile(file);
+            toast({
+              title: "Aviso",
+              description: "Não foi possível comprimir o vídeo. Usando arquivo original.",
+              variant: "default",
+            });
+          }
+        } else {
+          setVideoFile(file);
+        }
       } else {
         toast({
           title: t('messages.error'),
@@ -452,11 +484,30 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                   />
                   <Upload className="h-5 w-5 text-muted-foreground" />
                 </div>
-                {videoFile && (
+                {isCompressing && (
+                  <div className="space-y-2 p-3 rounded-md bg-muted/50">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <span className="font-medium">
+                        {compressionProgress.stage === 'loading' 
+                          ? 'Carregando vídeo...' 
+                          : 'Comprimindo vídeo...'}
+                      </span>
+                      <span className="ml-auto">{Math.round(compressionProgress.progress)}%</span>
+                    </div>
+                    <Progress value={compressionProgress.progress} className="h-2" />
+                  </div>
+                )}
+                {videoFile && !isCompressing && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Video className="h-4 w-4" />
                     <span>{videoFile.name}</span>
                     <span>({(videoFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                    {originalVideoSize && originalVideoSize !== videoFile.size && (
+                      <span className="text-xs text-green-600">
+                        (comprimido de {(originalVideoSize / 1024 / 1024).toFixed(1)}MB)
+                      </span>
+                    )}
                   </div>
                 )}
                 {uploading && videoFile && (
@@ -469,7 +520,7 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {t('modals.videoOptional')}
+                  {t('modals.videoOptional')} Vídeos acima de 50MB serão comprimidos automaticamente.
                 </p>
               </div>
             </div>
@@ -482,11 +533,16 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
             </Button>
             <Button 
               onClick={handleSubmit} 
-              disabled={uploading}
+              disabled={uploading || isCompressing}
               className="flex items-center gap-2"
             >
               {uploading ? (
                 t('modals.saving')
+              ) : isCompressing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Comprimindo...
+                </>
               ) : (
                 <>
                   <FileText className="h-4 w-4" />
