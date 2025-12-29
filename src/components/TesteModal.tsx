@@ -85,28 +85,45 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
       // Upload do vídeo se fornecido (agora opcional)
       if (videoFile) {
         try {
-          const fileName = `teste_${ordem.id}_${Date.now()}_${videoFile.name}`;
+          console.log('Iniciando upload do vídeo:', {
+            nome: videoFile.name,
+            tamanho: `${(videoFile.size / 1024 / 1024).toFixed(2)} MB`,
+            tipo: videoFile.type
+          });
+          
+          const fileName = `teste_${ordem.id}_${Date.now()}_${videoFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('videos-teste')
-            .upload(fileName, videoFile);
+            .upload(fileName, videoFile, {
+              cacheControl: '3600',
+              upsert: false
+            });
 
           if (uploadError) {
-            console.warn('Erro no upload do vídeo:', uploadError);
+            console.error('Erro no upload do vídeo:', uploadError);
+            const errorMessage = uploadError.message || 'Erro desconhecido no upload';
             toast({
               title: t('messages.warning'),
-              description: t('modals.testSavedNoVideo'),
+              description: `${t('modals.testSavedNoVideo')} (${errorMessage})`,
               variant: "default",
             });
           } else {
+            console.log('Upload concluído com sucesso:', uploadData);
             // Obter URL pública do vídeo
             const { data: urlData } = supabase.storage
               .from('videos-teste')
               .getPublicUrl(fileName);
             
             videoUrl = urlData.publicUrl;
+            console.log('URL do vídeo:', videoUrl);
           }
-        } catch (videoError) {
-          console.warn('Erro no upload do vídeo:', videoError);
+        } catch (videoError: any) {
+          console.error('Exceção no upload do vídeo:', videoError);
+          toast({
+            title: t('messages.warning'),
+            description: `Erro no upload: ${videoError?.message || 'Erro desconhecido'}`,
+            variant: "default",
+          });
         }
       }
 
