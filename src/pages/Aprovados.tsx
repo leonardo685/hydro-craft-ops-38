@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera } from "lucide-react";
+import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera, Video } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { ItemSelectionModal } from "@/components/ItemSelectionModal";
 import { TesteModal } from "@/components/TesteModal";
 import { UploadProdutoProntoModal } from "@/components/UploadProdutoProntoModal";
 import { UploadFotosProducaoModal } from "@/components/UploadFotosProducaoModal";
+import { UploadVideoTesteModal } from "@/components/UploadVideoTesteModal";
 import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
@@ -273,13 +274,26 @@ export default function Aprovados() {
                                 </Button>
                               </>
                             )
-                          ) : ordem.status === 'em_teste' ? <Button variant="outline" size="sm" onClick={() => {
-                  setOrdemSelecionada(ordem);
-                  setUploadModalOpen(true);
-                        }}>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            {t('aprovados.finalize')}
-                          </Button> : null}
+                          ) : ordem.status === 'em_teste' ? (
+                            <>
+                              <UploadVideoTesteModal 
+                                ordem={ordem} 
+                                onUploadComplete={() => loadOrdensAprovadas()}
+                              >
+                                <Button variant="outline" size="sm">
+                                  <Video className="h-4 w-4 mr-2" />
+                                  Upload Vídeo
+                                </Button>
+                              </UploadVideoTesteModal>
+                              <Button variant="outline" size="sm" onClick={() => {
+                                setOrdemSelecionada(ordem);
+                                setUploadModalOpen(true);
+                              }}>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                {t('aprovados.finalize')}
+                              </Button>
+                            </>
+                          ) : null}
                         
                         <ItemSelectionModal title={t('compras.partsNeeded')} items={ordem.pecas_necessarias || []} type="pecas" ordemId={ordem.id}>
                           <Button variant="outline" size="sm">
