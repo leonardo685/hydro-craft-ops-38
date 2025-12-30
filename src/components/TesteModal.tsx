@@ -47,11 +47,24 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
   const { toast } = useToast();
   const { compressVideo, isCompressing, compressionProgress, shouldCompress } = useVideoCompression();
 
-  const uploadWithProgress = (file: File, fileName: string): Promise<string | null> => {
+  const uploadWithProgress = async (file: File, fileName: string): Promise<string | null> => {
+    const supabaseUrl = 'https://fmbfkufkxvyncadunlhh.supabase.co';
+    
+    // Obter token do usuário autenticado
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      console.error('Upload falhou: usuário não autenticado');
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para fazer upload de vídeos.",
+        variant: "destructive",
+      });
+      return null;
+    }
+    
+    console.log('Upload iniciando com token do usuário autenticado');
+    
     return new Promise((resolve) => {
-      const supabaseUrl = 'https://fmbfkufkxvyncadunlhh.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtYmZrdWZreHZ5bmNhZHVubGhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwOTM1NDYsImV4cCI6MjA3MjY2OTU0Nn0.A3-H5fOxRJMx_q4Vj3qvM0vxjZgSF-VXxZYBdZT-Tbs';
-      
       const xhr = new XMLHttpRequest();
       
       xhr.upload.addEventListener('progress', (event) => {
@@ -64,21 +77,34 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
       xhr.addEventListener('load', () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           const publicUrl = `${supabaseUrl}/storage/v1/object/public/videos-teste/${fileName}`;
+          console.log('Upload concluído:', publicUrl);
           resolve(publicUrl);
         } else {
-          console.error('Upload failed:', xhr.status, xhr.responseText);
+          console.error('Upload falhou:', {
+            status: xhr.status,
+            statusText: xhr.statusText,
+            response: xhr.responseText
+          });
           resolve(null);
         }
       });
       
-      xhr.addEventListener('error', () => {
-        console.error('Upload error');
+      xhr.addEventListener('error', (e) => {
+        console.error('Erro de rede no upload:', e);
         resolve(null);
       });
       
+      xhr.addEventListener('timeout', () => {
+        console.error('Upload timeout');
+        resolve(null);
+      });
+      
+      // Timeout de 10 minutos para uploads grandes
+      xhr.timeout = 600000;
+      
       xhr.open('POST', `${supabaseUrl}/storage/v1/object/videos-teste/${fileName}`);
-      xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`);
-      xhr.setRequestHeader('x-upsert', 'false');
+      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+      xhr.setRequestHeader('x-upsert', 'true');
       xhr.send(file);
     });
   };
