@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -16,6 +16,10 @@ interface UploadVideoTesteModalProps {
 export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: UploadVideoTesteModalProps) {
   const [open, setOpen] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const videoPreviewUrl = useMemo(() => {
+    if (videoFile) return URL.createObjectURL(videoFile);
+    return null;
+  }, [videoFile]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [testeInfo, setTesteInfo] = useState<any>(null);
@@ -290,6 +294,18 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
               </label>
             ) : (
               <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+                {/* Preview do vídeo */}
+                {videoPreviewUrl && (
+                  <div className="relative rounded-lg overflow-hidden bg-black">
+                    <video
+                      src={videoPreviewUrl}
+                      controls
+                      className="w-full max-h-48 object-contain"
+                      preload="metadata"
+                    />
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Video className="h-5 w-5 text-primary" />
