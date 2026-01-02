@@ -69,8 +69,15 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validar tipo de arquivo
-    if (!file.type.startsWith('video/')) {
+    console.log('📹 Arquivo selecionado:', file.name, 'Tipo:', file.type, 'Tamanho:', file.size);
+
+    // Validar por extensão também (MOV às vezes não tem MIME type correto)
+    const validExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.3gp'];
+    const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+    const isVideoByType = file.type.startsWith('video/') || file.type === 'application/octet-stream';
+    const isVideoByExtension = validExtensions.includes(extension);
+
+    if (!isVideoByType && !isVideoByExtension) {
       toast({
         title: "Arquivo inválido",
         description: "Por favor, selecione um arquivo de vídeo.",
@@ -90,22 +97,15 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
       return;
     }
 
-    // Comprimir se necessário
-    if (shouldCompress(file)) {
-      try {
-        const result = await compressVideo(file);
-        setVideoFile(result.file);
-        toast({
-          title: "Vídeo comprimido",
-          description: `Tamanho reduzido de ${(result.originalSize / 1024 / 1024).toFixed(1)}MB para ${(result.compressedSize / 1024 / 1024).toFixed(1)}MB`,
-        });
-      } catch (error) {
-        console.error('Erro na compressão:', error);
-        setVideoFile(file);
-      }
-    } else {
-      setVideoFile(file);
-    }
+    // Feedback imediato
+    toast({
+      title: "Vídeo selecionado!",
+      description: `${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`,
+    });
+
+    // Usar arquivo diretamente sem compressão automática
+    // (compressão pode falhar com arquivos MOV grandes)
+    setVideoFile(file);
   };
 
   const handleUpload = async () => {
