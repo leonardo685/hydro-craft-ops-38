@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, Video, X, CheckCircle } from "lucide-react";
+import { Upload, Video, X, CheckCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useVideoCompression } from "@/hooks/useVideoCompression";
@@ -17,7 +17,7 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
   const [open, setOpen] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [testeInfo, setTesteInfo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,6 +55,7 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
       loadTesteInfo();
       setVideoFile(null);
       setUploadProgress(0);
+      setUploadStatus('idle');
     }
   };
 
@@ -101,70 +102,6 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
     }
   };
 
-  const uploadWithProgress = async (file: File, fileName: string): Promise<string | null> => {
-    const supabaseUrl = 'https://fmbfkufkxvyncadunlhh.supabase.co';
-    
-    // Obter token do usuário autenticado
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      console.error('Upload falhou: usuário não autenticado');
-      toast({
-        title: "Erro de autenticação",
-        description: "Você precisa estar logado para fazer upload de vídeos.",
-        variant: "destructive",
-      });
-      return null;
-    }
-    
-    console.log('Upload iniciando com token do usuário autenticado');
-    console.log('Tamanho do arquivo:', (file.size / 1024 / 1024).toFixed(2), 'MB');
-    
-    return new Promise((resolve) => {
-      const xhr = new XMLHttpRequest();
-      
-      xhr.upload.addEventListener('progress', (event) => {
-        if (event.lengthComputable) {
-          const progress = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(progress);
-          console.log('Progresso do upload:', progress, '%');
-        }
-      });
-      
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const publicUrl = `${supabaseUrl}/storage/v1/object/public/videos-teste/${fileName}`;
-          console.log('Upload concluído:', publicUrl);
-          resolve(publicUrl);
-        } else {
-          console.error('Upload falhou:', {
-            status: xhr.status,
-            statusText: xhr.statusText,
-            response: xhr.responseText
-          });
-          resolve(null);
-        }
-      });
-      
-      xhr.addEventListener('error', (e) => {
-        console.error('Erro de rede no upload:', e);
-        resolve(null);
-      });
-      
-      xhr.addEventListener('timeout', () => {
-        console.error('Upload timeout');
-        resolve(null);
-      });
-      
-      // Timeout de 10 minutos para uploads grandes
-      xhr.timeout = 600000;
-      
-      xhr.open('POST', `${supabaseUrl}/storage/v1/object/videos-teste/${fileName}`);
-      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
-      xhr.setRequestHeader('x-upsert', 'true');
-      xhr.send(file);
-    });
-  };
-
   const handleUpload = async () => {
     if (!videoFile || !testeInfo) {
       toast({
@@ -175,10 +112,22 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
       return;
     }
 
-    setIsUploading(true);
+    setUploadStatus('uploading');
     setUploadProgress(0);
 
     try {
+      // Verificar autenticação
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Você precisa estar logado para fazer upload de vídeos.",
+          variant: "destructive",
+        });
+        setUploadStatus('error');
+        return;
+      }
+
       // Gerar nome do arquivo
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem || 'sem-numero';
@@ -186,9 +135,50 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
       const fileName = `${numeroOrdem}_teste_${timestamp}.${fileExt}`;
 
       console.log('Iniciando upload do vídeo:', fileName);
+      console.log('Tamanho do arquivo:', (videoFile.size / 1024 / 1024).toFixed(2), 'MB');
 
-      // Fazer upload com progresso
-      const videoUrl = await uploadWithProgress(videoFile, fileName);
+      // Fazer upload com XMLHttpRequest para ter progresso real
+      const supabaseUrl = 'https://fmbfkufkxvyncadunlhh.supabase.co';
+      
+      const videoUrl = await new Promise<string | null>((resolve) => {
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const progress = Math.round((event.loaded / event.total) * 100);
+            console.log('Progresso:', progress, '%');
+            setUploadProgress(progress);
+          }
+        });
+        
+        xhr.addEventListener('load', () => {
+          console.log('XHR load - status:', xhr.status, 'response:', xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const publicUrl = `${supabaseUrl}/storage/v1/object/public/videos-teste/${fileName}`;
+            resolve(publicUrl);
+          } else {
+            console.error('Upload falhou:', xhr.status, xhr.statusText, xhr.responseText);
+            resolve(null);
+          }
+        });
+        
+        xhr.addEventListener('error', (e) => {
+          console.error('Erro de rede:', e);
+          resolve(null);
+        });
+        
+        xhr.addEventListener('timeout', () => {
+          console.error('Timeout');
+          resolve(null);
+        });
+        
+        xhr.timeout = 600000; // 10 minutos
+        
+        xhr.open('POST', `${supabaseUrl}/storage/v1/object/videos-teste/${fileName}`);
+        xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+        xhr.setRequestHeader('x-upsert', 'true');
+        xhr.send(videoFile);
+      });
 
       if (!videoUrl) {
         throw new Error('Falha no upload do vídeo');
@@ -202,33 +192,37 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
 
       if (error) throw error;
 
+      setUploadStatus('success');
       toast({
         title: "Vídeo enviado!",
         description: "O vídeo do teste foi salvo com sucesso.",
       });
 
-      setOpen(false);
-      onUploadComplete?.();
+      setTimeout(() => {
+        setOpen(false);
+        onUploadComplete?.();
+      }, 1000);
     } catch (error) {
       console.error('Erro no upload:', error);
+      setUploadStatus('error');
       toast({
         title: "Erro no upload",
         description: "Não foi possível enviar o vídeo. Tente novamente.",
         variant: "destructive",
       });
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
     }
   };
 
   const removeVideo = () => {
     setVideoFile(null);
     setUploadProgress(0);
+    setUploadStatus('idle');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
+
+  const isUploading = uploadStatus === 'uploading';
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -278,6 +272,7 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
               onChange={handleFileChange}
               className="hidden"
               id="video-upload-modal-input"
+              disabled={isUploading}
             />
             
             {!videoFile ? (
@@ -307,21 +302,25 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={removeVideo}
-                    disabled={isUploading}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  {!isUploading && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={removeVideo}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
 
                 {/* Barra de progresso de compressão */}
                 {isCompressing && (
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Comprimindo vídeo...</span>
+                      <span className="flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Comprimindo vídeo...
+                      </span>
                       <span>{compressionProgress.progress}%</span>
                     </div>
                     <Progress value={compressionProgress.progress} className="h-2" />
@@ -330,12 +329,26 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
 
                 {/* Barra de progresso de upload */}
                 {isUploading && (
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Enviando...</span>
-                      <span>{uploadProgress}%</span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="flex items-center gap-1 text-primary font-medium">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Enviando vídeo...
+                      </span>
+                      <span className="text-primary font-medium">{uploadProgress}%</span>
                     </div>
-                    <Progress value={uploadProgress} className="h-2" />
+                    <Progress value={uploadProgress} className="h-3" />
+                    <p className="text-xs text-muted-foreground text-center">
+                      Não feche esta janela durante o upload
+                    </p>
+                  </div>
+                )}
+
+                {/* Sucesso */}
+                {uploadStatus === 'success' && (
+                  <div className="flex items-center gap-2 text-green-600 text-sm">
+                    <CheckCircle className="h-4 w-4" />
+                    Upload concluído com sucesso!
                   </div>
                 )}
               </div>
@@ -351,7 +364,12 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
             onClick={handleUpload} 
             disabled={!videoFile || !testeInfo || isUploading || isCompressing}
           >
-            {isUploading ? "Enviando..." : "Enviar Vídeo"}
+            {isUploading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Enviando... {uploadProgress}%
+              </>
+            ) : "Enviar Vídeo"}
           </Button>
         </DialogFooter>
       </DialogContent>
