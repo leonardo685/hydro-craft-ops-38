@@ -2,7 +2,7 @@ import { useState, useRef, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, Video, X, CheckCircle, Loader2 } from "lucide-react";
+import { Upload, Video, X, CheckCircle, Loader2, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useVideoCompression } from "@/hooks/useVideoCompression";
@@ -25,6 +25,7 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
   const [testeInfo, setTesteInfo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { compressVideo, isCompressing, compressionProgress, shouldCompress } = useVideoCompression();
 
@@ -224,6 +225,13 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+    }
+  };
+
+  const openCamera = () => {
+    cameraInputRef.current?.click();
   };
 
   const isUploading = uploadStatus === 'uploading';
@@ -279,19 +287,56 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
               disabled={isUploading}
             />
             
+            {/* Input para captura de câmera */}
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="video/*"
+              capture="environment"
+              onChange={handleFileChange}
+              className="hidden"
+              id="video-camera-input"
+              disabled={isUploading}
+            />
+            
             {!videoFile ? (
-              <label
-                htmlFor="video-upload-modal-input"
-                className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-              >
-                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                <span className="text-sm text-muted-foreground">
-                  Clique para selecionar o vídeo
-                </span>
-                <span className="text-xs text-muted-foreground mt-1">
-                  Máximo 500MB
-                </span>
-              </label>
+              <div className="space-y-3">
+                {/* Botão de gravar com câmera */}
+                <Button
+                  type="button"
+                  variant="default"
+                  className="w-full h-16"
+                  onClick={openCamera}
+                  disabled={isUploading}
+                >
+                  <Camera className="h-6 w-6 mr-2" />
+                  Gravar Vídeo com Câmera
+                </Button>
+
+                {/* Divisor */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">ou</span>
+                  </div>
+                </div>
+
+                {/* Selecionar arquivo existente */}
+                <label
+                  htmlFor="video-upload-modal-input"
+                  className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                >
+                  <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                  <span className="text-sm text-muted-foreground">
+                    Selecionar vídeo existente
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Máximo 500MB
+                  </span>
+                </label>
+              </div>
             ) : (
               <div className="p-4 bg-muted/30 rounded-lg space-y-3">
                 {/* Preview do vídeo */}
