@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Search, Link2, Loader2, Unlink } from "lucide-react";
 import { format } from "date-fns";
+import { useEmpresa } from "@/contexts/EmpresaContext";
+import { enviarWebhook } from "@/lib/webhook-utils";
 interface VincularOrdensModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,6 +31,14 @@ export function VincularOrdensModal({
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { empresaAtual } = useEmpresa();
+
+  // Obter webhook da empresa
+  const getWebhookUrl = (): string | null => {
+    if (!empresaAtual) return null;
+    const config = empresaAtual.configuracoes as { webhook_url?: string } | null;
+    return config?.webhook_url || null;
+  };
 
   useEffect(() => {
     if (open && orcamento) {
@@ -110,8 +120,12 @@ export function VincularOrdensModal({
   };
 
   const enviarWebhookOrdemAprovada = async (ordem: any) => {
-    const maxTentativas = 3;
-    const intervaloRetry = 2000;
+    const webhookUrl = getWebhookUrl();
+    
+    if (!webhookUrl) {
+      console.warn('⚠️ Webhook não configurado para esta empresa');
+      return false;
+    }
 
     const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
     const tipoEquipamento = ordem.recebimentos?.tipo_equipamento || ordem.equipamento || 'Equipamento não especificado';
@@ -124,38 +138,11 @@ export function VincularOrdensModal({
       equipamento: tipoEquipamento,
       valor: valorFormatado,
       data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
-      orcamento_numero: orcamento.numero
+      orcamento_numero: orcamento.numero,
+      empresa: empresaAtual?.nome || 'N/A'
     };
 
-    for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
-      try {
-        console.log(`📤 Tentativa ${tentativa}/${maxTentativas} de envio webhook para OS ${numeroOrdem}...`);
-        
-        const response = await fetch('https://primary-production-dc42.up.railway.app/webhook/f2cabfd9-4e4c-4dd0-802a-b27c4b0c9d17', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (response.ok) {
-          console.log(`✅ Webhook enviado com sucesso para OS ${numeroOrdem}`);
-          return true;
-        } else {
-          console.error(`❌ Tentativa ${tentativa} falhou com status:`, response.status);
-          if (tentativa < maxTentativas) {
-            await new Promise(resolve => setTimeout(resolve, intervaloRetry));
-          }
-        }
-      } catch (error) {
-        console.error(`❌ Erro na tentativa ${tentativa}:`, error);
-        if (tentativa < maxTentativas) {
-          await new Promise(resolve => setTimeout(resolve, intervaloRetry));
-        }
-      }
-    }
-    
-    console.error(`❌ Falha ao enviar webhook para OS ${numeroOrdem} após ${maxTentativas} tentativas`);
-    return false;
+    return await enviarWebhook(webhookUrl, payload);
   };
 
   const handleSalvar = async () => {

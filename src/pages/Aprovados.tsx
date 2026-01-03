@@ -16,6 +16,8 @@ import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useEmpresa } from "@/contexts/EmpresaContext";
+import { enviarWebhook } from "@/lib/webhook-utils";
 
 export default function Aprovados() {
   const { t } = useLanguage();
@@ -28,6 +30,15 @@ export default function Aprovados() {
     toast
   } = useToast();
   const navigate = useNavigate();
+  const { empresaAtual } = useEmpresa();
+
+  // Obter webhook da empresa
+  const getWebhookUrl = (): string | null => {
+    if (!empresaAtual) return null;
+    const config = empresaAtual.configuracoes as { webhook_url?: string } | null;
+    return config?.webhook_url || null;
+  };
+
   useEffect(() => {
     loadOrdensAprovadas();
   }, []);
@@ -354,67 +365,41 @@ export default function Aprovados() {
           }).eq('id', ordemSelecionada.id);
           if (error) throw error;
 
-          // Enviar notificação para o n8n/Telegram com retry
-          const maxTentativas = 3;
-          const intervaloRetry = 2000; // 2 segundos
-          let notificacaoEnviada = false;
-
-          const notaFiscalEntrada = ordemSelecionada.recebimentos?.nota_fiscal || ordemSelecionada.recebimentos?.chave_acesso_nfe || 'n/a';
-          const tipoNotificacao = ordemSelecionada.recebimento_id 
-            ? 'ordem_retorno' 
-            : ordemSelecionada.orcamento_id 
-              ? 'ordem_finalizada' 
-              : 'ordem_faturamento_sem_retorno';
+          // Enviar notificação via webhook da empresa
+          const webhookUrl = getWebhookUrl();
           
-          const payload = {
-            tipo: tipoNotificacao,
-            numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
-            cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
-            equipamento: ordemSelecionada.equipamento,
-            nota_fiscal_entrada: notaFiscalEntrada,
-            data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
-            data_aprovacao: ordemSelecionada.updated_at ? format(parseISO(ordemSelecionada.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy')
-          };
+          if (webhookUrl) {
+            const notaFiscalEntrada = ordemSelecionada.recebimentos?.nota_fiscal || ordemSelecionada.recebimentos?.chave_acesso_nfe || 'n/a';
+            const tipoNotificacao = ordemSelecionada.recebimento_id 
+              ? 'ordem_retorno' 
+              : ordemSelecionada.orcamento_id 
+                ? 'ordem_finalizada' 
+                : 'ordem_faturamento_sem_retorno';
+            
+            const payload = {
+              tipo: tipoNotificacao,
+              numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
+              cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
+              equipamento: ordemSelecionada.equipamento,
+              nota_fiscal_entrada: notaFiscalEntrada,
+              data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
+              data_aprovacao: ordemSelecionada.updated_at ? format(parseISO(ordemSelecionada.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy'),
+              empresa: empresaAtual?.nome || 'N/A'
+            };
 
-          for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
-            try {
-              console.log(`📤 Tentativa ${tentativa}/${maxTentativas} de envio da notificação...`);
-              
-              const webhookResponse = await fetch('https://primary-production-dc42.up.railway.app/webhook/f2cabfd9-4e4c-4dd0-802a-b27c4b0c9d17', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+            const notificacaoEnviada = await enviarWebhook(webhookUrl, payload);
+
+            if (!notificacaoEnviada) {
+              toast({
+                title: "Aviso",
+                description: "Operação concluída, mas notificação não foi enviada após 3 tentativas.",
+                variant: "destructive"
               });
-
-              if (webhookResponse.ok) {
-                notificacaoEnviada = true;
-                console.log('✅ Notificação de faturamento enviada com sucesso na tentativa', tentativa);
-                break;
-              } else {
-                console.error(`❌ Tentativa ${tentativa} falhou com status:`, webhookResponse.status);
-                if (tentativa < maxTentativas) {
-                  console.log(`⏳ Aguardando ${intervaloRetry/1000}s antes da próxima tentativa...`);
-                  await new Promise(resolve => setTimeout(resolve, intervaloRetry));
-                }
-              }
-            } catch (webhookError) {
-              console.error(`❌ Erro na tentativa ${tentativa}:`, webhookError);
-              if (tentativa < maxTentativas) {
-                console.log(`⏳ Aguardando ${intervaloRetry/1000}s antes da próxima tentativa...`);
-                await new Promise(resolve => setTimeout(resolve, intervaloRetry));
-              }
             }
+          } else {
+            console.warn('⚠️ Webhook não configurado para esta empresa');
           }
-
-          if (!notificacaoEnviada) {
-            toast({
-              title: "Aviso",
-              description: `Operação concluída, mas notificação não foi enviada após ${maxTentativas} tentativas.`,
-              variant: "destructive"
-            });
-          }
+          
           toast({
             title: "Ordem finalizada",
             description: "A ordem foi finalizada e enviada para faturamento"

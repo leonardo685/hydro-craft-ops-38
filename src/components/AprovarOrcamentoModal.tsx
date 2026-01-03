@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, FileText, Calculator } from "lucide-react";
+import { Upload, FileText, Calculator, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useEmpresa } from "@/contexts/EmpresaContext";
+import { enviarWebhook } from "@/lib/webhook-utils";
 
 interface AprovarOrcamentoModalProps {
   open: boolean;
@@ -24,6 +26,15 @@ export const AprovarOrcamentoModal = ({
   onConfirm 
 }: AprovarOrcamentoModalProps) => {
   const { toast } = useToast();
+  const { empresaAtual } = useEmpresa();
+  
+  // Obter webhook da empresa
+  const getWebhookUrl = (): string | null => {
+    if (!empresaAtual) return null;
+    const config = empresaAtual.configuracoes as { webhook_url?: string } | null;
+    return config?.webhook_url || null;
+  };
+  
   const [formData, setFormData] = useState({
     valor: orcamento?.valor || 0,
     prazoPagamento: 30,
@@ -238,91 +249,54 @@ export const AprovarOrcamentoModal = ({
         }
       }
 
-      // Enviar notificação para o n8n/Telegram com retry
-      const maxTentativas = 3;
-      const intervaloRetry = 2000; // 2 segundos
-      let notificacaoEnviada = false;
-
-      const payload = {
-        tipo: 'orcamento_aprovado',
-        numero: orcamento.numero,
-        cliente: orcamento.cliente_nome,
-        valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        numeroPedido: formData.numeroPedido,
-        data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
-        // Dados da ordem de serviço vinculada
-        ordem_servico_aprovada: orcamento.ordem_servico_id ? true : false,
-        numero_ordem: ordemServicoNumero
-      };
-
-      for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
-        try {
-          console.log(`📤 Tentativa ${tentativa}/${maxTentativas} de envio da notificação...`);
-          
-          const webhookResponse = await fetch('https://primary-production-dc42.up.railway.app/webhook/f2cabfd9-4e4c-4dd0-802a-b27c4b0c9d17', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload)
-          });
-
-          if (webhookResponse.ok) {
-            notificacaoEnviada = true;
-            console.log('✅ Notificação de orçamento enviada com sucesso na tentativa', tentativa);
-            break;
-          } else {
-            console.error(`❌ Tentativa ${tentativa} falhou com status:`, webhookResponse.status);
-            if (tentativa < maxTentativas) {
-              console.log(`⏳ Aguardando ${intervaloRetry/1000}s antes da próxima tentativa...`);
-              await new Promise(resolve => setTimeout(resolve, intervaloRetry));
-            }
-          }
-        } catch (webhookError) {
-          console.error(`❌ Erro na tentativa ${tentativa}:`, webhookError);
-          if (tentativa < maxTentativas) {
-            console.log(`⏳ Aguardando ${intervaloRetry/1000}s antes da próxima tentativa...`);
-            await new Promise(resolve => setTimeout(resolve, intervaloRetry));
-          }
-        }
-      }
-
-      if (!notificacaoEnviada) {
+      // Enviar notificação via webhook da empresa
+      const webhookUrl = getWebhookUrl();
+      
+      if (!webhookUrl) {
+        console.warn('⚠️ Webhook não configurado para esta empresa');
         toast({
           title: "Aviso",
-          description: `Orçamento aprovado, mas notificação não foi enviada após ${maxTentativas} tentativas.`,
-          variant: "destructive"
+          description: "Orçamento aprovado, mas webhook não está configurado nas configurações da empresa.",
         });
-      }
-
-      // Se houver ordem de serviço vinculada, enviar webhook separado para aprovadores de OS
-      if (orcamento.ordem_servico_id && ordemServicoNumero) {
-        console.log('📤 Enviando webhook para aprovadores de ordem de serviço...');
-        
-        const payloadOrdem = {
-          tipo: 'ordem_aprovada',
-          numero_ordem: ordemServicoNumero,
+      } else {
+        const payload = {
+          tipo: 'orcamento_aprovado',
+          numero: orcamento.numero,
           cliente: orcamento.cliente_nome,
-          equipamento: tipoEquipamento || orcamento.equipamento || 'Equipamento não especificado',
           valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          numeroPedido: formData.numeroPedido,
           data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
-          orcamento_numero: orcamento.numero
+          ordem_servico_aprovada: orcamento.ordem_servico_id ? true : false,
+          numero_ordem: ordemServicoNumero,
+          empresa: empresaAtual?.nome || 'N/A'
         };
 
-        try {
-          const responseOrdem = await fetch('https://primary-production-dc42.up.railway.app/webhook/f2cabfd9-4e4c-4dd0-802a-b27c4b0c9d17', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payloadOrdem)
-          });
+        const notificacaoEnviada = await enviarWebhook(webhookUrl, payload);
 
-          if (responseOrdem.ok) {
-            console.log('✅ Webhook de ordem de serviço enviado com sucesso');
-          } else {
-            console.error('❌ Falha ao enviar webhook de ordem de serviço:', responseOrdem.status);
-          }
-        } catch (error) {
-          console.error('❌ Erro ao enviar webhook de ordem de serviço:', error);
+        if (!notificacaoEnviada) {
+          toast({
+            title: "Aviso",
+            description: "Orçamento aprovado, mas notificação não foi enviada após 3 tentativas.",
+            variant: "destructive"
+          });
+        }
+
+        // Se houver ordem de serviço vinculada, enviar webhook separado
+        if (orcamento.ordem_servico_id && ordemServicoNumero) {
+          console.log('📤 Enviando webhook para aprovadores de ordem de serviço...');
+          
+          const payloadOrdem = {
+            tipo: 'ordem_aprovada',
+            numero_ordem: ordemServicoNumero,
+            cliente: orcamento.cliente_nome,
+            equipamento: tipoEquipamento || orcamento.equipamento || 'Equipamento não especificado',
+            valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
+            orcamento_numero: orcamento.numero,
+            empresa: empresaAtual?.nome || 'N/A'
+          };
+
+          await enviarWebhook(webhookUrl, payloadOrdem);
         }
       }
 
