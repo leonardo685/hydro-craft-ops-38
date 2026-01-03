@@ -4,8 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, TrendingUp, TrendingDown, Minus, Calendar, Wrench, AlertTriangle } from "lucide-react";
-import { useState } from "react";
+import { Search, FileText, TrendingUp, TrendingDown, Minus, Calendar, Wrench, AlertTriangle, Clock, X } from "lucide-react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEmpresa } from "@/contexts/EmpresaContext";
@@ -40,6 +40,36 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
   const [loading, setLoading] = useState(false);
   const [historico, setHistorico] = useState<ManutencaoHistorico[]>([]);
   const [searched, setSearched] = useState(false);
+  const [buscasRecentes, setBuscasRecentes] = useState<string[]>([]);
+
+  const STORAGE_KEY = 'historico-manutencao-buscas-recentes';
+
+  // Carregar buscas recentes do localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        setBuscasRecentes(JSON.parse(saved));
+      } catch {
+        setBuscasRecentes([]);
+      }
+    }
+  }, []);
+
+  // Salvar busca recente
+  const salvarBuscaRecente = (termo: string) => {
+    const normalizado = normalizarNumeroOrdem(termo);
+    const novaLista = [normalizado, ...buscasRecentes.filter(b => b !== normalizado)].slice(0, 5);
+    setBuscasRecentes(novaLista);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(novaLista));
+  };
+
+  // Limpar uma busca recente
+  const removerBuscaRecente = (termo: string) => {
+    const novaLista = buscasRecentes.filter(b => b !== termo);
+    setBuscasRecentes(novaLista);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(novaLista));
+  };
 
   // Normaliza o número da ordem (ex: "1-25" -> "MH-001-25")
   const normalizarNumeroOrdem = (input: string): string => {
@@ -53,8 +83,9 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
     return `MH-${limpo}`;
   };
 
-  const buscarHistorico = async () => {
-    if (!searchTerm.trim()) {
+  const buscarHistorico = async (termoBusca?: string) => {
+    const termo = termoBusca || searchTerm;
+    if (!termo.trim()) {
       toast({
         title: "Digite um número de ordem",
         description: "Informe o número da ordem de serviço para buscar o histórico.",
@@ -63,7 +94,8 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
       return;
     }
 
-    const numeroNormalizado = normalizarNumeroOrdem(searchTerm);
+    const numeroNormalizado = normalizarNumeroOrdem(termo);
+    salvarBuscaRecente(termo);
 
     setLoading(true);
     setSearched(true);
@@ -384,7 +416,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
                     onKeyDown={(e) => e.key === "Enter" && buscarHistorico()}
                   />
                 </div>
-                <Button onClick={buscarHistorico} disabled={loading}>
+                <Button onClick={() => buscarHistorico()} disabled={loading}>
                   <Search className="h-4 w-4 mr-2" />
                   {loading ? "Buscando..." : "Buscar"}
                 </Button>
@@ -394,6 +426,35 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
               </p>
             </div>
           </div>
+
+          {/* Buscas Recentes */}
+          {buscasRecentes.length > 0 && !searched && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Recentes:
+              </span>
+              {buscasRecentes.map((busca) => (
+                <Badge
+                  key={busca}
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-secondary/80 group pr-1"
+                  onClick={() => buscarHistorico(busca)}
+                >
+                  {busca}
+                  <button
+                    className="ml-1 opacity-50 hover:opacity-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removerBuscaRecente(busca);
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
 
           {/* Resultados */}
           {searched && historico.length === 0 && !loading && (
