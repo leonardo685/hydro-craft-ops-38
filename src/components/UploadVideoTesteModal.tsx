@@ -6,6 +6,7 @@ import { Upload, Video, X, CheckCircle, Loader2, Camera, AlertCircle } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useVideoCompression } from "@/hooks/useVideoCompression";
+import * as tus from 'tus-js-client';
 
 interface UploadVideoTesteModalProps {
   ordem: any;
@@ -124,8 +125,8 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
     setUploadError(null);
 
     try {
-      console.log('=== INICIANDO UPLOAD ===');
-      console.log('Arquivo original:', videoFile.name, 'Tipo:', videoFile.type);
+      console.log('=== INICIANDO UPLOAD RESUMÍVEL (TUS) ===');
+      console.log('Arquivo:', videoFile.name, 'Tipo:', videoFile.type, 'Tamanho:', (videoFile.size / 1024 / 1024).toFixed(2), 'MB');
       
       // Verificar autenticação
       const { data: { session } } = await supabase.auth.getSession();
@@ -142,69 +143,62 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
         return;
       }
 
-      // Gerar nome do arquivo - SEMPRE usar .mp4 para compatibilidade
+      // Gerar nome do arquivo
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem || 'sem-numero';
       const fileName = `${numeroOrdem}_teste_${timestamp}.mp4`;
+      const bucketName = 'videos-teste';
 
       console.log('Nome do arquivo:', fileName);
-      console.log('Tamanho:', (videoFile.size / 1024 / 1024).toFixed(2), 'MB');
 
-      // Iniciar upload
+      // Iniciar upload resumível com TUS
       setUploadStatus('uploading');
       
       const supabaseUrl = 'https://fmbfkufkxvyncadunlhh.supabase.co';
-      
-      const videoUrl = await new Promise<string | null>((resolve) => {
-        const xhr = new XMLHttpRequest();
-        
-        xhr.upload.addEventListener('progress', (event) => {
-          if (event.lengthComputable) {
-            const progress = Math.round((event.loaded / event.total) * 100);
-            console.log('Progresso:', progress, '%');
-            setUploadProgress(progress);
-          }
-        });
-        
-        xhr.addEventListener('load', () => {
-          console.log('XHR load - status:', xhr.status, 'response:', xhr.responseText);
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const publicUrl = `${supabaseUrl}/storage/v1/object/public/videos-teste/${fileName}`;
+      const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtYmZrdWZreHZ5bmNhZHVubGhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwOTM1NDYsImV4cCI6MjA3MjY2OTU0Nn0.A3-H5fOxRJMx_q4Vj3qvM0vxjZgSF-VXxZYBdZT-Tbs';
+
+      const videoUrl = await new Promise<string | null>((resolve, reject) => {
+        const upload = new tus.Upload(videoFile, {
+          endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
+          retryDelays: [0, 3000, 5000, 10000, 20000],
+          headers: {
+            authorization: `Bearer ${session.access_token}`,
+            apikey: anonKey,
+          },
+          uploadDataDuringCreation: true,
+          removeFingerprintOnSuccess: true,
+          chunkSize: 6 * 1024 * 1024, // 6MB por chunk
+          metadata: {
+            bucketName: bucketName,
+            objectName: fileName,
+            contentType: 'video/mp4',
+            cacheControl: '3600',
+          },
+          onError: (error) => {
+            console.error('TUS Error:', error);
+            setUploadError(error.message || 'Erro no upload');
+            reject(error);
+          },
+          onProgress: (bytesUploaded, bytesTotal) => {
+            const percentage = Math.round((bytesUploaded / bytesTotal) * 100);
+            console.log(`Progresso: ${percentage}% (${(bytesUploaded / 1024 / 1024).toFixed(1)}MB / ${(bytesTotal / 1024 / 1024).toFixed(1)}MB)`);
+            setUploadProgress(percentage);
+          },
+          onSuccess: () => {
+            console.log('TUS Upload concluído!');
+            const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${fileName}`;
             resolve(publicUrl);
-          } else {
-            // Capturar erro específico do Supabase
-            let errorMsg = 'Erro desconhecido';
-            try {
-              const errorData = JSON.parse(xhr.responseText);
-              errorMsg = errorData.message || errorData.error || xhr.statusText;
-            } catch {
-              errorMsg = xhr.statusText || `Erro ${xhr.status}`;
-            }
-            console.error('Upload falhou:', xhr.status, errorMsg);
-            setUploadError(errorMsg);
-            resolve(null);
+          },
+        });
+
+        // Verificar se há upload anterior para retomar
+        upload.findPreviousUploads().then((previousUploads) => {
+          if (previousUploads.length > 0) {
+            console.log('Retomando upload anterior...');
+            upload.resumeFromPreviousUpload(previousUploads[0]);
           }
+          upload.start();
         });
-        
-        xhr.addEventListener('error', (e) => {
-          console.error('Erro de rede:', e);
-          setUploadError('Erro de conexão. Verifique sua internet.');
-          resolve(null);
-        });
-        
-        xhr.addEventListener('timeout', () => {
-          console.error('Timeout');
-          setUploadError('Tempo limite excedido. Tente novamente.');
-          resolve(null);
-        });
-        
-        xhr.timeout = 600000; // 10 minutos
-        
-        xhr.open('POST', `${supabaseUrl}/storage/v1/object/videos-teste/${fileName}`);
-        xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
-        xhr.setRequestHeader('Content-Type', 'video/mp4'); // Forçar MIME type MP4
-        xhr.setRequestHeader('x-upsert', 'true');
-        xhr.send(videoFile);
       });
 
       if (!videoUrl) {
