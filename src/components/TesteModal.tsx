@@ -35,7 +35,6 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
     checkVazamentoPistao: false,
     checkVazamentoVedacoesEstaticas: false,
     checkVazamentoHaste: false,
-    testePerformancePR004: '',
     espessuraCamada: '',
     checkOk: false,
     observacao: '',
@@ -226,7 +225,6 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
             checkVazamentoPistao: formData.checkVazamentoPistao,
             checkVazamentoVedacoesEstaticas: formData.checkVazamentoVedacoesEstaticas,
             checkVazamentoHaste: formData.checkVazamentoHaste,
-            testePerformancePR004: formData.testePerformancePR004,
             espessuraCamada: formData.espessuraCamada,
             checkOk: formData.checkOk,
             observacao: formData.observacao,
@@ -258,7 +256,6 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
         checkVazamentoPistao: false,
         checkVazamentoVedacoesEstaticas: false,
         checkVazamentoHaste: false,
-        testePerformancePR004: '',
         espessuraCamada: '',
         checkOk: false,
         observacao: '',
@@ -431,15 +428,6 @@ export function TesteModal({ ordem, children, onTesteIniciado }: TesteModalProps
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="testePerformancePR004">{t('modals.performanceTest')}</Label>
-              <Input
-                id="testePerformancePR004"
-                value={formData.testePerformancePR004}
-                onChange={(e) => setFormData(prev => ({ ...prev, testePerformancePR004: e.target.value }))}
-                placeholder="Descreva o teste de performance"
-              />
-            </div>
 
             <div className="grid grid-cols-2 gap-4 items-end">
               <div>
