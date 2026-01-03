@@ -268,7 +268,8 @@ export const AprovarOrcamentoModal = ({
           data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
           ordem_servico_aprovada: orcamento.ordem_servico_id ? true : false,
           numero_ordem: ordemServicoNumero,
-          empresa: empresaAtual?.nome || 'N/A'
+          empresa: empresaAtual?.nome || 'N/A',
+          empresa_id: empresaAtual?.id || null
         };
 
         const notificacaoEnviada = await enviarWebhook(webhookUrl, payload);
@@ -293,7 +294,8 @@ export const AprovarOrcamentoModal = ({
             valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
             orcamento_numero: orcamento.numero,
-            empresa: empresaAtual?.nome || 'N/A'
+            empresa: empresaAtual?.nome || 'N/A',
+            empresa_id: empresaAtual?.id || null
           };
 
           await enviarWebhook(webhookUrl, payloadOrdem);

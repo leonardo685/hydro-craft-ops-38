@@ -140,10 +140,11 @@ export default function AdminPermissions() {
       if (permsError) throw permsError;
       setPermissions(permsData || []);
 
-      // Buscar aprovadores
+      // Buscar aprovadores da empresa atual
       const { data: aprovadoresData, error: aprovadoresError } = await supabase
         .from('aprovadores_fluxo')
         .select('*')
+        .eq('empresa_id', empresaId)
         .order('nome');
 
       if (aprovadoresError) throw aprovadoresError;
@@ -313,6 +314,11 @@ export default function AdminPermissions() {
       return;
     }
 
+    if (!empresaId) {
+      toast.error('Selecione uma empresa antes de cadastrar aprovadores');
+      return;
+    }
+
     try {
       if (editandoAprovador) {
         const { error } = await supabase
@@ -335,7 +341,8 @@ export default function AdminPermissions() {
             nome: formAprovador.nome,
             telefone: formAprovador.telefone,
             fluxo_permissao: formAprovador.fluxo_permissao,
-            ativo: formAprovador.ativo
+            ativo: formAprovador.ativo,
+            empresa_id: empresaId
           });
 
         if (error) throw error;

@@ -139,7 +139,8 @@ export function VincularOrdensModal({
       valor: valorFormatado,
       data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
       orcamento_numero: orcamento.numero,
-      empresa: empresaAtual?.nome || 'N/A'
+      empresa: empresaAtual?.nome || 'N/A',
+      empresa_id: empresaAtual?.id || null
     };
 
     return await enviarWebhook(webhookUrl, payload);
