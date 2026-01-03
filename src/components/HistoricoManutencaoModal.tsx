@@ -41,6 +41,18 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
   const [historico, setHistorico] = useState<ManutencaoHistorico[]>([]);
   const [searched, setSearched] = useState(false);
 
+  // Normaliza o número da ordem (ex: "1-25" -> "MH-001-25")
+  const normalizarNumeroOrdem = (input: string): string => {
+    const limpo = input.trim().toUpperCase().replace(/^MH-?/i, '');
+    const match = limpo.match(/^(\d+)-(\d+)$/);
+    if (match) {
+      const numero = match[1].padStart(3, '0');
+      const ano = match[2];
+      return `MH-${numero}-${ano}`;
+    }
+    return `MH-${limpo}`;
+  };
+
   const buscarHistorico = async () => {
     if (!searchTerm.trim()) {
       toast({
@@ -50,6 +62,8 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
       });
       return;
     }
+
+    const numeroNormalizado = normalizarNumeroOrdem(searchTerm);
 
     setLoading(true);
     setSearched(true);
@@ -69,7 +83,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
           status,
           recebimento_id
         `)
-        .ilike('numero_ordem', `%${searchTerm.trim()}%`)
+        .ilike('numero_ordem', `%${numeroNormalizado}%`)
         .limit(1)
         .maybeSingle();
 
@@ -357,20 +371,26 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
             <div className="flex-1">
               <Label htmlFor="searchOrdem">Número da Ordem</Label>
               <div className="flex gap-2 mt-1">
-                <Input
-                  id="searchOrdem"
-                  placeholder="Ex: MH-001-25"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && buscarHistorico()}
-                />
+                <div className="flex flex-1">
+                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm font-medium">
+                    MH-
+                  </span>
+                  <Input
+                    id="searchOrdem"
+                    className="rounded-l-none"
+                    placeholder="001-25 ou 1-25"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && buscarHistorico()}
+                  />
+                </div>
                 <Button onClick={buscarHistorico} disabled={loading}>
                   <Search className="h-4 w-4 mr-2" />
                   {loading ? "Buscando..." : "Buscar"}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Digite qualquer número de ordem da cadeia de manutenções
+                Digite apenas o número (ex: 1-25 ou 001-25)
               </p>
             </div>
           </div>
