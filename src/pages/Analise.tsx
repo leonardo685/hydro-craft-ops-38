@@ -21,6 +21,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { HistoricoManutencaoModal } from "@/components/HistoricoManutencaoModal";
+import { enviarWebhook } from "@/lib/webhook-utils";
 
 export default function OrdensServico() {
   const navigate = useNavigate();
@@ -36,6 +37,13 @@ export default function OrdensServico() {
   } | null>(null);
   const [selectedOrdemForLabel, setSelectedOrdemForLabel] = useState<any>(null);
   const [historicoModalOpen, setHistoricoModalOpen] = useState(false);
+
+  // Obter webhook da empresa
+  const getWebhookUrl = (): string | null => {
+    if (!empresaAtual) return null;
+    const config = empresaAtual.configuracoes as { webhook_url?: string } | null;
+    return config?.webhook_url || null;
+  };
 
   useEffect(() => {
     loadOrdensServico();
@@ -159,12 +167,10 @@ export default function OrdensServico() {
 
       if (error) throw error;
       
-      // Enviar notificação para o n8n/Telegram com retry
-      let notificacaoEnviada = false;
-      const maxTentativas = 3;
-      const intervaloRetry = 2000; // 2 segundos
+      // Enviar notificação via webhook da empresa
+      const webhookUrl = getWebhookUrl();
       
-      if (ordem) {
+      if (ordem && webhookUrl) {
         // Buscar o número correto da ordem e tipo de equipamento no formato MH-XXX-YY
         const { data: recebimento } = await supabase
           .from('recebimentos')
@@ -177,48 +183,21 @@ export default function OrdensServico() {
           numero_ordem: recebimento?.numero_ordem || ordem.numero_ordem,
           cliente: ordem.cliente_nome,
           equipamento: ordem.equipamento || recebimento?.tipo_equipamento || 'Equipamento não especificado',
-          data_aprovacao: format(new Date(), 'dd-MM-yyyy')
+          data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
+          empresa: empresaAtual?.nome || 'N/A'
         };
 
-        for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
-          try {
-            console.log(`📤 Tentativa ${tentativa}/${maxTentativas} de envio da notificação...`);
-            
-            const webhookResponse = await fetch('https://primary-production-dc42.up.railway.app/webhook/f2cabfd9-4e4c-4dd0-802a-b27c4b0c9d17', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(payload)
-            });
-
-            if (webhookResponse.ok) {
-              notificacaoEnviada = true;
-              console.log('✅ Notificação enviada com sucesso na tentativa', tentativa);
-              break;
-            } else {
-              console.error(`❌ Tentativa ${tentativa} falhou com status:`, webhookResponse.status);
-              if (tentativa < maxTentativas) {
-                console.log(`⏳ Aguardando ${intervaloRetry/1000}s antes da próxima tentativa...`);
-                await new Promise(resolve => setTimeout(resolve, intervaloRetry));
-              }
-            }
-          } catch (webhookError) {
-            console.error(`❌ Erro na tentativa ${tentativa}:`, webhookError);
-            if (tentativa < maxTentativas) {
-              console.log(`⏳ Aguardando ${intervaloRetry/1000}s antes da próxima tentativa...`);
-              await new Promise(resolve => setTimeout(resolve, intervaloRetry));
-            }
-          }
-        }
+        const notificacaoEnviada = await enviarWebhook(webhookUrl, payload);
 
         if (!notificacaoEnviada) {
           toast({
             title: t('messages.warning'),
-            description: t('analise.approvedWarning').replace('{attempts}', String(maxTentativas)),
+            description: t('analise.approvedWarning').replace('{attempts}', '3'),
             variant: "destructive"
           });
         }
+      } else if (!webhookUrl) {
+        console.warn('⚠️ Webhook não configurado para esta empresa');
       }
       
       toast({

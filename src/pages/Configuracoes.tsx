@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Settings, Globe, Building2, Upload, Loader2, Search } from "lucide-react";
+import { Settings, Globe, Building2, Upload, Loader2, Search, Webhook } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +38,7 @@ export default function Configuracoes() {
   const [estado, setEstado] = useState("");
   const [cep, setCep] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
 
   // Load empresa data
   useEffect(() => {
@@ -55,6 +56,9 @@ export default function Configuracoes() {
       setEstado(empresaAtual.estado || "");
       setCep(empresaAtual.cep || "");
       setLogoUrl(empresaAtual.logo_url || "");
+      // Carregar webhook da empresa
+      const config = empresaAtual.configuracoes as { webhook_url?: string } | null;
+      setWebhookUrl(config?.webhook_url || "");
     }
   }, [empresaAtual]);
 
@@ -236,6 +240,13 @@ export default function Configuracoes() {
 
     setSaving(true);
     try {
+      // Preparar configurações incluindo webhook
+      const configuracoesAtuais = (empresaAtual.configuracoes as Record<string, any>) || {};
+      const novasConfiguracoes = {
+        ...configuracoesAtuais,
+        webhook_url: webhookUrl || null,
+      };
+
       const { error } = await supabase
         .from('empresas')
         .update({
@@ -250,6 +261,7 @@ export default function Configuracoes() {
           cep: cep || null,
           logo_url: logoUrl || null,
           tipo_identificacao: tipoIdentificacao,
+          configuracoes: novasConfiguracoes,
           updated_at: new Date().toISOString(),
         } as any)
         .eq('id', empresaAtual.id);
@@ -509,6 +521,25 @@ export default function Configuracoes() {
                       placeholder={labels.placeholderEstado}
                       maxLength={2}
                     />
+                  </div>
+
+                  {/* Webhook URL */}
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="webhookUrl" className="flex items-center gap-2">
+                      <Webhook className="h-4 w-4" />
+                      URL do Webhook (n8n)
+                    </Label>
+                    <Input
+                      id="webhookUrl"
+                      type="url"
+                      value={webhookUrl}
+                      onChange={(e) => setWebhookUrl(e.target.value)}
+                      disabled={!canEdit}
+                      placeholder="https://seu-servidor.com/webhook/..."
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      URL do webhook para receber notificações de orçamentos aprovados, ordens finalizadas, etc.
+                    </p>
                   </div>
                 </div>
 
