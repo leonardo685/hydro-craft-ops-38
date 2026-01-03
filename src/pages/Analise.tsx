@@ -184,7 +184,8 @@ export default function OrdensServico() {
           cliente: ordem.cliente_nome,
           equipamento: ordem.equipamento || recebimento?.tipo_equipamento || 'Equipamento não especificado',
           data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
-          empresa: empresaAtual?.nome || 'N/A'
+          empresa: empresaAtual?.nome || 'N/A',
+          empresa_id: empresaAtual?.id || null
         };
 
         const notificacaoEnviada = await enviarWebhook(webhookUrl, payload);

@@ -384,7 +384,8 @@ export default function Aprovados() {
               nota_fiscal_entrada: notaFiscalEntrada,
               data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
               data_aprovacao: ordemSelecionada.updated_at ? format(parseISO(ordemSelecionada.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy'),
-              empresa: empresaAtual?.nome || 'N/A'
+              empresa: empresaAtual?.nome || 'N/A',
+              empresa_id: empresaAtual?.id || null
             };
 
             const notificacaoEnviada = await enviarWebhook(webhookUrl, payload);
