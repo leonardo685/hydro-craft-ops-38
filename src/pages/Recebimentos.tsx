@@ -74,14 +74,16 @@ export default function Recebimentos() {
   }, []);
   
   // Filtrar recebimentos em andamento (sem nota de retorno)
+  // Quando filtroNotaFiscal está ativo, mostra resultados independente do status
   const recebimentosFiltrados = useMemo(() => {
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
-    
     return recebimentos.filter(item => {
-      // Apenas equipamentos que ainda estão na empresa E não têm nota de retorno
-      if (!item.na_empresa || item.pdf_nota_retorno) return false;
+      // Se está buscando por nota fiscal específica, ignora filtro de status para encontrar a nota
+      const buscandoNotaFiscal = filtroNotaFiscal && filtroNotaFiscal.trim().length > 0;
+      
+      if (!buscandoNotaFiscal) {
+        // Apenas equipamentos que ainda estão na empresa E não têm nota de retorno
+        if (!item.na_empresa || item.pdf_nota_retorno) return false;
+      }
       
       const dataItem = new Date(item.data_entrada);
       
