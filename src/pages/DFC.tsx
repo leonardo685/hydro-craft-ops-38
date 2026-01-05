@@ -2098,7 +2098,7 @@ export default function DFC() {
                   const dadosExcel = extratoFiltrado.map(item => {
                     const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
                     const conta = contasBancarias.find(c => c.id === item.conta);
-                    const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor);
+                    const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor || f.nome === item.fornecedor);
                     return {
                       'Data Esperada': format(item.dataEsperada, "dd/MM/yyyy"),
                       'Data Realizada': item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-',
@@ -2106,7 +2106,7 @@ export default function DFC() {
                       'Descrição': item.descricao,
                       'Categoria': item.categoria,
                       'Conta': conta?.nome || '-',
-                      'Fornecedor/Cliente': fornecedor?.nome || '-',
+                      'Fornecedor/Cliente': fornecedor?.nome || item.fornecedor || '-',
                       'Valor': item.valor,
                       'Status': status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo'
                     };
@@ -2204,7 +2204,7 @@ export default function DFC() {
                       {sortData(extratoFiltrado).map(item => {
                       const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
                       const conta = contasBancarias.find(c => c.id === item.conta);
-                      const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor);
+                      const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor || f.nome === item.fornecedor);
                       return <TableRow key={item.id}>
                             {colunasVisiveis.tipo && <TableCell>
                                 <Badge className="gap-1" style={{
@@ -2265,7 +2265,7 @@ export default function DFC() {
                                           {f.nome}
                                         </SelectItem>)}
                                     </SelectContent>
-                                  </Select> : fornecedor?.nome || '-'}
+                                  </Select> : fornecedor?.nome || item.fornecedor || '-'}
                               </TableCell>}
                             {colunasVisiveis.valor && <TableCell className={`text-right font-medium ${item.tipo === 'transferencia' ? (item.descricao.includes('Entrada') ? 'text-green-600' : 'text-destructive') : item.tipo === 'entrada' ? 'text-green-600' : 'text-destructive'}`}>
                                 {editandoLancamento === item.id ? <Input type="number" value={lancamentoEditado?.valor || 0} onChange={e => setLancamentoEditado({
