@@ -26,6 +26,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { translations } from "@/i18n/translations";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
 import jsPDF from "jspdf";
 
@@ -375,6 +376,49 @@ export default function MetaGastos() {
       margemLucroLiquido
     };
   }, [planejamento]);
+
+  // Cores para gráficos
+  const CHART_COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'];
+  const CHART_COLORS_GREEN = ['#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6'];
+
+  // Dados para gráficos das Metas de Gastos
+  const dadosGraficoMetas = useMemo(() => {
+    return metasComGastos.slice(0, 6).map(meta => ({
+      name: meta.categoriaNome.length > 15 ? meta.categoriaNome.substring(0, 15) + '...' : meta.categoriaNome,
+      meta: meta.valorMeta,
+      gasto: meta.valorGasto,
+      percentual: ((meta.valorGasto / meta.valorMeta) * 100).toFixed(1)
+    }));
+  }, [metasComGastos]);
+
+  // Dados para gráfico de pizza do Planejamento
+  const dadosPizzaDespesas = useMemo(() => {
+    if (planejamento.despesasFixas.length === 0) return [];
+    return planejamento.despesasFixas.map((d, index) => ({
+      name: d.descricao,
+      value: d.valor,
+      color: CHART_COLORS[index % CHART_COLORS.length]
+    }));
+  }, [planejamento.despesasFixas]);
+
+  const dadosPizzaFaturamentos = useMemo(() => {
+    if (planejamento.faturamentos.length === 0) return [];
+    return planejamento.faturamentos.map((f, index) => ({
+      name: f.descricao,
+      value: f.valor,
+      color: CHART_COLORS_GREEN[index % CHART_COLORS_GREEN.length]
+    }));
+  }, [planejamento.faturamentos]);
+
+  // Dados para gráfico de barras do Planejamento
+  const dadosBarrasPlanejamento = useMemo(() => {
+    return [
+      { name: t('metaGastos.totalRevenue'), valor: calcularTotais.totalFaturamento, fill: '#22c55e' },
+      { name: t('metaGastos.fixedExpensesShort'), valor: calcularTotais.totalDespesas, fill: '#ef4444' },
+      { name: t('metaGastos.contributionMargin'), valor: calcularTotais.metaMargemReais, fill: '#3b82f6' },
+      { name: t('metaGastos.operatingProfit'), valor: calcularTotais.lucroOperacional, fill: calcularTotais.lucroOperacional >= 0 ? '#10b981' : '#dc2626' },
+    ];
+  }, [calcularTotais, t]);
 
   // Funções para gerenciar despesas fixas
   const adicionarDespesa = () => {
@@ -1286,6 +1330,50 @@ export default function MetaGastos() {
               </Card>
             </div>
 
+            {/* Gráfico de Barras: Metas vs Gastos */}
+            {dadosGraficoMetas.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('metaGastos.goalsVsSpentChart')}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{t('metaGastos.goalsVsSpentChartDesc')}</p>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={dadosGraficoMetas} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fontSize: 12 }}
+                        className="fill-muted-foreground"
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        className="fill-muted-foreground"
+                        tickFormatter={(value) => formatCurrency(value).replace(/R\$\s?/, '')}
+                      />
+                      <Tooltip 
+                        formatter={(value: number, name: string) => [
+                          formatCurrency(value),
+                          name === 'meta' ? t('metaGastos.goalLabel') : t('metaGastos.spentLabel')
+                        ]}
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      />
+                      <Legend 
+                        formatter={(value) => value === 'meta' ? t('metaGastos.goalLabel') : t('metaGastos.spentLabel')}
+                      />
+                      <Bar dataKey="meta" fill="#3b82f6" name="meta" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="gasto" fill="#ef4444" name="gasto" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
           <CardHeader>
             <CardTitle>{t('metaGastos.spendingGoals')}</CardTitle>
@@ -1691,6 +1779,135 @@ export default function MetaGastos() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Gráficos de Distribuição */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Gráfico de Pizza - Despesas */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">{t('metaGastos.expensesDistribution')}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {dadosPizzaDespesas.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                          <PieChart>
+                            <Pie
+                              data={dadosPizzaDespesas}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={90}
+                              paddingAngle={2}
+                              dataKey="value"
+                              label={({ name, percent }) => `${String(name).substring(0, 10)}${String(name).length > 10 ? '...' : ''} (${((percent as number) * 100).toFixed(0)}%)`}
+                              labelLine={false}
+                            >
+                              {dadosPizzaDespesas.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip 
+                              formatter={(value: number) => formatCurrency(value)}
+                              contentStyle={{
+                                backgroundColor: 'hsl(var(--card))',
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '8px',
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="flex items-center justify-center h-[250px] text-muted-foreground text-sm">
+                          {t('metaGastos.noDataForChart')}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Gráfico de Pizza - Faturamentos */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">{t('metaGastos.revenueDistribution')}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {dadosPizzaFaturamentos.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                          <PieChart>
+                            <Pie
+                              data={dadosPizzaFaturamentos}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={90}
+                              paddingAngle={2}
+                              dataKey="value"
+                              label={({ name, percent }) => `${String(name).substring(0, 10)}${String(name).length > 10 ? '...' : ''} (${((percent as number) * 100).toFixed(0)}%)`}
+                              labelLine={false}
+                            >
+                              {dadosPizzaFaturamentos.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip 
+                              formatter={(value: number) => formatCurrency(value)}
+                              contentStyle={{
+                                backgroundColor: 'hsl(var(--card))',
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '8px',
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="flex items-center justify-center h-[250px] text-muted-foreground text-sm">
+                          {t('metaGastos.noDataForChart')}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Gráfico de Barras - Visão Geral */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t('metaGastos.financialOverview')}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{t('metaGastos.financialOverviewDesc')}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={dadosBarrasPlanejamento} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={true} vertical={false} />
+                        <XAxis 
+                          type="number"
+                          tick={{ fontSize: 12 }}
+                          className="fill-muted-foreground"
+                          tickFormatter={(value) => formatCurrency(value).replace(/R\$\s?/, '')}
+                        />
+                        <YAxis 
+                          type="category"
+                          dataKey="name"
+                          tick={{ fontSize: 12 }}
+                          className="fill-muted-foreground"
+                          width={90}
+                        />
+                        <Tooltip 
+                          formatter={(value: number) => formatCurrency(value)}
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                          }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
+                        />
+                        <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
+                          {dadosBarrasPlanejamento.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
 
                 {/* Seção 3: Indicadores Financeiros */}
                 <Card>

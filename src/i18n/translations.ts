@@ -637,6 +637,17 @@ export const translations = {
       goalSaveError: 'Erro ao salvar meta',
       goalDeleteError: 'Erro ao excluir meta',
       select: 'Selecionar',
+      // Charts
+      goalsVsSpentChart: 'Metas vs Gastos',
+      goalsVsSpentChartDesc: 'Comparativo visual do orçamento por categoria',
+      goalLabel: 'Meta',
+      spentLabel: 'Gasto',
+      expensesDistribution: 'Distribuição das Despesas',
+      revenueDistribution: 'Distribuição do Faturamento',
+      financialOverview: 'Visão Geral Financeira',
+      financialOverviewDesc: 'Resumo dos principais indicadores',
+      fixedExpensesShort: 'Despesas Fixas',
+      noDataForChart: 'Adicione dados para visualizar o gráfico',
     },
     // Aprovados
     aprovados: {
@@ -1516,6 +1527,17 @@ export const translations = {
       goalSaveError: 'Error saving goal',
       goalDeleteError: 'Error deleting goal',
       select: 'Select',
+      // Charts
+      goalsVsSpentChart: 'Goals vs Spent',
+      goalsVsSpentChartDesc: 'Visual budget comparison by category',
+      goalLabel: 'Goal',
+      spentLabel: 'Spent',
+      expensesDistribution: 'Expenses Distribution',
+      revenueDistribution: 'Revenue Distribution',
+      financialOverview: 'Financial Overview',
+      financialOverviewDesc: 'Summary of key indicators',
+      fixedExpensesShort: 'Fixed Expenses',
+      noDataForChart: 'Add data to view the chart',
     },
     // Aprovados
     aprovados: {
