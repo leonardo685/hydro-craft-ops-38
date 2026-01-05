@@ -20,8 +20,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format, endOfMonth, addMonths, endOfYear, differenceInDays } from "date-fns";
-import { ptBR } from 'date-fns/locale';
+import { ptBR, enUS } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 import jsPDF from "jspdf";
 
@@ -69,6 +70,8 @@ const calcularDataFim = (
 };
 
 export default function MetaGastos() {
+  const { t, language } = useLanguage();
+  const dateLocale = language === 'pt-BR' ? ptBR : enUS;
   const [modeloGestao, setModeloGestao] = useState<'dre' | 'esperado' | 'realizado'>('realizado');
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
   const { lancamentos } = useLancamentosFinanceiros();
@@ -223,9 +226,9 @@ export default function MetaGastos() {
   }, [metas, lancamentos, getCategoriasForSelect, modeloGestao]);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
+    return new Intl.NumberFormat(language === 'pt-BR' ? 'pt-BR' : 'en-US', {
       style: 'currency',
-      currency: 'BRL'
+      currency: language === 'pt-BR' ? 'BRL' : 'USD'
     }).format(value);
   };
 
@@ -234,14 +237,14 @@ export default function MetaGastos() {
   };
 
   const getStatusMeta = (percentual: number) => {
-    if (percentual >= 100) return { label: 'Excedido', variant: 'destructive' as const, icon: TrendingDown };
-    if (percentual >= 80) return { label: 'Próximo do Limite', variant: 'default' as const, icon: AlertTriangle };
-    return { label: 'Dentro da Meta', variant: 'default' as const, icon: TrendingUp };
+    if (percentual >= 100) return { label: t('metaGastos.exceeded'), variant: 'destructive' as const, icon: TrendingDown };
+    if (percentual >= 80) return { label: t('metaGastos.nearLimit'), variant: 'default' as const, icon: AlertTriangle };
+    return { label: t('metaGastos.withinGoal'), variant: 'default' as const, icon: TrendingUp };
   };
 
   const handleSalvarMeta = async () => {
     if (!metaForm.categoriaId || !metaForm.valorMeta) {
-      toast.error("Preencha todos os campos obrigatórios");
+      toast.error(t('metaGastos.fillAllFields'));
       return;
     }
 
@@ -258,17 +261,17 @@ export default function MetaGastos() {
     let sucesso = false;
     if (editandoId) {
       sucesso = await atualizarMeta(editandoId, metaData);
-      if (sucesso) toast.success("Meta atualizada com sucesso!");
+      if (sucesso) toast.success(t('metaGastos.goalUpdated'));
     } else {
       sucesso = await adicionarMeta(metaData);
-      if (sucesso) toast.success("Meta criada com sucesso!");
+      if (sucesso) toast.success(t('metaGastos.goalCreated'));
     }
 
     if (sucesso) {
       setIsDialogOpen(false);
       resetForm();
     } else {
-      toast.error("Erro ao salvar meta");
+      toast.error(t('metaGastos.goalSaveError'));
     }
   };
 
@@ -290,9 +293,9 @@ export default function MetaGastos() {
   const handleExcluirMeta = async (id: string) => {
     const sucesso = await deletarMeta(id);
     if (sucesso) {
-      toast.success("Meta excluída com sucesso!");
+      toast.success(t('metaGastos.goalDeleted'));
     } else {
-      toast.error("Erro ao excluir meta");
+      toast.error(t('metaGastos.goalDeleteError'));
     }
   };
 
@@ -372,7 +375,7 @@ export default function MetaGastos() {
   // Funções para gerenciar despesas fixas
   const adicionarDespesa = () => {
     if (!formDespesa.descricao || !formDespesa.valor) {
-      toast.error("Preencha todos os campos");
+      toast.error(t('metaGastos.fillAllFields'));
       return;
     }
     
@@ -388,7 +391,7 @@ export default function MetaGastos() {
     }));
     
     setFormDespesa({ descricao: '', valor: '' });
-    toast.success("Despesa adicionada");
+    toast.success(t('metaGastos.expenseAdded'));
   };
 
   const removerDespesa = (id: string) => {
@@ -396,13 +399,13 @@ export default function MetaGastos() {
       ...prev,
       despesasFixas: prev.despesasFixas.filter(d => d.id !== id)
     }));
-    toast.success("Despesa removida");
+    toast.success(t('metaGastos.expenseRemoved'));
   };
 
   // Funções para gerenciar faturamento
   const adicionarFaturamento = () => {
     if (!formFaturamento.descricao || !formFaturamento.valor) {
-      toast.error("Preencha todos os campos");
+      toast.error(t('metaGastos.fillAllFields'));
       return;
     }
     
@@ -418,7 +421,7 @@ export default function MetaGastos() {
     }));
     
     setFormFaturamento({ descricao: '', valor: '' });
-    toast.success("Faturamento adicionado");
+    toast.success(t('metaGastos.revenueAdded'));
   };
 
   const removerFaturamento = (id: string) => {
@@ -426,13 +429,13 @@ export default function MetaGastos() {
       ...prev,
       faturamentos: prev.faturamentos.filter(f => f.id !== id)
     }));
-    toast.success("Faturamento removido");
+    toast.success(t('metaGastos.revenueRemoved'));
   };
 
   // Funções para gerenciar despesas não operacionais
   const adicionarDespesaNaoOp = () => {
     if (!formDespesaNaoOp.descricao || !formDespesaNaoOp.valor) {
-      toast.error("Preencha todos os campos");
+      toast.error(t('metaGastos.fillAllFields'));
       return;
     }
     
@@ -448,7 +451,7 @@ export default function MetaGastos() {
     }));
     
     setFormDespesaNaoOp({ descricao: '', valor: '' });
-    toast.success("Despesa não operacional adicionada");
+    toast.success(t('metaGastos.nonOpExpenseAdded'));
   };
 
   const removerDespesaNaoOp = (id: string) => {
@@ -456,13 +459,13 @@ export default function MetaGastos() {
       ...prev,
       despesasNaoOperacionais: prev.despesasNaoOperacionais.filter(d => d.id !== id)
     }));
-    toast.success("Despesa não operacional removida");
+    toast.success(t('metaGastos.nonOpExpenseRemoved'));
   };
 
   // Funções para gerenciar investimentos
   const adicionarInvestimento = () => {
     if (!formInvestimento.descricao || !formInvestimento.valor) {
-      toast.error("Preencha todos os campos");
+      toast.error(t('metaGastos.fillAllFields'));
       return;
     }
     
@@ -478,7 +481,7 @@ export default function MetaGastos() {
     }));
     
     setFormInvestimento({ descricao: '', valor: '' });
-    toast.success("Investimento adicionado");
+    toast.success(t('metaGastos.investmentAdded'));
   };
 
   const removerInvestimento = (id: string) => {
@@ -486,7 +489,7 @@ export default function MetaGastos() {
       ...prev,
       investimentos: prev.investimentos.filter(i => i.id !== id)
     }));
-    toast.success("Investimento removido");
+    toast.success(t('metaGastos.investmentRemoved'));
   };
 
   // Funções para ajustar percentuais
@@ -545,12 +548,12 @@ export default function MetaGastos() {
       
       localStorage.setItem('planejamento_estrategico', JSON.stringify(planejamentoParaSalvar));
       
-      toast.success('Planejamento salvo com sucesso!', {
-        description: 'Seus dados foram salvos localmente e estarão disponíveis na próxima vez que acessar.'
+      toast.success(t('metaGastos.planningSavedSuccess'), {
+        description: t('metaGastos.planningSavedDesc')
       });
     } catch (error) {
       console.error('Erro ao salvar planejamento:', error);
-      toast.error('Erro ao salvar planejamento');
+      toast.error(t('metaGastos.planningSaveError'));
     }
   };
 
@@ -860,11 +863,11 @@ export default function MetaGastos() {
         );
       }
 
-      doc.save(`Planejamento-Estrategico-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
-      toast.success("PDF gerado com sucesso!");
+      doc.save(`Planejamento-Estrategico-${new Date().toLocaleDateString(language === 'pt-BR' ? 'pt-BR' : 'en-US').replace(/\//g, '-')}.pdf`);
+      toast.success(t('metaGastos.pdfGenerated'));
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
-      toast.error("Erro ao gerar PDF");
+      toast.error(t('metaGastos.pdfError'));
     }
   };
 
@@ -885,15 +888,15 @@ export default function MetaGastos() {
       <PopoverContent className="w-80">
         <div className="space-y-4">
           <div>
-            <h4 className="font-semibold mb-2">Calculadora</h4>
+            <h4 className="font-semibold mb-2">{t('metaGastos.calculator')}</h4>
             <p className="text-sm text-muted-foreground">
-              Multiplique valores para calcular rapidamente
+              {t('metaGastos.calculatorDesc')}
             </p>
           </div>
           
           <div className="space-y-3">
             <div>
-              <Label htmlFor="calc-base">Valor Base (R$)</Label>
+              <Label htmlFor="calc-base">{t('metaGastos.baseValue')}</Label>
               <Input 
                 id="calc-base"
                 type="number"
@@ -905,7 +908,7 @@ export default function MetaGastos() {
             </div>
             
             <div>
-              <Label htmlFor="calc-mult">Multiplicador</Label>
+              <Label htmlFor="calc-mult">{t('metaGastos.multiplier')}</Label>
               <Input 
                 id="calc-mult"
                 type="number"
@@ -918,7 +921,7 @@ export default function MetaGastos() {
             
             <div className="pt-3 border-t">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-sm font-medium">Resultado:</span>
+                <span className="text-sm font-medium">{t('metaGastos.result')}:</span>
                 <span className="text-lg font-bold text-primary">
                   {formatCurrency(calcularValor())}
                 </span>
@@ -929,7 +932,7 @@ export default function MetaGastos() {
                 className="w-full"
                 disabled={!calcValorBase}
               >
-                Aplicar Valor
+                {t('metaGastos.applyValue')}
               </Button>
             </div>
           </div>
@@ -943,8 +946,8 @@ export default function MetaGastos() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Planejamento</h1>
-            <p className="text-muted-foreground">Gerencie metas e simulações estratégicas</p>
+            <h1 className="text-3xl font-bold">{t('metaGastos.pageTitle')}</h1>
+            <p className="text-muted-foreground">{t('metaGastos.pageSubtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
             <Select value={modeloGestao} onValueChange={(value: 'dre' | 'esperado' | 'realizado') => setModeloGestao(value)}>
@@ -952,9 +955,9 @@ export default function MetaGastos() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="realizado">Realizado (DFC)</SelectItem>
-                <SelectItem value="esperado">Esperado</SelectItem>
-                <SelectItem value="dre">DRE</SelectItem>
+                <SelectItem value="realizado">{t('metaGastos.realized')}</SelectItem>
+                <SelectItem value="esperado">{t('metaGastos.expected')}</SelectItem>
+                <SelectItem value="dre">{t('metaGastos.dre')}</SelectItem>
               </SelectContent>
             </Select>
             <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -964,23 +967,23 @@ export default function MetaGastos() {
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Nova Meta
+                  {t('metaGastos.newGoal')}
                 </Button>
               </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>{editandoId ? 'Editar Meta' : 'Nova Meta de Gastos'}</DialogTitle>
+                <DialogTitle>{editandoId ? t('metaGastos.editGoal') : t('metaGastos.newSpendingGoal')}</DialogTitle>
                 <DialogDescription>
-                  Defina uma meta de gastos para uma categoria específica
+                  {t('metaGastos.defineGoalDesc')}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Categoria *</Label>
+                    <Label>{t('metaGastos.category')} *</Label>
                     <Select value={metaForm.categoriaId} onValueChange={(value) => setMetaForm(prev => ({ ...prev, categoriaId: value }))}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecionar categoria" />
+                        <SelectValue placeholder={t('metaGastos.selectCategory')} />
                       </SelectTrigger>
                       <SelectContent>
                         {getCategoriasForSelect().map(categoria => (
@@ -992,7 +995,7 @@ export default function MetaGastos() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Valor da Meta *</Label>
+                    <Label>{t('metaGastos.goalValue')} *</Label>
                     <Input
                       type="number"
                       placeholder="0,00"
@@ -1003,7 +1006,7 @@ export default function MetaGastos() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Período</Label>
+                  <Label>{t('metaGastos.period')}</Label>
                   <Select value={metaForm.periodo} onValueChange={(value: 'mensal' | 'trimestral' | 'anual') => {
                     const novaDataFim = calcularDataFim(metaForm.dataInicio, value);
                     setMetaForm(prev => ({ 
@@ -1016,21 +1019,21 @@ export default function MetaGastos() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="mensal">Mensal</SelectItem>
-                      <SelectItem value="trimestral">Trimestral</SelectItem>
-                      <SelectItem value="anual">Anual</SelectItem>
+                      <SelectItem value="mensal">{t('metaGastos.monthly')}</SelectItem>
+                      <SelectItem value="trimestral">{t('metaGastos.quarterly')}</SelectItem>
+                      <SelectItem value="anual">{t('metaGastos.yearly')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Data Início</Label>
+                    <Label>{t('metaGastos.startDate')}</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !metaForm.dataInicio && "text-muted-foreground")}>
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {metaForm.dataInicio ? format(metaForm.dataInicio, "dd/MM/yyyy") : "Selecionar"}
+                          {metaForm.dataInicio ? format(metaForm.dataInicio, "dd/MM/yyyy", { locale: dateLocale }) : t('metaGastos.select')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
@@ -1055,9 +1058,9 @@ export default function MetaGastos() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Label>Data Fim</Label>
+                      <Label>{t('metaGastos.endDate')}</Label>
                       <Badge variant="outline" className="text-xs">
-                        Automático
+                        {t('metaGastos.automatic')}
                       </Badge>
                     </div>
                     <Button 
@@ -1066,10 +1069,10 @@ export default function MetaGastos() {
                       disabled
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {format(metaForm.dataFim, "dd/MM/yyyy")}
+                      {format(metaForm.dataFim, "dd/MM/yyyy", { locale: dateLocale })}
                     </Button>
                     <p className="text-xs text-muted-foreground">
-                      Calculado baseado no período selecionado
+                      {t('metaGastos.calculatedBasedOnPeriod')}
                     </p>
                   </div>
                 </div>
@@ -1077,30 +1080,30 @@ export default function MetaGastos() {
                 <div className="bg-muted p-3 rounded-md flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Duração:</span>
+                    <span className="text-sm font-medium">{t('metaGastos.duration')}:</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">
-                      {differenceInDays(metaForm.dataFim, metaForm.dataInicio) + 1} dias
+                      {differenceInDays(metaForm.dataFim, metaForm.dataInicio) + 1} {t('metaGastos.days')}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                      ({format(metaForm.dataInicio, "dd/MM")} até {format(metaForm.dataFim, "dd/MM/yyyy")})
+                      ({format(metaForm.dataInicio, "dd/MM", { locale: dateLocale })} {t('metaGastos.until')} {format(metaForm.dataFim, "dd/MM/yyyy", { locale: dateLocale })})
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Observações</Label>
+                  <Label>{t('metaGastos.observations')}</Label>
                   <Textarea
-                    placeholder="Adicione observações sobre esta meta..."
+                    placeholder={t('metaGastos.addObservationsPlaceholder')}
                     value={metaForm.observacoes}
                     onChange={(e) => setMetaForm(prev => ({ ...prev, observacoes: e.target.value }))}
                   />
                 </div>
 
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-                  <Button onClick={handleSalvarMeta}>Salvar Meta</Button>
+                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t('metaGastos.cancel')}</Button>
+                  <Button onClick={handleSalvarMeta}>{t('metaGastos.saveGoal')}</Button>
                 </div>
               </div>
             </DialogContent>
@@ -1110,8 +1113,8 @@ export default function MetaGastos() {
 
         <Tabs defaultValue="metas" className="w-full">
           <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="metas">Metas de Gastos</TabsTrigger>
-            <TabsTrigger value="estrategico">Planejamento Estratégico</TabsTrigger>
+            <TabsTrigger value="metas">{t('metaGastos.spendingGoals')}</TabsTrigger>
+            <TabsTrigger value="estrategico">{t('metaGastos.strategicPlanning')}</TabsTrigger>
           </TabsList>
 
           {/* ABA 1: METAS DE GASTOS */}
@@ -1121,14 +1124,14 @@ export default function MetaGastos() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
                     <Target className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-base font-medium">Total de Metas</CardTitle>
+                    <CardTitle className="text-base font-medium">{t('metaGastos.totalGoals')}</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="text-3xl font-bold text-primary">
                     {formatCurrency(totalMetas)}
                   </div>
-                  <p className="text-sm text-muted-foreground">{metasComGastos.length} metas cadastradas</p>
+                  <p className="text-sm text-muted-foreground">{metasComGastos.length} {t('metaGastos.goalsRegistered')}</p>
                 </CardContent>
               </Card>
 
@@ -1136,7 +1139,7 @@ export default function MetaGastos() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2 text-destructive">
                     <TrendingDown className="h-5 w-5" />
-                    <CardTitle className="text-base font-medium">Total Gasto</CardTitle>
+                    <CardTitle className="text-base font-medium">{t('metaGastos.totalSpent')}</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -1144,7 +1147,7 @@ export default function MetaGastos() {
                     {formatCurrency(totalGasto)}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {((totalGasto / totalMetas) * 100).toFixed(1)}% das metas
+                    {((totalGasto / totalMetas) * 100).toFixed(1)}% {t('metaGastos.ofGoals')}
                   </p>
                 </CardContent>
               </Card>
@@ -1153,28 +1156,28 @@ export default function MetaGastos() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2 text-green-600">
                     <TrendingUp className="h-5 w-5" />
-                    <CardTitle className="text-base font-medium">Disponível</CardTitle>
+                    <CardTitle className="text-base font-medium">{t('metaGastos.available')}</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="text-3xl font-bold text-green-600">
                     {formatCurrency(disponivel)}
                   </div>
-                  <p className="text-sm text-muted-foreground">Saldo restante</p>
+                  <p className="text-sm text-muted-foreground">{t('metaGastos.remainingBalance')}</p>
                 </CardContent>
               </Card>
             </div>
 
             <Card>
           <CardHeader>
-            <CardTitle>Metas de Gastos</CardTitle>
+            <CardTitle>{t('metaGastos.spendingGoals')}</CardTitle>
             <div className="flex gap-2 mt-4">
               <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Categoria" />
+                  <SelectValue placeholder={t('metaGastos.category')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todas">Todas as Categorias</SelectItem>
+                  <SelectItem value="todas">{t('metaGastos.allCategories')}</SelectItem>
                   {getCategoriasForSelect().map(categoria => (
                     <SelectItem key={categoria.value} value={categoria.value}>
                       {categoria.label}
@@ -1185,25 +1188,25 @@ export default function MetaGastos() {
 
               <Select value={filtroPeriodo} onValueChange={setFiltroPeriodo}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Período" />
+                  <SelectValue placeholder={t('metaGastos.period')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos os Períodos</SelectItem>
-                  <SelectItem value="mensal">Mensal</SelectItem>
-                  <SelectItem value="trimestral">Trimestral</SelectItem>
-                  <SelectItem value="anual">Anual</SelectItem>
+                  <SelectItem value="todos">{t('metaGastos.allPeriods')}</SelectItem>
+                  <SelectItem value="mensal">{t('metaGastos.monthly')}</SelectItem>
+                  <SelectItem value="trimestral">{t('metaGastos.quarterly')}</SelectItem>
+                  <SelectItem value="anual">{t('metaGastos.yearly')}</SelectItem>
                 </SelectContent>
               </Select>
 
               <Select value={filtroStatus} onValueChange={setFiltroStatus}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('common.status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos os Status</SelectItem>
-                  <SelectItem value="dentro">Dentro da Meta</SelectItem>
-                  <SelectItem value="proximo">Próximo do Limite</SelectItem>
-                  <SelectItem value="excedido">Excedido</SelectItem>
+                  <SelectItem value="todos">{t('metaGastos.allStatuses')}</SelectItem>
+                  <SelectItem value="dentro">{t('metaGastos.withinGoal')}</SelectItem>
+                  <SelectItem value="proximo">{t('metaGastos.nearLimit')}</SelectItem>
+                  <SelectItem value="excedido">{t('metaGastos.exceeded')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1212,20 +1215,20 @@ export default function MetaGastos() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Período</TableHead>
-                  <TableHead>Valor Meta</TableHead>
-                  <TableHead>Valor Gasto</TableHead>
-                  <TableHead>Progresso</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead>{t('metaGastos.categoryColumn')}</TableHead>
+                  <TableHead>{t('metaGastos.periodColumn')}</TableHead>
+                  <TableHead>{t('metaGastos.goalValueColumn')}</TableHead>
+                  <TableHead>{t('metaGastos.spentValueColumn')}</TableHead>
+                  <TableHead>{t('metaGastos.progressColumn')}</TableHead>
+                  <TableHead>{t('metaGastos.statusColumn')}</TableHead>
+                  <TableHead className="text-right">{t('metaGastos.actionsColumn')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {metasFiltradas.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground">
-                      Nenhuma meta encontrada
+                      {t('metaGastos.noGoalsFound')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -1239,7 +1242,7 @@ export default function MetaGastos() {
                         <TableCell className="font-medium">{meta.categoriaNome}</TableCell>
                         <TableCell>
                           <Badge variant="outline">
-                            {meta.periodo === 'mensal' ? 'Mensal' : meta.periodo === 'trimestral' ? 'Trimestral' : 'Anual'}
+                            {meta.periodo === 'mensal' ? t('metaGastos.monthly') : meta.periodo === 'trimestral' ? t('metaGastos.quarterly') : t('metaGastos.yearly')}
                           </Badge>
                         </TableCell>
                         <TableCell>{formatCurrency(meta.valorMeta)}</TableCell>
@@ -1298,17 +1301,17 @@ export default function MetaGastos() {
             {/* Header com botão de exportar */}
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-semibold">Simulação Financeira</h3>
-                <p className="text-sm text-muted-foreground">Planeje cenários e analise a viabilidade financeira</p>
+                <h3 className="text-lg font-semibold">{t('metaGastos.financialSimulation')}</h3>
+                <p className="text-sm text-muted-foreground">{t('metaGastos.financialSimulationDesc')}</p>
               </div>
               <div className="flex gap-2">
                 <Button onClick={salvarPlanejamento} variant="default" className="gap-2">
                   <Save className="h-4 w-4" />
-                  Salvar Planejamento
+                  {t('metaGastos.savePlanning')}
                 </Button>
                 <Button onClick={gerarPDFPlanejamento} variant="outline" className="gap-2">
                   <FileDown className="h-4 w-4" />
-                  Exportar PDF
+                  {t('metaGastos.exportPdf')}
                 </Button>
               </div>
             </div>
@@ -1319,20 +1322,20 @@ export default function MetaGastos() {
               {/* Formulário Despesas Fixas */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Despesas Fixas Médias</CardTitle>
-                  <p className="text-sm text-muted-foreground">Registre as despesas fixas do último ano</p>
+                  <CardTitle>{t('metaGastos.averageFixedExpenses')}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{t('metaGastos.fixedExpensesDesc')}</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                 <div className="flex gap-2">
                   <Input 
-                    placeholder="Descrição (ex: Aluguel)"
+                    placeholder={t('metaGastos.descriptionPlaceholder')}
                     value={formDespesa.descricao}
                     onChange={(e) => setFormDespesa(prev => ({ ...prev, descricao: e.target.value }))}
                   />
                   <div className="flex gap-1 items-center">
                     <Input 
                       type="number"
-                      placeholder="Valor"
+                      placeholder={t('metaGastos.value')}
                       value={formDespesa.valor}
                       onChange={(e) => setFormDespesa(prev => ({ ...prev, valor: e.target.value }))}
                       className="w-32"
@@ -1349,8 +1352,8 @@ export default function MetaGastos() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Descrição</TableHead>
-                            <TableHead className="text-right">Valor</TableHead>
+                            <TableHead>{t('metaGastos.description')}</TableHead>
+                            <TableHead className="text-right">{t('metaGastos.value')}</TableHead>
                             <TableHead className="w-12"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1382,20 +1385,20 @@ export default function MetaGastos() {
               {/* Formulário Faturamento */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Faturamento do Último Ano</CardTitle>
-                  <p className="text-sm text-muted-foreground">Registre o faturamento por fonte</p>
+                  <CardTitle>{t('metaGastos.revenueStreams')}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{t('metaGastos.revenueDesc')}</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                 <div className="flex gap-2">
                   <Input 
-                    placeholder="Descrição (ex: Vendas Produto A)"
+                    placeholder={t('metaGastos.revenueDescPlaceholder')}
                     value={formFaturamento.descricao}
                     onChange={(e) => setFormFaturamento(prev => ({ ...prev, descricao: e.target.value }))}
                   />
                   <div className="flex gap-1 items-center">
                     <Input 
                       type="number"
-                      placeholder="Valor"
+                      placeholder={t('metaGastos.value')}
                       value={formFaturamento.valor}
                       onChange={(e) => setFormFaturamento(prev => ({ ...prev, valor: e.target.value }))}
                       className="w-32"
@@ -1412,8 +1415,8 @@ export default function MetaGastos() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Descrição</TableHead>
-                            <TableHead className="text-right">Valor</TableHead>
+                            <TableHead>{t('metaGastos.description')}</TableHead>
+                            <TableHead className="text-right">{t('metaGastos.value')}</TableHead>
                             <TableHead className="w-12"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1451,7 +1454,7 @@ export default function MetaGastos() {
                   {/* Card 1: Faturamento com Ajuste */}
                   <Card className="border-l-4 border-l-green-500">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Faturamento Total</CardTitle>
+                      <CardTitle className="text-base">{t('metaGastos.totalRevenue')}</CardTitle>
                       <p className="text-xs text-muted-foreground">
                         Base: {formatCurrency(calcularTotais.totalFaturamentoBase)}
                       </p>
@@ -1475,7 +1478,7 @@ export default function MetaGastos() {
                             {planejamento.ajusteFaturamento > 0 ? '+' : ''}
                             {planejamento.ajusteFaturamento.toFixed(1)}%
                           </div>
-                          <div className="text-xs text-muted-foreground">Ajuste</div>
+                          <div className="text-xs text-muted-foreground">{t('metaGastos.adjustment')}</div>
                         </div>
                         
                         <Button 
@@ -1492,7 +1495,7 @@ export default function MetaGastos() {
                   {/* Card 2: Despesas Fixas com Ajuste */}
                   <Card className="border-l-4 border-l-red-500">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Despesas Fixas</CardTitle>
+                      <CardTitle className="text-base">{t('metaGastos.totalExpenses')}</CardTitle>
                       <p className="text-xs text-muted-foreground">
                         Base: {formatCurrency(calcularTotais.totalDespesasBase)}
                       </p>
@@ -1516,7 +1519,7 @@ export default function MetaGastos() {
                             {planejamento.ajusteDespesas > 0 ? '+' : ''}
                             {planejamento.ajusteDespesas.toFixed(1)}%
                           </div>
-                          <div className="text-xs text-muted-foreground">Ajuste</div>
+                          <div className="text-xs text-muted-foreground">{t('metaGastos.adjustment')}</div>
                         </div>
                         
                         <Button 
@@ -1533,9 +1536,9 @@ export default function MetaGastos() {
                   {/* Card 3: Meta de Margem de Contribuição */}
                   <Card className="border-l-4 border-l-blue-500">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Meta de Margem</CardTitle>
+                      <CardTitle className="text-base">{t('metaGastos.marginGoal')}</CardTitle>
                       <p className="text-xs text-muted-foreground">
-                        Margem de Contribuição
+                        {t('metaGastos.contributionMargin')}
                       </p>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -1556,7 +1559,7 @@ export default function MetaGastos() {
                           <div className="text-lg font-semibold">
                             {planejamento.ajusteMargemContribuicao.toFixed(1)}%
                           </div>
-                          <div className="text-xs text-muted-foreground">Meta</div>
+                          <div className="text-xs text-muted-foreground">{t('metaGastos.goal')}</div>
                         </div>
                         
                         <Button 
@@ -1574,9 +1577,9 @@ export default function MetaGastos() {
                 {/* Seção 3: Indicadores Financeiros */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Indicadores Financeiros</CardTitle>
+                    <CardTitle>{t('metaGastos.financialIndicators')}</CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      Análise estratégica baseada nos dados informados
+                      {t('metaGastos.financialIndicatorsDesc')}
                     </p>
                   </CardHeader>
                   <CardContent>
@@ -1585,68 +1588,68 @@ export default function MetaGastos() {
                       {/* Ponto de Equilíbrio */}
                       <div className="space-y-2 p-4 border rounded-lg">
                         <div className="text-sm font-medium text-muted-foreground">
-                          Ponto de Equilíbrio
+                          {t('metaGastos.breakEvenPoint')}
                         </div>
                         <div className="text-2xl font-bold">
                           {formatCurrency(calcularTotais.pontoEquilibrio)}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Faturamento mínimo para cobrir custos
+                          {t('metaGastos.breakEvenDesc')}
                         </p>
                       </div>
 
                       {/* Margem de Lucro Operacional */}
                       <div className="space-y-2 p-4 border rounded-lg">
                         <div className="text-sm font-medium text-muted-foreground">
-                          Margem de Lucro
+                          {t('metaGastos.profitMargin')}
                         </div>
                         <div className="text-2xl font-bold">
                           {calcularTotais.margemLucroOperacional.toFixed(2)}%
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Lucro sobre faturamento
+                          {t('metaGastos.profitOverRevenue')}
                         </p>
                       </div>
 
                       {/* Custos Variáveis Máximo */}
                       <div className="space-y-2 p-4 border rounded-lg">
                         <div className="text-sm font-medium text-muted-foreground">
-                          Custos Variáveis Máx.
+                          {t('metaGastos.maxVariableCosts')}
                         </div>
                         <div className="text-2xl font-bold">
                           {formatCurrency(calcularTotais.custosVariaveisMaximo)}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {(calcularTotais.percentualCustosVariaveis * 100).toFixed(1)}% do faturamento
+                          {(calcularTotais.percentualCustosVariaveis * 100).toFixed(1)}% {t('metaGastos.ofRevenue')}
                         </p>
                       </div>
 
                       {/* Índice de Lucratividade */}
                       <div className="space-y-2 p-4 border rounded-lg">
                         <div className="text-sm font-medium text-muted-foreground">
-                          Índice de Lucratividade
+                          {t('metaGastos.profitabilityIndex')}
                         </div>
                         <div className="text-2xl font-bold">
                           {calcularTotais.indiceLucratividade.toFixed(2)}x
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Lucro / Despesas Fixas
+                          {t('metaGastos.profitOverFixedExpenses')}
                         </p>
                       </div>
                     </div>
 
                     {/* Resumo Executivo */}
                     <div className="mt-6 p-4 bg-muted rounded-lg space-y-2">
-                      <h4 className="font-semibold">Resumo Executivo</h4>
+                      <h4 className="font-semibold">{t('metaGastos.executiveSummary')}</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="font-medium">Lucro Operacional:</span>
+                          <span className="font-medium">{t('metaGastos.operatingProfit')}:</span>
                           <span className="ml-2 text-green-600 font-bold">
                             {formatCurrency(calcularTotais.lucroOperacional)}
                           </span>
                         </div>
                         <div>
-                          <span className="font-medium">% sobre Faturamento:</span>
+                          <span className="font-medium">{t('metaGastos.overRevenue')}:</span>
                           <span className="ml-2 font-bold">
                             {calcularTotais.margemLucroOperacional.toFixed(2)}%
                           </span>
@@ -1662,22 +1665,22 @@ export default function MetaGastos() {
                   {/* Formulário Despesas Não Operacionais */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Despesas Não Operacionais</CardTitle>
+                      <CardTitle>{t('metaGastos.nonOperatingExpenses')}</CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        Despesas fora da operação (ex: multas, juros)
+                        {t('metaGastos.nonOperatingExpensesDesc')}
                       </p>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex gap-2">
                         <Input 
-                          placeholder="Descrição (ex: Multa fiscal)"
+                          placeholder={t('metaGastos.nonOperatingPlaceholder')}
                           value={formDespesaNaoOp.descricao}
                           onChange={(e) => setFormDespesaNaoOp(prev => ({ ...prev, descricao: e.target.value }))}
                         />
                         <div className="flex gap-1 items-center">
                           <Input 
                             type="number"
-                            placeholder="Valor"
+                            placeholder={t('metaGastos.value')}
                             value={formDespesaNaoOp.valor}
                             onChange={(e) => setFormDespesaNaoOp(prev => ({ ...prev, valor: e.target.value }))}
                             className="w-32"
@@ -1694,8 +1697,8 @@ export default function MetaGastos() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Descrição</TableHead>
-                                <TableHead className="text-right">Valor</TableHead>
+                                <TableHead>{t('metaGastos.description')}</TableHead>
+                                <TableHead className="text-right">{t('metaGastos.value')}</TableHead>
                                 <TableHead className="w-12"></TableHead>
                               </TableRow>
                             </TableHeader>
@@ -1727,22 +1730,22 @@ export default function MetaGastos() {
                   {/* Formulário Investimentos */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Investimentos</CardTitle>
+                      <CardTitle>{t('metaGastos.investments')}</CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        Investimentos planejados (ex: equipamentos, expansão)
+                        {t('metaGastos.investmentsDesc')}
                       </p>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex gap-2">
                         <Input 
-                          placeholder="Descrição (ex: Nova máquina)"
+                          placeholder={t('metaGastos.investmentPlaceholder')}
                           value={formInvestimento.descricao}
                           onChange={(e) => setFormInvestimento(prev => ({ ...prev, descricao: e.target.value }))}
                         />
                         <div className="flex gap-1 items-center">
                           <Input 
                             type="number"
-                            placeholder="Valor"
+                            placeholder={t('metaGastos.value')}
                             value={formInvestimento.valor}
                             onChange={(e) => setFormInvestimento(prev => ({ ...prev, valor: e.target.value }))}
                             className="w-32"
@@ -1759,8 +1762,8 @@ export default function MetaGastos() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Descrição</TableHead>
-                                <TableHead className="text-right">Valor</TableHead>
+                                <TableHead>{t('metaGastos.description')}</TableHead>
+                                <TableHead className="text-right">{t('metaGastos.value')}</TableHead>
                                 <TableHead className="w-12"></TableHead>
                               </TableRow>
                             </TableHeader>
@@ -1794,9 +1797,9 @@ export default function MetaGastos() {
                 {(planejamento.despesasNaoOperacionais.length > 0 || planejamento.investimentos.length > 0) && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Indicadores de Lucro Líquido</CardTitle>
+                      <CardTitle>{t('metaGastos.netProfitIndicators')}</CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        Análise após despesas não operacionais e investimentos
+                        {t('metaGastos.netProfitIndicatorsDesc')}
                       </p>
                     </CardHeader>
                     <CardContent>
@@ -1805,48 +1808,48 @@ export default function MetaGastos() {
                         {/* Lucro Antes dos Investimentos */}
                         <div className="space-y-2 p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
                           <div className="text-sm font-medium text-muted-foreground">
-                            Lucro Antes dos Investimentos
+                            {t('metaGastos.profitBeforeInvestments')}
                           </div>
                           <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                             {formatCurrency(calcularTotais.lucroAntesInvestimentos)}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Lucro operacional (antes de deduzir despesas não operacionais e investimentos)
+                            {t('metaGastos.profitBeforeInvestmentsDesc')}
                           </p>
                         </div>
 
                         {/* Margem de Lucro Líquido */}
                         <div className="space-y-2 p-4 border rounded-lg bg-green-50 dark:bg-green-950">
                           <div className="text-sm font-medium text-muted-foreground">
-                            Margem de Lucro Líquido
+                            {t('metaGastos.netProfitMargin')}
                           </div>
                           <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                             {calcularTotais.margemLucroLiquido.toFixed(2)}%
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Lucro líquido sobre faturamento
+                            {t('metaGastos.netProfitOverRevenue')}
                           </p>
                         </div>
                       </div>
 
                       {/* Resumo Executivo do Lucro Líquido */}
                       <div className="mt-6 p-4 bg-muted rounded-lg space-y-2">
-                        <h4 className="font-semibold">Resumo do Lucro Líquido</h4>
+                        <h4 className="font-semibold">{t('metaGastos.netProfitSummary')}</h4>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                           <div>
-                            <span className="font-medium">Lucro Operacional:</span>
+                            <span className="font-medium">{t('metaGastos.operatingProfit')}:</span>
                             <span className="ml-2 text-blue-600 dark:text-blue-400 font-bold">
                               {formatCurrency(calcularTotais.lucroOperacional)}
                             </span>
                           </div>
                           <div>
-                            <span className="font-medium">(-) Desp. Não Op. + Invest.:</span>
+                            <span className="font-medium">{t('metaGastos.minusNonOpInvest')}:</span>
                             <span className="ml-2 text-red-600 dark:text-red-400 font-bold">
                               {formatCurrency(calcularTotais.totalDespesasNaoOp + calcularTotais.totalInvestimentos)}
                             </span>
                           </div>
                           <div>
-                            <span className="font-medium">(=) Lucro Líquido:</span>
+                            <span className="font-medium">(=) {t('metaGastos.netProfit')}:</span>
                             <span className="ml-2 text-green-600 dark:text-green-400 font-bold">
                               {formatCurrency(calcularTotais.lucroLiquido)}
                             </span>
