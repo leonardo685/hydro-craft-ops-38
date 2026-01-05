@@ -187,12 +187,42 @@ export default function Recebimentos() {
     setAplicandoFiltros(false);
   };
 
-  // Agrupar recebimentos por nota fiscal
+  // Agrupar recebimentos por nota fiscal (com filtros aplicados)
   const notasFiscaisAgrupadas = useMemo(() => {
     const grupos = new Map<string, any>();
     
     recebimentos
       .filter(r => r.nota_fiscal && r.nota_fiscal.trim() !== '')
+      .filter(r => {
+        // Filtro por nota fiscal
+        if (filtroNotaFiscal && filtroNotaFiscal.trim().length > 0) {
+          if (!r.nota_fiscal.toLowerCase().includes(filtroNotaFiscal.toLowerCase())) {
+            return false;
+          }
+        }
+        
+        // Filtro por cliente
+        if (filtroCliente && filtroCliente.trim().length > 0) {
+          const nomeCliente = r.clientes?.nome || r.cliente_nome || '';
+          if (!nomeCliente.toLowerCase().includes(filtroCliente.toLowerCase())) {
+            return false;
+          }
+        }
+        
+        // Filtro por data início
+        if (dataInicio) {
+          const dataItem = new Date(r.data_entrada);
+          if (dataItem < dataInicio) return false;
+        }
+        
+        // Filtro por data fim
+        if (dataFim) {
+          const dataItem = new Date(r.data_entrada);
+          if (dataItem > dataFim) return false;
+        }
+        
+        return true;
+      })
       .forEach(recebimento => {
         const numeroNota = recebimento.nota_fiscal;
         
@@ -213,7 +243,7 @@ export default function Recebimentos() {
       });
     
     return Array.from(grupos.values());
-  }, [recebimentos]);
+  }, [recebimentos, filtroNotaFiscal, filtroCliente, dataInicio, dataFim]);
 
   return (
     <AppLayout>
