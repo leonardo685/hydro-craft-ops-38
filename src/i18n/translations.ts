@@ -3,7 +3,7 @@ export const translations = {
     // Menu/Sidebar
     menu: {
       recebimentos: 'Recebimentos',
-      analise: 'Análise',
+      analise: 'Ordens de Serviço',
       orcamentos: 'Orçamentos',
       aprovados: 'Aprovados',
       compras: 'Compras',
