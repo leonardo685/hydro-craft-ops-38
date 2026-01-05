@@ -334,53 +334,27 @@ export const useRecebimentos = () => {
 
   const gerarNumeroOrdem = async () => {
     try {
-      const anoAtual = new Date().getFullYear();
-      const anoAbreviado = anoAtual.toString().slice(-2);
-      
-      // Buscar todas as ordens do ano atual em ambas as tabelas
-      const [ordensData, recebimentosData] = await Promise.all([
-        supabase
-          .from('ordens_servico')
-          .select('numero_ordem')
-          .ilike('numero_ordem', `MH-%-${anoAbreviado}`),
-        supabase
-          .from('recebimentos')
-          .select('numero_ordem')
-          .ilike('numero_ordem', `MH-%-${anoAbreviado}`)
-      ]);
-
-      if (ordensData.error) throw ordensData.error;
-      if (recebimentosData.error) throw recebimentosData.error;
-
-      // Combinar os resultados de ambas as tabelas
-      const todasOrdens = [
-        ...(ordensData.data || []),
-        ...(recebimentosData.data || [])
-      ];
-
-      // Se não houver ordens, começar com 001
-      if (todasOrdens.length === 0) {
-        return `MH-001-${anoAbreviado}`;
-      }
-
-      // Encontrar o maior número de todas as ordens
-      let maiorNumero = 0;
-      todasOrdens.forEach(item => {
-        const partes = item.numero_ordem.split('-');
-        if (partes.length === 3 && partes[2] === anoAbreviado) {
-          const numero = parseInt(partes[1]);
-          if (!isNaN(numero) && numero > maiorNumero) {
-            maiorNumero = numero;
-          }
+      // Usar função RPC atômica para gerar número por empresa
+      if (empresaId) {
+        const { data, error } = await supabase.rpc('gerar_proximo_numero_ordem', {
+          p_empresa_id: empresaId
+        });
+        
+        if (!error && data) {
+          return data;
         }
-      });
-
-      const proximoNumero = (maiorNumero + 1).toString().padStart(3, '0');
-      return `MH-${proximoNumero}-${anoAbreviado}`;
+        console.warn('Erro na RPC, usando fallback:', error);
+      }
+      
+      // Fallback: gerar localmente (para casos sem empresa ou erro na RPC)
+      const anoAbreviado = new Date().getFullYear().toString().slice(-2);
+      const timestamp = Date.now().toString().slice(-4);
+      return `MH-${timestamp}-${anoAbreviado}`;
     } catch (error) {
       console.error('Erro ao gerar número da ordem:', error);
       const anoAbreviado = new Date().getFullYear().toString().slice(-2);
-      return `MH-001-${anoAbreviado}`;
+      const timestamp = Date.now().toString().slice(-4);
+      return `MH-${timestamp}-${anoAbreviado}`;
     }
   };
 

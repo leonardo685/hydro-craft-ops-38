@@ -148,54 +148,34 @@ const NovaOrdemDireta = () => {
   useEffect(() => {
     const gerarNumeroOrdem = async () => {
       try {
-        const ano = new Date().getFullYear().toString().slice(-2);
-        
-        // Buscar todas as ordens do ano atual em AMBAS as tabelas
-        const [ordensData, recebimentosData] = await Promise.all([
-          supabase
-            .from('ordens_servico')
-            .select('numero_ordem')
-            .ilike('numero_ordem', `MH-%-${ano}`),
-          supabase
-            .from('recebimentos')
-            .select('numero_ordem')
-            .ilike('numero_ordem', `MH-%-${ano}`)
-        ]);
-
-        if (ordensData.error) throw ordensData.error;
-        if (recebimentosData.error) throw recebimentosData.error;
-
-        // Combinar os resultados de ambas as tabelas
-        const todasOrdens = [
-          ...(ordensData.data || []),
-          ...(recebimentosData.data || [])
-        ];
-
-        let proximoNumero = 1;
-        if (todasOrdens.length > 0) {
-          // Extrair todos os números e encontrar o maior
-          const numeros = todasOrdens
-            .map(ordem => {
-              const match = ordem.numero_ordem.match(/MH-(\d+)-/);
-              return match ? parseInt(match[1]) : 0;
-            })
-            .filter(num => num > 0);
+        // Usar função RPC atômica para gerar número por empresa
+        if (empresaAtual?.id) {
+          const { data, error } = await supabase.rpc('gerar_proximo_numero_ordem', {
+            p_empresa_id: empresaAtual.id
+          });
           
-          if (numeros.length > 0) {
-            proximoNumero = Math.max(...numeros) + 1;
+          if (!error && data) {
+            setFormData(prev => ({ ...prev, numeroOrdem: data }));
+            return;
           }
+          console.warn('Erro na RPC, usando fallback:', error);
         }
-
-        const numeroFormatado = `MH-${proximoNumero.toString().padStart(3, '0')}-${ano}`;
         
+        // Fallback: gerar localmente
+        const ano = new Date().getFullYear().toString().slice(-2);
+        const timestamp = Date.now().toString().slice(-4);
+        const numeroFormatado = `MH-${timestamp}-${ano}`;
         setFormData(prev => ({ ...prev, numeroOrdem: numeroFormatado }));
       } catch (error) {
         console.error('Erro ao gerar número da ordem:', error);
+        const ano = new Date().getFullYear().toString().slice(-2);
+        const timestamp = Date.now().toString().slice(-4);
+        setFormData(prev => ({ ...prev, numeroOrdem: `MH-${timestamp}-${ano}` }));
       }
     };
 
     gerarNumeroOrdem();
-  }, []);
+  }, [empresaAtual?.id]);
 
   // Carregar orçamentos disponíveis
   useEffect(() => {
