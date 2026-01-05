@@ -2122,6 +2122,10 @@ export type Database = {
         Args: { nota_id: string }
         Returns: undefined
       }
+      gerar_proximo_numero_ordem: {
+        Args: { p_empresa_id: string }
+        Returns: string
+      }
       get_user_empresa_id: { Args: never; Returns: string }
       has_role: {
         Args: {
