@@ -235,6 +235,7 @@ const VisualizarOrdemServico = () => {
     const dadosBasicos: Array<{label: string, value: string}> = [
       { label: 'Nº Ordem:', value: recebimento.numero_ordem || '' },
       { label: 'Cliente:', value: ordem.cliente_nome || '' },
+      { label: 'CNPJ/CPF:', value: recebimento.cliente_cnpj || '-' },
       { label: 'Equipamento:', value: ordem.equipamento || '' },
       { label: 'Data de Entrada:', value: new Date(ordem.data_entrada).toLocaleDateString('pt-BR') },
       { label: 'Nota Fiscal:', value: recebimento.nota_fiscal || '-' },
@@ -483,6 +484,9 @@ const VisualizarOrdemServico = () => {
               <div>
                 <Label>Cliente</Label>
                 <div className="text-red-600 font-medium">{ordem.cliente_nome}</div>
+                {recebimento?.cliente_cnpj && (
+                  <div className="text-sm text-muted-foreground">{recebimento.cliente_cnpj}</div>
+                )}
               </div>
               <div>
                 <Label>Data de Entrada</Label>
