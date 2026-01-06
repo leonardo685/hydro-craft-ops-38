@@ -84,6 +84,9 @@ export default function DetalhesRecebimento() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Cliente</p>
                   <p className="font-medium">{recebimento.cliente_nome}</p>
+                  {recebimento.cliente_cnpj && (
+                    <p className="text-sm text-muted-foreground">{recebimento.cliente_cnpj}</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Data de Entrada</p>

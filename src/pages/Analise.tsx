@@ -58,6 +58,7 @@ export default function OrdensServico() {
           recebimentos (
             numero_ordem,
             cliente_nome,
+            cliente_cnpj,
             tipo_equipamento
           ),
           orcamentos!orcamentos_ordem_servico_id_fkey (
@@ -513,6 +514,7 @@ export default function OrdensServico() {
       // Informações Básicas
       const dadosBasicos = [
         { label: 'Cliente:', value: ordem.recebimentos?.cliente_nome || ordem.cliente_nome },
+        { label: 'CNPJ/CPF:', value: ordem.recebimentos?.cliente_cnpj || recebimentoData?.cliente_cnpj || '-' },
         { label: 'Equipamento:', value: ordem.recebimentos?.tipo_equipamento || ordem.equipamento },
         { label: 'Data de Entrada:', value: new Date(ordem.data_entrada).toLocaleDateString('pt-BR') },
         { label: 'Técnico:', value: ordem.tecnico || '' },

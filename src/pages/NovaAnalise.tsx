@@ -400,6 +400,7 @@ const NovaOrdemServico = () => {
     // Informações Básicas - TABELA
     const dadosBasicos: Array<{label: string, value: string}> = [
       { label: 'Cliente:', value: dadosRecebimento?.cliente_nome || '' },
+      { label: 'CNPJ/CPF:', value: dadosRecebimento?.cliente_cnpj || '-' },
       { label: 'Equipamento:', value: dadosRecebimento?.tipo_equipamento || '' },
       { label: 'Data de Entrada:', value: dadosOrdem?.data_entrada ? new Date(dadosOrdem.data_entrada).toLocaleDateString('pt-BR') : '' },
       { label: 'Técnico:', value: dadosOrdem?.tecnico || '' },
@@ -696,6 +697,7 @@ const NovaOrdemServico = () => {
               id,
               numero_ordem,
               cliente_nome,
+              cliente_cnpj,
               tipo_equipamento,
               data_entrada,
               nota_fiscal,
@@ -732,6 +734,7 @@ const NovaOrdemServico = () => {
           setRecebimento({
             id: recebimentoData.id,
             cliente_nome: recebimentoData.cliente_nome,
+            cliente_cnpj: recebimentoData.cliente_cnpj,
             tipo_equipamento: recebimentoData.tipo_equipamento,
             data_entrada: recebimentoData.data_entrada,
             dataEntrada: new Date(recebimentoData.data_entrada).toLocaleDateString('pt-BR'),
@@ -1686,6 +1689,9 @@ const NovaOrdemServico = () => {
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.client')}</Label>
                   <p className="font-semibold text-primary">{recebimento.cliente_nome}</p>
+                  {recebimento.cliente_cnpj && (
+                    <p className="text-sm text-muted-foreground">{recebimento.cliente_cnpj}</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.entryDate')}</Label>

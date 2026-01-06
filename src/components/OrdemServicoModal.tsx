@@ -103,7 +103,12 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">{t('common.client')}:</span>
-                  <span>{ordem.recebimentos?.cliente_nome || ordem.cliente_nome}</span>
+                  <span>
+                    {ordem.recebimentos?.cliente_nome || ordem.cliente_nome}
+                    {recebimento?.cliente_cnpj && (
+                      <span className="text-muted-foreground ml-2">({recebimento.cliente_cnpj})</span>
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Package className="h-4 w-4 text-muted-foreground" />
