@@ -1216,7 +1216,6 @@ export function UploadExtratoModal({
                             <Checkbox 
                               checked={transacao.selecionada}
                               onCheckedChange={() => toggleSelecao(transacao.id)}
-                              disabled={isConfirmada}
                             />
                           </TableCell>
                           <TableCell>
