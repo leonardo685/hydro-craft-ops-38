@@ -415,6 +415,17 @@ export default function NovoRecebimento() {
 
               {formData.categoriaEquipamento === 'cilindro' && (
                 <>
+                  <div className="space-y-2">
+                    <Label htmlFor="tipoEquipamento">Descrição do Equipamento*</Label>
+                    <Input 
+                      id="tipoEquipamento"
+                      value={formData.tipoEquipamento}
+                      onChange={(e) => setFormData({...formData, tipoEquipamento: e.target.value})}
+                      placeholder="Ex: Cilindro Hidráulico do Laminador, Cilindro de Bris, etc."
+                      required
+                    />
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="camisa">Camisa</Label>
