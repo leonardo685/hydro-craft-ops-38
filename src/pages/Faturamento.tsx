@@ -110,12 +110,13 @@ export default function Faturamento() {
           // Buscar todas as OS que têm esse orcamento_id
           const { data: osVinculadas } = await supabase
             .from('ordens_servico')
-            .select('id, numero_ordem, recebimento_id, recebimentos(numero_ordem)')
+            .select('id, numero_ordem, recebimento_id, recebimentos(numero_ordem, nota_fiscal)')
             .eq('orcamento_id', orc.id);
           
           const ordensVinculadas = osVinculadas?.map(os => ({
             id: os.id,
-            numero_ordem: os.recebimentos?.numero_ordem || os.numero_ordem
+            numero_ordem: os.recebimentos?.numero_ordem || os.numero_ordem,
+            nota_fiscal: os.recebimentos?.nota_fiscal
           })) || [];
           
           return {
@@ -608,9 +609,16 @@ export default function Faturamento() {
                                 {item.numero}
                               </CardTitle>
                               {item.ordens_vinculadas?.map((ordem: any) => (
-                                <Badge key={ordem.id} variant="secondary" className="text-xs">
-                                  OS: {ordem.numero_ordem}
-                                </Badge>
+                                <div key={ordem.id} className="flex gap-1">
+                                  <Badge variant="secondary" className="text-xs">
+                                    OS: {ordem.numero_ordem}
+                                  </Badge>
+                                  {ordem.nota_fiscal && (
+                                    <Badge variant="outline" className="text-xs">
+                                      Pedido: {ordem.nota_fiscal}
+                                    </Badge>
+                                  )}
+                                </div>
                               ))}
                             </div>
                             <CardDescription className="mt-1">
