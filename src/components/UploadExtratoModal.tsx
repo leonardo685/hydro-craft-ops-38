@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, parse, isValid, addDays, subDays } from 'date-fns';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { useEmpresa } from '@/contexts/EmpresaContext';
 
 interface TransacaoExtrato {
   id: string;
@@ -48,6 +49,7 @@ export function UploadExtratoModal({
   fornecedores,
   clientes
 }: UploadExtratoModalProps) {
+  const { empresaAtual } = useEmpresa();
   const [etapa, setEtapa] = useState<'upload' | 'categorizar' | 'confirmacao'>('upload');
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [transacoes, setTransacoes] = useState<TransacaoExtrato[]>([]);
@@ -1026,6 +1028,13 @@ export function UploadExtratoModal({
       console.warn(`⚠️ Importando ${duplicatasPossiveis.length} transação(ões) com possível duplicata`);
     }
 
+    if (!empresaAtual?.id) {
+      toast.error("Erro de configuração", {
+        description: "Nenhuma empresa selecionada. Por favor, selecione uma empresa primeiro."
+      });
+      return;
+    }
+
     setProcessando(true);
     try {
       const lancamentos = selecionadas.map(t => ({
@@ -1039,7 +1048,8 @@ export function UploadExtratoModal({
         categoria_id: t.categoria,
         conta_bancaria: t.contaBancaria,
         fornecedor_cliente: t.fornecedorCliente || null,
-        forma_pagamento: 'a_vista'
+        forma_pagamento: 'a_vista',
+        empresa_id: empresaAtual.id
       }));
 
       const { error } = await supabase
