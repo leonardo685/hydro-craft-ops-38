@@ -2047,29 +2047,51 @@ export default function DFC() {
                   }
                   y += 5;
 
-                  // Cabeçalhos
+                  // Helper para obter dados da coluna
+                  const getColumnValue = (item: any, colValue: string) => {
+                    const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
+                    const conta = contasBancarias.find(c => c.id === item.conta);
+                    const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor || f.nome === item.fornecedor);
+                    
+                    switch(colValue) {
+                      case 'tipo': return item.tipo === 'transferencia' ? 'Transf.' : item.tipo === 'entrada' ? 'Entrada' : 'Saída';
+                      case 'descricao': return item.descricao;
+                      case 'categoria': return item.categoria;
+                      case 'conta': return conta?.nome || '-';
+                      case 'fornecedor': return fornecedor?.nome || item.fornecedor || '-';
+                      case 'valor': return formatCurrency(item.valor);
+                      case 'dataEsperada': return format(item.dataEsperada, "dd/MM/yyyy");
+                      case 'dataRealizada': return item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-';
+                      case 'status': return status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo';
+                      default: return '-';
+                    }
+                  };
+
+                  // Cabeçalhos dinâmicos baseados nas colunas selecionadas
                   doc.setFontSize(9);
-                  doc.text('Data', 14, y);
-                  doc.text('Descrição', 40, y);
-                  doc.text('Categoria', 90, y);
-                  doc.text('Valor', 140, y);
-                  doc.text('Status', 170, y);
+                  const colWidth = 182 / selectedExtratoColumns.length;
+                  let xPos = 14;
+                  selectedExtratoColumns.forEach(col => {
+                    doc.text(col.label.substring(0, Math.floor(colWidth / 2.5)), xPos, y);
+                    xPos += colWidth;
+                  });
                   y += 5;
                   doc.line(14, y, 196, y);
                   y += 5;
 
-                  // Dados
-                  extratoFiltrado.forEach((item, index) => {
+                  // Dados dinâmicos
+                  extratoFiltrado.forEach((item) => {
                     if (y > 270) {
                       doc.addPage();
                       y = 20;
                     }
-                    const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
-                    doc.text(format(item.dataEsperada, "dd/MM/yyyy"), 14, y);
-                    doc.text(item.descricao.substring(0, 25), 40, y);
-                    doc.text(item.categoria.substring(0, 20), 90, y);
-                    doc.text(formatCurrency(item.valor), 140, y);
-                    doc.text(status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo', 170, y);
+                    xPos = 14;
+                    selectedExtratoColumns.forEach(col => {
+                      const value = getColumnValue(item, col.value);
+                      const maxChars = Math.floor(colWidth / 2.5);
+                      doc.text(value.substring(0, maxChars), xPos, y);
+                      xPos += colWidth;
+                    });
                     y += 6;
                   });
 
@@ -2095,39 +2117,52 @@ export default function DFC() {
                     Exportar PDF
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => {
-                  const dadosExcel = extratoFiltrado.map(item => {
+                  // Helper para obter dados da coluna no Excel
+                  const getExcelColumnValue = (item: any, colValue: string) => {
                     const status = getStatusPagamento(item.dataEsperada, item.dataRealizada, item.pago);
                     const conta = contasBancarias.find(c => c.id === item.conta);
                     const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor || f.nome === item.fornecedor);
-                    return {
-                      'Data Esperada': format(item.dataEsperada, "dd/MM/yyyy"),
-                      'Data Realizada': item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-',
-                      'Tipo': item.tipo === 'transferencia' ? 'Transferência' : item.tipo === 'entrada' ? 'Entrada' : 'Saída',
-                      'Descrição': item.descricao,
-                      'Categoria': item.categoria,
-                      'Conta': conta?.nome || '-',
-                      'Fornecedor/Cliente': fornecedor?.nome || item.fornecedor || '-',
-                      'Valor': item.valor,
-                      'Status': status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo'
-                    };
+                    
+                    switch(colValue) {
+                      case 'tipo': return item.tipo === 'transferencia' ? 'Transferência' : item.tipo === 'entrada' ? 'Entrada' : 'Saída';
+                      case 'descricao': return item.descricao;
+                      case 'categoria': return item.categoria;
+                      case 'conta': return conta?.nome || '-';
+                      case 'fornecedor': return fornecedor?.nome || item.fornecedor || '-';
+                      case 'valor': return item.valor;
+                      case 'dataEsperada': return format(item.dataEsperada, "dd/MM/yyyy");
+                      case 'dataRealizada': return item.dataRealizada ? format(item.dataRealizada, "dd/MM/yyyy") : '-';
+                      case 'status': return status === 'pago' ? 'Pago' : status === 'atrasado' ? 'Atrasado' : 'No Prazo';
+                      default: return '-';
+                    }
+                  };
+
+                  // Gerar dados apenas com colunas selecionadas na ordem correta
+                  const dadosExcel = extratoFiltrado.map(item => {
+                    const rowData: Record<string, any> = {};
+                    selectedExtratoColumns.forEach(col => {
+                      rowData[col.label] = getExcelColumnValue(item, col.value);
+                    });
+                    return rowData;
                   });
+                  
                   const ws = XLSX.utils.json_to_sheet(dadosExcel);
                   const wb = XLSX.utils.book_new();
                   XLSX.utils.book_append_sheet(wb, ws, "Extrato");
 
-                  // Adicionar totais
+                  // Adicionar totais usando a primeira coluna disponível para label e coluna Valor se existir
                   const totalEntradas = extratoFiltrado.filter(i => i.tipo === 'entrada').reduce((acc, i) => acc + i.valor, 0);
                   const totalSaidas = extratoFiltrado.filter(i => i.tipo === 'saida').reduce((acc, i) => acc + i.valor, 0);
-                  XLSX.utils.sheet_add_json(ws, [{
-                    'Descrição': 'Total Entradas',
-                    'Valor': totalEntradas
-                  }, {
-                    'Descrição': 'Total Saídas',
-                    'Valor': totalSaidas
-                  }, {
-                    'Descrição': 'Saldo',
-                    'Valor': totalEntradas - totalSaidas
-                  }], {
+                  const firstColLabel = selectedExtratoColumns[0]?.label || 'Info';
+                  const hasValorCol = selectedExtratoColumns.some(c => c.value === 'valor');
+                  
+                  const totaisData = [
+                    { [firstColLabel]: 'Total Entradas', ...(hasValorCol ? { 'Valor': totalEntradas } : {}) },
+                    { [firstColLabel]: 'Total Saídas', ...(hasValorCol ? { 'Valor': totalSaidas } : {}) },
+                    { [firstColLabel]: 'Saldo', ...(hasValorCol ? { 'Valor': totalEntradas - totalSaidas } : {}) }
+                  ];
+                  
+                  XLSX.utils.sheet_add_json(ws, totaisData, {
                     skipHeader: true,
                     origin: -1
                   });
