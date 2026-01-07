@@ -2079,8 +2079,9 @@ export default function DFC() {
                   doc.line(14, y, 196, y);
                   y += 5;
 
-                  // Dados dinâmicos
-                  extratoFiltrado.forEach((item) => {
+                  // Dados dinâmicos - usar mesma ordenação da tabela
+                  const sortedData = sortData(extratoFiltrado);
+                  sortedData.forEach((item) => {
                     if (y > 270) {
                       doc.addPage();
                       y = 20;
@@ -2099,8 +2100,8 @@ export default function DFC() {
                   y += 5;
                   doc.line(14, y, 196, y);
                   y += 5;
-                  const totalEntradas = extratoFiltrado.filter(i => i.tipo === 'entrada').reduce((acc, i) => acc + i.valor, 0);
-                  const totalSaidas = extratoFiltrado.filter(i => i.tipo === 'saida').reduce((acc, i) => acc + i.valor, 0);
+                  const totalEntradas = sortedData.filter(i => i.tipo === 'entrada').reduce((acc, i) => acc + i.valor, 0);
+                  const totalSaidas = sortedData.filter(i => i.tipo === 'saida').reduce((acc, i) => acc + i.valor, 0);
                   doc.setFontSize(10);
                   doc.text('Total Entradas:', 14, y);
                   doc.text(formatCurrency(totalEntradas), 140, y);
@@ -2137,8 +2138,9 @@ export default function DFC() {
                     }
                   };
 
-                  // Gerar dados apenas com colunas selecionadas na ordem correta
-                  const dadosExcel = extratoFiltrado.map(item => {
+                  // Gerar dados apenas com colunas selecionadas na ordem correta - usar mesma ordenação da tabela
+                  const sortedData = sortData(extratoFiltrado);
+                  const dadosExcel = sortedData.map(item => {
                     const rowData: Record<string, any> = {};
                     selectedExtratoColumns.forEach(col => {
                       rowData[col.label] = getExcelColumnValue(item, col.value);
@@ -2151,8 +2153,8 @@ export default function DFC() {
                   XLSX.utils.book_append_sheet(wb, ws, "Extrato");
 
                   // Adicionar totais usando a primeira coluna disponível para label e coluna Valor se existir
-                  const totalEntradas = extratoFiltrado.filter(i => i.tipo === 'entrada').reduce((acc, i) => acc + i.valor, 0);
-                  const totalSaidas = extratoFiltrado.filter(i => i.tipo === 'saida').reduce((acc, i) => acc + i.valor, 0);
+                  const totalEntradas = sortedData.filter(i => i.tipo === 'entrada').reduce((acc, i) => acc + i.valor, 0);
+                  const totalSaidas = sortedData.filter(i => i.tipo === 'saida').reduce((acc, i) => acc + i.valor, 0);
                   const firstColLabel = selectedExtratoColumns[0]?.label || 'Info';
                   const hasValorCol = selectedExtratoColumns.some(c => c.value === 'valor');
                   
