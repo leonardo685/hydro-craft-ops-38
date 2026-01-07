@@ -1252,8 +1252,13 @@ export function UploadExtratoModal({
                           <TableCell className="whitespace-nowrap">
                             {format(transacao.data, 'dd/MM/yyyy')}
                           </TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {transacao.descricao}
+                        <TableCell className="max-w-[200px]">
+                          <span 
+                            className="block truncate cursor-help"
+                            title={transacao.descricao}
+                          >
+                            {transacao.descricao}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -1280,7 +1285,11 @@ export function UploadExtratoModal({
                                 .filter(c => c.classificacao === transacao.tipo)
                                 .sort((a, b) => a.codigo.localeCompare(b.codigo, undefined, { numeric: true }))
                                 .map(cat => (
-                                  <SelectItem key={cat.id} value={cat.id}>
+                                  <SelectItem 
+                                    key={cat.id} 
+                                    value={cat.id}
+                                    className={cat.tipo === 'filha' ? 'pl-8' : 'font-semibold'}
+                                  >
                                     {cat.codigo} - {cat.nome}
                                   </SelectItem>
                                 ))}
