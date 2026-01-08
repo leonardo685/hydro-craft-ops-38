@@ -117,16 +117,22 @@ export function gerarPdfDanfe(dados: DadosNFe): jsPDF {
   doc.text('EMITENTE / REMETENTE', margin + 3, y + 5.5);
   
   y += 10;
-  doc.rect(margin, y, pageWidth - margin * 2, 14, 'S');
+  doc.rect(margin, y, pageWidth - margin * 2, 18, 'S');
   
   y += 5;
   doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Razão Social:', margin + 3, y);
+  doc.setFont('helvetica', 'normal');
+  doc.text(dados.nomeEmitente || '-', margin + 30, y);
+  
+  y += 6;
   doc.setFont('helvetica', 'bold');
   doc.text('CNPJ:', margin + 3, y);
   doc.setFont('helvetica', 'normal');
   doc.text(dados.cnpjEmitente || '-', margin + 20, y);
   
-  y += 16;
+  y += 14;
 
   // ===== DESTINATÁRIO =====
   doc.setFillColor(240, 240, 240);
@@ -152,7 +158,7 @@ export function gerarPdfDanfe(dados: DadosNFe): jsPDF {
   doc.setFont('helvetica', 'bold');
   doc.text('CNPJ/CPF:', margin + 3, y);
   doc.setFont('helvetica', 'normal');
-  doc.text(dados.clienteCnpj || dados.cnpjEmitente || '-', margin + 25, y);
+  doc.text(dados.clienteCnpj || '-', margin + 25, y);
   
   y += 14;
 

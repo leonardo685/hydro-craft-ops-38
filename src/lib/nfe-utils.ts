@@ -14,6 +14,7 @@ export interface ItemNFe {
 export interface DadosNFe {
   chaveAcesso: string;
   cnpjEmitente: string;
+  nomeEmitente?: string;
   dataEmissao: string;
   modelo: string;
   serie: string;
@@ -119,7 +120,8 @@ export async function extrairDadosNFe(chave: string): Promise<DadosNFe> {
 
     return {
       chaveAcesso: chave,
-      cnpjEmitente: dados.cliente_cnpj || dados.cnpj_emitente,
+      cnpjEmitente: dados.cnpj_emitente,
+      nomeEmitente: dados.nome_emitente,
       dataEmissao: dados.data_emissao,
       modelo: dados.modelo === '55' ? 'NFe' : dados.modelo === '65' ? 'NFCe' : dados.modelo,
       serie: dados.serie,
