@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, AlertCircle, FileText, UserPlus } from "lucide-react";
+import { CheckCircle, AlertCircle, FileText, UserPlus, FileDown } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatarChaveAcesso, validarChaveAcesso, extrairDadosNFe, buscarClientePorCNPJ, type DadosNFe, type ItemNFe } from "@/lib/nfe-utils";
+import { baixarPdfDanfe } from "@/lib/danfe-pdf-utils";
 import { ItensNFeModal } from "./ItensNFeModal";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
 
@@ -238,26 +239,39 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
             </Alert>
           )}
 
-          <div className="flex gap-2">
-            {!dadosExtraidos ? (
-              <>
-                <Button variant="outline" onClick={handleFechar} className="flex-1">
-                  Cancelar
-                </Button>
-                <Button onClick={handleValidar} className="flex-1">
-                  Validar Chave
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" onClick={handleFechar} className="flex-1">
-                  Cancelar
-                </Button>
-                <Button onClick={handleProsseguir} className="flex-1">
-                  Ver Itens ({dadosExtraidos.itens?.length || 0})
-                </Button>
-              </>
+          <div className="flex flex-col gap-2">
+            {dadosExtraidos && dadosExtraidos.valida && (
+              <Button 
+                variant="outline" 
+                onClick={() => baixarPdfDanfe(dadosExtraidos)}
+                className="w-full"
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Baixar DANFE (PDF)
+              </Button>
             )}
+            
+            <div className="flex gap-2">
+              {!dadosExtraidos ? (
+                <>
+                  <Button variant="outline" onClick={handleFechar} className="flex-1">
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleValidar} className="flex-1">
+                    Validar Chave
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={handleFechar} className="flex-1">
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleProsseguir} className="flex-1">
+                    Ver Itens ({dadosExtraidos.itens?.length || 0})
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
