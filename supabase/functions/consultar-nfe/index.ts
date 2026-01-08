@@ -19,6 +19,7 @@ interface ItemNFe {
 interface DadosNFe {
   chave_acesso: string;
   cnpj_emitente: string;
+  nome_emitente: string;
   data_emissao: Date;
   modelo: string;
   serie: string;
@@ -84,6 +85,9 @@ serve(async (req) => {
     // Consultar API SERPRO
     const serproApiKey = Deno.env.get('SERPRO_API_KEY');
     
+    // Declarar variável para dados simulados
+    let dadosSimulados: DadosNFe;
+    
     if (!serproApiKey) {
       console.log('API Key SERPRO não configurada, usando dados simulados baseados na chave');
       
@@ -106,6 +110,7 @@ serve(async (req) => {
         dadosSimulados = {
           chave_acesso: chaveAcesso,
           cnpj_emitente: cnpjFormatado,
+          nome_emitente: 'Novelis do Brasil Ltda',
           data_emissao: new Date('2025-05-01'),
           modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
           serie: parseInt(serie).toString(),
@@ -125,10 +130,11 @@ serve(async (req) => {
           ]
         };
       } else if (chaveAcesso === '35250760561800004109550010009436351035908201') {
-        // Dados reais da NFe 943635 - Novelis para MEC-HIDRO (23/07/2025)
+        // Dados reais da NFe 943635 - Novelis (EMITENTE) para MEC-HIDRO (DESTINATÁRIO)
         dadosSimulados = {
           chave_acesso: chaveAcesso,
-          cnpj_emitente: cnpjFormatado,
+          cnpj_emitente: cnpjFormatado, // 60.561.800/0041-09
+          nome_emitente: 'Novelis do Brasil Ltda',
           data_emissao: new Date('2025-07-23'),
           modelo: 'NFe',
           serie: '1',
@@ -152,6 +158,7 @@ serve(async (req) => {
         dadosSimulados = {
           chave_acesso: chaveAcesso,
           cnpj_emitente: cnpjFormatado,
+          nome_emitente: 'Emitente não identificado',
           data_emissao: dataEmissao,
           modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
           serie: parseInt(serie).toString(),
@@ -169,6 +176,7 @@ serve(async (req) => {
         .insert({
           chave_acesso: dadosSimulados.chave_acesso,
           cnpj_emitente: dadosSimulados.cnpj_emitente,
+          nome_emitente: dadosSimulados.nome_emitente,
           data_emissao: dadosSimulados.data_emissao,
           modelo: dadosSimulados.modelo,
           serie: dadosSimulados.serie,
@@ -239,6 +247,7 @@ serve(async (req) => {
       dadosProcessados = {
         chave_acesso: chaveAcesso,
         cnpj_emitente: dadosSerpro.emit?.CNPJ || '',
+        nome_emitente: dadosSerpro.emit?.xNome || '',
         data_emissao: new Date(dadosSerpro.ide?.dhEmi || new Date()),
         modelo: dadosSerpro.ide?.mod || '55',
         serie: dadosSerpro.ide?.serie || '001',
@@ -275,6 +284,7 @@ serve(async (req) => {
         dadosProcessados = {
           chave_acesso: chaveAcesso,
           cnpj_emitente: cnpjFormatado,
+          nome_emitente: 'Novelis do Brasil Ltda',
           data_emissao: new Date('2025-05-01'),
           modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
           serie: parseInt(serie).toString(),
@@ -294,10 +304,11 @@ serve(async (req) => {
           ]
         };
       } else if (chaveAcesso === '35250760561800004109550010009436351035908201') {
-        // Dados reais da NFe 943635 - Novelis para MEC-HIDRO (23/07/2025)
+        // Dados reais da NFe 943635 - Novelis (EMITENTE) para MEC-HIDRO (DESTINATÁRIO)
         dadosProcessados = {
           chave_acesso: chaveAcesso,
-          cnpj_emitente: cnpjFormatado,
+          cnpj_emitente: cnpjFormatado, // 60.561.800/0041-09
+          nome_emitente: 'Novelis do Brasil Ltda',
           data_emissao: new Date('2025-07-23'),
           modelo: 'NFe',
           serie: '1',
@@ -321,6 +332,7 @@ serve(async (req) => {
         dadosProcessados = {
           chave_acesso: chaveAcesso,
           cnpj_emitente: cnpjFormatado,
+          nome_emitente: 'Emitente não identificado',
           data_emissao: dataEmissao,
           modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
           serie: parseInt(serie).toString(),
@@ -339,6 +351,7 @@ serve(async (req) => {
       .insert({
         chave_acesso: dadosProcessados.chave_acesso,
         cnpj_emitente: dadosProcessados.cnpj_emitente,
+        nome_emitente: dadosProcessados.nome_emitente,
         data_emissao: dadosProcessados.data_emissao,
         modelo: dadosProcessados.modelo,
         serie: dadosProcessados.serie,
