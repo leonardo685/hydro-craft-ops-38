@@ -257,7 +257,7 @@ export default function Recebimentos() {
           </div>
           <div className="flex gap-3">
             <Button 
-              onClick={() => setAvisoNovaNotaFiscal(true)}
+              onClick={() => setModalChaveAcesso(true)}
               variant="outline"
               className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth shadow-medium"
             >
