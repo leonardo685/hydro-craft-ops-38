@@ -1443,6 +1443,7 @@ export type Database = {
           empresa_id: string | null
           id: string
           modelo: string | null
+          nome_emitente: string | null
           numero: string
           serie: string
           status: string | null
@@ -1459,6 +1460,7 @@ export type Database = {
           empresa_id?: string | null
           id?: string
           modelo?: string | null
+          nome_emitente?: string | null
           numero: string
           serie: string
           status?: string | null
@@ -1475,6 +1477,7 @@ export type Database = {
           empresa_id?: string | null
           id?: string
           modelo?: string | null
+          nome_emitente?: string | null
           numero?: string
           serie?: string
           status?: string | null
