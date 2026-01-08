@@ -3,12 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, AlertCircle, FileText, UserPlus, FileDown } from "lucide-react";
+import { CheckCircle, AlertCircle, FileText, UserPlus, FileDown, Pencil } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatarChaveAcesso, validarChaveAcesso, extrairDadosNFe, buscarClientePorCNPJ, type DadosNFe, type ItemNFe } from "@/lib/nfe-utils";
 import { baixarPdfDanfe } from "@/lib/danfe-pdf-utils";
 import { ItensNFeModal } from "./ItensNFeModal";
+import { EditarDadosNFeModal } from "./EditarDadosNFeModal";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
 
 interface ChaveAcessoModalProps {
@@ -24,6 +25,7 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
   const [cliente, setCliente] = useState("");
   const [erro, setErro] = useState("");
   const [mostrarItens, setMostrarItens] = useState(false);
+  const [mostrarEdicao, setMostrarEdicao] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
   const handleChaveChange = (valor: string) => {
@@ -150,12 +152,21 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
     handleFechar();
   };
 
+  const handleSalvarEdicao = (dadosEditados: DadosNFe) => {
+    setDadosExtraidos(dadosEditados);
+    // Atualizar cliente com o nome do destinatário se tiver
+    if (dadosEditados.clienteNome) {
+      setCliente(dadosEditados.clienteNome);
+    }
+  };
+
   const handleFechar = () => {
     setChaveAcesso("");
     setDadosExtraidos(null);
     setCliente("");
     setErro("");
     setMostrarItens(false);
+    setMostrarEdicao(false);
     onClose();
   };
 
@@ -241,14 +252,24 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
 
           <div className="flex flex-col gap-2">
             {dadosExtraidos && dadosExtraidos.valida && (
-              <Button 
-                variant="outline" 
-                onClick={() => baixarPdfDanfe(dadosExtraidos)}
-                className="w-full"
-              >
-                <FileDown className="mr-2 h-4 w-4" />
-                Baixar DANFE (PDF)
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => baixarPdfDanfe(dadosExtraidos)}
+                  className="flex-1"
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Baixar DANFE
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setMostrarEdicao(true)}
+                  className="flex-1"
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar Dados
+                </Button>
+              </div>
             )}
             
             <div className="flex gap-2">
@@ -276,13 +297,21 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
         </div>
 
         {dadosExtraidos && (
-          <ItensNFeModal
-            open={mostrarItens}
-            onClose={() => setMostrarItens(false)}
-            onConfirm={handleConfirmarItens}
-            dadosNFe={dadosExtraidos}
-            salvando={salvando}
-          />
+          <>
+            <ItensNFeModal
+              open={mostrarItens}
+              onClose={() => setMostrarItens(false)}
+              onConfirm={handleConfirmarItens}
+              dadosNFe={dadosExtraidos}
+              salvando={salvando}
+            />
+            <EditarDadosNFeModal
+              open={mostrarEdicao}
+              onClose={() => setMostrarEdicao(false)}
+              dados={dadosExtraidos}
+              onSalvar={handleSalvarEdicao}
+            />
+          </>
         )}
       </DialogContent>
     </Dialog>
