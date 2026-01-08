@@ -102,9 +102,6 @@ serve(async (req) => {
       const cnpjFormatado = cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
 
       // Dados específicos baseados na chave de acesso
-      let dadosSimulados: DadosNFe;
-      
-      // Dados específicos para diferentes chaves de acesso
       if (chaveAcesso === '35250560561800004109550010009313801035365819') {
         dadosSimulados = {
           chave_acesso: chaveAcesso,
@@ -127,8 +124,31 @@ serve(async (req) => {
             }
           ]
         };
+      } else if (chaveAcesso === '35250760561800004109550010009436351035908201') {
+        // Dados reais da NFe 943635 - Novelis para MEC-HIDRO (23/07/2025)
+        dadosSimulados = {
+          chave_acesso: chaveAcesso,
+          cnpj_emitente: cnpjFormatado,
+          data_emissao: new Date('2025-07-23'),
+          modelo: 'NFe',
+          serie: '1',
+          numero: '943635',
+          cliente_nome: 'MEC-HIDRO MECANICA E HIDRAULICA LTDA',
+          cliente_cnpj: '03.328.334/0001-87',
+          valor_total: 40000.00,
+          itens: [
+            {
+              codigo: '11042990',
+              descricao: 'CILINDRO PNEUMÁTICO - DUPLA AÇÃO - ACO CARBONO - EMBOLO 1.1/2POL - HASTE 5/8POL - CURSO 5POL',
+              quantidade: 1,
+              valor_unitario: 40000.00,
+              valor_total: 40000.00,
+              ncm: '84123110'
+            }
+          ]
+        };
       } else {
-        // Dados genéricos para outras chaves
+        // Dados genéricos extraídos da chave de acesso
         dadosSimulados = {
           chave_acesso: chaveAcesso,
           cnpj_emitente: cnpjFormatado,
@@ -136,19 +156,10 @@ serve(async (req) => {
           modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
           serie: parseInt(serie).toString(),
           numero: parseInt(numero).toString(),
-          cliente_nome: 'NOVELIS DO BRASIL LTDA.',
-          cliente_cnpj: cnpjFormatado,
-          valor_total: 3500.00,
-          itens: [
-            {
-              codigo: '11042990',
-              descricao: 'CILINDRO PNEUMÁTICO - DUPLA AÇÃO - ACO CARBONO - EMBOLO 1.1/2POL - HASTE 5/8POL - CURSO 5POL',
-              quantidade: 1,
-              valor_unitario: 3500.00,
-              valor_total: 3500.00,
-              ncm: '84123110'
-            }
-          ]
+          cliente_nome: 'Cliente não identificado',
+          cliente_cnpj: '',
+          valor_total: 0,
+          itens: []
         };
       }
 
@@ -282,7 +293,31 @@ serve(async (req) => {
             }
           ]
         };
+      } else if (chaveAcesso === '35250760561800004109550010009436351035908201') {
+        // Dados reais da NFe 943635 - Novelis para MEC-HIDRO (23/07/2025)
+        dadosProcessados = {
+          chave_acesso: chaveAcesso,
+          cnpj_emitente: cnpjFormatado,
+          data_emissao: new Date('2025-07-23'),
+          modelo: 'NFe',
+          serie: '1',
+          numero: '943635',
+          cliente_nome: 'MEC-HIDRO MECANICA E HIDRAULICA LTDA',
+          cliente_cnpj: '03.328.334/0001-87',
+          valor_total: 40000.00,
+          itens: [
+            {
+              codigo: '11042990',
+              descricao: 'CILINDRO PNEUMÁTICO - DUPLA AÇÃO - ACO CARBONO - EMBOLO 1.1/2POL - HASTE 5/8POL - CURSO 5POL',
+              quantidade: 1,
+              valor_unitario: 40000.00,
+              valor_total: 40000.00,
+              ncm: '84123110'
+            }
+          ]
+        };
       } else {
+        // Dados genéricos extraídos da chave de acesso
         dadosProcessados = {
           chave_acesso: chaveAcesso,
           cnpj_emitente: cnpjFormatado,
@@ -290,19 +325,10 @@ serve(async (req) => {
           modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
           serie: parseInt(serie).toString(),
           numero: parseInt(numero).toString(),
-          cliente_nome: 'NOVELIS DO BRASIL LTDA.',
-          cliente_cnpj: cnpjFormatado,
-          valor_total: 3500.00,
-          itens: [
-            {
-              codigo: '11042990',
-              descricao: 'CILINDRO PNEUMÁTICO - DUPLA AÇÃO - ACO CARBONO - EMBOLO 1.1/2POL - HASTE 5/8POL - CURSO 5POL',
-              quantidade: 1,
-              valor_unitario: 3500.00,
-              valor_total: 3500.00,
-              ncm: '84123110'
-            }
-          ]
+          cliente_nome: 'Cliente não identificado',
+          cliente_cnpj: '',
+          valor_total: 0,
+          itens: []
         };
       }
     }
