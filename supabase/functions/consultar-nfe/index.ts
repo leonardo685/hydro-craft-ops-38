@@ -30,6 +30,81 @@ interface DadosNFe {
   itens?: ItemNFe[];
 }
 
+// Função para parsear XML e extrair dados
+function parseXmlValue(xml: string, tag: string): string {
+  const regex = new RegExp(`<${tag}>([^<]*)</${tag}>`, 'i');
+  const match = xml.match(regex);
+  return match ? match[1] : '';
+}
+
+function parseXmlItems(xml: string): ItemNFe[] {
+  const items: ItemNFe[] = [];
+  const detRegex = /<det[^>]*>([\s\S]*?)<\/det>/gi;
+  let detMatch;
+  
+  while ((detMatch = detRegex.exec(xml)) !== null) {
+    const detContent = detMatch[1];
+    const prodMatch = detContent.match(/<prod>([\s\S]*?)<\/prod>/i);
+    
+    if (prodMatch) {
+      const prodContent = prodMatch[1];
+      items.push({
+        codigo: parseXmlValue(prodContent, 'cProd'),
+        descricao: parseXmlValue(prodContent, 'xProd'),
+        quantidade: parseFloat(parseXmlValue(prodContent, 'qCom') || '0'),
+        valor_unitario: parseFloat(parseXmlValue(prodContent, 'vUnCom') || '0'),
+        valor_total: parseFloat(parseXmlValue(prodContent, 'vProd') || '0'),
+        ncm: parseXmlValue(prodContent, 'NCM'),
+      });
+    }
+  }
+  
+  return items;
+}
+
+function parseNFeXml(xml: string, chaveAcesso: string): DadosNFe {
+  // Extrair dados do emitente
+  const emitMatch = xml.match(/<emit>([\s\S]*?)<\/emit>/i);
+  const emitContent = emitMatch ? emitMatch[1] : '';
+  
+  // Extrair dados do destinatário
+  const destMatch = xml.match(/<dest>([\s\S]*?)<\/dest>/i);
+  const destContent = destMatch ? destMatch[1] : '';
+  
+  // Extrair dados da identificação
+  const ideMatch = xml.match(/<ide>([\s\S]*?)<\/ide>/i);
+  const ideContent = ideMatch ? ideMatch[1] : '';
+  
+  // Extrair valor total
+  const totalMatch = xml.match(/<ICMSTot>([\s\S]*?)<\/ICMSTot>/i);
+  const totalContent = totalMatch ? totalMatch[1] : '';
+  
+  // Formatar CNPJ
+  const cnpjEmit = parseXmlValue(emitContent, 'CNPJ');
+  const cnpjFormatado = cnpjEmit.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+  
+  const cnpjDest = parseXmlValue(destContent, 'CNPJ');
+  const cnpjDestFormatado = cnpjDest ? cnpjDest.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : '';
+  
+  // Parsear data de emissão
+  const dhEmi = parseXmlValue(ideContent, 'dhEmi');
+  const dataEmissao = dhEmi ? new Date(dhEmi) : new Date();
+  
+  return {
+    chave_acesso: chaveAcesso,
+    cnpj_emitente: cnpjFormatado || cnpjEmit,
+    nome_emitente: parseXmlValue(emitContent, 'xNome') || parseXmlValue(emitContent, 'xFant') || 'Emitente não identificado',
+    data_emissao: dataEmissao,
+    modelo: parseXmlValue(ideContent, 'mod') || '55',
+    serie: parseXmlValue(ideContent, 'serie') || '1',
+    numero: parseXmlValue(ideContent, 'nNF') || '',
+    cliente_nome: parseXmlValue(destContent, 'xNome') || 'Cliente não identificado',
+    cliente_cnpj: cnpjDestFormatado || cnpjDest,
+    valor_total: parseFloat(parseXmlValue(totalContent, 'vNF') || '0'),
+    itens: parseXmlItems(xml),
+  };
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -64,7 +139,7 @@ serve(async (req) => {
         itens_nfe (*)
       `)
       .eq('chave_acesso', chaveAcesso)
-      .single();
+      .maybeSingle();
 
     if (notaExistente) {
       console.log('NFe encontrada no cache local');
@@ -74,7 +149,8 @@ serve(async (req) => {
           dados: {
             ...notaExistente,
             itens: notaExistente.itens_nfe || []
-          }
+          },
+          source: 'cache'
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -82,16 +158,83 @@ serve(async (req) => {
       );
     }
 
-    // Consultar API SERPRO
-    const serproApiKey = Deno.env.get('SERPRO_API_KEY');
+    // Consultar API Meu Danfe
+    const meuDanfeApiKey = Deno.env.get('MEUDANFE_API_KEY');
     
-    // Declarar variável para dados simulados
-    let dadosSimulados: DadosNFe;
-    
-    if (!serproApiKey) {
-      console.log('API Key SERPRO não configurada, usando dados simulados baseados na chave');
+    if (!meuDanfeApiKey) {
+      console.log('API Key Meu Danfe não configurada');
+      return new Response(
+        JSON.stringify({ 
+          error: 'API Key não configurada. Configure a MEUDANFE_API_KEY nas secrets do projeto.' 
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    let dadosNFe: DadosNFe | null = null;
+
+    try {
+      // Passo 1: Adicionar a NFe na conta do Meu Danfe
+      console.log('Adicionando NFe no Meu Danfe...');
+      const addResponse = await fetch(
+        `https://api.meudanfe.com.br/v2/fd/add/${chaveAcesso}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Api-Key': meuDanfeApiKey,
+          },
+        }
+      );
+
+      if (!addResponse.ok) {
+        const errorText = await addResponse.text();
+        console.log('Erro ao adicionar NFe:', addResponse.status, errorText);
+        
+        // Se retornar 409, a NFe já existe - continuar para buscar o XML
+        if (addResponse.status !== 409) {
+          throw new Error(`Erro ao adicionar NFe: ${addResponse.status} - ${errorText}`);
+        }
+      } else {
+        console.log('NFe adicionada com sucesso');
+      }
+
+      // Passo 2: Buscar o XML da NFe
+      console.log('Buscando XML da NFe...');
+      const xmlResponse = await fetch(
+        `https://api.meudanfe.com.br/v2/fd/get/xml/${chaveAcesso}`,
+        {
+          method: 'GET',
+          headers: {
+            'Api-Key': meuDanfeApiKey,
+          },
+        }
+      );
+
+      if (!xmlResponse.ok) {
+        const errorText = await xmlResponse.text();
+        console.log('Erro ao buscar XML:', xmlResponse.status, errorText);
+        throw new Error(`Erro ao buscar XML: ${xmlResponse.status} - ${errorText}`);
+      }
+
+      const xmlContent = await xmlResponse.text();
+      console.log('XML recebido, parseando dados...');
       
-      // Extrair informações da chave para dados simulados mais realistas
+      // Parsear o XML
+      dadosNFe = parseNFeXml(xmlContent, chaveAcesso);
+      console.log('Dados parseados:', JSON.stringify({
+        numero: dadosNFe.numero,
+        emitente: dadosNFe.nome_emitente,
+        cliente: dadosNFe.cliente_nome,
+        itens: dadosNFe.itens?.length
+      }));
+
+    } catch (apiError) {
+      console.error('Erro na API Meu Danfe:', apiError.message);
+      
+      // Fallback: extrair dados básicos da chave de acesso
       const aamm = chaveAcesso.substring(2, 6);
       const cnpj = chaveAcesso.substring(6, 20);
       const modelo = chaveAcesso.substring(20, 22);
@@ -102,115 +245,28 @@ serve(async (req) => {
       const mes = parseInt(aamm.substring(2, 4));
       const dataEmissao = new Date(ano, mes - 1, 1);
       
-      // Formatar CNPJ no padrão XX.XXX.XXX/XXXX-XX
       const cnpjFormatado = cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
 
-      // Dados específicos baseados na chave de acesso
-      if (chaveAcesso === '35250560561800004109550010009313801035365819') {
-        dadosSimulados = {
-          chave_acesso: chaveAcesso,
-          cnpj_emitente: cnpjFormatado,
-          nome_emitente: 'Novelis do Brasil Ltda',
-          data_emissao: new Date('2025-05-01'),
-          modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
-          serie: parseInt(serie).toString(),
-          numero: parseInt(numero).toString(),
-          cliente_nome: 'MEC-HIDRO MECANICA E HIDRAULICA LTDA',
-          cliente_cnpj: '03.328.334/0001-87',
-          valor_total: 5000.00,
-          itens: [
-            {
-              codigo: '11037515',
-              descricao: 'NOME: KIT/CONJUNTO; TIPO KIT/CONJUNTO: CONJUNTO HIDRAULICO; NOME: EXTRATOR COMPLETO C/BOMBA; REFERENCIA/FABRICANTE: MPS2 4CE/ENERPAC',
-              quantidade: 1,
-              valor_unitario: 5000.00,
-              valor_total: 5000.00,
-              ncm: '392690900'
-            }
-          ]
-        };
-      } else if (chaveAcesso === '35250760561800004109550010009436351035908201') {
-        // Dados reais da NFe 943635 - Novelis (EMITENTE) para MEC-HIDRO (DESTINATÁRIO)
-        dadosSimulados = {
-          chave_acesso: chaveAcesso,
-          cnpj_emitente: cnpjFormatado, // 60.561.800/0041-09
-          nome_emitente: 'Novelis do Brasil Ltda',
-          data_emissao: new Date('2025-07-23'),
-          modelo: 'NFe',
-          serie: '1',
-          numero: '943635',
-          cliente_nome: 'MEC-HIDRO MECANICA E HIDRAULICA LTDA',
-          cliente_cnpj: '03.328.334/0001-87',
-          valor_total: 40000.00,
-          itens: [
-            {
-              codigo: '11042990',
-              descricao: 'CILINDRO PNEUMÁTICO - DUPLA AÇÃO - ACO CARBONO - EMBOLO 1.1/2POL - HASTE 5/8POL - CURSO 5POL',
-              quantidade: 1,
-              valor_unitario: 40000.00,
-              valor_total: 40000.00,
-              ncm: '84123110'
-            }
-          ]
-        };
-      } else {
-        // Dados genéricos extraídos da chave de acesso
-        dadosSimulados = {
-          chave_acesso: chaveAcesso,
-          cnpj_emitente: cnpjFormatado,
-          nome_emitente: 'Emitente não identificado',
-          data_emissao: dataEmissao,
-          modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
-          serie: parseInt(serie).toString(),
-          numero: parseInt(numero).toString(),
-          cliente_nome: 'Cliente não identificado',
-          cliente_cnpj: '',
-          valor_total: 0,
-          itens: []
-        };
-      }
-
-      // Salvar no banco local
-      const { data: notaCriada } = await supabase
-        .from('notas_fiscais')
-        .insert({
-          chave_acesso: dadosSimulados.chave_acesso,
-          cnpj_emitente: dadosSimulados.cnpj_emitente,
-          nome_emitente: dadosSimulados.nome_emitente,
-          data_emissao: dadosSimulados.data_emissao,
-          modelo: dadosSimulados.modelo,
-          serie: dadosSimulados.serie,
-          numero: dadosSimulados.numero,
-          cliente_nome: dadosSimulados.cliente_nome,
-          cliente_cnpj: dadosSimulados.cliente_cnpj,
-          valor_total: dadosSimulados.valor_total,
-          status: 'processada'
-        })
-        .select()
-        .single();
-
-      if (notaCriada && dadosSimulados.itens) {
-        // Salvar itens
-        const itensParaInserir = dadosSimulados.itens.map(item => ({
-          nota_fiscal_id: notaCriada.id,
-          codigo: item.codigo,
-          descricao: item.descricao,
-          quantidade: item.quantidade,
-          valor_unitario: item.valor_unitario,
-          valor_total: item.valor_total,
-          ncm: item.ncm
-        }));
-
-        await supabase
-          .from('itens_nfe')
-          .insert(itensParaInserir);
-      }
+      dadosNFe = {
+        chave_acesso: chaveAcesso,
+        cnpj_emitente: cnpjFormatado,
+        nome_emitente: 'Consulta pendente - edite manualmente',
+        data_emissao: dataEmissao,
+        modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
+        serie: parseInt(serie).toString(),
+        numero: parseInt(numero).toString(),
+        cliente_nome: 'Consulta pendente - edite manualmente',
+        cliente_cnpj: '',
+        valor_total: 0,
+        itens: []
+      };
 
       return new Response(
         JSON.stringify({
-          success: true,
-          dados: dadosSimulados,
-          source: 'simulado'
+          success: false,
+          error: `Erro ao consultar NFe: ${apiError.message}`,
+          dados: dadosNFe,
+          source: 'fallback'
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -218,155 +274,32 @@ serve(async (req) => {
       );
     }
 
-    // Tentar consultar API SERPRO (com fallback para dados simulados)
-    let dadosSerpro = null;
-    try {
-      const response = await fetch(`https://apigateway.serpro.gov.br/consulta-nfe/v1/nfe/${chaveAcesso}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${serproApiKey}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        dadosSerpro = await response.json();
-        console.log('Dados recebidos do SERPRO:', dadosSerpro);
-      } else {
-        console.log('API SERPRO indisponível, usando dados simulados');
-      }
-    } catch (error) {
-      console.log('Erro ao consultar SERPRO, usando dados simulados:', error.message);
-    }
-
-    // Processar dados do SERPRO ou usar dados simulados
-    let dadosProcessados: DadosNFe;
-    
-    if (dadosSerpro) {
-      // Dados reais do SERPRO
-      dadosProcessados = {
-        chave_acesso: chaveAcesso,
-        cnpj_emitente: dadosSerpro.emit?.CNPJ || '',
-        nome_emitente: dadosSerpro.emit?.xNome || '',
-        data_emissao: new Date(dadosSerpro.ide?.dhEmi || new Date()),
-        modelo: dadosSerpro.ide?.mod || '55',
-        serie: dadosSerpro.ide?.serie || '001',
-        numero: dadosSerpro.ide?.nNF || '',
-        cliente_nome: dadosSerpro.dest?.xNome || '',
-        cliente_cnpj: dadosSerpro.dest?.CNPJ || '',
-        valor_total: parseFloat(dadosSerpro.total?.ICMSTot?.vNF || '0'),
-        itens: dadosSerpro.det?.map((item: any) => ({
-          codigo: item.prod?.cProd || '',
-          descricao: item.prod?.xProd || '',
-          quantidade: parseFloat(item.prod?.qCom || '0'),
-          valor_unitario: parseFloat(item.prod?.vUnCom || '0'),
-          valor_total: parseFloat(item.prod?.vProd || '0'),
-          ncm: item.prod?.NCM || ''
-        })) || []
-      };
-    } else {
-      // Usar dados simulados se SERPRO não funcionar
-      const aamm = chaveAcesso.substring(2, 6);
-      const cnpj = chaveAcesso.substring(6, 20);
-      const modelo = chaveAcesso.substring(20, 22);
-      const serie = chaveAcesso.substring(22, 25);
-      const numero = chaveAcesso.substring(25, 34);
-
-      const ano = 2000 + parseInt(aamm.substring(0, 2));
-      const mes = parseInt(aamm.substring(2, 4));
-      const dataEmissao = new Date(ano, mes - 1, 1);
-      
-      // Formatar CNPJ no padrão XX.XXX.XXX/XXXX-XX
-      const cnpjFormatado = cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
-
-      // Dados específicos baseados na chave de acesso
-      if (chaveAcesso === '35250560561800004109550010009313801035365819') {
-        dadosProcessados = {
-          chave_acesso: chaveAcesso,
-          cnpj_emitente: cnpjFormatado,
-          nome_emitente: 'Novelis do Brasil Ltda',
-          data_emissao: new Date('2025-05-01'),
-          modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
-          serie: parseInt(serie).toString(),
-          numero: parseInt(numero).toString(),
-          cliente_nome: 'MEC-HIDRO MECANICA E HIDRAULICA LTDA',
-          cliente_cnpj: '03.328.334/0001-87',
-          valor_total: 5000.00,
-          itens: [
-            {
-              codigo: '11037515',
-              descricao: 'NOME: KIT/CONJUNTO; TIPO KIT/CONJUNTO: CONJUNTO HIDRAULICO; NOME: EXTRATOR COMPLETO C/BOMBA; REFERENCIA/FABRICANTE: MPS2 4CE/ENERPAC',
-              quantidade: 1,
-              valor_unitario: 5000.00,
-              valor_total: 5000.00,
-              ncm: '392690900'
-            }
-          ]
-        };
-      } else if (chaveAcesso === '35250760561800004109550010009436351035908201') {
-        // Dados reais da NFe 943635 - Novelis (EMITENTE) para MEC-HIDRO (DESTINATÁRIO)
-        dadosProcessados = {
-          chave_acesso: chaveAcesso,
-          cnpj_emitente: cnpjFormatado, // 60.561.800/0041-09
-          nome_emitente: 'Novelis do Brasil Ltda',
-          data_emissao: new Date('2025-07-23'),
-          modelo: 'NFe',
-          serie: '1',
-          numero: '943635',
-          cliente_nome: 'MEC-HIDRO MECANICA E HIDRAULICA LTDA',
-          cliente_cnpj: '03.328.334/0001-87',
-          valor_total: 40000.00,
-          itens: [
-            {
-              codigo: '11042990',
-              descricao: 'CILINDRO PNEUMÁTICO - DUPLA AÇÃO - ACO CARBONO - EMBOLO 1.1/2POL - HASTE 5/8POL - CURSO 5POL',
-              quantidade: 1,
-              valor_unitario: 40000.00,
-              valor_total: 40000.00,
-              ncm: '84123110'
-            }
-          ]
-        };
-      } else {
-        // Dados genéricos extraídos da chave de acesso
-        dadosProcessados = {
-          chave_acesso: chaveAcesso,
-          cnpj_emitente: cnpjFormatado,
-          nome_emitente: 'Emitente não identificado',
-          data_emissao: dataEmissao,
-          modelo: modelo === '55' ? 'NFe' : modelo === '65' ? 'NFCe' : modelo,
-          serie: parseInt(serie).toString(),
-          numero: parseInt(numero).toString(),
-          cliente_nome: 'Cliente não identificado',
-          cliente_cnpj: '',
-          valor_total: 0,
-          itens: []
-        };
-      }
-    }
-
     // Salvar no banco local
-    const { data: notaCriada } = await supabase
+    const { data: notaCriada, error: insertError } = await supabase
       .from('notas_fiscais')
       .insert({
-        chave_acesso: dadosProcessados.chave_acesso,
-        cnpj_emitente: dadosProcessados.cnpj_emitente,
-        nome_emitente: dadosProcessados.nome_emitente,
-        data_emissao: dadosProcessados.data_emissao,
-        modelo: dadosProcessados.modelo,
-        serie: dadosProcessados.serie,
-        numero: dadosProcessados.numero,
-        cliente_nome: dadosProcessados.cliente_nome,
-        cliente_cnpj: dadosProcessados.cliente_cnpj,
-        valor_total: dadosProcessados.valor_total,
+        chave_acesso: dadosNFe.chave_acesso,
+        cnpj_emitente: dadosNFe.cnpj_emitente,
+        nome_emitente: dadosNFe.nome_emitente,
+        data_emissao: dadosNFe.data_emissao,
+        modelo: dadosNFe.modelo,
+        serie: dadosNFe.serie,
+        numero: dadosNFe.numero,
+        cliente_nome: dadosNFe.cliente_nome,
+        cliente_cnpj: dadosNFe.cliente_cnpj,
+        valor_total: dadosNFe.valor_total,
         status: 'processada'
       })
       .select()
       .single();
 
-    if (notaCriada && dadosProcessados.itens) {
+    if (insertError) {
+      console.error('Erro ao salvar nota:', insertError);
+    }
+
+    if (notaCriada && dadosNFe.itens && dadosNFe.itens.length > 0) {
       // Salvar itens
-      const itensParaInserir = dadosProcessados.itens.map(item => ({
+      const itensParaInserir = dadosNFe.itens.map(item => ({
         nota_fiscal_id: notaCriada.id,
         codigo: item.codigo,
         descricao: item.descricao,
@@ -376,16 +309,20 @@ serve(async (req) => {
         ncm: item.ncm
       }));
 
-      await supabase
+      const { error: itensError } = await supabase
         .from('itens_nfe')
         .insert(itensParaInserir);
+
+      if (itensError) {
+        console.error('Erro ao salvar itens:', itensError);
+      }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        dados: dadosProcessados,
-        source: dadosSerpro ? 'serpro' : 'simulado'
+        dados: dadosNFe,
+        source: 'meudanfe'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
