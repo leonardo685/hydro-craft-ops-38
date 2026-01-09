@@ -9,9 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Building2, User, Phone } from "lucide-react";
+import { Shield, Building2, User, Phone, CheckCircle2 } from "lucide-react";
 
-const formSchema = z.object({
+// Schema para etapa 1 (telefone)
+const telefoneSchema = z.object({
+  telefone: z.string()
+    .trim()
+    .regex(/^(\+55\s?)?(\(?\d{2}\)?[\s-]?)?9?\d{4}[\s-]?\d{4}$/, 
+      "Telefone inválido. Use formato: (19) 99999-9999 ou 19999999999")
+});
+
+// Schema para etapa 2 (dados adicionais)
+const dadosSchema = z.object({
   nome: z.string()
     .trim()
     .min(3, "Nome deve ter pelo menos 3 caracteres")
@@ -20,28 +29,81 @@ const formSchema = z.object({
     .trim()
     .min(2, "Nome da empresa deve ter pelo menos 2 caracteres")
     .max(100, "Nome da empresa muito longo"),
-  telefone: z.string()
-    .trim()
-    .regex(/^(\+55\s?)?(\(?\d{2}\)?[\s-]?)?9?\d{4}[\s-]?\d{4}$/, 
-      "Telefone inválido. Use formato: (19) 99999-9999 ou 19999999999")
 });
 
-type FormData = z.infer<typeof formSchema>;
+type TelefoneData = z.infer<typeof telefoneSchema>;
+type DadosData = z.infer<typeof dadosSchema>;
 
 export default function AcessoOrdemPublica() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [etapa, setEtapa] = useState<'telefone' | 'dados'>('telefone');
+  const [telefoneVerificado, setTelefoneVerificado] = useState('');
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+  // Form para etapa 1 (telefone)
+  const telefoneForm = useForm<TelefoneData>({
+    resolver: zodResolver(telefoneSchema),
   });
 
-  const onSubmit = async (data: FormData) => {
+  // Form para etapa 2 (dados adicionais)
+  const dadosForm = useForm<DadosData>({
+    resolver: zodResolver(dadosSchema),
+  });
+
+  // Função auxiliar para formatar telefone
+  const formatarTelefone = (telefone: string) => {
+    return telefone.startsWith('+55') 
+      ? telefone 
+      : `+55${telefone.replace(/\D/g, '')}`;
+  };
+
+  // Função para obter IP
+  const obterIP = async () => {
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      return ipData.ip;
+    } catch {
+      return null;
+    }
+  };
+
+  // Função para verificar se ordem está finalizada
+  const verificarOrdemFinalizada = async (ordemServicoId: string, recebimentoId: number | null) => {
+    // Buscar recebimento se existir (para verificar nota de retorno)
+    let pdfNotaRetorno = null;
+    if (recebimentoId) {
+      const { data: recebimento } = await supabase
+        .from("recebimentos")
+        .select("pdf_nota_retorno")
+        .eq("id", recebimentoId)
+        .maybeSingle();
+      
+      pdfNotaRetorno = recebimento?.pdf_nota_retorno;
+    }
+
+    // Verificar se existe laudo técnico
+    const { data: teste } = await supabase
+      .from("testes_equipamentos")
+      .select("id")
+      .eq("ordem_servico_id", ordemServicoId)
+      .maybeSingle();
+
+    // Buscar fotos da ordem
+    const { data: fotosOrdem } = await supabase
+      .from("fotos_equipamentos")
+      .select("id")
+      .eq("ordem_servico_id", ordemServicoId)
+      .limit(1);
+
+    const temFotos = fotosOrdem && fotosOrdem.length > 0;
+
+    return !!(teste || pdfNotaRetorno || temFotos);
+  };
+
+  // Etapa 1: Verificar telefone
+  const onVerificarTelefone = async (data: TelefoneData) => {
     if (!numeroOrdem) {
       toast.error("Número da ordem não encontrado");
       return;
@@ -50,7 +112,9 @@ export default function AcessoOrdemPublica() {
     setLoading(true);
 
     try {
-      // Buscar ordem de serviço diretamente pelo numero_ordem
+      const telefoneFormatado = formatarTelefone(data.telefone);
+
+      // Buscar ordem de serviço
       const { data: ordemServico, error: ordemError } = await supabase
         .from("ordens_servico")
         .select("id, status, recebimento_id")
@@ -65,74 +129,33 @@ export default function AcessoOrdemPublica() {
         return;
       }
 
-      // Buscar recebimento se existir (para verificar nota de retorno)
-      let pdfNotaRetorno = null;
-      if (ordemServico.recebimento_id) {
-        const { data: recebimento } = await supabase
-          .from("recebimentos")
-          .select("pdf_nota_retorno")
-          .eq("id", ordemServico.recebimento_id)
-          .maybeSingle();
-        
-        pdfNotaRetorno = recebimento?.pdf_nota_retorno;
-      }
+      // Verificar se ordem está finalizada
+      const ordemFinalizada = await verificarOrdemFinalizada(
+        ordemServico.id, 
+        ordemServico.recebimento_id
+      );
 
-      // Verificar se existe laudo técnico criado (teste) para a ordem
-      const { data: teste, error: testeError } = await supabase
-        .from("testes_equipamentos")
-        .select("id")
-        .eq("ordem_servico_id", ordemServico.id)
-        .maybeSingle();
-
-      if (testeError) throw testeError;
-
-      // Buscar fotos da ordem para verificar se existe alguma
-      const { data: fotosOrdem } = await supabase
-        .from("fotos_equipamentos")
-        .select("id")
-        .eq("ordem_servico_id", ordemServico.id)
-        .limit(1);
-
-      const temFotos = fotosOrdem && fotosOrdem.length > 0;
-
-      // Se não existe laudo técnico, nota de retorno NEM fotos, ordem não está pronta
-      if (!teste && !pdfNotaRetorno && !temFotos) {
+      if (!ordemFinalizada) {
         toast.error("Esta ordem ainda não foi finalizada");
         navigate("/");
         return;
       }
 
-      // Capturar IP e User Agent (se disponível)
-      let ipAcesso = null;
-      try {
-        const ipResponse = await fetch('https://api.ipify.org?format=json');
-        const ipData = await ipResponse.json();
-        ipAcesso = ipData.ip;
-      } catch (error) {
-        console.log("Não foi possível obter IP", error);
-      }
-
-      const userAgent = navigator.userAgent;
-
-      // Formatar telefone com +55
-      const telefoneFormatado = data.telefone.startsWith('+55') 
-        ? data.telefone 
-        : `+55${data.telefone.replace(/\D/g, '')}`;
-
-      // Verificar se já existe cliente com este telefone
+      // Verificar se telefone já existe
       const { data: clienteExistente } = await supabase
         .from("clientes_marketing")
-        .select("id")
+        .select("id, nome")
         .eq("telefone", telefoneFormatado)
         .maybeSingle();
 
-      // Atualizar ou inserir dados de marketing
       if (clienteExistente) {
-        const { error: updateError } = await supabase
+        // Cliente já existe - atualizar acesso e redirecionar
+        const ipAcesso = await obterIP();
+        const userAgent = navigator.userAgent;
+
+        await supabase
           .from("clientes_marketing")
           .update({
-            nome: data.nome,
-            empresa: data.empresa,
             numero_ordem: numeroOrdem,
             ordem_servico_id: ordemServico.id,
             data_acesso: new Date().toISOString(),
@@ -141,27 +164,65 @@ export default function AcessoOrdemPublica() {
           })
           .eq("id", clienteExistente.id);
 
-        if (updateError) throw updateError;
+        toast.success(`Bem-vindo de volta, ${clienteExistente.nome}!`);
+        navigate(`/laudo-publico/${numeroOrdem}`);
       } else {
-        const { error: insertError } = await supabase
-          .from("clientes_marketing")
-          .insert({
-            ordem_servico_id: ordemServico.id,
-            numero_ordem: numeroOrdem,
-            nome: data.nome,
-            empresa: data.empresa,
-            telefone: telefoneFormatado,
-            ip_acesso: ipAcesso,
-            user_agent: userAgent,
-            // empresa_id será null para acesso público
-          });
+        // Cliente não existe - mostrar campos adicionais
+        setTelefoneVerificado(telefoneFormatado);
+        setEtapa('dados');
+      }
+    } catch (error) {
+      console.error("Erro ao verificar telefone:", error);
+      toast.error("Erro ao verificar telefone. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        if (insertError) throw insertError;
+  // Etapa 2: Registrar dados completos
+  const onSubmitDados = async (data: DadosData) => {
+    if (!numeroOrdem || !telefoneVerificado) {
+      toast.error("Dados incompletos");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Buscar ordem de serviço novamente
+      const { data: ordemServico, error: ordemError } = await supabase
+        .from("ordens_servico")
+        .select("id")
+        .eq("numero_ordem", numeroOrdem)
+        .maybeSingle();
+
+      if (ordemError) throw ordemError;
+
+      if (!ordemServico) {
+        toast.error("Ordem não encontrada");
+        navigate("/");
+        return;
       }
 
+      const ipAcesso = await obterIP();
+      const userAgent = navigator.userAgent;
+
+      // Inserir novo registro
+      const { error: insertError } = await supabase
+        .from("clientes_marketing")
+        .insert({
+          ordem_servico_id: ordemServico.id,
+          numero_ordem: numeroOrdem,
+          nome: data.nome,
+          empresa: data.empresa,
+          telefone: telefoneVerificado,
+          ip_acesso: ipAcesso,
+          user_agent: userAgent,
+        });
+
+      if (insertError) throw insertError;
+
       toast.success("Dados registrados com sucesso!");
-      
-      // Redirecionar para visualização do laudo
       navigate(`/laudo-publico/${numeroOrdem}`);
     } catch (error) {
       console.error("Erro ao registrar dados:", error);
@@ -180,74 +241,121 @@ export default function AcessoOrdemPublica() {
           </div>
           <CardTitle className="text-2xl">Acesso ao Laudo Técnico</CardTitle>
           <CardDescription className="text-base">
-            Para acessar o laudo da ordem <span className="font-semibold text-foreground">#{numeroOrdem}</span>, 
-            por favor preencha seus dados abaixo.
+            {etapa === 'telefone' ? (
+              <>
+                Para acessar o laudo da ordem <span className="font-semibold text-foreground">#{numeroOrdem}</span>, 
+                digite seu telefone.
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-4 h-4 inline-block mr-1 text-green-500" />
+                Telefone verificado! Complete seu cadastro.
+              </>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="nome" className="flex items-center gap-2">
-                <User className="w-4 h-4 text-muted-foreground" />
-                Nome Completo *
-              </Label>
-              <Input
-                id="nome"
-                placeholder="Digite seu nome completo"
-                {...register("nome")}
-                className={errors.nome ? "border-destructive" : ""}
-              />
-              {errors.nome && (
-                <p className="text-sm text-destructive">{errors.nome.message}</p>
-              )}
-            </div>
+          {etapa === 'telefone' ? (
+            <form onSubmit={telefoneForm.handleSubmit(onVerificarTelefone)} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="telefone" className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                  Telefone *
+                </Label>
+                <Input
+                  id="telefone"
+                  placeholder="(19) 99999-9999"
+                  {...telefoneForm.register("telefone")}
+                  className={telefoneForm.formState.errors.telefone ? "border-destructive" : ""}
+                  autoFocus
+                />
+                {telefoneForm.formState.errors.telefone && (
+                  <p className="text-sm text-destructive">{telefoneForm.formState.errors.telefone.message}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="empresa" className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-muted-foreground" />
-                Empresa *
-              </Label>
-              <Input
-                id="empresa"
-                placeholder="Nome da sua empresa"
-                {...register("empresa")}
-                className={errors.empresa ? "border-destructive" : ""}
-              />
-              {errors.empresa && (
-                <p className="text-sm text-destructive">{errors.empresa.message}</p>
-              )}
-            </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                size="lg"
+                disabled={loading}
+              >
+                {loading ? "Verificando..." : "Verificar Telefone"}
+              </Button>
 
-            <div className="space-y-2">
-              <Label htmlFor="telefone" className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-muted-foreground" />
-                Telefone *
-              </Label>
-              <Input
-                id="telefone"
-                placeholder="(19) 99999-9999"
-                {...register("telefone")}
-                className={errors.telefone ? "border-destructive" : ""}
-              />
-              {errors.telefone && (
-                <p className="text-sm text-destructive">{errors.telefone.message}</p>
-              )}
-            </div>
+              <p className="text-xs text-center text-muted-foreground mt-4">
+                Se você já acessou antes, será redirecionado automaticamente.
+              </p>
+            </form>
+          ) : (
+            <form onSubmit={dadosForm.handleSubmit(onSubmitDados)} className="space-y-5">
+              <div className="p-3 bg-muted/50 rounded-lg mb-4">
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  {telefoneVerificado}
+                </p>
+              </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              size="lg"
-              disabled={loading}
-            >
-              {loading ? "Processando..." : "Acessar Laudo"}
-            </Button>
+              <div className="space-y-2">
+                <Label htmlFor="nome" className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  Nome Completo *
+                </Label>
+                <Input
+                  id="nome"
+                  placeholder="Digite seu nome completo"
+                  {...dadosForm.register("nome")}
+                  className={dadosForm.formState.errors.nome ? "border-destructive" : ""}
+                  autoFocus
+                />
+                {dadosForm.formState.errors.nome && (
+                  <p className="text-sm text-destructive">{dadosForm.formState.errors.nome.message}</p>
+                )}
+              </div>
 
-            <p className="text-xs text-center text-muted-foreground mt-4">
-              Seus dados serão utilizados apenas para contato sobre serviços relacionados. 
-              Não compartilhamos suas informações com terceiros.
-            </p>
-          </form>
+              <div className="space-y-2">
+                <Label htmlFor="empresa" className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-muted-foreground" />
+                  Empresa *
+                </Label>
+                <Input
+                  id="empresa"
+                  placeholder="Nome da sua empresa"
+                  {...dadosForm.register("empresa")}
+                  className={dadosForm.formState.errors.empresa ? "border-destructive" : ""}
+                />
+                {dadosForm.formState.errors.empresa && (
+                  <p className="text-sm text-destructive">{dadosForm.formState.errors.empresa.message}</p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => {
+                    setEtapa('telefone');
+                    setTelefoneVerificado('');
+                  }}
+                  disabled={loading}
+                >
+                  Voltar
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="flex-1" 
+                  size="lg"
+                  disabled={loading}
+                >
+                  {loading ? "Processando..." : "Acessar Laudo"}
+                </Button>
+              </div>
+
+              <p className="text-xs text-center text-muted-foreground mt-4">
+                Seus dados serão utilizados apenas para contato sobre serviços relacionados.
+              </p>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
