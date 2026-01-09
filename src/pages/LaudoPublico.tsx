@@ -3,8 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import defaultLogo from "@/assets/mec-hidro-logo-novo.jpg";
+import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ interface OrdemServico {
   data_entrada: string;
   data_analise: string | null;
   status: string;
+  empresa_id: string | null;
   recebimentos?: {
     numero_ordem: string;
   };
@@ -69,6 +70,16 @@ interface FotoEquipamento {
   nome_arquivo: string;
 }
 
+interface EmpresaData {
+  logo_url: string | null;
+  razao_social: string | null;
+  nome: string;
+  cnpj: string | null;
+  telefone: string | null;
+  email: string | null;
+  tipo_identificacao: string | null;
+}
+
 export default function LaudoPublico() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
   const navigate = useNavigate();
@@ -77,6 +88,7 @@ export default function LaudoPublico() {
   const [teste, setTeste] = useState<TesteEquipamento | null>(null);
   const [fotos, setFotos] = useState<FotoEquipamento[]>([]);
   const [empresaLogo, setEmpresaLogo] = useState<string | null>(null);
+  const [empresaData, setEmpresaData] = useState<EmpresaData | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -188,16 +200,19 @@ export default function LaudoPublico() {
 
         setFotos(fotosData);
 
-        // Buscar logo da empresa
+        // Buscar dados completos da empresa
         if (ordem.empresa_id) {
-          const { data: empresaData } = await supabase
+          const { data: empresa } = await supabase
             .from("empresas")
-            .select("logo_url")
+            .select("logo_url, razao_social, nome, cnpj, telefone, email, tipo_identificacao")
             .eq("id", ordem.empresa_id)
             .maybeSingle();
           
-          if (empresaData?.logo_url) {
-            setEmpresaLogo(empresaData.logo_url);
+          if (empresa) {
+            setEmpresaData(empresa);
+            if (empresa.logo_url) {
+              setEmpresaLogo(empresa.logo_url);
+            }
           }
         }
       } catch (error) {
@@ -213,45 +228,293 @@ export default function LaudoPublico() {
   }, [numeroOrdem, navigate]);
 
   const handleExportPDF = async () => {
-    if (!contentRef.current || !ordemServico) return;
+    if (!ordemServico) return;
     
     try {
       toast.loading("Gerando PDF...");
       
-      const canvas = await html2canvas(contentRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      let yPosition = 10;
       
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
+      const tipoIdentificacao = empresaData?.tipo_identificacao || 'cnpj';
+      const labelIdentificacao = tipoIdentificacao === 'ein' ? 'EIN' : tipoIdentificacao === 'ssn' ? 'SSN' : 'CNPJ';
       
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - 20;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const EMPRESA_INFO = {
+        nome: empresaData?.razao_social || empresaData?.nome || "N/A",
+        cnpj: empresaData?.cnpj || "",
+        telefone: empresaData?.telefone || "",
+        email: empresaData?.email || "",
+        labelIdentificacao
+      };
       
-      let heightLeft = imgHeight;
-      let position = 10;
+      // Função para adicionar detalhes decorativos no canto
+      const adicionarDetalheDecorativo = () => {
+        doc.setFillColor(220, 38, 38);
+        doc.triangle(pageWidth - 30, pageHeight - 30, pageWidth, pageHeight - 30, pageWidth, pageHeight, 'F');
+        doc.setFillColor(0, 0, 0);
+        doc.triangle(pageWidth - 15, pageHeight - 30, pageWidth, pageHeight - 30, pageWidth, pageHeight, 'F');
+      };
       
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      // Função para adicionar rodapé em todas as páginas
+      const adicionarRodape = () => {
+        const totalPages = doc.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          adicionarDetalheDecorativo();
+          doc.setFontSize(8);
+          doc.setTextColor(128, 128, 128);
+          doc.text(`Página ${i} de ${totalPages}`, 15, pageHeight - 10);
+          doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth - 60, pageHeight - 10);
+        }
+      };
       
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight + 10;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
+      // === CABEÇALHO ===
+      await addLogoToPDF(doc, empresaData?.logo_url, pageWidth - 50, 8, 35, 20);
+      
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(EMPRESA_INFO.nome, 20, yPosition + 5);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${EMPRESA_INFO.labelIdentificacao}: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
+      doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
+      doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
+      
+      // Linha decorativa
+      doc.setDrawColor(220, 38, 38);
+      doc.setLineWidth(1);
+      doc.line(20, yPosition + 28, pageWidth - 20, yPosition + 28);
+      
+      // Triângulo decorativo no canto superior direito
+      doc.setFillColor(220, 38, 38);
+      doc.triangle(pageWidth - 20, 10, pageWidth, 10, pageWidth, 40, 'F');
+      
+      yPosition = 48;
+      
+      // === TÍTULO ===
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(220, 38, 38);
+      doc.text("LAUDO TÉCNICO", pageWidth / 2, yPosition, { align: "center" });
+      doc.setTextColor(0, 0, 0);
       
       const numeroOrdemCorreto = ordemServico.recebimentos?.numero_ordem || ordemServico.numero_ordem;
-      pdf.save(`Laudo_${numeroOrdemCorreto}.pdf`);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Ordem de Serviço: ${numeroOrdemCorreto}`, pageWidth / 2, yPosition + 8, { align: "center" });
+      
+      yPosition = 68;
+      
+      // Função para criar tabelas estilizadas
+      const criarTabela = (titulo: string, dados: Array<{label: string, value: string}>, corTitulo: number[] = [128, 128, 128]) => {
+        if (dados.length === 0) return;
+        
+        if (yPosition > 240) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(255, 255, 255);
+        doc.setFillColor(corTitulo[0], corTitulo[1], corTitulo[2]);
+        doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
+        doc.text(titulo.toUpperCase(), pageWidth / 2, yPosition + 6, { align: 'center' });
+        yPosition += 8;
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setLineWidth(0.1);
+        
+        const rowHeight = 8;
+        dados.forEach((item, index) => {
+          if (yPosition > 270) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          
+          if (index % 2 === 0) {
+            doc.setFillColor(245, 245, 245);
+          } else {
+            doc.setFillColor(255, 255, 255);
+          }
+          doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(20, yPosition, pageWidth - 40, rowHeight);
+          
+          doc.setFont('helvetica', 'bold');
+          doc.text(item.label, 25, yPosition + 5.5);
+          doc.setFont('helvetica', 'normal');
+          
+          const valorLines = doc.splitTextToSize(item.value, pageWidth - 110);
+          if (valorLines.length > 1) {
+            const extraHeight = (valorLines.length - 1) * 4;
+            doc.setFillColor(index % 2 === 0 ? 245 : 255, index % 2 === 0 ? 245 : 255, index % 2 === 0 ? 245 : 255);
+            doc.rect(20, yPosition, pageWidth - 40, rowHeight + extraHeight, 'F');
+            doc.setDrawColor(200, 200, 200);
+            doc.rect(20, yPosition, pageWidth - 40, rowHeight + extraHeight);
+            doc.setFont('helvetica', 'bold');
+            doc.text(item.label, 25, yPosition + 5.5);
+            doc.setFont('helvetica', 'normal');
+            doc.text(valorLines, 85, yPosition + 5.5);
+            yPosition += rowHeight + extraHeight;
+          } else {
+            doc.text(item.value, 85, yPosition + 5.5);
+            yPosition += rowHeight;
+          }
+        });
+        
+        yPosition += 8;
+      };
+      
+      // === INFORMAÇÕES DA ORDEM ===
+      const dadosOrdem = [
+        { label: 'Cliente:', value: ordemServico.cliente_nome || '-' },
+        { label: 'Equipamento:', value: ordemServico.equipamento || '-' },
+        { label: 'Data de Entrada:', value: format(new Date(ordemServico.data_entrada), "dd/MM/yyyy", { locale: ptBR }) },
+        { label: 'Status:', value: 'Finalizado' }
+      ];
+      criarTabela('Informações da Ordem', dadosOrdem, [128, 128, 128]);
+      
+      // === RESULTADO DO TESTE ===
+      if (teste) {
+        const corResultado = teste.resultado_teste === 'aprovado' ? [34, 197, 94] : [239, 68, 68];
+        const dadosTeste = [
+          { label: 'Tipo de Teste:', value: teste.tipo_teste || '-' },
+          { label: 'Data/Hora do Teste:', value: format(new Date(teste.data_hora_teste), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) },
+          { label: 'Resultado:', value: teste.resultado_teste === 'aprovado' ? '✓ APROVADO' : '✗ REPROVADO' }
+        ];
+        criarTabela('Resultado do Teste', dadosTeste, corResultado);
+        
+        // Parâmetros de Teste
+        const parametros: Array<{label: string, value: string}> = [];
+        if (teste.pressao_teste) parametros.push({ label: 'Pressão de Teste:', value: teste.pressao_teste });
+        if (teste.temperatura_operacao) parametros.push({ label: 'Temperatura de Operação:', value: teste.temperatura_operacao });
+        if (teste.tempo_minutos) parametros.push({ label: 'Tempo de Teste:', value: `${teste.tempo_minutos} minutos` });
+        if (teste.curso) parametros.push({ label: 'Curso:', value: teste.curso });
+        if (teste.qtd_ciclos) parametros.push({ label: 'Quantidade de Ciclos:', value: teste.qtd_ciclos });
+        if (teste.pressao_maxima_trabalho) parametros.push({ label: 'Pressão Máxima de Trabalho:', value: teste.pressao_maxima_trabalho });
+        if (teste.pressao_avanco) parametros.push({ label: 'Pressão de Avanço:', value: teste.pressao_avanco });
+        if (teste.pressao_retorno) parametros.push({ label: 'Pressão de Retorno:', value: teste.pressao_retorno });
+        if (teste.espessura_camada) parametros.push({ label: 'Espessura da Camada:', value: teste.espessura_camada });
+        
+        if (parametros.length > 0) {
+          criarTabela('Parâmetros de Teste', parametros, [128, 128, 128]);
+        }
+        
+        // Verificações de Vazamento
+        const verificacoes: Array<{label: string, value: string}> = [];
+        if (teste.check_vazamento_pistao !== null) {
+          verificacoes.push({ label: 'Vazamento no Pistão:', value: teste.check_vazamento_pistao ? '✓ OK' : '✗ NOK' });
+        }
+        if (teste.check_vazamento_vedacoes_estaticas !== null) {
+          verificacoes.push({ label: 'Vazamento nas Vedações Estáticas:', value: teste.check_vazamento_vedacoes_estaticas ? '✓ OK' : '✗ NOK' });
+        }
+        if (teste.check_vazamento_haste !== null) {
+          verificacoes.push({ label: 'Vazamento na Haste:', value: teste.check_vazamento_haste ? '✓ OK' : '✗ NOK' });
+        }
+        if (teste.check_ok !== null) {
+          verificacoes.push({ label: 'Verificação Geral:', value: teste.check_ok ? '✓ OK' : '✗ NOK' });
+        }
+        
+        if (verificacoes.length > 0) {
+          criarTabela('Verificações de Vazamento', verificacoes, [128, 128, 128]);
+        }
+        
+        // Observações
+        const observacao = teste.observacoes_teste || teste.observacao;
+        if (observacao) {
+          criarTabela('Observações', [{ label: '', value: observacao }], [128, 128, 128]);
+        }
+      }
+      
+      // === FOTOS DO EQUIPAMENTO ===
+      if (fotos.length > 0) {
+        if (yPosition > 180) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(255, 255, 255);
+        doc.setFillColor(128, 128, 128);
+        doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
+        doc.text('FOTOS DO EQUIPAMENTO', pageWidth / 2, yPosition + 6, { align: 'center' });
+        yPosition += 12;
+        
+        const fotosPorPagina = 4;
+        const maxFotoWidth = 80;
+        const maxFotoHeight = 55;
+        const espacoHorizontal = 12;
+        const espacoVertical = 12;
+        
+        for (let i = 0; i < fotos.length; i += fotosPorPagina) {
+          if (i > 0) {
+            doc.addPage();
+            yPosition = 20;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(220, 38, 38);
+            doc.text('FOTOS DO EQUIPAMENTO (continuação)', 20, yPosition);
+            doc.setTextColor(0, 0, 0);
+            yPosition += 10;
+          }
+          
+          const fotosPagina = fotos.slice(i, i + fotosPorPagina);
+          
+          for (let j = 0; j < fotosPagina.length; j++) {
+            const col = j % 2;
+            const row = Math.floor(j / 2);
+            const xPos = 20 + col * (maxFotoWidth + espacoHorizontal);
+            const yPos = yPosition + row * (maxFotoHeight + espacoVertical);
+            
+            try {
+              await new Promise<void>((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                  try {
+                    const ratio = Math.min(maxFotoWidth / img.width, maxFotoHeight / img.height);
+                    const imgWidth = img.width * ratio;
+                    const imgHeight = img.height * ratio;
+                    const xOffset = xPos + (maxFotoWidth - imgWidth) / 2;
+                    const yOffset = yPos + (maxFotoHeight - imgHeight) / 2;
+                    
+                    doc.setDrawColor(200, 200, 200);
+                    doc.rect(xPos - 2, yPos - 2, maxFotoWidth + 4, maxFotoHeight + 4);
+                    doc.addImage(img, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
+                  } catch (e) {
+                    console.error('Erro ao adicionar imagem:', e);
+                  }
+                  resolve();
+                };
+                img.onerror = () => {
+                  doc.setFillColor(240, 240, 240);
+                  doc.rect(xPos, yPos, maxFotoWidth, maxFotoHeight, 'F');
+                  doc.setTextColor(150, 150, 150);
+                  doc.setFontSize(8);
+                  doc.text('Erro ao carregar', xPos + maxFotoWidth / 2, yPos + maxFotoHeight / 2, { align: 'center' });
+                  resolve();
+                };
+                img.src = fotosPagina[j].arquivo_url;
+              });
+            } catch (e) {
+              console.error('Erro ao processar foto:', e);
+            }
+          }
+          
+          yPosition += Math.ceil(fotosPagina.length / 2) * (maxFotoHeight + espacoVertical);
+        }
+      }
+      
+      // Adicionar rodapé em todas as páginas
+      adicionarRodape();
+      
+      doc.save(`Laudo_${numeroOrdemCorreto}.pdf`);
       
       toast.dismiss();
       toast.success("PDF exportado com sucesso!");
