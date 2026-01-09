@@ -98,12 +98,35 @@ export function OrdensAguardandoRetorno({
   };
   const handleEmitirNotaRetorno = async (ordemId: string) => {
     try {
-      const {
-        error
-      } = await supabase.from('ordens_servico').update({
-        status: 'faturado'
-      }).eq('id', ordemId);
+      // Buscar o recebimento_id da ordem
+      const { data: ordem, error: ordemError } = await supabase
+        .from('ordens_servico')
+        .select('recebimento_id')
+        .eq('id', ordemId)
+        .single();
+
+      if (ordemError) throw ordemError;
+
+      // Atualizar status da ordem para faturado
+      const { error } = await supabase
+        .from('ordens_servico')
+        .update({ status: 'faturado' })
+        .eq('id', ordemId);
+      
       if (error) throw error;
+
+      // Atualizar na_empresa do recebimento para false
+      if (ordem?.recebimento_id) {
+        const { error: recebimentoError } = await supabase
+          .from('recebimentos')
+          .update({ na_empresa: false })
+          .eq('id', ordem.recebimento_id);
+
+        if (recebimentoError) {
+          console.error('Erro ao atualizar recebimento:', recebimentoError);
+        }
+      }
+
       toast({
         title: "Nota de retorno confirmada",
         description: "A ordem foi movida para faturadas"

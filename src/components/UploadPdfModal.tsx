@@ -108,7 +108,8 @@ export function UploadPdfModal({
             .update({ 
               pdf_nota_retorno: urlData.publicUrl,
               data_nota_retorno: new Date().toISOString(),
-              numero_nota_retorno: numeroNotaRetorno.trim()
+              numero_nota_retorno: numeroNotaRetorno.trim(),
+              na_empresa: false
             })
             .eq('id', ordem.recebimento_id);
 
