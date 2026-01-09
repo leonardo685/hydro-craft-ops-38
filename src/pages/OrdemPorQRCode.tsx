@@ -61,22 +61,9 @@ export default function OrdemPorQRCode() {
 
         // Se existe laudo técnico OU nota de retorno, permite acesso público
         if (teste || pdfNotaRetorno) {
-          // Verificar se já existe registro de acesso no marketing
-          const { data: registroMarketing, error: marketingError } = await supabase
-            .from("clientes_marketing")
-            .select("id")
-            .eq("ordem_servico_id", ordemServico.id)
-            .maybeSingle();
-
-          if (marketingError) throw marketingError;
-
-          if (!registroMarketing) {
-            // Primeira vez acessando, redirecionar para formulário de captura
-            navigate(`/acesso-ordem/${numeroOrdem}`);
-          } else {
-            // Já preencheu o formulário antes, liberar acesso direto ao laudo
-            navigate(`/laudo-publico/${numeroOrdem}`);
-          }
+          // Sempre redirecionar para formulário de telefone primeiro
+          // A verificação de acesso anterior será feita após informar o telefone
+          navigate(`/acesso-ordem/${numeroOrdem}`);
         } else {
           // Ordem não finalizada, bloquear acesso público
           toast.error("Esta ordem ainda não possui laudo disponível");
