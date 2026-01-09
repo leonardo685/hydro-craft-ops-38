@@ -51,11 +51,27 @@ export default function AcessoOrdemPublica() {
     resolver: zodResolver(dadosSchema),
   });
 
-  // Função auxiliar para formatar telefone
-  const formatarTelefone = (telefone: string) => {
-    return telefone.startsWith('+55') 
-      ? telefone 
-      : `+55${telefone.replace(/\D/g, '')}`;
+  // Função para normalizar telefone - extrai apenas os 11 dígitos finais (DDD + número)
+  const normalizarTelefone = (telefone: string): string => {
+    let numeros = telefone.replace(/\D/g, '');
+    
+    // Remove 55 do início se existir (código do Brasil)
+    if (numeros.startsWith('55') && numeros.length > 11) {
+      numeros = numeros.slice(2);
+    }
+    
+    // Remove 0 do início se existir
+    if (numeros.startsWith('0')) {
+      numeros = numeros.slice(1);
+    }
+    
+    // Retorna os últimos 11 dígitos
+    return numeros.slice(-11);
+  };
+
+  // Função para formatar telefone para salvar no banco
+  const formatarTelefoneParaSalvar = (telefone: string): string => {
+    return `+55${normalizarTelefone(telefone)}`;
   };
 
   // Função para obter IP
@@ -112,7 +128,7 @@ export default function AcessoOrdemPublica() {
     setLoading(true);
 
     try {
-      const telefoneFormatado = formatarTelefone(data.telefone);
+      const telefoneFormatado = formatarTelefoneParaSalvar(data.telefone);
 
       // Buscar ordem de serviço
       const { data: ordemServico, error: ordemError } = await supabase
@@ -141,12 +157,16 @@ export default function AcessoOrdemPublica() {
         return;
       }
 
-      // Verificar se telefone já existe
-      const { data: clienteExistente } = await supabase
+      // Verificar se telefone já existe (busca flexível pelos 11 dígitos)
+      const telefoneNormalizado = normalizarTelefone(data.telefone);
+      const { data: clientesExistentes } = await supabase
         .from("clientes_marketing")
-        .select("id, nome")
-        .eq("telefone", telefoneFormatado)
-        .maybeSingle();
+        .select("id, nome, telefone");
+
+      // Encontrar cliente cujo telefone normalizado corresponde
+      const clienteExistente = clientesExistentes?.find(
+        c => normalizarTelefone(c.telefone) === telefoneNormalizado
+      );
 
       if (clienteExistente) {
         // Cliente já existe - atualizar acesso e redirecionar
@@ -215,7 +235,7 @@ export default function AcessoOrdemPublica() {
           numero_ordem: numeroOrdem,
           nome: data.nome,
           empresa: data.empresa,
-          telefone: telefoneVerificado,
+          telefone: formatarTelefoneParaSalvar(telefoneVerificado),
           ip_acesso: ipAcesso,
           user_agent: userAgent,
         });
