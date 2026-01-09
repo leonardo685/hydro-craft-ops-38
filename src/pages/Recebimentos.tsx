@@ -661,9 +661,10 @@ export default function Recebimentos() {
                       <TableCell>
                         {(() => {
                           // Calcular status baseado no campo na_empresa dos recebimentos
+                          // Um recebimento é "na empresa" se na_empresa=true E não tem pdf_nota_retorno
                           const recebimentosDaNota = recebimentos.filter(r => r.nota_fiscal === nota.numero_nota);
                           const totalRecebimentos = recebimentosDaNota.length;
-                          const naEmpresa = recebimentosDaNota.filter(r => r.na_empresa).length;
+                          const naEmpresa = recebimentosDaNota.filter(r => r.na_empresa && !r.pdf_nota_retorno).length;
                           
                           let statusText = 'Processada';
                           let statusColor = 'bg-blue-50 text-blue-700 ring-blue-600/20';
