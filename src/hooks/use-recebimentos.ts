@@ -84,6 +84,8 @@ export const useRecebimentos = () => {
   const { empresaId } = useEmpresaId();
 
   const carregarRecebimentos = async () => {
+    if (!empresaId) return;
+    
     try {
       const { data, error } = await supabase
         .from('recebimentos')
@@ -100,6 +102,7 @@ export const useRecebimentos = () => {
             apresentar_orcamento
           )
         `)
+        .eq('empresa_id', empresaId)
         .order('data_entrada', { ascending: false });
 
       if (error) throw error;
@@ -107,7 +110,8 @@ export const useRecebimentos = () => {
       // Buscar ordens de serviço para verificar quais recebimentos já têm análise
       const { data: ordensData } = await supabase
         .from('ordens_servico')
-        .select('recebimento_id');
+        .select('recebimento_id')
+        .eq('empresa_id', empresaId);
 
       const recebimentosComOrdem = new Set(
         ordensData?.map(ordem => ordem.recebimento_id).filter(Boolean) || []
@@ -131,6 +135,8 @@ export const useRecebimentos = () => {
   };
 
   const carregarNotasFiscais = async () => {
+    if (!empresaId) return;
+    
     try {
       const { data, error } = await supabase
         .from('notas_fiscais')
@@ -139,6 +145,7 @@ export const useRecebimentos = () => {
           itens_nfe (*),
           recebimentos!nota_fiscal_id (*)
         `)
+        .eq('empresa_id', empresaId)
         .order('data_emissao', { ascending: false });
 
       if (error) throw error;
@@ -360,13 +367,15 @@ export const useRecebimentos = () => {
 
   useEffect(() => {
     const carregarDados = async () => {
+      if (!empresaId) return;
+      
       setLoading(true);
       await Promise.all([carregarRecebimentos(), carregarNotasFiscais()]);
       setLoading(false);
     };
 
     carregarDados();
-  }, []);
+  }, [empresaId]);
 
   return {
     recebimentos,

@@ -70,11 +70,15 @@ export default function Orcamentos() {
   const [filtroNumero, setFiltroNumero] = useState("");
 
   useEffect(() => {
-    carregarOrdensServico();
-    carregarOrcamentos();
-  }, []);
+    if (empresaAtual?.id) {
+      carregarOrdensServico();
+      carregarOrcamentos();
+    }
+  }, [empresaAtual?.id]);
 
   const carregarOrdensServico = async () => {
+    if (!empresaAtual?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('ordens_servico')
@@ -84,6 +88,7 @@ export default function Orcamentos() {
             numero_ordem
           )
         `)
+        .eq('empresa_id', empresaAtual.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -102,6 +107,8 @@ export default function Orcamentos() {
   };
 
   const carregarOrcamentos = async () => {
+    if (!empresaAtual?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('orcamentos')
@@ -109,6 +116,7 @@ export default function Orcamentos() {
           *,
           itens_orcamento(*)
         `)
+        .eq('empresa_id', empresaAtual.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -128,6 +136,7 @@ export default function Orcamentos() {
             numero_ordem
           )
         `)
+        .eq('empresa_id', empresaAtual.id)
         .not('orcamento_id', 'is', null);
 
       // Mapear ordens vinculadas por orcamento_id

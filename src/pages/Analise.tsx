@@ -46,10 +46,14 @@ export default function OrdensServico() {
   };
 
   useEffect(() => {
-    loadOrdensServico();
-  }, []);
+    if (empresaAtual?.id) {
+      loadOrdensServico();
+    }
+  }, [empresaAtual?.id]);
 
   const loadOrdensServico = async () => {
+    if (!empresaAtual?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('ordens_servico')
@@ -66,6 +70,7 @@ export default function OrdensServico() {
             status
           )
         `)
+        .eq('empresa_id', empresaAtual.id)
         .neq('status', 'aprovada')
         .neq('status', 'reprovada')
         .neq('status', 'faturado')
