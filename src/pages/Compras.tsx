@@ -10,6 +10,7 @@ import { ChevronRight, ChevronLeft, Package, Settings, Search } from "lucide-rea
 import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import { EditableItemsModal } from "@/components/EditableItemsModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 
 interface Compra {
   id: string;
@@ -41,11 +42,14 @@ interface Compra {
 
 export default function Compras() {
   const { t } = useLanguage();
+  const { empresaAtual } = useEmpresa();
   const [compras, setCompras] = useState<Compra[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroNumero, setFiltroNumero] = useState("");
 
   const loadCompras = async () => {
+    if (!empresaAtual?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from("compras")
@@ -69,6 +73,7 @@ export default function Compras() {
             )
           )
         `)
+        .eq("empresa_id", empresaAtual.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -81,8 +86,10 @@ export default function Compras() {
   };
 
   useEffect(() => {
-    loadCompras();
-  }, []);
+    if (empresaAtual?.id) {
+      loadCompras();
+    }
+  }, [empresaAtual?.id]);
 
   const updateStatus = async (compraId: string, newStatus: 'aprovado' | 'cotando' | 'comprado') => {
     try {

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 
 interface NotaFaturada {
   id: string;
@@ -28,6 +29,7 @@ interface NotaFaturada {
 
 export default function Faturamento() {
   const { t } = useLanguage();
+  const { empresaAtual } = useEmpresa();
   const [orcamentosEmFaturamento, setOrcamentosEmFaturamento] = useState<any[]>([]);
   const [orcamentosFinalizados, setOrcamentosFinalizados] = useState<Orcamento[]>([]);
   const [notasFaturadas, setNotasFaturadas] = useState<NotaFaturada[]>([]);
@@ -55,10 +57,14 @@ export default function Faturamento() {
   const [numeroFiltroFat, setNumeroFiltroFat] = useState("");
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (empresaAtual?.id) {
+      loadData();
+    }
+  }, [empresaAtual?.id]);
 
   const loadData = async () => {
+    if (!empresaAtual?.id) return;
+    
     // Carregar ordens aguardando retorno, reprovadas E sem retorno (todas precisam de faturamento)
     const { data: ordensData, error: ordensError } = await supabase
       .from('ordens_servico')
@@ -67,6 +73,7 @@ export default function Faturamento() {
         recebimentos!left(nota_fiscal, numero_ordem),
         orcamentos!ordem_servico_id(numero)
       `)
+      .eq('empresa_id', empresaAtual.id)
       .in('status', ['aguardando_retorno', 'reprovada', 'aguardando_faturamento_sem_retorno'])
       .order('updated_at', { ascending: false });
 
@@ -97,6 +104,7 @@ export default function Faturamento() {
     const { data: orcamentosAprovados, error: orcamentosError } = await supabase
       .from('orcamentos')
       .select('*')
+      .eq('empresa_id', empresaAtual.id)
       .eq('status', 'aprovado')
       .order('updated_at', { ascending: false });
 
@@ -133,6 +141,8 @@ export default function Faturamento() {
   };
 
   const loadNotasFaturadas = async () => {
+    if (!empresaAtual?.id) return;
+    
     try {
       // Buscar ordens de serviço com status 'faturado' (notas de retorno)
       const { data: ordensData, error: ordensError } = await supabase
@@ -145,6 +155,7 @@ export default function Faturamento() {
           pdf_nota_fiscal,
           recebimentos(numero_ordem, pdf_nota_retorno)
         `)
+        .eq('empresa_id', empresaAtual.id)
         .eq('status', 'faturado')
         .order('updated_at', { ascending: false });
 
@@ -156,6 +167,7 @@ export default function Faturamento() {
       const { data: orcamentosData, error: orcamentosError } = await supabase
         .from('orcamentos')
         .select('*')
+        .eq('empresa_id', empresaAtual.id)
         .eq('status', 'finalizado')
         .order('updated_at', { ascending: false });
 
