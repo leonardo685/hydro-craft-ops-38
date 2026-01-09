@@ -40,9 +40,14 @@ export default function Aprovados() {
   };
 
   useEffect(() => {
-    loadOrdensAprovadas();
-  }, []);
+    if (empresaAtual?.id) {
+      loadOrdensAprovadas();
+    }
+  }, [empresaAtual?.id]);
+
   const loadOrdensAprovadas = async () => {
+    if (!empresaAtual?.id) return;
+    
     try {
       const {
         data,
@@ -57,9 +62,10 @@ export default function Aprovados() {
             chave_acesso_nfe,
             categoria_equipamento
           )
-        `).in('status', ['aprovada', 'em_producao', 'em_teste']).order('created_at', {
-        ascending: false
-      });
+        `)
+        .eq('empresa_id', empresaAtual.id)
+        .in('status', ['aprovada', 'em_producao', 'em_teste'])
+        .order('created_at', { ascending: false });
       if (error) throw error;
       setOrdensServico(data || []);
 
