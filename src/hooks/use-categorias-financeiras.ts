@@ -28,10 +28,16 @@ export const useCategoriasFinanceiras = () => {
 
   // Buscar categorias do Supabase
   const fetchCategorias = async () => {
+    if (!empresaId) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('categorias_financeiras')
         .select('*')
+        .eq('empresa_id', empresaId)
         .order('codigo');
 
       if (error) throw error;
@@ -57,7 +63,7 @@ export const useCategoriasFinanceiras = () => {
 
   useEffect(() => {
     fetchCategorias();
-  }, []);
+  }, [empresaId]);
 
   const categoriasMae = useMemo(
     () => categorias.filter(cat => cat.tipo === 'mae'),

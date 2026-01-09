@@ -31,11 +31,17 @@ export const useLancamentosFinanceiros = () => {
   const { empresaId } = useEmpresaId();
 
   const fetchLancamentos = async () => {
+    if (!empresaId) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('lancamentos_financeiros')
         .select('*')
+        .eq('empresa_id', empresaId)
         .order('data_esperada', { ascending: false });
 
       if (error) throw error;
@@ -73,7 +79,7 @@ export const useLancamentosFinanceiros = () => {
 
   useEffect(() => {
     fetchLancamentos();
-  }, []);
+  }, [empresaId]);
 
   const adicionarLancamento = async (
     lancamento: Omit<LancamentoFinanceiro, 'id' | 'createdAt'>

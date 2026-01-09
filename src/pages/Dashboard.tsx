@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 
 // Custom Tooltip for mini charts
 const CustomTooltip = ({ active, payload }: any) => {
@@ -134,18 +135,23 @@ export default function Dashboard() {
   const { contas, loading: loadingContas } = useContasBancarias();
   const { categorias } = useCategoriasFinanceiras();
   const { t } = useLanguage();
+  const { empresaAtual } = useEmpresa();
   
   const { data: orcamentos = [], isLoading: loadingOrcamentos } = useQuery({
-    queryKey: ['orcamentos'],
+    queryKey: ['orcamentos', empresaAtual?.id],
     queryFn: async () => {
+      if (!empresaAtual?.id) return [];
+      
       const { data, error } = await supabase
         .from('orcamentos')
         .select('*')
+        .eq('empresa_id', empresaAtual.id)
         .order('data_criacao', { ascending: false });
       
       if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: !!empresaAtual?.id
   });
   
   const [dashboardPeriodType, setDashboardPeriodType] = useState<'mes' | 'trimestre' | 'ano'>('mes');

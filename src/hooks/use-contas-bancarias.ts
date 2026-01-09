@@ -21,11 +21,17 @@ export const useContasBancarias = () => {
   const { empresaId } = useEmpresaId();
 
   const fetchContas = async () => {
+    if (!empresaId) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('contas_bancarias')
         .select('*')
+        .eq('empresa_id', empresaId)
         .order('nome');
 
       if (error) throw error;
@@ -40,7 +46,7 @@ export const useContasBancarias = () => {
 
   useEffect(() => {
     fetchContas();
-  }, []);
+  }, [empresaId]);
 
   const adicionarConta = async (conta: Omit<ContaBancaria, 'id' | 'created_at' | 'updated_at'>) => {
     try {
