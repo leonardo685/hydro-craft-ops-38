@@ -665,17 +665,23 @@ export default function Recebimentos() {
                           const recebimentosDaNota = recebimentos.filter(r => r.nota_fiscal === nota.numero_nota);
                           const totalRecebimentos = recebimentosDaNota.length;
                           const naEmpresa = recebimentosDaNota.filter(r => r.na_empresa && !r.pdf_nota_retorno).length;
+                          const comOrdem = recebimentosDaNota.filter(r => r.temOrdemServico).length;
                           
                           let statusText = 'Processada';
                           let statusColor = 'bg-blue-50 text-blue-700 ring-blue-600/20';
-                          
-                          if (naEmpresa === totalRecebimentos) {
-                            statusText = 'Processada';
-                            statusColor = 'bg-blue-50 text-blue-700 ring-blue-600/20';
-                          } else if (naEmpresa === 0) {
+
+                          // Prioridade 1: Sem ordem de serviço
+                          if (comOrdem === 0) {
+                            statusText = 'Sem Ordem';
+                            statusColor = 'bg-red-50 text-red-700 ring-red-600/20';
+                          }
+                          // Prioridade 2: Todos retornados
+                          else if (naEmpresa === 0) {
                             statusText = 'Retornada';
-                            statusColor = 'bg-gray-50 text-gray-700 ring-gray-600/20';
-                          } else {
+                            statusColor = 'bg-green-50 text-green-700 ring-green-600/20';
+                          }
+                          // Prioridade 3: Parcialmente retornados
+                          else if (naEmpresa < totalRecebimentos) {
                             statusText = 'Parcialmente Retornada';
                             statusColor = 'bg-amber-50 text-amber-700 ring-amber-600/20';
                           }
