@@ -268,9 +268,28 @@ export const useRecebimentos = () => {
         return null;
       }
 
+      // Construir objeto de inserção EXPLICITAMENTE para garantir empresa_id correto
+      // Não usar spread de dadosNota para evitar sobrescrever empresa_id
+      const notaParaInserir = {
+        chave_acesso: chaveNormalizada,
+        cnpj_emitente: dadosNota.cnpj_emitente,
+        numero: dadosNota.numero,
+        serie: dadosNota.serie,
+        modelo: dadosNota.modelo || 'NFe',
+        data_emissao: dadosNota.data_emissao,
+        cliente_nome: dadosNota.cliente_nome,
+        cliente_cnpj: dadosNota.cliente_cnpj || null,
+        valor_total: dadosNota.valor_total || null,
+        status: dadosNota.status || 'processada',
+        nome_emitente: dadosNota.nome_emitente || null,
+        empresa_id: empresaId // SEMPRE definir explicitamente
+      };
+
+      console.log('Inserindo nota fiscal:', notaParaInserir);
+
       const { data: notaData, error: notaError } = await supabase
         .from('notas_fiscais')
-        .insert([{ ...dadosNota, chave_acesso: chaveNormalizada, empresa_id: empresaId }])
+        .insert([notaParaInserir])
         .select()
         .single();
 
