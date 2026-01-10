@@ -228,11 +228,13 @@ export const useRecebimentos = () => {
       const chaveNormalizada = dadosNota.chave_acesso.replace(/\s/g, '');
       
       // Verificar se a nota já existe GLOBALMENTE (chave_acesso é unique no BD)
-      const { data: notaExistente } = await supabase
+      const { data: notaExistente, error: checkError } = await supabase
         .from('notas_fiscais')
         .select('id, numero')
-        .or(`chave_acesso.eq.${chaveNormalizada},chave_acesso.eq.${dadosNota.chave_acesso}`)
+        .eq('chave_acesso', chaveNormalizada)
         .maybeSingle();
+      
+      console.log('Verificação de duplicata:', { chaveNormalizada, notaExistente, checkError });
       
       if (notaExistente) {
         toast({
