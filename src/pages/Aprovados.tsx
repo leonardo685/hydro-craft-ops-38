@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera, Video, ClipboardCheck, ExternalLink } from "lucide-react";
+import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera, Video, ClipboardCheck, ExternalLink, Search, History, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,15 @@ import { useEmpresa } from "@/contexts/EmpresaContext";
 import { enviarWebhook } from "@/lib/webhook-utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+
+interface HistoricoBuscaLaudo {
+  numeroOrdem: string;
+  cliente: string;
+  equipamento: string;
+  dataHora: string;
+  temLaudo: boolean;
+}
 
 export default function Aprovados() {
   const { t } = useLanguage();
@@ -29,6 +38,10 @@ export default function Aprovados() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [ordemSelecionada, setOrdemSelecionada] = useState<any>(null);
   const [laudoModalOpen, setLaudoModalOpen] = useState(false);
+  const [buscaNumeroOrdem, setBuscaNumeroOrdem] = useState("");
+  const [buscandoLaudo, setBuscandoLaudo] = useState(false);
+  const [erroLaudo, setErroLaudo] = useState<string | null>(null);
+  const [historicoBuscas, setHistoricoBuscas] = useState<HistoricoBuscaLaudo[]>([]);
   const {
     toast
   } = useToast();
@@ -42,11 +55,160 @@ export default function Aprovados() {
     return config?.webhook_url || null;
   };
 
+  // Carregar histórico de buscas do localStorage
+  useEffect(() => {
+    const historico = localStorage.getItem('historico_busca_laudo');
+    if (historico) {
+      try {
+        setHistoricoBuscas(JSON.parse(historico));
+      } catch (e) {
+        console.error('Erro ao carregar histórico:', e);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (empresaAtual?.id) {
       loadOrdensAprovadas();
     }
   }, [empresaAtual?.id]);
+
+  // Função para buscar laudo por número da ordem
+  const buscarLaudo = async () => {
+    if (!buscaNumeroOrdem.trim()) {
+      setErroLaudo("Digite o número da ordem");
+      return;
+    }
+
+    setBuscandoLaudo(true);
+    setErroLaudo(null);
+
+    try {
+      // Buscar ordem pelo número
+      const { data: ordemData, error: ordemError } = await supabase
+        .from('ordens_servico')
+        .select(`
+          id,
+          numero_ordem,
+          cliente_nome,
+          equipamento,
+          recebimentos (numero_ordem, cliente_nome, tipo_equipamento)
+        `)
+        .or(`numero_ordem.ilike.%${buscaNumeroOrdem.trim()}%`)
+        .limit(1)
+        .single();
+
+      if (ordemError || !ordemData) {
+        // Tentar buscar pelo número do recebimento
+        const { data: recData, error: recError } = await supabase
+          .from('recebimentos')
+          .select('id')
+          .ilike('numero_ordem', `%${buscaNumeroOrdem.trim()}%`)
+          .limit(1)
+          .single();
+
+        if (recError || !recData) {
+          setErroLaudo("Ordem não encontrada. Verifique o número digitado.");
+          setBuscandoLaudo(false);
+          return;
+        }
+
+        // Buscar ordem pelo recebimento_id
+        const { data: ordemByRec, error: ordemByRecError } = await supabase
+          .from('ordens_servico')
+          .select(`
+            id,
+            numero_ordem,
+            cliente_nome,
+            equipamento,
+            recebimentos (numero_ordem, cliente_nome, tipo_equipamento)
+          `)
+          .eq('recebimento_id', recData.id)
+          .limit(1)
+          .single();
+
+        if (ordemByRecError || !ordemByRec) {
+          setErroLaudo("Ordem não encontrada para este recebimento.");
+          setBuscandoLaudo(false);
+          return;
+        }
+
+        // Verificar se tem laudo
+        await verificarEAbrirLaudo(ordemByRec);
+        return;
+      }
+
+      // Verificar se tem laudo
+      await verificarEAbrirLaudo(ordemData);
+    } catch (error) {
+      console.error('Erro ao buscar laudo:', error);
+      setErroLaudo("Erro ao buscar ordem. Tente novamente.");
+    } finally {
+      setBuscandoLaudo(false);
+    }
+  };
+
+  const verificarEAbrirLaudo = async (ordem: any) => {
+    // Verificar se a ordem tem testes registrados
+    const { data: testes, error: testesError } = await supabase
+      .from('testes_equipamentos')
+      .select('id')
+      .eq('ordem_servico_id', ordem.id)
+      .limit(1);
+
+    const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
+    const cliente = ordem.recebimentos?.cliente_nome || ordem.cliente_nome || '';
+    const equipamento = ordem.recebimentos?.tipo_equipamento || ordem.equipamento || '';
+    const temLaudo = !testesError && testes && testes.length > 0;
+
+    // Salvar no histórico
+    const novaBusca: HistoricoBuscaLaudo = {
+      numeroOrdem,
+      cliente,
+      equipamento,
+      dataHora: new Date().toISOString(),
+      temLaudo
+    };
+
+    const novoHistorico = [novaBusca, ...historicoBuscas.filter(h => h.numeroOrdem !== numeroOrdem)].slice(0, 10);
+    setHistoricoBuscas(novoHistorico);
+    localStorage.setItem('historico_busca_laudo', JSON.stringify(novoHistorico));
+
+    if (temLaudo) {
+      // Abrir laudo em nova aba
+      window.open(`/laudo/${ordem.id}`, '_blank');
+      setLaudoModalOpen(false);
+      setBuscaNumeroOrdem("");
+    } else {
+      setErroLaudo(`A ordem ${numeroOrdem} ainda não possui laudo de teste disponível.`);
+    }
+  };
+
+  const abrirLaudoDoHistorico = async (numeroOrdem: string) => {
+    setBuscaNumeroOrdem(numeroOrdem);
+    // Buscar direto
+    setBuscandoLaudo(true);
+    setErroLaudo(null);
+
+    try {
+      const { data: ordemData } = await supabase
+        .from('ordens_servico')
+        .select('id, numero_ordem, recebimentos (numero_ordem)')
+        .or(`numero_ordem.ilike.%${numeroOrdem}%`)
+        .limit(1)
+        .single();
+
+      if (ordemData) {
+        window.open(`/laudo/${ordemData.id}`, '_blank');
+        setLaudoModalOpen(false);
+        setBuscaNumeroOrdem("");
+      }
+    } catch (error) {
+      console.error('Erro ao abrir laudo do histórico:', error);
+    } finally {
+      setBuscandoLaudo(false);
+    }
+  };
 
   const loadOrdensAprovadas = async () => {
     if (!empresaAtual?.id) return;
@@ -429,8 +591,14 @@ export default function Aprovados() {
         }
       }} />}
 
-      {/* Modal de Seleção de Ordem para Laudo */}
-      <Dialog open={laudoModalOpen} onOpenChange={setLaudoModalOpen}>
+      {/* Modal de Busca de Laudo */}
+      <Dialog open={laudoModalOpen} onOpenChange={(open) => {
+        setLaudoModalOpen(open);
+        if (!open) {
+          setBuscaNumeroOrdem("");
+          setErroLaudo(null);
+        }
+      }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -438,44 +606,93 @@ export default function Aprovados() {
               Abrir Laudo de Teste
             </DialogTitle>
             <DialogDescription>
-              Selecione a ordem de serviço para visualizar o laudo
+              Digite o número da ordem de serviço para visualizar o laudo
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[400px]">
-            <div className="space-y-2">
-              {ordensServico.length > 0 ? (
-                ordensServico.map(ordem => (
-                  <div
-                    key={ordem.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">
-                        {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {ordem.equipamento || ordem.recebimentos?.tipo_equipamento} - {ordem.cliente_nome || ordem.recebimentos?.cliente_nome}
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        window.open(`/laudo/${ordem.id}`, '_blank');
-                        setLaudoModalOpen(false);
-                      }}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Abrir
-                    </Button>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhuma ordem em produção
-                </div>
-              )}
+          
+          <div className="space-y-4">
+            {/* Campo de busca */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Ex: MH-001-25"
+                value={buscaNumeroOrdem}
+                onChange={(e) => {
+                  setBuscaNumeroOrdem(e.target.value);
+                  setErroLaudo(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') buscarLaudo();
+                }}
+                className="flex-1"
+              />
+              <Button onClick={buscarLaudo} disabled={buscandoLaudo}>
+                {buscandoLaudo ? (
+                  <RotateCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+              </Button>
             </div>
-          </ScrollArea>
+
+            {/* Mensagem de erro */}
+            {erroLaudo && (
+              <div className="flex items-start gap-2 p-3 bg-destructive/10 text-destructive rounded-lg">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <p className="text-sm">{erroLaudo}</p>
+              </div>
+            )}
+
+            {/* Histórico de buscas */}
+            {historicoBuscas.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <History className="h-4 w-4" />
+                  <span>Buscas recentes</span>
+                </div>
+                <ScrollArea className="max-h-[200px]">
+                  <div className="space-y-1">
+                    {historicoBuscas.map((busca, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+                        onClick={() => {
+                          if (busca.temLaudo) {
+                            abrirLaudoDoHistorico(busca.numeroOrdem);
+                          } else {
+                            setBuscaNumeroOrdem(busca.numeroOrdem);
+                            setErroLaudo(`A ordem ${busca.numeroOrdem} ainda não possui laudo de teste disponível.`);
+                          }
+                        }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm truncate">
+                              {busca.numeroOrdem}
+                            </span>
+                            {busca.temLaudo ? (
+                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                Com laudo
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                                Sem laudo
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {busca.equipamento} - {busca.cliente}
+                          </p>
+                        </div>
+                        {busca.temLaudo && (
+                          <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
       
