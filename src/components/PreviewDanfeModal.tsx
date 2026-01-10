@@ -37,16 +37,25 @@ function formatChaveAcesso(chave: string): string {
 export function PreviewDanfeModal({ open, onClose, dados }: PreviewDanfeModalProps) {
   if (!dados) return null;
 
+  // Debug: verificar dados recebidos
+  console.log('PreviewDanfeModal - dados recebidos:', dados);
+  console.log('PreviewDanfeModal - dados.itens:', dados.itens);
+
   // Garantir que itens existam e tenham valores corretos (tratando snake_case e camelCase)
-  const itensNormalizados: ItemNFe[] = (dados.itens || []).map((item: any) => ({
-    codigo: item.codigo || '',
-    descricao: item.descricao || '',
-    ncm: item.ncm || '',
-    quantidade: item.quantidade || 1,
-    valorUnitario: item.valor_unitario || item.valorUnitario || 0,
-    valorTotal: item.valor_total || item.valorTotal || 0,
-    unidade: item.unidade || 'UN'
-  }));
+  const itensNormalizados: ItemNFe[] = (dados.itens || []).map((item: any) => {
+    console.log('PreviewDanfeModal - item raw:', item);
+    return {
+      codigo: item.codigo || '',
+      descricao: item.descricao || '',
+      ncm: item.ncm || '',
+      quantidade: item.quantidade || 1,
+      valorUnitario: item.valor_unitario || item.valorUnitario || 0,
+      valorTotal: item.valor_total || item.valorTotal || 0,
+      unidade: item.unidade || 'UN'
+    };
+  });
+
+  console.log('PreviewDanfeModal - itensNormalizados:', itensNormalizados);
 
   const valorTotal = dados.valorTotal || itensNormalizados.reduce((sum, item) => sum + (item.valorTotal || 0), 0) || 0;
 
