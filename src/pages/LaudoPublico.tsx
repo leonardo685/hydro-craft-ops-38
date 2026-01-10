@@ -35,6 +35,9 @@ interface OrdemServico {
   data_analise: string | null;
   status: string;
   empresa_id: string | null;
+  pecas_necessarias: any;
+  servicos_necessarios: any;
+  usinagem_necessaria: any;
   recebimentos?: {
     numero_ordem: string;
   };
@@ -436,6 +439,36 @@ export default function LaudoPublico() {
         }
       }
       
+      // === PEÇAS UTILIZADAS ===
+      const pecas = Array.isArray(ordemServico.pecas_necessarias) ? ordemServico.pecas_necessarias : [];
+      if (pecas.length > 0) {
+        const dadosPecas = pecas.map((peca: any) => ({
+          label: peca.descricao || peca.nome || 'Peça',
+          value: `Qtd: ${peca.quantidade || 1}${peca.codigo ? ` | Cód: ${peca.codigo}` : ''}`
+        }));
+        criarTabela('Peças Utilizadas', dadosPecas, [59, 130, 246]);
+      }
+      
+      // === SERVIÇOS REALIZADOS ===
+      const servicos = Array.isArray(ordemServico.servicos_necessarios) ? ordemServico.servicos_necessarios : [];
+      if (servicos.length > 0) {
+        const dadosServicos = servicos.map((servico: any) => ({
+          label: servico.descricao || servico.nome || 'Serviço',
+          value: servico.detalhes || servico.observacao || '-'
+        }));
+        criarTabela('Serviços Realizados', dadosServicos, [34, 197, 94]);
+      }
+      
+      // === USINAGEM ===
+      const usinagem = Array.isArray(ordemServico.usinagem_necessaria) ? ordemServico.usinagem_necessaria : [];
+      if (usinagem.length > 0) {
+        const dadosUsinagem = usinagem.map((item: any) => ({
+          label: item.descricao || item.nome || 'Usinagem',
+          value: item.detalhes || item.observacao || '-'
+        }));
+        criarTabela('Usinagem', dadosUsinagem, [168, 85, 247]);
+      }
+      
       // === FOTOS DO EQUIPAMENTO ===
       if (fotos.length > 0) {
         if (yPosition > 180) {
@@ -799,6 +832,79 @@ export default function LaudoPublico() {
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Peças Utilizadas */}
+        {ordemServico && Array.isArray(ordemServico.pecas_necessarias) && ordemServico.pecas_necessarias.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-blue-500" />
+                Peças Utilizadas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {ordemServico.pecas_necessarias.map((peca: any, index: number) => (
+                  <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                    <span className="font-medium">{peca.descricao || peca.nome || 'Peça'}</span>
+                    <span className="text-sm text-muted-foreground">
+                      Qtd: {peca.quantidade || 1}
+                      {peca.codigo && ` | Cód: ${peca.codigo}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Serviços Realizados */}
+        {ordemServico && Array.isArray(ordemServico.servicos_necessarios) && ordemServico.servicos_necessarios.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileCheck className="w-5 h-5 text-green-500" />
+                Serviços Realizados
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {ordemServico.servicos_necessarios.map((servico: any, index: number) => (
+                  <div key={index} className="p-2 bg-muted/50 rounded">
+                    <p className="font-medium">{servico.descricao || servico.nome || 'Serviço'}</p>
+                    {(servico.detalhes || servico.observacao) && (
+                      <p className="text-sm text-muted-foreground mt-1">{servico.detalhes || servico.observacao}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Usinagem */}
+        {ordemServico && Array.isArray(ordemServico.usinagem_necessaria) && ordemServico.usinagem_necessaria.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gauge className="w-5 h-5 text-purple-500" />
+                Usinagem
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {ordemServico.usinagem_necessaria.map((item: any, index: number) => (
+                  <div key={index} className="p-2 bg-muted/50 rounded">
+                    <p className="font-medium">{item.descricao || item.nome || 'Usinagem'}</p>
+                    {(item.detalhes || item.observacao) && (
+                      <p className="text-sm text-muted-foreground mt-1">{item.detalhes || item.observacao}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}
