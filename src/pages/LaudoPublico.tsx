@@ -402,7 +402,7 @@ export default function LaudoPublico() {
         if (teste.espessura_camada) parametros.push({ label: 'Espessura da Camada:', value: teste.espessura_camada });
         
         if (parametros.length > 0) {
-          criarTabela('Parâmetros de Teste', parametros, [128, 128, 128]);
+          criarTabela('Parâmetros de Teste ISO10100', parametros, [128, 128, 128]);
         }
         
         // Verificações de Vazamento
@@ -416,9 +416,14 @@ export default function LaudoPublico() {
         if (teste.check_vazamento_haste !== null) {
           verificacoes.push({ label: 'Vazamento na Haste:', value: teste.check_vazamento_haste ? '✓ OK' : '✗ NOK' });
         }
-        if (teste.check_ok !== null) {
-          verificacoes.push({ label: 'Verificação Geral:', value: teste.check_ok ? '✓ OK' : '✗ NOK' });
-        }
+        
+        // Verificação Geral: é OK se todas as verificações de vazamento estão OK
+        const todasVerificacoesOK = 
+          (teste.check_vazamento_pistao === null || teste.check_vazamento_pistao === true) &&
+          (teste.check_vazamento_vedacoes_estaticas === null || teste.check_vazamento_vedacoes_estaticas === true) &&
+          (teste.check_vazamento_haste === null || teste.check_vazamento_haste === true);
+        
+        verificacoes.push({ label: 'Verificação Geral:', value: todasVerificacoesOK ? '✓ OK' : '✗ NOK' });
         
         if (verificacoes.length > 0) {
           criarTabela('Verificações de Vazamento', verificacoes, [128, 128, 128]);
