@@ -37,7 +37,18 @@ function formatChaveAcesso(chave: string): string {
 export function PreviewDanfeModal({ open, onClose, dados }: PreviewDanfeModalProps) {
   if (!dados) return null;
 
-  const valorTotal = dados.valorTotal || dados.itens?.reduce((sum, item) => sum + (item.valorTotal || 0), 0) || 0;
+  // Garantir que itens existam e tenham valores corretos (tratando snake_case e camelCase)
+  const itensNormalizados: ItemNFe[] = (dados.itens || []).map((item: any) => ({
+    codigo: item.codigo || '',
+    descricao: item.descricao || '',
+    ncm: item.ncm || '',
+    quantidade: item.quantidade || 1,
+    valorUnitario: item.valor_unitario || item.valorUnitario || 0,
+    valorTotal: item.valor_total || item.valorTotal || 0,
+    unidade: item.unidade || 'UN'
+  }));
+
+  const valorTotal = dados.valorTotal || itensNormalizados.reduce((sum, item) => sum + (item.valorTotal || 0), 0) || 0;
 
   const handleDownload = () => {
     baixarPdfDanfe(dados);
@@ -141,8 +152,8 @@ export function PreviewDanfeModal({ open, onClose, dados }: PreviewDanfeModalPro
                     </tr>
                   </thead>
                   <tbody>
-                    {dados.itens && dados.itens.length > 0 ? (
-                      dados.itens.map((item: ItemNFe, index: number) => (
+                    {itensNormalizados.length > 0 ? (
+                      itensNormalizados.map((item: ItemNFe, index: number) => (
                         <tr key={index} className={index % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
                           <td className="px-3 py-2 font-mono text-xs">{item.codigo || '-'}</td>
                           <td className="px-3 py-2">{item.descricao || '-'}</td>
