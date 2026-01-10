@@ -107,6 +107,15 @@ export const migrarDadosLocalStorage = async () => {
       const notasFiscais = JSON.parse(notasFiscaisLocal);
       
       for (const nota of notasFiscais) {
+        // Obter empresa_id do usuário atual
+        const { data: userData } = await supabase.rpc('get_user_empresa_id');
+        const empresaId = userData || null;
+        
+        if (!empresaId) {
+          console.error('Erro: empresa_id não encontrado para migrar nota fiscal');
+          continue;
+        }
+
         const notaData = {
           chave_acesso: nota.chaveAcesso,
           cnpj_emitente: nota.cnpjEmitente,
@@ -117,7 +126,8 @@ export const migrarDadosLocalStorage = async () => {
           cliente_nome: nota.clienteNome,
           cliente_cnpj: nota.clienteCnpj,
           valor_total: nota.valorTotal,
-          status: nota.status || 'processada'
+          status: nota.status || 'processada',
+          empresa_id: empresaId
         };
 
         const { data: notaCriada, error } = await supabase
@@ -140,7 +150,8 @@ export const migrarDadosLocalStorage = async () => {
             ncm: item.ncm,
             quantidade: parseFloat(item.quantidade),
             valor_unitario: parseFloat(item.valorUnitario),
-            valor_total: parseFloat(item.valorTotal)
+            valor_total: parseFloat(item.valorTotal),
+            empresa_id: empresaId
           }));
 
           await supabase

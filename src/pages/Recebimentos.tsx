@@ -187,10 +187,55 @@ export default function Recebimentos() {
     setAplicandoFiltros(false);
   };
 
-  // Agrupar recebimentos por nota fiscal (com filtros aplicados)
+  // Agrupar recebimentos por nota fiscal E incluir notas importadas da tabela notas_fiscais
   const notasFiscaisAgrupadas = useMemo(() => {
     const grupos = new Map<string, any>();
     
+    // 1. Primeiro adicionar notas importadas da tabela notas_fiscais
+    notasFiscais.forEach(nota => {
+      const numeroNota = nota.numero;
+      
+      // Aplicar filtros
+      if (filtroNotaFiscal && filtroNotaFiscal.trim().length > 0) {
+        if (!numeroNota.toLowerCase().includes(filtroNotaFiscal.toLowerCase())) {
+          return;
+        }
+      }
+      
+      if (filtroCliente && filtroCliente.trim().length > 0) {
+        const nomeCliente = nota.nome_emitente || nota.cliente_nome || '';
+        if (!nomeCliente.toLowerCase().includes(filtroCliente.toLowerCase())) {
+          return;
+        }
+      }
+      
+      if (dataInicio) {
+        const dataItem = new Date(nota.data_emissao);
+        if (dataItem < dataInicio) return;
+      }
+      
+      if (dataFim) {
+        const dataItem = new Date(nota.data_emissao);
+        if (dataItem > dataFim) return;
+      }
+      
+      if (!grupos.has(numeroNota)) {
+        grupos.set(numeroNota, {
+          id: nota.id,
+          numero_nota: numeroNota,
+          cliente_nome: nota.nome_emitente || nota.cliente_nome || '',
+          data_entrada: nota.data_emissao,
+          recebimentos: nota.recebimentos || [],
+          quantidade_itens: nota.itens?.length || 0,
+          status: nota.status || 'processada',
+          fonte: 'notas_fiscais',
+          itens: nota.itens,
+          chave_acesso: nota.chave_acesso
+        });
+      }
+    });
+    
+    // 2. Adicionar/mesclar recebimentos agrupados por nota_fiscal
     recebimentos
       .filter(r => r.nota_fiscal && r.nota_fiscal.trim() !== '')
       .filter(r => {
@@ -233,17 +278,21 @@ export default function Recebimentos() {
             data_entrada: recebimento.data_entrada,
             recebimentos: [],
             quantidade_itens: 0,
-            status: 'Processada'
+            status: 'Processada',
+            fonte: 'recebimentos'
           });
         }
         
         const grupo = grupos.get(numeroNota);
         grupo.recebimentos.push(recebimento);
-        grupo.quantidade_itens = grupo.recebimentos.length;
+        // Se a fonte é recebimentos, a quantidade de itens é a quantidade de recebimentos
+        if (grupo.fonte === 'recebimentos') {
+          grupo.quantidade_itens = grupo.recebimentos.length;
+        }
       });
     
     return Array.from(grupos.values());
-  }, [recebimentos, filtroNotaFiscal, filtroCliente, dataInicio, dataFim]);
+  }, [recebimentos, notasFiscais, filtroNotaFiscal, filtroCliente, dataInicio, dataFim]);
 
   return (
     <AppLayout>
@@ -660,6 +709,18 @@ export default function Recebimentos() {
                       </TableCell>
                       <TableCell>
                         {(() => {
+                          // Se é nota importada da tabela notas_fiscais
+                          if (nota.fonte === 'notas_fiscais') {
+                            const hasRecebimentos = nota.recebimentos && nota.recebimentos.length > 0;
+                            if (!hasRecebimentos) {
+                              return (
+                                <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset bg-purple-50 text-purple-700 ring-purple-600/20">
+                                  Aguardando Ordem
+                                </span>
+                              );
+                            }
+                          }
+                          
                           // Calcular status baseado no campo na_empresa dos recebimentos
                           // Um recebimento é "na empresa" se na_empresa=true E não tem pdf_nota_retorno
                           const recebimentosDaNota = recebimentos.filter(r => r.nota_fiscal === nota.numero_nota);
@@ -671,12 +732,12 @@ export default function Recebimentos() {
                           let statusColor = 'bg-blue-50 text-blue-700 ring-blue-600/20';
 
                           // Prioridade 1: Sem ordem de serviço
-                          if (comOrdem === 0) {
+                          if (comOrdem === 0 && totalRecebimentos > 0) {
                             statusText = 'Sem Ordem';
                             statusColor = 'bg-red-50 text-red-700 ring-red-600/20';
                           }
                           // Prioridade 2: Todos retornados
-                          else if (naEmpresa === 0) {
+                          else if (naEmpresa === 0 && totalRecebimentos > 0) {
                             statusText = 'Retornada';
                             statusColor = 'bg-green-50 text-green-700 ring-green-600/20';
                           }
@@ -698,7 +759,10 @@ export default function Recebimentos() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setModalCriarOrdem({ tipo: 'agrupada', ...nota })}
+                            onClick={() => setModalCriarOrdem({ 
+                              tipo: nota.fonte === 'notas_fiscais' ? 'nfe_importada' : 'agrupada', 
+                              ...nota 
+                            })}
                             className="h-8"
                             title="Criar nova ordem"
                           >
@@ -707,7 +771,10 @@ export default function Recebimentos() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setNotaFiscalSelecionada({ tipo: 'agrupada', ...nota })}
+                            onClick={() => setNotaFiscalSelecionada({ 
+                              tipo: nota.fonte === 'notas_fiscais' ? 'nfe_importada' : 'agrupada', 
+                              ...nota 
+                            })}
                             className="h-8"
                             title="Visualizar itens"
                           >
