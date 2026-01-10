@@ -1855,6 +1855,7 @@ export type Database = {
           numero_nota_retorno: string | null
           numero_ordem: string
           numero_serie: string | null
+          observacoes: string | null
           ordem_anterior: string | null
           pdf_nota_retorno: string | null
           potencia: string | null
@@ -1892,6 +1893,7 @@ export type Database = {
           numero_nota_retorno?: string | null
           numero_ordem: string
           numero_serie?: string | null
+          observacoes?: string | null
           ordem_anterior?: string | null
           pdf_nota_retorno?: string | null
           potencia?: string | null
@@ -1929,6 +1931,7 @@ export type Database = {
           numero_nota_retorno?: string | null
           numero_ordem?: string
           numero_serie?: string | null
+          observacoes?: string | null
           ordem_anterior?: string | null
           pdf_nota_retorno?: string | null
           potencia?: string | null
