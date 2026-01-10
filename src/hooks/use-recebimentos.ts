@@ -196,11 +196,15 @@ export const useRecebimentos = () => {
       });
 
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao criar recebimento:', error);
+      
+      // Extrair mensagem detalhada do erro
+      const mensagemErro = error?.message || error?.details || "Erro ao criar recebimento";
+      
       toast({
         title: "Erro",
-        description: "Erro ao criar recebimento",
+        description: mensagemErro,
         variant: "destructive",
       });
       throw error;
