@@ -228,6 +228,7 @@ export default function Recebimentos() {
           cliente_nome: nota.nome_emitente || nota.cliente_nome || '',
           cliente: nota.nome_emitente || nota.cliente_nome || '',
           data_entrada: nota.data_emissao,
+          data_emissao: nota.data_emissao,
           dataEmissao: nota.data_emissao,
           recebimentos: nota.recebimentos || [],
           quantidade_itens: nota.itens?.length || 0,
@@ -236,7 +237,8 @@ export default function Recebimentos() {
           itens: nota.itens,
           chave_acesso: nota.chave_acesso,
           chaveAcesso: nota.chave_acesso,
-          cnpjEmitente: nota.cnpj_emitente
+          cnpjEmitente: nota.cnpj_emitente,
+          cliente_cnpj: nota.cliente_cnpj
         });
       }
     });
