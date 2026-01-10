@@ -252,24 +252,14 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
 
           <div className="flex flex-col gap-2">
             {dadosExtraidos && dadosExtraidos.valida && (
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => baixarPdfDanfe(dadosExtraidos)}
-                  className="flex-1"
-                >
-                  <FileDown className="mr-2 h-4 w-4" />
-                  Baixar DANFE
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setMostrarEdicao(true)}
-                  className="flex-1"
-                >
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Editar Dados
-                </Button>
-              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => baixarPdfDanfe(dadosExtraidos)}
+                className="w-full"
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Baixar DANFE
+              </Button>
             )}
             
             <div className="flex gap-2">
