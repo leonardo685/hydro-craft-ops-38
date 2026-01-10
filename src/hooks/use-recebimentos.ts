@@ -281,7 +281,6 @@ export const useRecebimentos = () => {
         cliente_cnpj: dadosNota.cliente_cnpj || null,
         valor_total: dadosNota.valor_total || null,
         status: dadosNota.status || 'processada',
-        nome_emitente: dadosNota.nome_emitente || null,
         empresa_id: empresaId // SEMPRE definir explicitamente
       };
 
