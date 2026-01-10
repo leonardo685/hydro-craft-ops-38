@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera, Video } from "lucide-react";
+import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera, Video, ClipboardCheck, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,8 @@ import { format, parseISO } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { enviarWebhook } from "@/lib/webhook-utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Aprovados() {
   const { t } = useLanguage();
@@ -26,6 +28,7 @@ export default function Aprovados() {
   const [ordensEmProducao, setOrdensEmProducao] = useState<Set<string>>(new Set());
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [ordemSelecionada, setOrdemSelecionada] = useState<any>(null);
+  const [laudoModalOpen, setLaudoModalOpen] = useState(false);
   const {
     toast
   } = useToast();
@@ -177,6 +180,10 @@ export default function Aprovados() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setLaudoModalOpen(true)}>
+              <ClipboardCheck className="h-4 w-4 mr-2" />
+              Laudo de Teste
+            </Button>
             <Button variant="outline">
               <Package className="h-4 w-4 mr-2" />
               {t('aprovados.productionReport')}
@@ -421,6 +428,56 @@ export default function Aprovados() {
           });
         }
       }} />}
+
+      {/* Modal de Seleção de Ordem para Laudo */}
+      <Dialog open={laudoModalOpen} onOpenChange={setLaudoModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-primary" />
+              Abrir Laudo de Teste
+            </DialogTitle>
+            <DialogDescription>
+              Selecione a ordem de serviço para visualizar o laudo
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[400px]">
+            <div className="space-y-2">
+              {ordensServico.length > 0 ? (
+                ordensServico.map(ordem => (
+                  <div
+                    key={ordem.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium">
+                        {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {ordem.equipamento || ordem.recebimentos?.tipo_equipamento} - {ordem.cliente_nome || ordem.recebimentos?.cliente_nome}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        window.open(`/laudo/${ordem.id}`, '_blank');
+                        setLaudoModalOpen(false);
+                      }}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Abrir
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhuma ordem em produção
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
       
       </div>
     </AppLayout>;
