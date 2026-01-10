@@ -93,8 +93,9 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
           const numeroOrdem = await gerarNumeroOrdem();
           const recebimentoData = {
             numero_ordem: numeroOrdem,
-            cliente_nome: notaFiscal.cliente_nome,
-            cliente_cnpj: notaFiscal.cliente_cnpj || notaFiscal.cnpj_emitente,
+            // Para NFe de entrada, o emitente é quem enviou o equipamento = cliente do serviço
+            cliente_nome: notaFiscal.nome_emitente || notaFiscal.cliente_nome,
+            cliente_cnpj: notaFiscal.cnpjEmitente || notaFiscal.cnpj_emitente || notaFiscal.cliente_cnpj,
             data_entrada: new Date().toISOString(),
             nota_fiscal: `NF-${notaFiscal.numero}`,
             chave_acesso_nfe: notaFiscal.chave_acesso,
@@ -111,12 +112,25 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
       }
 
       handleFechar();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao criar ordens:', error);
       const { toast } = await import("@/hooks/use-toast");
+      
+      // Extrair mensagem de erro detalhada do Supabase
+      let mensagemErro = "Erro desconhecido ao criar recebimento";
+      if (error?.message) {
+        mensagemErro = error.message;
+      }
+      if (error?.details) {
+        mensagemErro += ` - ${error.details}`;
+      }
+      if (error?.hint) {
+        mensagemErro += ` (${error.hint})`;
+      }
+      
       toast({
         title: "Erro ao criar recebimento",
-        description: error instanceof Error ? error.message : "Erro desconhecido ao criar recebimento",
+        description: mensagemErro,
         variant: "destructive",
       });
     } finally {
