@@ -113,6 +113,12 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
       handleFechar();
     } catch (error) {
       console.error('Erro ao criar ordens:', error);
+      const { toast } = await import("@/hooks/use-toast");
+      toast({
+        title: "Erro ao criar recebimento",
+        description: error instanceof Error ? error.message : "Erro desconhecido ao criar recebimento",
+        variant: "destructive",
+      });
     } finally {
       setCriando(false);
     }
