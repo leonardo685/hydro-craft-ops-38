@@ -11,6 +11,7 @@ import { baixarPdfDanfe } from "@/lib/danfe-pdf-utils";
 import { ItensNFeModal } from "./ItensNFeModal";
 import { EditarDadosNFeModal } from "./EditarDadosNFeModal";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
+import { useEmpresaId } from "@/hooks/use-empresa-id";
 
 interface ChaveAcessoModalProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface ChaveAcessoModalProps {
 
 export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
   const navigate = useNavigate();
+  const { empresaId, loading: empresaLoading } = useEmpresaId();
   const { criarNotaFiscal, criarRecebimento, gerarNumeroOrdem, recarregar } = useRecebimentos();
   const [chaveAcesso, setChaveAcesso] = useState("");
   const [dadosExtraidos, setDadosExtraidos] = useState<DadosNFe | null>(null);
@@ -69,6 +71,13 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
 
   const handleProsseguir = () => {
     if (!dadosExtraidos) return;
+    
+    // Verificar se empresa está carregada ANTES de prosseguir
+    if (!empresaId) {
+      setErro("Empresa não identificada. Por favor, aguarde o carregamento ou recarregue a página.");
+      return;
+    }
+    
     setMostrarItens(true);
   };
 
