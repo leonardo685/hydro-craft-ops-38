@@ -73,6 +73,19 @@ interface FotoEquipamento {
   nome_arquivo: string;
 }
 
+interface DadosDimensionais {
+  camisa: string | null;
+  curso: string | null;
+  haste_comprimento: string | null;
+  conexao_a: string | null;
+  conexao_b: string | null;
+  pressao_trabalho: string | null;
+  temperatura_trabalho: string | null;
+  fluido_trabalho: string | null;
+  ambiente_trabalho: string | null;
+  potencia: string | null;
+}
+
 interface EmpresaData {
   logo_url: string | null;
   razao_social: string | null;
@@ -92,6 +105,7 @@ export default function LaudoPublico() {
   const [fotos, setFotos] = useState<FotoEquipamento[]>([]);
   const [empresaLogo, setEmpresaLogo] = useState<string | null>(null);
   const [empresaData, setEmpresaData] = useState<EmpresaData | null>(null);
+  const [dadosDimensionais, setDadosDimensionais] = useState<DadosDimensionais | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -121,18 +135,34 @@ export default function LaudoPublico() {
           return;
         }
 
-        // Buscar recebimento se existir (para verificar nota de retorno)
+        // Buscar recebimento se existir (para verificar nota de retorno e dados dimensionais)
         let pdfNotaRetorno = null;
         let recebimentoId = null;
         if (ordem.recebimento_id) {
           const { data: recebimento } = await supabase
             .from("recebimentos")
-            .select("id, pdf_nota_retorno")
+            .select("id, pdf_nota_retorno, camisa, curso, haste_comprimento, conexao_a, conexao_b, pressao_trabalho, temperatura_trabalho, fluido_trabalho, ambiente_trabalho, potencia")
             .eq("id", ordem.recebimento_id)
             .maybeSingle();
           
           pdfNotaRetorno = recebimento?.pdf_nota_retorno;
           recebimentoId = recebimento?.id;
+          
+          // Salvar dados dimensionais
+          if (recebimento) {
+            setDadosDimensionais({
+              camisa: recebimento.camisa,
+              curso: recebimento.curso,
+              haste_comprimento: recebimento.haste_comprimento,
+              conexao_a: recebimento.conexao_a,
+              conexao_b: recebimento.conexao_b,
+              pressao_trabalho: recebimento.pressao_trabalho,
+              temperatura_trabalho: recebimento.temperatura_trabalho,
+              fluido_trabalho: recebimento.fluido_trabalho,
+              ambiente_trabalho: recebimento.ambiente_trabalho,
+              potencia: recebimento.potencia
+            });
+          }
         }
 
         // Verificar se existe laudo técnico criado (teste) para a ordem
@@ -436,6 +466,25 @@ export default function LaudoPublico() {
         const observacao = teste.observacoes_teste || teste.observacao;
         if (observacao) {
           criarTabela('Observações', [{ label: '', value: observacao }], [128, 128, 128]);
+        }
+      }
+      
+      // === DADOS DIMENSIONAIS ===
+      if (dadosDimensionais) {
+        const dimensoes: Array<{label: string, value: string}> = [];
+        if (dadosDimensionais.camisa) dimensoes.push({ label: 'Diâmetro Camisa:', value: dadosDimensionais.camisa });
+        if (dadosDimensionais.curso) dimensoes.push({ label: 'Curso:', value: dadosDimensionais.curso });
+        if (dadosDimensionais.haste_comprimento) dimensoes.push({ label: 'Haste (Ø x Compr.):', value: dadosDimensionais.haste_comprimento });
+        if (dadosDimensionais.conexao_a) dimensoes.push({ label: 'Conexão A:', value: dadosDimensionais.conexao_a });
+        if (dadosDimensionais.conexao_b) dimensoes.push({ label: 'Conexão B:', value: dadosDimensionais.conexao_b });
+        if (dadosDimensionais.pressao_trabalho) dimensoes.push({ label: 'Pressão de Trabalho:', value: dadosDimensionais.pressao_trabalho });
+        if (dadosDimensionais.temperatura_trabalho) dimensoes.push({ label: 'Temperatura de Trabalho:', value: dadosDimensionais.temperatura_trabalho });
+        if (dadosDimensionais.fluido_trabalho) dimensoes.push({ label: 'Fluido de Trabalho:', value: dadosDimensionais.fluido_trabalho });
+        if (dadosDimensionais.ambiente_trabalho) dimensoes.push({ label: 'Ambiente de Trabalho:', value: dadosDimensionais.ambiente_trabalho });
+        if (dadosDimensionais.potencia) dimensoes.push({ label: 'Potência:', value: dadosDimensionais.potencia });
+        
+        if (dimensoes.length > 0) {
+          criarTabela('Dados Dimensionais', dimensoes, [245, 158, 11]);
         }
       }
       
@@ -832,6 +881,82 @@ export default function LaudoPublico() {
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Dados Dimensionais */}
+        {dadosDimensionais && (dadosDimensionais.camisa || dadosDimensionais.curso || dadosDimensionais.haste_comprimento || dadosDimensionais.conexao_a || dadosDimensionais.conexao_b || dadosDimensionais.pressao_trabalho) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gauge className="w-5 h-5 text-amber-500" />
+                Dados Dimensionais
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {dadosDimensionais.camisa && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Diâmetro Camisa</p>
+                    <p className="font-semibold">{dadosDimensionais.camisa}</p>
+                  </div>
+                )}
+                {dadosDimensionais.curso && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Curso</p>
+                    <p className="font-semibold">{dadosDimensionais.curso}</p>
+                  </div>
+                )}
+                {dadosDimensionais.haste_comprimento && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Haste (Ø x Compr.)</p>
+                    <p className="font-semibold">{dadosDimensionais.haste_comprimento}</p>
+                  </div>
+                )}
+                {dadosDimensionais.conexao_a && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Conexão A</p>
+                    <p className="font-semibold">{dadosDimensionais.conexao_a}</p>
+                  </div>
+                )}
+                {dadosDimensionais.conexao_b && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Conexão B</p>
+                    <p className="font-semibold">{dadosDimensionais.conexao_b}</p>
+                  </div>
+                )}
+                {dadosDimensionais.pressao_trabalho && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pressão de Trabalho</p>
+                    <p className="font-semibold">{dadosDimensionais.pressao_trabalho}</p>
+                  </div>
+                )}
+                {dadosDimensionais.temperatura_trabalho && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Temperatura de Trabalho</p>
+                    <p className="font-semibold">{dadosDimensionais.temperatura_trabalho}</p>
+                  </div>
+                )}
+                {dadosDimensionais.fluido_trabalho && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Fluido de Trabalho</p>
+                    <p className="font-semibold">{dadosDimensionais.fluido_trabalho}</p>
+                  </div>
+                )}
+                {dadosDimensionais.ambiente_trabalho && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Ambiente de Trabalho</p>
+                    <p className="font-semibold">{dadosDimensionais.ambiente_trabalho}</p>
+                  </div>
+                )}
+                {dadosDimensionais.potencia && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Potência</p>
+                    <p className="font-semibold">{dadosDimensionais.potencia}</p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
