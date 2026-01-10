@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ItensNFeModal } from "@/components/ItensNFeModal";
 import { CriarOrdemModal } from "@/components/CriarOrdemModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { PreviewDanfeModal } from "@/components/PreviewDanfeModal";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +25,6 @@ import { useRecebimentos } from "@/hooks/use-recebimentos";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { baixarPdfDanfe } from "@/lib/danfe-pdf-utils";
 import type { DadosNFe, ItemNFe } from "@/lib/nfe-utils";
 
 // Removed localStorage function since we're now using Supabase data
@@ -40,6 +40,7 @@ export default function Recebimentos() {
   const [modalCriarOrdem, setModalCriarOrdem] = useState<any>(null);
   const [avisoNovaNotaFiscal, setAvisoNovaNotaFiscal] = useState(false);
   const [ordensFinalizadas, setOrdensFinalizadas] = useState<any[]>([]);
+  const [previewDanfe, setPreviewDanfe] = useState<DadosNFe | null>(null);
   
   // Estados para filtros
   const [dataInicio, setDataInicio] = useState<Date>();
@@ -823,14 +824,10 @@ export default function Recebimentos() {
                                   clienteCnpj: nota.cliente_cnpj || '',
                                   itens: itensFormatados
                                 };
-                                baixarPdfDanfe(dadosNFe);
-                                toast({
-                                  title: "DANFE gerado",
-                                  description: `PDF da nota ${nota.numero_nota} baixado com sucesso.`,
-                                });
+                                setPreviewDanfe(dadosNFe);
                               }}
                               className="h-8"
-                              title="Gerar DANFE (PDF)"
+                              title="Visualizar DANFE"
                             >
                               <Printer className="h-4 w-4" />
                             </Button>
@@ -1073,6 +1070,13 @@ export default function Recebimentos() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Modal de Preview DANFE */}
+        <PreviewDanfeModal
+          open={!!previewDanfe}
+          onClose={() => setPreviewDanfe(null)}
+          dados={previewDanfe}
+        />
       </div>
     </AppLayout>
   );
