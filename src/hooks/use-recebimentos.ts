@@ -233,8 +233,9 @@ export const useRecebimentos = () => {
   };
 
   const criarNotaFiscal = async (dadosNota: Omit<NotaFiscal, 'id'>, itens: Omit<ItemNFe, 'id'>[]) => {
-    // Validação: garantir que empresaId existe
-    if (!empresaId) {
+    // Validação RIGOROSA: garantir que empresaId existe e é válido
+    if (!empresaId || typeof empresaId !== 'string' || empresaId.trim() === '') {
+      console.error('ERRO CRÍTICO: empresaId inválido ao criar nota fiscal:', empresaId);
       toast({
         title: "Erro",
         description: "Empresa não identificada. Por favor, recarregue a página.",
@@ -242,6 +243,8 @@ export const useRecebimentos = () => {
       });
       return null;
     }
+
+    console.log('Criando nota fiscal com empresa_id:', empresaId);
 
     try {
       // Normalizar chave de acesso (remover espaços)
