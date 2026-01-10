@@ -796,6 +796,17 @@ export default function Recebimentos() {
                               variant="outline"
                               size="sm"
                               onClick={() => {
+                                // Mapear itens de snake_case (banco) para camelCase (DadosNFe)
+                                const itensFormatados: ItemNFe[] = (nota.itens || []).map((item: any) => ({
+                                  codigo: item.codigo || '',
+                                  descricao: item.descricao || '',
+                                  ncm: item.ncm || '',
+                                  quantidade: item.quantidade || 1,
+                                  valorUnitario: item.valor_unitario || item.valorUnitario || 0,
+                                  valorTotal: item.valor_total || item.valorTotal || 0,
+                                  unidade: item.unidade || 'UN'
+                                }));
+                                
                                 const dadosNFe: DadosNFe = {
                                   chaveAcesso: nota.chave_acesso || '',
                                   cnpjEmitente: nota.cnpjEmitente || nota.cliente_cnpj || '',
@@ -807,10 +818,10 @@ export default function Recebimentos() {
                                   codigoNumerico: '',
                                   digitoVerificador: '',
                                   valida: true,
-                                  valorTotal: nota.itens?.reduce((sum: number, item: ItemNFe) => sum + (item.valorTotal || 0), 0) || 0,
+                                  valorTotal: itensFormatados.reduce((sum, item) => sum + (item.valorTotal || 0), 0),
                                   clienteNome: nota.cliente_nome || '',
                                   clienteCnpj: nota.cliente_cnpj || '',
-                                  itens: nota.itens || []
+                                  itens: itensFormatados
                                 };
                                 baixarPdfDanfe(dadosNFe);
                                 toast({
