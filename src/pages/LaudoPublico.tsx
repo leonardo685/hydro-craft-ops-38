@@ -656,71 +656,74 @@ export default function LaudoPublico() {
 
               <Separator />
 
-              {/* Parâmetros de Teste */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {teste.pressao_teste && (
-                  <div className="flex items-start gap-3">
-                    <Gauge className="w-5 h-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Pressão de Teste</p>
-                      <p className="font-semibold">{teste.pressao_teste}</p>
+              {/* Parâmetros de Teste ISO10100 */}
+              <div>
+                <p className="font-semibold mb-3">Parâmetros de Teste ISO10100</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {teste.pressao_teste && (
+                    <div className="flex items-start gap-3">
+                      <Gauge className="w-5 h-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Pressão de Teste</p>
+                        <p className="font-semibold">{teste.pressao_teste}</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {teste.temperatura_operacao && (
-                  <div className="flex items-start gap-3">
-                    <Thermometer className="w-5 h-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Temperatura de Operação</p>
-                      <p className="font-semibold">{teste.temperatura_operacao}</p>
+                  )}
+                  {teste.temperatura_operacao && (
+                    <div className="flex items-start gap-3">
+                      <Thermometer className="w-5 h-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Temperatura de Operação</p>
+                        <p className="font-semibold">{teste.temperatura_operacao}</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {teste.tempo_minutos && (
-                  <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Tempo de Teste</p>
-                      <p className="font-semibold">{teste.tempo_minutos} minutos</p>
+                  )}
+                  {teste.tempo_minutos && (
+                    <div className="flex items-start gap-3">
+                      <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Tempo de Teste</p>
+                        <p className="font-semibold">{teste.tempo_minutos} minutos</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {teste.curso && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Curso</p>
-                    <p className="font-semibold">{teste.curso}</p>
-                  </div>
-                )}
-                {teste.qtd_ciclos && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Quantidade de Ciclos</p>
-                    <p className="font-semibold">{teste.qtd_ciclos}</p>
-                  </div>
-                )}
-                {teste.pressao_maxima_trabalho && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Pressão Máxima de Trabalho</p>
-                    <p className="font-semibold">{teste.pressao_maxima_trabalho}</p>
-                  </div>
-                )}
-                {teste.pressao_avanco && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Pressão de Avanço</p>
-                    <p className="font-semibold">{teste.pressao_avanco}</p>
-                  </div>
-                )}
-                {teste.pressao_retorno && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Pressão de Retorno</p>
-                    <p className="font-semibold">{teste.pressao_retorno}</p>
-                  </div>
-                )}
-                {teste.espessura_camada && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Espessura da Camada</p>
-                    <p className="font-semibold">{teste.espessura_camada}</p>
-                  </div>
-                )}
+                  )}
+                  {teste.curso && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Curso</p>
+                      <p className="font-semibold">{teste.curso}</p>
+                    </div>
+                  )}
+                  {teste.qtd_ciclos && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Quantidade de Ciclos</p>
+                      <p className="font-semibold">{teste.qtd_ciclos}</p>
+                    </div>
+                  )}
+                  {teste.pressao_maxima_trabalho && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Pressão Máxima de Trabalho</p>
+                      <p className="font-semibold">{teste.pressao_maxima_trabalho}</p>
+                    </div>
+                  )}
+                  {teste.pressao_avanco && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Pressão de Avanço</p>
+                      <p className="font-semibold">{teste.pressao_avanco}</p>
+                    </div>
+                  )}
+                  {teste.pressao_retorno && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Pressão de Retorno</p>
+                      <p className="font-semibold">{teste.pressao_retorno}</p>
+                    </div>
+                  )}
+                  {teste.espessura_camada && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Espessura da Camada</p>
+                      <p className="font-semibold">{teste.espessura_camada}</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Verificações */}
@@ -762,6 +765,23 @@ export default function LaudoPublico() {
                           <span>Vazamento na Haste</span>
                         </div>
                       )}
+                      {/* Verificação Geral calculada */}
+                      {(() => {
+                        const todasVerificacoesOK = 
+                          (teste.check_vazamento_pistao === null || teste.check_vazamento_pistao === true) &&
+                          (teste.check_vazamento_vedacoes_estaticas === null || teste.check_vazamento_vedacoes_estaticas === true) &&
+                          (teste.check_vazamento_haste === null || teste.check_vazamento_haste === true);
+                        return (
+                          <div className="flex items-center gap-2 pt-2 border-t mt-2">
+                            {todasVerificacoesOK ? (
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <XCircle className="w-4 h-4 text-red-500" />
+                            )}
+                            <span className="font-semibold">Verificação Geral</span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </>
