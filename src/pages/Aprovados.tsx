@@ -83,6 +83,9 @@ export default function Aprovados() {
     setBuscandoLaudo(true);
     setErroLaudo(null);
 
+    // Montar número completo com prefixo MH-
+    const numeroCompleto = `MH-${buscaNumeroOrdem.trim()}`;
+
     try {
       // Buscar ordem pelo número
       const { data: ordemData, error: ordemError } = await supabase
@@ -94,7 +97,7 @@ export default function Aprovados() {
           equipamento,
           recebimentos (numero_ordem, cliente_nome, tipo_equipamento)
         `)
-        .or(`numero_ordem.ilike.%${buscaNumeroOrdem.trim()}%`)
+        .or(`numero_ordem.ilike.%${numeroCompleto}%`)
         .limit(1)
         .single();
 
@@ -103,7 +106,7 @@ export default function Aprovados() {
         const { data: recData, error: recError } = await supabase
           .from('recebimentos')
           .select('id')
-          .ilike('numero_ordem', `%${buscaNumeroOrdem.trim()}%`)
+          .ilike('numero_ordem', `%${numeroCompleto}%`)
           .limit(1)
           .single();
 
@@ -613,18 +616,23 @@ export default function Aprovados() {
           <div className="space-y-4">
             {/* Campo de busca */}
             <div className="flex gap-2">
-              <Input
-                placeholder="Ex: MH-001-25"
-                value={buscaNumeroOrdem}
-                onChange={(e) => {
-                  setBuscaNumeroOrdem(e.target.value);
-                  setErroLaudo(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') buscarLaudo();
-                }}
-                className="flex-1"
-              />
+              <div className="flex-1 flex">
+                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
+                  MH-
+                </span>
+                <Input
+                  placeholder="001-25"
+                  value={buscaNumeroOrdem}
+                  onChange={(e) => {
+                    setBuscaNumeroOrdem(e.target.value);
+                    setErroLaudo(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') buscarLaudo();
+                  }}
+                  className="rounded-l-none flex-1"
+                />
+              </div>
               <Button onClick={buscarLaudo} disabled={buscandoLaudo}>
                 {buscandoLaudo ? (
                   <RotateCw className="h-4 w-4 animate-spin" />
