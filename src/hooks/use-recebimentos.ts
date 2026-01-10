@@ -227,12 +227,11 @@ export const useRecebimentos = () => {
       // Normalizar chave de acesso (remover espaços)
       const chaveNormalizada = dadosNota.chave_acesso.replace(/\s/g, '');
       
-      // Verificar se a nota já existe (com ou sem espaços na chave)
+      // Verificar se a nota já existe GLOBALMENTE (chave_acesso é unique no BD)
       const { data: notaExistente } = await supabase
         .from('notas_fiscais')
         .select('id, numero')
         .or(`chave_acesso.eq.${chaveNormalizada},chave_acesso.eq.${dadosNota.chave_acesso}`)
-        .eq('empresa_id', empresaId)
         .maybeSingle();
       
       if (notaExistente) {
