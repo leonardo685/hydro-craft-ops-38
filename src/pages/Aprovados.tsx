@@ -178,8 +178,8 @@ export default function Aprovados() {
     localStorage.setItem('historico_busca_laudo', JSON.stringify(novoHistorico));
 
     if (temLaudo) {
-      // Abrir laudo em nova aba
-      window.open(`/laudo/${ordem.id}`, '_blank');
+      // Abrir laudo em nova aba - usando numeroOrdem na rota correta
+      window.open(`/laudo-publico/${encodeURIComponent(numeroOrdem)}`, '_blank');
       setLaudoModalOpen(false);
       setBuscaNumeroOrdem("");
     } else {
@@ -202,7 +202,8 @@ export default function Aprovados() {
         .single();
 
       if (ordemData) {
-        window.open(`/laudo/${ordemData.id}`, '_blank');
+        const numOrdem = ordemData.recebimentos?.numero_ordem || ordemData.numero_ordem;
+        window.open(`/laudo-publico/${encodeURIComponent(numOrdem)}`, '_blank');
         setLaudoModalOpen(false);
         setBuscaNumeroOrdem("");
       }
