@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText, ChevronDown, Settings, FileCheck } from "lucide-react";
+import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText, ChevronDown, Settings, FileCheck, Printer } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
@@ -24,6 +24,8 @@ import { useRecebimentos } from "@/hooks/use-recebimentos";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { baixarPdfDanfe } from "@/lib/danfe-pdf-utils";
+import type { DadosNFe, ItemNFe } from "@/lib/nfe-utils";
 
 // Removed localStorage function since we're now using Supabase data
 
@@ -789,6 +791,39 @@ export default function Recebimentos() {
                           >
                             <FileText className="h-4 w-4" />
                           </Button>
+                          {nota.fonte === 'notas_fiscais' && nota.chave_acesso && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const dadosNFe: DadosNFe = {
+                                  chaveAcesso: nota.chave_acesso || '',
+                                  cnpjEmitente: nota.cnpjEmitente || nota.cliente_cnpj || '',
+                                  nomeEmitente: nota.nome_emitente || nota.cliente_nome || '',
+                                  dataEmissao: nota.data_emissao || nota.data_entrada || '',
+                                  modelo: 'NFe',
+                                  serie: nota.serie || '1',
+                                  numero: nota.numero || nota.numero_nota || '',
+                                  codigoNumerico: '',
+                                  digitoVerificador: '',
+                                  valida: true,
+                                  valorTotal: nota.itens?.reduce((sum: number, item: ItemNFe) => sum + (item.valorTotal || 0), 0) || 0,
+                                  clienteNome: nota.cliente_nome || '',
+                                  clienteCnpj: nota.cliente_cnpj || '',
+                                  itens: nota.itens || []
+                                };
+                                baixarPdfDanfe(dadosNFe);
+                                toast({
+                                  title: "DANFE gerado",
+                                  description: `PDF da nota ${nota.numero_nota} baixado com sucesso.`,
+                                });
+                              }}
+                              className="h-8"
+                              title="Gerar DANFE (PDF)"
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
