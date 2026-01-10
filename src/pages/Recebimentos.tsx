@@ -223,14 +223,20 @@ export default function Recebimentos() {
         grupos.set(numeroNota, {
           id: nota.id,
           numero_nota: numeroNota,
+          numero: numeroNota,
+          serie: nota.serie || '1',
           cliente_nome: nota.nome_emitente || nota.cliente_nome || '',
+          cliente: nota.nome_emitente || nota.cliente_nome || '',
           data_entrada: nota.data_emissao,
+          dataEmissao: nota.data_emissao,
           recebimentos: nota.recebimentos || [],
           quantidade_itens: nota.itens?.length || 0,
           status: nota.status || 'processada',
           fonte: 'notas_fiscais',
           itens: nota.itens,
-          chave_acesso: nota.chave_acesso
+          chave_acesso: nota.chave_acesso,
+          chaveAcesso: nota.chave_acesso,
+          cnpjEmitente: nota.cnpj_emitente
         });
       }
     });
