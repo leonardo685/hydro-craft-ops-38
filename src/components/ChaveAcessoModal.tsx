@@ -82,7 +82,7 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
         numero: dadosNFe.numero,
         serie: dadosNFe.serie,
         modelo: dadosNFe.modelo || 'NFe',
-        data_emissao: dadosNFe.dataEmissao, // Usar a data já formatada
+        data_emissao: dadosNFe.dataEmissao,
         cliente_nome: cliente,
         cliente_cnpj: dadosNFe.cnpjEmitente,
         valor_total: itensSelecionados.reduce((total, item) => total + item.valorTotal, 0),
@@ -100,7 +100,13 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
         valor_total: item.valorTotal
       }));
 
-      await criarNotaFiscal(notaFiscalData, itensParaSalvar);
+      const notaCriada = await criarNotaFiscal(notaFiscalData, itensParaSalvar);
+      
+      // Se a nota já existia, não continuar
+      if (!notaCriada) {
+        setSalvando(false);
+        return;
+      }
 
       // 2. Criar ordens de serviço para cada item selecionado
       for (const item of itensSelecionados) {

@@ -224,9 +224,29 @@ export const useRecebimentos = () => {
 
   const criarNotaFiscal = async (dadosNota: Omit<NotaFiscal, 'id'>, itens: Omit<ItemNFe, 'id'>[]) => {
     try {
+      // Normalizar chave de acesso (remover espaços)
+      const chaveNormalizada = dadosNota.chave_acesso.replace(/\s/g, '');
+      
+      // Verificar se a nota já existe (com ou sem espaços na chave)
+      const { data: notaExistente } = await supabase
+        .from('notas_fiscais')
+        .select('id, numero')
+        .or(`chave_acesso.eq.${chaveNormalizada},chave_acesso.eq.${dadosNota.chave_acesso}`)
+        .eq('empresa_id', empresaId)
+        .maybeSingle();
+      
+      if (notaExistente) {
+        toast({
+          title: "Nota já cadastrada",
+          description: `A nota fiscal ${notaExistente.numero} já foi cadastrada anteriormente.`,
+          variant: "destructive",
+        });
+        return null;
+      }
+
       const { data: notaData, error: notaError } = await supabase
         .from('notas_fiscais')
-        .insert([{ ...dadosNota, empresa_id: empresaId }])
+        .insert([{ ...dadosNota, chave_acesso: chaveNormalizada, empresa_id: empresaId }])
         .select()
         .single();
 
@@ -261,7 +281,7 @@ export const useRecebimentos = () => {
         description: "Erro ao criar nota fiscal",
         variant: "destructive",
       });
-      throw error;
+      return null;
     }
   };
 
