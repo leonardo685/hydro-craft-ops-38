@@ -168,6 +168,16 @@ export const useRecebimentos = () => {
   };
 
   const criarRecebimento = async (dadosRecebimento: Omit<Recebimento, 'id'>) => {
+    // Validação: garantir que empresaId existe
+    if (!empresaId) {
+      toast({
+        title: "Erro",
+        description: "Empresa não identificada. Por favor, recarregue a página.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('recebimentos')
@@ -223,6 +233,16 @@ export const useRecebimentos = () => {
   };
 
   const criarNotaFiscal = async (dadosNota: Omit<NotaFiscal, 'id'>, itens: Omit<ItemNFe, 'id'>[]) => {
+    // Validação: garantir que empresaId existe
+    if (!empresaId) {
+      toast({
+        title: "Erro",
+        description: "Empresa não identificada. Por favor, recarregue a página.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
     try {
       // Normalizar chave de acesso (remover espaços)
       const chaveNormalizada = dadosNota.chave_acesso.replace(/\s/g, '');
