@@ -986,10 +986,10 @@ export default function Recebimentos() {
                                 {item.quantidade?.toFixed(2)} {item.unidade}
                               </TableCell>
                               <TableCell className="text-right">
-                                R$ {item.valorUnitario?.toFixed(2)}
+                                R$ {(item.valor_unitario || item.valorUnitario || 0).toFixed(2)}
                               </TableCell>
                               <TableCell className="text-right font-medium">
-                                R$ {item.valorTotal?.toFixed(2)}
+                                R$ {(item.valor_total || item.valorTotal || 0).toFixed(2)}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -1003,7 +1003,7 @@ export default function Recebimentos() {
                         <span className="font-semibold">Total Geral da Nota:</span>
                         <span className="text-xl font-bold text-primary">
                           R$ {notaFiscalSelecionada.itens
-                            .reduce((total: number, item: any) => total + (item.valorTotal || 0), 0)
+                            .reduce((total: number, item: any) => total + (item.valor_total || item.valorTotal || 0), 0)
                             .toFixed(2)}
                         </span>
                       </div>
