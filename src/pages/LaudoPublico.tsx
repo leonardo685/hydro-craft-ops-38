@@ -442,9 +442,9 @@ export default function LaudoPublico() {
       // === PEÇAS UTILIZADAS ===
       const pecas = Array.isArray(ordemServico.pecas_necessarias) ? ordemServico.pecas_necessarias : [];
       if (pecas.length > 0) {
-        const dadosPecas = pecas.map((peca: any) => ({
-          label: peca.descricao || peca.nome || 'Peça',
-          value: `Qtd: ${peca.quantidade || 1}${peca.codigo ? ` | Cód: ${peca.codigo}` : ''}`
+        const dadosPecas = pecas.map((item: any) => ({
+          label: item.peca || item.descricao || item.nome || 'Peça',
+          value: `Qtd: ${item.quantidade || 1}${item.codigo ? ` | Cód: ${item.codigo}` : ''}`
         }));
         criarTabela('Peças Utilizadas', dadosPecas, [59, 130, 246]);
       }
@@ -847,12 +847,12 @@ export default function LaudoPublico() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {ordemServico.pecas_necessarias.map((peca: any, index: number) => (
+                {ordemServico.pecas_necessarias.map((item: any, index: number) => (
                   <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded">
-                    <span className="font-medium">{peca.descricao || peca.nome || 'Peça'}</span>
+                    <span className="font-medium">{item.peca || item.descricao || item.nome || 'Peça'}</span>
                     <span className="text-sm text-muted-foreground">
-                      Qtd: {peca.quantidade || 1}
-                      {peca.codigo && ` | Cód: ${peca.codigo}`}
+                      Qtd: {item.quantidade || 1}
+                      {item.codigo && ` | Cód: ${item.codigo}`}
                     </span>
                   </div>
                 ))}
