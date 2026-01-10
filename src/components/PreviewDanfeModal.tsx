@@ -65,8 +65,8 @@ export function PreviewDanfeModal({ open, onClose, dados }: PreviewDanfeModalPro
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-4">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
             DANFE - Pré-visualização
@@ -76,8 +76,7 @@ export function PreviewDanfeModal({ open, onClose, dados }: PreviewDanfeModalPro
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6">
-          <div className="space-y-4 pb-6">
+        <div className="space-y-4">
             {/* Cabeçalho DANFE */}
             <div className="bg-primary text-primary-foreground rounded-lg p-4 text-center">
               <h2 className="text-xl font-bold">DANFE</h2>
@@ -163,12 +162,12 @@ export function PreviewDanfeModal({ open, onClose, dados }: PreviewDanfeModalPro
                   <tbody>
                     {itensNormalizados.length > 0 ? (
                       itensNormalizados.map((item: ItemNFe, index: number) => (
-                        <tr key={index} className={index % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
-                          <td className="px-3 py-2 font-mono text-xs">{item.codigo || '-'}</td>
-                          <td className="px-3 py-2">{item.descricao || '-'}</td>
-                          <td className="px-3 py-2 text-center">{item.quantidade || 1}</td>
-                          <td className="px-3 py-2 text-right">{formatCurrency(item.valorUnitario || 0)}</td>
-                          <td className="px-3 py-2 text-right font-medium">{formatCurrency(item.valorTotal || 0)}</td>
+                        <tr key={index} className="border-b">
+                          <td className="px-3 py-3 font-mono text-xs">{item.codigo || '-'}</td>
+                          <td className="px-3 py-3">{item.descricao || '-'}</td>
+                          <td className="px-3 py-3 text-center">{item.quantidade || 1}</td>
+                          <td className="px-3 py-3 text-right">{formatCurrency(item.valorUnitario || 0)}</td>
+                          <td className="px-3 py-3 text-right font-medium text-primary">{formatCurrency(item.valorTotal || 0)}</td>
                         </tr>
                       ))
                     ) : (
@@ -199,11 +198,10 @@ export function PreviewDanfeModal({ open, onClose, dados }: PreviewDanfeModalPro
               Documento gerado automaticamente pelo sistema - Não é documento fiscal válido
             </p>
           </div>
-        </ScrollArea>
 
         <Separator />
         
-        <DialogFooter className="px-6 py-4">
+        <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             <X className="h-4 w-4 mr-2" />
             Fechar
