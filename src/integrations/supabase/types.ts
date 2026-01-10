@@ -1151,7 +1151,7 @@ export type Database = {
           codigo: string
           created_at: string
           descricao: string
-          empresa_id: string | null
+          empresa_id: string
           id: string
           ncm: string | null
           nota_fiscal_id: string | null
@@ -1163,7 +1163,7 @@ export type Database = {
           codigo: string
           created_at?: string
           descricao: string
-          empresa_id?: string | null
+          empresa_id: string
           id?: string
           ncm?: string | null
           nota_fiscal_id?: string | null
@@ -1175,7 +1175,7 @@ export type Database = {
           codigo?: string
           created_at?: string
           descricao?: string
-          empresa_id?: string | null
+          empresa_id?: string
           id?: string
           ncm?: string | null
           nota_fiscal_id?: string | null
@@ -1440,7 +1440,7 @@ export type Database = {
           cnpj_emitente: string
           created_at: string
           data_emissao: string
-          empresa_id: string | null
+          empresa_id: string
           id: string
           modelo: string | null
           nome_emitente: string | null
@@ -1457,7 +1457,7 @@ export type Database = {
           cnpj_emitente: string
           created_at?: string
           data_emissao: string
-          empresa_id?: string | null
+          empresa_id: string
           id?: string
           modelo?: string | null
           nome_emitente?: string | null
@@ -1474,7 +1474,7 @@ export type Database = {
           cnpj_emitente?: string
           created_at?: string
           data_emissao?: string
-          empresa_id?: string | null
+          empresa_id?: string
           id?: string
           modelo?: string | null
           nome_emitente?: string | null
