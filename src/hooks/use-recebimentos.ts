@@ -53,6 +53,7 @@ export interface NotaFiscal {
   id: string;
   chave_acesso: string;
   cnpj_emitente: string;
+  nome_emitente?: string;
   numero: string;
   serie: string;
   modelo: string;
