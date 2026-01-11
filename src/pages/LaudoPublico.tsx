@@ -363,6 +363,9 @@ export default function LaudoPublico() {
         doc.setLineWidth(0.1);
         
         const rowHeight = 8;
+        const labelMaxWidth = 100; // Largura máxima do label
+        const valueXPosition = 130; // Posição X do valor (mais à direita)
+        
         dados.forEach((item, index) => {
           if (yPosition > 270) {
             doc.addPage();
@@ -378,24 +381,26 @@ export default function LaudoPublico() {
           doc.setDrawColor(200, 200, 200);
           doc.rect(20, yPosition, pageWidth - 40, rowHeight);
           
+          // Limitar o label para não sobrepor o valor
           doc.setFont('helvetica', 'bold');
-          doc.text(item.label, 25, yPosition + 5.5);
-          doc.setFont('helvetica', 'normal');
+          const labelLines = doc.splitTextToSize(item.label, labelMaxWidth);
           
-          const valorLines = doc.splitTextToSize(item.value, pageWidth - 110);
-          if (valorLines.length > 1) {
-            const extraHeight = (valorLines.length - 1) * 4;
+          if (labelLines.length > 1) {
+            // Se o label precisa de múltiplas linhas
+            const extraHeight = (labelLines.length - 1) * 4;
             doc.setFillColor(index % 2 === 0 ? 245 : 255, index % 2 === 0 ? 245 : 255, index % 2 === 0 ? 245 : 255);
             doc.rect(20, yPosition, pageWidth - 40, rowHeight + extraHeight, 'F');
             doc.setDrawColor(200, 200, 200);
             doc.rect(20, yPosition, pageWidth - 40, rowHeight + extraHeight);
             doc.setFont('helvetica', 'bold');
-            doc.text(item.label, 25, yPosition + 5.5);
+            doc.text(labelLines, 25, yPosition + 5.5);
             doc.setFont('helvetica', 'normal');
-            doc.text(valorLines, 85, yPosition + 5.5);
+            doc.text(item.value, valueXPosition, yPosition + 5.5);
             yPosition += rowHeight + extraHeight;
           } else {
-            doc.text(item.value, 85, yPosition + 5.5);
+            doc.text(item.label, 25, yPosition + 5.5);
+            doc.setFont('helvetica', 'normal');
+            doc.text(item.value, valueXPosition, yPosition + 5.5);
             yPosition += rowHeight;
           }
         });
