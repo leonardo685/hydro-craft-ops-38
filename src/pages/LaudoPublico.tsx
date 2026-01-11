@@ -484,7 +484,7 @@ export default function LaudoPublico() {
         if (dadosDimensionais.potencia) dimensoes.push({ label: 'Potência:', value: dadosDimensionais.potencia });
         
         if (dimensoes.length > 0) {
-          criarTabela('Dados Dimensionais', dimensoes, [245, 158, 11]);
+          criarTabela('Dados Dimensionais', dimensoes, [128, 128, 128]);
         }
       }
       
@@ -495,7 +495,7 @@ export default function LaudoPublico() {
           label: item.peca || item.descricao || item.nome || 'Peça',
           value: `Qtd: ${item.quantidade || 1}${item.codigo ? ` | Cód: ${item.codigo}` : ''}`
         }));
-        criarTabela('Peças Utilizadas', dadosPecas, [59, 130, 246]);
+        criarTabela('Peças Utilizadas', dadosPecas, [128, 128, 128]);
       }
       
       // === SERVIÇOS REALIZADOS ===
@@ -505,7 +505,7 @@ export default function LaudoPublico() {
           label: servico.descricao || servico.nome || 'Serviço',
           value: servico.detalhes || servico.observacao || '-'
         }));
-        criarTabela('Serviços Realizados', dadosServicos, [34, 197, 94]);
+        criarTabela('Serviços Realizados', dadosServicos, [128, 128, 128]);
       }
       
       // === USINAGEM ===
@@ -515,7 +515,7 @@ export default function LaudoPublico() {
           label: item.descricao || item.nome || 'Usinagem',
           value: item.detalhes || item.observacao || '-'
         }));
-        criarTabela('Usinagem', dadosUsinagem, [168, 85, 247]);
+        criarTabela('Usinagem', dadosUsinagem, [128, 128, 128]);
       }
       
       // === FOTOS DO EQUIPAMENTO ===
