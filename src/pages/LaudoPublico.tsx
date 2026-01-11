@@ -275,10 +275,10 @@ export default function LaudoPublico() {
       const labelIdentificacao = tipoIdentificacao === 'ein' ? 'EIN' : tipoIdentificacao === 'ssn' ? 'SSN' : 'CNPJ';
       
       const EMPRESA_INFO = {
-        nome: empresaData?.razao_social || empresaData?.nome || "N/A",
-        cnpj: empresaData?.cnpj || "",
-        telefone: empresaData?.telefone || "",
-        email: empresaData?.email || "",
+        nome: empresaData?.razao_social || empresaData?.nome || "Empresa",
+        cnpj: empresaData?.cnpj || "Não informado",
+        telefone: empresaData?.telefone || "Não informado",
+        email: empresaData?.email || "Não informado",
         labelIdentificacao
       };
       
