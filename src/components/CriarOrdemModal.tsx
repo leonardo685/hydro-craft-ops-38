@@ -97,7 +97,7 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
             cliente_nome: notaFiscal.nome_emitente || notaFiscal.cliente_nome,
             cliente_cnpj: notaFiscal.cnpjEmitente || notaFiscal.cnpj_emitente || notaFiscal.cliente_cnpj,
             data_entrada: new Date().toISOString(),
-            nota_fiscal: `NF-${notaFiscal.numero}`,
+            nota_fiscal: notaFiscal.numero, // Salvar sem prefixo NF-
             chave_acesso_nfe: notaFiscal.chave_acesso,
             nota_fiscal_id: notaFiscal.id,
             tipo_equipamento: item.descricao,

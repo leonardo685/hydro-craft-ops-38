@@ -126,7 +126,7 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
           cliente_nome: cliente,
           cliente_cnpj: dadosNFe.cnpjEmitente,
           data_entrada: new Date().toISOString(),
-          nota_fiscal: `NF-${dadosNFe.numero}`,
+          nota_fiscal: dadosNFe.numero, // Salvar sem prefixo NF-
           chave_acesso_nfe: dadosNFe.chaveAcesso,
           tipo_equipamento: item.descricao,
           numero_serie: `${item.codigo}-${new Date().getFullYear()}`,
