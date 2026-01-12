@@ -190,6 +190,11 @@ export default function Recebimentos() {
     setAplicandoFiltros(false);
   };
 
+  // Função auxiliar para normalizar número da nota (remove prefixo NF-)
+  const normalizarNumeroNota = (numero: string) => {
+    return numero?.replace(/^NF-/i, '').trim() || '';
+  };
+
   // Agrupar recebimentos por nota fiscal E incluir notas importadas da tabela notas_fiscais
   const notasFiscaisAgrupadas = useMemo(() => {
     const grupos = new Map<string, any>();
@@ -197,10 +202,12 @@ export default function Recebimentos() {
     // 1. Primeiro adicionar notas importadas da tabela notas_fiscais
     notasFiscais.forEach(nota => {
       const numeroNota = nota.numero;
+      const numeroNotaNormalizado = normalizarNumeroNota(numeroNota);
       
       // Aplicar filtros
       if (filtroNotaFiscal && filtroNotaFiscal.trim().length > 0) {
-        if (!numeroNota.toLowerCase().includes(filtroNotaFiscal.toLowerCase())) {
+        const filtroNormalizado = normalizarNumeroNota(filtroNotaFiscal);
+        if (!numeroNotaNormalizado.toLowerCase().includes(filtroNormalizado.toLowerCase())) {
           return;
         }
       }
@@ -222,8 +229,9 @@ export default function Recebimentos() {
         if (dataItem > dataFim) return;
       }
       
-      if (!grupos.has(numeroNota)) {
-        grupos.set(numeroNota, {
+      // Usar número normalizado como chave para evitar duplicatas
+      if (!grupos.has(numeroNotaNormalizado)) {
+        grupos.set(numeroNotaNormalizado, {
           id: nota.id,
           numero_nota: numeroNota,
           numero: numeroNota,
@@ -251,9 +259,12 @@ export default function Recebimentos() {
     recebimentos
       .filter(r => r.nota_fiscal && r.nota_fiscal.trim() !== '')
       .filter(r => {
+        const numeroNotaNormalizado = normalizarNumeroNota(r.nota_fiscal);
+        
         // Filtro por nota fiscal
         if (filtroNotaFiscal && filtroNotaFiscal.trim().length > 0) {
-          if (!r.nota_fiscal.toLowerCase().includes(filtroNotaFiscal.toLowerCase())) {
+          const filtroNormalizado = normalizarNumeroNota(filtroNotaFiscal);
+          if (!numeroNotaNormalizado.toLowerCase().includes(filtroNormalizado.toLowerCase())) {
             return false;
           }
         }
@@ -281,11 +292,12 @@ export default function Recebimentos() {
         return true;
       })
       .forEach(recebimento => {
-        const numeroNota = recebimento.nota_fiscal;
+        const numeroNotaNormalizado = normalizarNumeroNota(recebimento.nota_fiscal);
         
-        if (!grupos.has(numeroNota)) {
-          grupos.set(numeroNota, {
-            numero_nota: numeroNota,
+        // Verificar se já existe grupo com esse número normalizado
+        if (!grupos.has(numeroNotaNormalizado)) {
+          grupos.set(numeroNotaNormalizado, {
+            numero_nota: recebimento.nota_fiscal,
             cliente_nome: recebimento.clientes?.nome || recebimento.cliente_nome || '',
             data_entrada: recebimento.data_entrada,
             recebimentos: [],
@@ -295,7 +307,7 @@ export default function Recebimentos() {
           });
         }
         
-        const grupo = grupos.get(numeroNota);
+        const grupo = grupos.get(numeroNotaNormalizado);
         grupo.recebimentos.push(recebimento);
         // Se a fonte é recebimentos, a quantidade de itens é a quantidade de recebimentos
         if (grupo.fonte === 'recebimentos') {
