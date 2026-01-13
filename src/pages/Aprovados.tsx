@@ -230,6 +230,11 @@ export default function Aprovados() {
             nota_fiscal,
             chave_acesso_nfe,
             categoria_equipamento
+          ),
+          orcamentos!orcamentos_ordem_servico_id_fkey (
+            id,
+            numero,
+            status
           )
         `)
         .eq('empresa_id', empresaAtual.id)
@@ -379,7 +384,13 @@ export default function Aprovados() {
                                 <button className="text-primary hover:underline cursor-pointer">
                                   {ordem.recebimentos?.numero_ordem || ordem.numero_ordem || 'Sem número'}
                                 </button>
-                              </OrdemServicoModal> - {ordem.equipamento || ordem.recebimentos?.tipo_equipamento}
+                              </OrdemServicoModal>
+                              {ordem.orcamentos && ordem.orcamentos.length > 0 && ordem.orcamentos[0]?.numero && (
+                                <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">
+                                  #{ordem.orcamentos[0].numero}
+                                </Badge>
+                              )}
+                              <span>- {ordem.equipamento || ordem.recebimentos?.tipo_equipamento}</span>
                             </CardTitle>
                             <CardDescription className="mt-1 flex items-center gap-4">
                               <span className="flex items-center gap-1">

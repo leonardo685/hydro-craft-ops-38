@@ -67,6 +67,7 @@ export default function OrdensServico() {
           ),
           orcamentos!orcamentos_ordem_servico_id_fkey (
             id,
+            numero,
             status
           )
         `)
@@ -879,7 +880,14 @@ export default function OrdensServico() {
                        filteredOrdensServico.map((ordem) => (
                          <TableRow key={ordem.id} className="hover:bg-muted/30 transition-fast">
                              <TableCell className="font-medium text-primary">
-                               {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
+                               <div className="flex items-center gap-2">
+                                 {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
+                                 {ordem.orcamentos && ordem.orcamentos.length > 0 && ordem.orcamentos[0]?.numero && (
+                                   <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">
+                                     #{ordem.orcamentos[0].numero}
+                                   </Badge>
+                                 )}
+                               </div>
                              </TableCell>
                            <TableCell className="text-primary font-medium">
                              {ordem.recebimentos?.cliente_nome || ordem.cliente_nome}
