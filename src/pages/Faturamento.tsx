@@ -71,7 +71,7 @@ export default function Faturamento() {
       .select(`
         *,
         recebimentos!left(nota_fiscal, numero_ordem),
-        orcamentos!ordem_servico_id(numero)
+        orcamentos!orcamento_id(numero)
       `)
       .eq('empresa_id', empresaAtual.id)
       .in('status', ['aguardando_retorno', 'reprovada', 'aguardando_faturamento_sem_retorno'])
