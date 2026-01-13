@@ -185,15 +185,20 @@ export function OrdensAguardandoRetorno({
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-primary" />
-                        Ordem {ordem.numero_ordem}
-                        {ordem.numero_ordem.startsWith('OS-') && ordem.numero_ordem.match(/^OS-\d{13}/) && (
-                          <Badge variant="destructive" className="text-xs">
-                            Formato Antigo
-                          </Badge>
-                        )}
-                      </CardTitle>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Ordem {ordem.numero_ordem}
+                  {ordem.numero_ordem.startsWith('OS-') && ordem.numero_ordem.match(/^OS-\d{13}/) && (
+                    <Badge variant="destructive" className="text-xs">
+                      Formato Antigo
+                    </Badge>
+                  )}
+                  {ordem.orcamento_vinculado && (
+                    <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">
+                      #{ordem.orcamento_vinculado}
+                    </Badge>
+                  )}
+                </CardTitle>
                       <CardDescription className="mt-1">
                         {ordem.equipamento} - {ordem.cliente_nome}
                       </CardDescription>
@@ -221,13 +226,6 @@ export function OrdensAguardandoRetorno({
                         <p className="font-medium">{ordem.nota_fiscal || '-'}</p>
                       </div>
                     </div>
-                    {ordem.orcamento_vinculado && (
-                      <div className="md:col-span-2">
-                        <Badge variant="outline" className="text-xs">
-                          Vinculado ao Orçamento: {ordem.orcamento_vinculado}
-                        </Badge>
-                      </div>
-                    )}
                   </div>
 
                   {ordem.observacoes_tecnicas && <div className="p-3 bg-muted rounded-lg">
