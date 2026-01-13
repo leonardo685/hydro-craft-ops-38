@@ -194,7 +194,7 @@ export function OrdensAguardandoRetorno({
                     </Badge>
                   )}
                   {ordem.orcamento_vinculado && (
-                    <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">
+                    <Badge className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border-emerald-300 text-sm font-medium">
                       #{ordem.orcamento_vinculado}
                     </Badge>
                   )}
