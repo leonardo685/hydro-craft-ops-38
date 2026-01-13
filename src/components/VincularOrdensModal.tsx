@@ -49,6 +49,11 @@ export function VincularOrdensModal({
   const carregarOrdens = async () => {
     setLoading(true);
     try {
+      if (!empresaAtual?.id) {
+        console.error('Empresa não selecionada');
+        return;
+      }
+
       // Buscar ordens já vinculadas a este orçamento
       const { data: vinculadas, error: errorVinculadas } = await supabase
         .from('ordens_servico')
@@ -60,12 +65,13 @@ export function VincularOrdensModal({
           )
         `)
         .eq('orcamento_id', orcamento.id)
+        .eq('empresa_id', empresaAtual.id)
         .order('created_at', { ascending: false });
 
       if (errorVinculadas) throw errorVinculadas;
       setOrdensVinculadas(vinculadas || []);
 
-      // Buscar ordens disponíveis (sem vínculo com orçamento)
+      // Buscar ordens disponíveis (sem vínculo com orçamento) - TODAS independente do status
       const { data: disponiveis, error: errorDisponiveis } = await supabase
         .from('ordens_servico')
         .select(`
@@ -75,10 +81,13 @@ export function VincularOrdensModal({
             tipo_equipamento
           )
         `)
+        .eq('empresa_id', empresaAtual.id)
         .is('orcamento_id', null)
         .order('created_at', { ascending: false });
 
       if (errorDisponiveis) throw errorDisponiveis;
+      
+      console.log(`📋 Ordens disponíveis para vincular: ${disponiveis?.length || 0}`);
       setOrdensDisponiveis(disponiveis || []);
 
     } catch (error) {
