@@ -386,7 +386,7 @@ export default function Aprovados() {
                                 </button>
                               </OrdemServicoModal>
                               {ordem.orcamentos && ordem.orcamentos.length > 0 && ordem.orcamentos[0]?.numero && (
-                                <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">
+                                <Badge className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border-emerald-300 text-sm font-medium">
                                   #{ordem.orcamentos[0].numero}
                                 </Badge>
                               )}
