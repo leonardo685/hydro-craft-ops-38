@@ -55,7 +55,7 @@ export function OrdensAguardandoRetorno({
       } = await supabase.from('ordens_servico').select(`
           *,
           recebimentos!left(nota_fiscal, numero_ordem),
-          orcamentos!ordem_servico_id(numero)
+          orcamentos!orcamento_id(numero)
         `).eq('status', 'aguardando_retorno').order('created_at', {
         ascending: false
       });
