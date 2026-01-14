@@ -476,6 +476,7 @@ export default function NovoOrcamento() {
                 cliente_nome,
                 cliente_cnpj,
                 cliente_id,
+                descricao_nfe,
                 pressao_trabalho,
                 temperatura_trabalho,
                 fluido_trabalho,
@@ -587,10 +588,15 @@ export default function NovoOrcamento() {
               usinagem: usinagemOS
             });
 
-            // Inicializar assunto da proposta baseado na ordem de serviço
+            // Inicializar assunto da proposta baseado na descricao_nfe (imutável) ou ordem de serviço
+            const descricaoNfe = ordemServico.recebimentos?.descricao_nfe;
+            const assuntoPadrao = descricaoNfe 
+              ? descricaoNfe.toUpperCase().substring(0, 100)
+              : `${ordemServico.tipo_problema?.toUpperCase() || 'SERVIÇO'} ${ordemServico.equipamento?.toUpperCase() || ''}`.substring(0, 100);
+            
             setInformacoesComerciais(prev => ({
               ...prev,
-              assuntoProposta: `${ordemServico.tipo_problema?.toUpperCase() || 'SERVIÇO'} ${ordemServico.equipamento?.toUpperCase() || ''}`.substring(0, 100)
+              assuntoProposta: assuntoPadrao
             }));
 
             // Carregar fotos do equipamento
