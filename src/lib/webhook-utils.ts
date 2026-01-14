@@ -1,19 +1,26 @@
 /**
- * Envia um webhook com retry automático
- * @param webhookUrl URL do webhook
+ * URL centralizada do webhook n8n
+ * Todas as notificações são enviadas para este endpoint único
+ * A segregação por empresa é feita dentro do n8n usando o campo empresa_id
+ */
+export const WEBHOOK_URL_CENTRAL = 'https://mechidro.app.n8n.cloud/webhook/aprovacoes';
+
+/**
+ * Envia um webhook para o endpoint centralizado com retry automático
+ * @param empresaId ID da empresa (para segregação no n8n)
  * @param payload Dados a serem enviados
  * @param maxTentativas Número máximo de tentativas (padrão: 3)
  * @param intervaloRetry Intervalo entre tentativas em ms (padrão: 2000)
  * @returns true se enviado com sucesso, false caso contrário
  */
 export const enviarWebhook = async (
-  webhookUrl: string | null,
+  empresaId: string | null,
   payload: Record<string, any>,
   maxTentativas = 3,
   intervaloRetry = 2000
 ): Promise<boolean> => {
-  if (!webhookUrl) {
-    console.warn('⚠️ Webhook não configurado para esta empresa');
+  if (!WEBHOOK_URL_CENTRAL) {
+    console.warn('⚠️ Webhook URL não configurada');
     return false;
   }
 
@@ -28,15 +35,21 @@ export const enviarWebhook = async (
     return sanitized;
   };
 
-  const payloadSanitizado = sanitizePayload(payload);
+  // Incluir empresa_id no payload para segregação no n8n
+  const payloadCompleto = {
+    ...payload,
+    empresa_id: empresaId || '.'
+  };
+
+  const payloadSanitizado = sanitizePayload(payloadCompleto);
   
-  console.log('📤 Payload para envio:', payloadSanitizado);
+  console.log('📤 Payload para envio (webhook centralizado):', payloadSanitizado);
 
   for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
     try {
       console.log(`📤 Tentativa ${tentativa}/${maxTentativas} de envio da notificação...`);
       
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(WEBHOOK_URL_CENTRAL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
