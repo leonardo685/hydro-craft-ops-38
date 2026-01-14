@@ -38,12 +38,6 @@ export default function OrdensServico() {
   const [selectedOrdemForLabel, setSelectedOrdemForLabel] = useState<any>(null);
   const [historicoModalOpen, setHistoricoModalOpen] = useState(false);
 
-  // Obter webhook da empresa
-  const getWebhookUrl = (): string | null => {
-    if (!empresaAtual) return null;
-    const config = empresaAtual.configuracoes as { webhook_url?: string } | null;
-    return config?.webhook_url || null;
-  };
 
   useEffect(() => {
     if (empresaAtual?.id) {
@@ -174,10 +168,8 @@ export default function OrdensServico() {
 
       if (error) throw error;
       
-      // Enviar notificação via webhook da empresa
-      const webhookUrl = getWebhookUrl();
-      
-      if (ordem && webhookUrl) {
+      // Enviar notificação via webhook centralizado
+      if (ordem) {
         // Buscar o número correto da ordem e tipo de equipamento no formato MH-XXX-YY
         const { data: recebimento } = await supabase
           .from('recebimentos')
@@ -191,11 +183,10 @@ export default function OrdensServico() {
           cliente: ordem.cliente_nome,
           equipamento: ordem.equipamento || recebimento?.tipo_equipamento || 'Equipamento não especificado',
           data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
-          empresa: empresaAtual?.nome || 'N/A',
-          empresa_id: empresaAtual?.id || null
+          empresa: empresaAtual?.nome || 'N/A'
         };
 
-        const notificacaoEnviada = await enviarWebhook(webhookUrl, payload);
+        const notificacaoEnviada = await enviarWebhook(empresaAtual?.id || null, payload);
 
         if (!notificacaoEnviada) {
           toast({
@@ -204,8 +195,6 @@ export default function OrdensServico() {
             variant: "destructive"
           });
         }
-      } else if (!webhookUrl) {
-        console.warn('⚠️ Webhook não configurado para esta empresa');
       }
       
       toast({

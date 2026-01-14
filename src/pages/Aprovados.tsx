@@ -48,13 +48,6 @@ export default function Aprovados() {
   const navigate = useNavigate();
   const { empresaAtual } = useEmpresa();
 
-  // Obter webhook da empresa
-  const getWebhookUrl = (): string | null => {
-    if (!empresaAtual) return null;
-    const config = empresaAtual.configuracoes as { webhook_url?: string } | null;
-    return config?.webhook_url || null;
-  };
-
   // Carregar histórico de buscas do localStorage
   useEffect(() => {
     const historico = localStorage.getItem('historico_busca_laudo');
@@ -555,40 +548,33 @@ export default function Aprovados() {
           }).eq('id', ordemSelecionada.id);
           if (error) throw error;
 
-          // Enviar notificação via webhook da empresa
-          const webhookUrl = getWebhookUrl();
+          // Enviar notificação via webhook centralizado
+          const notaFiscalEntrada = ordemSelecionada.recebimentos?.nota_fiscal || ordemSelecionada.recebimentos?.chave_acesso_nfe || 'n/a';
+          const tipoNotificacao = ordemSelecionada.recebimento_id 
+            ? 'ordem_retorno' 
+            : ordemSelecionada.orcamento_id 
+              ? 'ordem_finalizada' 
+              : 'ordem_faturamento_sem_retorno';
           
-          if (webhookUrl) {
-            const notaFiscalEntrada = ordemSelecionada.recebimentos?.nota_fiscal || ordemSelecionada.recebimentos?.chave_acesso_nfe || 'n/a';
-            const tipoNotificacao = ordemSelecionada.recebimento_id 
-              ? 'ordem_retorno' 
-              : ordemSelecionada.orcamento_id 
-                ? 'ordem_finalizada' 
-                : 'ordem_faturamento_sem_retorno';
-            
-            const payload = {
-              tipo: tipoNotificacao,
-              numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
-              cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
-              equipamento: ordemSelecionada.equipamento,
-              nota_fiscal_entrada: notaFiscalEntrada,
-              data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
-              data_aprovacao: ordemSelecionada.updated_at ? format(parseISO(ordemSelecionada.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy'),
-              empresa: empresaAtual?.nome || 'N/A',
-              empresa_id: empresaAtual?.id || null
-            };
+          const payload = {
+            tipo: tipoNotificacao,
+            numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
+            cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
+            equipamento: ordemSelecionada.equipamento,
+            nota_fiscal_entrada: notaFiscalEntrada,
+            data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
+            data_aprovacao: ordemSelecionada.updated_at ? format(parseISO(ordemSelecionada.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy'),
+            empresa: empresaAtual?.nome || 'N/A'
+          };
 
-            const notificacaoEnviada = await enviarWebhook(webhookUrl, payload);
+          const notificacaoEnviada = await enviarWebhook(empresaAtual?.id || null, payload);
 
-            if (!notificacaoEnviada) {
-              toast({
-                title: "Aviso",
-                description: "Operação concluída, mas notificação não foi enviada após 3 tentativas.",
-                variant: "destructive"
-              });
-            }
-          } else {
-            console.warn('⚠️ Webhook não configurado para esta empresa');
+          if (!notificacaoEnviada) {
+            toast({
+              title: "Aviso",
+              description: "Operação concluída, mas notificação não foi enviada após 3 tentativas.",
+              variant: "destructive"
+            });
           }
           
           toast({

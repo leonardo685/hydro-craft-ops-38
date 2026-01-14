@@ -28,12 +28,6 @@ export const AprovarOrcamentoModal = ({
   const { toast } = useToast();
   const { empresaAtual } = useEmpresa();
   
-  // Obter webhook da empresa
-  const getWebhookUrl = (): string | null => {
-    if (!empresaAtual) return null;
-    const config = empresaAtual.configuracoes as { webhook_url?: string } | null;
-    return config?.webhook_url || null;
-  };
   
   const [formData, setFormData] = useState({
     valor: orcamento?.valor || 0,
@@ -249,57 +243,45 @@ export const AprovarOrcamentoModal = ({
         }
       }
 
-      // Enviar notificação via webhook da empresa
-      const webhookUrl = getWebhookUrl();
-      
-      if (!webhookUrl) {
-        console.warn('⚠️ Webhook não configurado para esta empresa');
+      // Enviar notificação via webhook centralizado
+      const payload = {
+        tipo: 'orcamento_aprovado',
+        numero: orcamento.numero,
+        cliente: orcamento.cliente_nome,
+        valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        numeroPedido: formData.numeroPedido,
+        data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
+        ordem_servico_aprovada: orcamento.ordem_servico_id ? true : false,
+        numero_ordem: ordemServicoNumero,
+        empresa: empresaAtual?.nome || 'N/A'
+      };
+
+      const notificacaoEnviada = await enviarWebhook(empresaAtual?.id || null, payload);
+
+      if (!notificacaoEnviada) {
         toast({
           title: "Aviso",
-          description: "Orçamento aprovado, mas webhook não está configurado nas configurações da empresa.",
+          description: "Orçamento aprovado, mas notificação não foi enviada após 3 tentativas.",
+          variant: "destructive"
         });
-      } else {
-        const payload = {
-          tipo: 'orcamento_aprovado',
-          numero: orcamento.numero,
-          cliente: orcamento.cliente_nome,
-          valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-          numeroPedido: formData.numeroPedido,
-          data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
-          ordem_servico_aprovada: orcamento.ordem_servico_id ? true : false,
+      }
+
+      // Se houver ordem de serviço vinculada, enviar webhook separado
+      if (orcamento.ordem_servico_id && ordemServicoNumero) {
+        console.log('📤 Enviando webhook para aprovadores de ordem de serviço...');
+        
+        const payloadOrdem = {
+          tipo: 'ordem_aprovada',
           numero_ordem: ordemServicoNumero,
-          empresa: empresaAtual?.nome || 'N/A',
-          empresa_id: empresaAtual?.id || null
+          cliente: orcamento.cliente_nome,
+          equipamento: tipoEquipamento || orcamento.equipamento || 'Equipamento não especificado',
+          valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
+          orcamento_numero: orcamento.numero,
+          empresa: empresaAtual?.nome || 'N/A'
         };
 
-        const notificacaoEnviada = await enviarWebhook(webhookUrl, payload);
-
-        if (!notificacaoEnviada) {
-          toast({
-            title: "Aviso",
-            description: "Orçamento aprovado, mas notificação não foi enviada após 3 tentativas.",
-            variant: "destructive"
-          });
-        }
-
-        // Se houver ordem de serviço vinculada, enviar webhook separado
-        if (orcamento.ordem_servico_id && ordemServicoNumero) {
-          console.log('📤 Enviando webhook para aprovadores de ordem de serviço...');
-          
-          const payloadOrdem = {
-            tipo: 'ordem_aprovada',
-            numero_ordem: ordemServicoNumero,
-            cliente: orcamento.cliente_nome,
-            equipamento: tipoEquipamento || orcamento.equipamento || 'Equipamento não especificado',
-            valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-            data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
-            orcamento_numero: orcamento.numero,
-            empresa: empresaAtual?.nome || 'N/A',
-            empresa_id: empresaAtual?.id || null
-          };
-
-          await enviarWebhook(webhookUrl, payloadOrdem);
-        }
+        await enviarWebhook(empresaAtual?.id || null, payloadOrdem);
       }
 
       toast({

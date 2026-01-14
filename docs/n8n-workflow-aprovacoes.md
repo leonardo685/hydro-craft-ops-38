@@ -1,24 +1,56 @@
-# Framework n8n - Sistema de Aprovações WhatsApp
+# Framework n8n - Sistema de Aprovações WhatsApp (Unificado)
 
 ## 📋 Visão Geral
 
-Este workflow substitui as notificações do Telegram por mensagens do WhatsApp Business API, buscando aprovadores dinamicamente do Supabase.
+Este workflow recebe todas as notificações em um **endpoint centralizado** e faz a segregação por empresa internamente.
+
+**URL do Webhook Centralizado:**
+```
+https://mechidro.app.n8n.cloud/webhook/aprovacoes
+```
+
+**IMPORTANTE**: Todas as empresas enviam para este mesmo endpoint. O campo `empresa_id` no payload é usado para segregar e aplicar configurações específicas por empresa.
 
 ---
 
 ## 🔧 Estrutura do Workflow
 
 ```
-1. Webhook Trigger (recebe notificação do sistema)
+1. Webhook Trigger (recebe notificação centralizada)
    ↓
-2. Set Variables (mapeia tipo → fluxo)
+2. Set Variables (mapeia tipo → fluxo + identifica empresa)
    ↓
-3. Supabase Query (busca aprovadores ativos)
+3. Supabase Query (busca aprovadores por empresa + fluxo)
    ↓
 4. Split Out (separa cada aprovador)
    ↓
 5. WhatsApp Business API (envia mensagem)
 ```
+
+---
+
+## 🏢 Segregação por Empresa
+
+O payload recebido **sempre** inclui o campo `empresa_id`:
+
+```json
+{
+  "tipo": "ordem_aprovada",
+  "empresa_id": "75a36c77-793a-4f0f-b939-a2d79f5383b3",
+  "numero_ordem": "MH-037-25",
+  "cliente": "Cliente XYZ",
+  "equipamento": "Cilindro Hidráulico",
+  "empresa": "Mec Hydro Hydraulics",
+  ...
+}
+```
+
+### IDs das Empresas
+
+| Empresa | empresa_id |
+|---------|------------|
+| Mec Hidro | `[ID da Mec Hidro]` |
+| Mec Hydro Hydraulics | `75a36c77-793a-4f0f-b939-a2d79f5383b3` |
 
 ---
 
@@ -35,19 +67,20 @@ Este workflow substitui as notificações do Telegram por mensagens do WhatsApp 
 ```json
 {
   "tipo": "ordem_retorno | ordem_finalizada | orcamento_aprovado | ordem_aprovada | ordem_faturamento_sem_retorno",
-  "numero_ordem": "OS-2024-001",
-  "cliente_nome": "Empresa XYZ",
+  "empresa_id": "uuid-da-empresa",
+  "numero_ordem": "MH-037-25",
+  "cliente": "Empresa XYZ",
   "equipamento": "Cilindro Hidráulico",
   "nota_fiscal_entrada": "12345",
-  "data_finalizacao": "2024-11-09T10:30:00Z",
-  "valor": 5000.00,
-  "observacoes": "Urgente"
+  "data_finalizacao": "09-11-2024",
+  "valor": "R$ 5.000,00",
+  "empresa": "Mec Hidro"
 }
 ```
 
 ---
 
-## 2️⃣ Set Variables - Mapeamento de Fluxos
+## 2️⃣ Set Variables - Mapeamento de Fluxos + Empresa
 
 **Node Type**: `Set`
 
@@ -56,16 +89,31 @@ Este workflow substitui as notificações do Telegram por mensagens do WhatsApp 
 ```javascript
 // Mapeia o tipo de notificação para o fluxo de aprovação
 const tipoNotificacao = $json.body.tipo;
+const empresaId = $json.body.empresa_id;
 
 const fluxoMap = {
   'ordem_retorno': 'fiscal',
   'ordem_finalizada': 'ordem_servico',
   'orcamento_aprovado': 'orcamento',
-  'ordem_aprovada': 'ordem_servico',  // ← NOVO: OS aprovada via orçamento
+  'ordem_aprovada': 'ordem_servico',
   'ordem_faturamento_sem_retorno': 'ordem_servico'
 };
 
 const fluxo = fluxoMap[tipoNotificacao] || 'orcamento';
+
+// Configurações específicas por empresa (opcional)
+const empresaConfig = {
+  '75a36c77-793a-4f0f-b939-a2d79f5383b3': {
+    nome: 'Mec Hydro Hydraulics',
+    prefixo_mensagem: '🔵 Mec Hydro Hydraulics'
+  },
+  // Adicione outras empresas aqui
+};
+
+const configEmpresa = empresaConfig[empresaId] || { 
+  nome: $json.body.empresa || 'Empresa', 
+  prefixo_mensagem: '🟢' 
+};
 
 // Define o ícone e título baseado no fluxo
 const tituloMap = {
@@ -77,6 +125,9 @@ const tituloMap = {
 const titulo = tituloMap[fluxo] || '🔔 Notificação';
 
 return {
+  empresa_id: empresaId,
+  empresa_nome: configEmpresa.nome,
+  prefixo: configEmpresa.prefixo_mensagem,
   fluxo_permissao: fluxo,
   titulo: titulo,
   tipo_notificacao: tipoNotificacao,
@@ -84,19 +135,9 @@ return {
 };
 ```
 
-**Output**:
-```json
-{
-  "fluxo_permissao": "fiscal",
-  "titulo": "📄 Nota de Retorno",
-  "tipo_notificacao": "ordem_retorno",
-  "dados": { ... }
-}
-```
-
 ---
 
-## 3️⃣ Supabase Query - Buscar Aprovadores
+## 3️⃣ Supabase Query - Buscar Aprovadores POR EMPRESA
 
 **Node Type**: `Supabase`
 
@@ -106,40 +147,29 @@ return {
 
 **Filters**:
 ```javascript
-// Filter 1
+// Filter 1 - Fluxo de permissão
 {
   "column": "fluxo_permissao",
   "operator": "eq",
   "value": "={{ $json.fluxo_permissao }}"
 }
 
-// Filter 2
+// Filter 2 - Ativo
 {
   "column": "ativo",
   "operator": "eq", 
   "value": true
 }
+
+// Filter 3 - EMPRESA (CRÍTICO para segregação!)
+{
+  "column": "empresa_id",
+  "operator": "eq",
+  "value": "={{ $json.empresa_id }}"
+}
 ```
 
-**Return Fields**: `id, nome, telefone, fluxo_permissao`
-
-**Output esperado**:
-```json
-[
-  {
-    "id": "uuid-123",
-    "nome": "Leonardo",
-    "telefone": "+5519996449359",
-    "fluxo_permissao": "fiscal"
-  },
-  {
-    "id": "uuid-456",
-    "nome": "Ana Costa",
-    "telefone": "+5519988776655",
-    "fluxo_permissao": "fiscal"
-  }
-]
-```
+**Return Fields**: `id, nome, telefone, fluxo_permissao, empresa_id`
 
 ---
 
@@ -150,31 +180,13 @@ return {
 **Configuração**:
 - Field to Split Out: `data`
 
-Isso separa o array de aprovadores em itens individuais para processar um por vez.
-
 ---
 
 ## 5️⃣ WhatsApp Business API - Enviar Mensagem
 
 **Node Type**: `HTTP Request`
 
-**Configuração**:
-- Method: `POST`
-- URL: `https://graph.facebook.com/v18.0/YOUR_PHONE_NUMBER_ID/messages`
-- Authentication: `Header Auth`
-  - Name: `Authorization`
-  - Value: `Bearer YOUR_ACCESS_TOKEN`
-
-**Headers**:
-```json
-{
-  "Content-Type": "application/json"
-}
-```
-
-**Body (JSON)**:
-
-### 📄 Template para Fiscal - Nota de Retorno
+### Template com Identificação da Empresa
 
 ```json
 {
@@ -183,67 +195,30 @@ Isso separa o array de aprovadores em itens individuais para processar um por ve
   "type": "text",
   "text": {
     "preview_url": false,
-    "body": "🔔 *Nova Notificação - Fiscal*\n\n📄 *Nota de Retorno*\n\n👤 Cliente: {{ $('Set Variables').item.json.dados.cliente_nome }}\n📋 Ordem: {{ $('Set Variables').item.json.dados.numero_ordem }}\n🔧 Equipamento: {{ $('Set Variables').item.json.dados.equipamento }}\n📑 NF Entrada: {{ $('Set Variables').item.json.dados.nota_fiscal_entrada }}\n📅 Data: {{ $('Set Variables').item.json.dados.data_finalizacao }}\n\n⚠️ *Ação necessária:* Emitir nota de retorno\n\n---\nSistema MecHidro"
-  }
-}
-```
-
-### 🔧 Template para Ordem de Serviço - Faturamento
-
-```json
-{
-  "messaging_product": "whatsapp",
-  "to": "={{ $json.telefone }}",
-  "type": "text",
-  "text": {
-    "preview_url": false,
-    "body": "🔔 *Nova Notificação - Faturamento*\n\n🔧 *Ordem Finalizada*\n\n👤 Cliente: {{ $('Set Variables').item.json.dados.cliente_nome }}\n📋 Ordem: {{ $('Set Variables').item.json.dados.numero_ordem }}\n🔧 Equipamento: {{ $('Set Variables').item.json.dados.equipamento }}\n📅 Data Finalização: {{ $('Set Variables').item.json.dados.data_finalizacao }}\n💰 Valor: R$ {{ $('Set Variables').item.json.dados.valor }}\n\n⚠️ *Ação necessária:* Emitir nota de faturamento\n\n---\nSistema MecHidro"
-  }
-}
-```
-
-### 💰 Template para Orçamento Aprovado
-
-```json
-{
-  "messaging_product": "whatsapp",
-  "to": "={{ $json.telefone }}",
-  "type": "text",
-  "text": {
-    "preview_url": false,
-    "body": "🔔 *Nova Notificação - Orçamento*\n\n💰 *Orçamento Aprovado*\n\n👤 Cliente: {{ $('Set Variables').item.json.dados.cliente_nome }}\n📋 Número: {{ $('Set Variables').item.json.dados.numero_ordem }}\n🔧 Equipamento: {{ $('Set Variables').item.json.dados.equipamento }}\n💰 Valor: R$ {{ $('Set Variables').item.json.dados.valor }}\n📅 Data Aprovação: {{ $('Set Variables').item.json.dados.data_finalizacao }}\n\n✅ *Status:* Aguardando faturamento\n\n---\nSistema MecHidro"
-  }
-}
-```
-
-### 🔧 Template para Ordem Aprovada (via Orçamento)
-
-```json
-{
-  "messaging_product": "whatsapp",
-  "to": "={{ $json.telefone }}",
-  "type": "text",
-  "text": {
-    "preview_url": false,
-    "body": "🔔 *Nova Notificação - Ordem de Serviço*\n\n✅ *Ordem Aprovada*\n\n👤 Cliente: {{ $('Set Variables').item.json.dados.cliente }}\n📋 OS: {{ $('Set Variables').item.json.dados.numero_ordem }}\n🔧 Equipamento: {{ $('Set Variables').item.json.dados.equipamento }}\n💰 Valor: R$ {{ $('Set Variables').item.json.dados.valor }}\n📄 Orçamento: {{ $('Set Variables').item.json.dados.orcamento_numero }}\n📅 Data Aprovação: {{ $('Set Variables').item.json.dados.data_aprovacao }}\n\n✅ *Status:* Ordem aprovada via orçamento\n\n---\nSistema MecHidro"
+    "body": "{{ $('Set Variables').item.json.prefixo }} *{{ $('Set Variables').item.json.empresa_nome }}*\n\n🔔 *{{ $('Set Variables').item.json.titulo }}*\n\n👤 Cliente: {{ $('Set Variables').item.json.dados.cliente }}\n📋 Ordem: {{ $('Set Variables').item.json.dados.numero_ordem }}\n🔧 Equipamento: {{ $('Set Variables').item.json.dados.equipamento }}\n📅 Data: {{ $('Set Variables').item.json.dados.data_aprovacao || $('Set Variables').item.json.dados.data_finalizacao }}\n\n---\nSistema Fixzys"
   }
 }
 ```
 
 ---
 
-## 🔀 Alternativa: IF Node para Templates Diferentes
+## 🔀 Alternativa: Switch Node para Empresas Diferentes
 
-Se preferir mensagens diferentes por tipo, adicione um **IF Node** antes do WhatsApp:
+Se precisar de templates completamente diferentes por empresa:
 
 ```javascript
-// Condition para cada fluxo
-$json.fluxo_permissao === 'fiscal'
-$json.fluxo_permissao === 'ordem_servico'
-$json.fluxo_permissao === 'orcamento'
+// Switch Node
+switch($json.empresa_id) {
+  case '75a36c77-793a-4f0f-b939-a2d79f5383b3':
+    // Branch: Mec Hydro Hydraulics
+    break;
+  case 'id-mec-hidro':
+    // Branch: Mec Hidro
+    break;
+  default:
+    // Branch: Padrão
+}
 ```
-
-E conecte cada branch a um node WhatsApp específico com template customizado.
 
 ---
 
@@ -251,21 +226,23 @@ E conecte cada branch a um node WhatsApp específico com template customizado.
 
 ```
 ┌─────────────────┐
-│  Webhook        │
+│  Webhook        │ ← Centralizado
 │  /aprovacoes    │
 └────────┬────────┘
          │
          ▼
 ┌─────────────────┐
-│  Set Variables  │
+│  Set Variables  │ ← Identifica empresa
 │  Mapeia fluxo   │
+│  + empresa      │
 └────────┬────────┘
          │
          ▼
 ┌─────────────────┐
-│  Supabase       │
+│  Supabase       │ ← Filtra por empresa_id
 │  Busca ativos   │
-│  do fluxo       │
+│  da empresa +   │
+│  fluxo          │
 └────────┬────────┘
          │
          ▼
@@ -276,9 +253,8 @@ E conecte cada branch a um node WhatsApp específico com template customizado.
          │
          ▼
 ┌─────────────────┐
-│  IF (opcional)  │
-│  Escolhe        │
-│  template       │
+│  Switch         │ ← Opcional: templates por empresa
+│  (empresa_id)   │
 └────────┬────────┘
          │
          ▼
@@ -325,62 +301,43 @@ curl -X POST \
 
 ## 🧪 Teste no Sistema
 
-### 1. Cadastrar aprovador de teste:
+### 1. Cadastrar aprovador de teste (com empresa_id):
 ```sql
-INSERT INTO aprovadores_fluxo (nome, telefone, fluxo_permissao, ativo) 
-VALUES ('Teste', '+5519999999999', 'fiscal', true);
+INSERT INTO aprovadores_fluxo (nome, telefone, fluxo_permissao, ativo, empresa_id) 
+VALUES (
+  'Teste', 
+  '+5519999999999', 
+  'fiscal', 
+  true,
+  '75a36c77-793a-4f0f-b939-a2d79f5383b3'  -- Mec Hydro Hydraulics
+);
 ```
 
 ### 2. Enviar webhook de teste:
 ```bash
 curl -X POST \
-  'https://seu-n8n.com/webhook/aprovacoes' \
+  'https://mechidro.app.n8n.cloud/webhook/aprovacoes' \
   -H 'Content-Type: application/json' \
   -d '{
-    "tipo": "ordem_retorno",
-    "numero_ordem": "OS-TEST-001",
-    "cliente_nome": "Cliente Teste",
+    "tipo": "ordem_aprovada",
+    "empresa_id": "75a36c77-793a-4f0f-b939-a2d79f5383b3",
+    "numero_ordem": "MH-037-25",
+    "cliente": "Cliente Teste",
     "equipamento": "Cilindro Teste",
-    "nota_fiscal_entrada": "12345",
-    "data_finalizacao": "2024-11-09T10:30:00Z"
+    "data_aprovacao": "14-01-2026",
+    "empresa": "Mec Hydro Hydraulics"
   }'
 ```
 
 ### 3. Verificar:
 - ✅ n8n recebeu o webhook
-- ✅ Mapeou corretamente para 'fiscal'
-- ✅ Buscou aprovadores do Supabase
-- ✅ Enviou mensagem WhatsApp
-
----
-
-## 🚨 Tratamento de Erros
-
-### Node de Error Handler (opcional):
-
-**Node Type**: `Function`
-
-```javascript
-// Após WhatsApp API, adicionar Error Trigger
-if ($json.error) {
-  console.error('Erro ao enviar WhatsApp:', {
-    aprovador: $json.nome,
-    telefone: $json.telefone,
-    erro: $json.error
-  });
-  
-  // Opcional: registrar falha no Supabase
-  // ou enviar alerta para admin
-}
-
-return $json;
-```
+- ✅ Identificou a empresa corretamente
+- ✅ Buscou aprovadores DESTA empresa
+- ✅ Enviou mensagem com identificação da empresa
 
 ---
 
 ## 📝 Variáveis de Ambiente no n8n
-
-Adicione no n8n Settings → Environment Variables:
 
 ```env
 WHATSAPP_PHONE_NUMBER_ID=123456789
@@ -389,81 +346,20 @@ SUPABASE_URL=https://fmbfkufkxvyncadunlhh.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-Use nas configurações dos nodes:
-```javascript
-{{ $env.WHATSAPP_ACCESS_TOKEN }}
-{{ $env.WHATSAPP_PHONE_NUMBER_ID }}
-```
-
----
-
-## 🔄 Migração do Telegram
-
-### Desativar notificações antigas:
-1. Encontre os nodes que enviam para Telegram
-2. Desative ou delete
-3. Conecte ao novo workflow de WhatsApp
-
-### Manter histórico:
-- Mantenha o workflow antigo desativado como backup
-- Documente a data de migração
-
----
-
-## 📊 Monitoramento
-
-### Logs importantes:
-```javascript
-console.log('Notificação recebida:', {
-  tipo: $json.tipo,
-  fluxo: $json.fluxo_permissao,
-  ordem: $json.dados.numero_ordem
-});
-
-console.log('Aprovadores encontrados:', {
-  fluxo: $json.fluxo_permissao,
-  quantidade: $json.data.length,
-  aprovadores: $json.data.map(a => a.nome)
-});
-
-console.log('Mensagem enviada:', {
-  para: $json.telefone,
-  nome: $json.nome,
-  status: 'enviado'
-});
-```
-
 ---
 
 ## ✅ Checklist de Implementação
 
-- [ ] Webhook configurado e testado
-- [ ] Variáveis de ambiente adicionadas
-- [ ] Credenciais WhatsApp Business API obtidas
-- [ ] Node Set Variables com mapeamento correto
-- [ ] Supabase node configurado com filtros
-- [ ] Split Out adicionado
-- [ ] WhatsApp API node configurado
-- [ ] Templates de mensagem customizados
-- [ ] Teste com cada tipo de notificação
-- [ ] Error handling implementado
-- [ ] Logs de monitoramento adicionados
-- [ ] Workflow antigo (Telegram) desativado
-- [ ] Documentação atualizada
+- [ ] Webhook centralizado configurado
+- [ ] Set Variables com identificação de empresa
+- [ ] Supabase query filtrando por empresa_id
+- [ ] Aprovadores cadastrados COM empresa_id
+- [ ] Templates com identificação visual da empresa
+- [ ] Testado com cada empresa
+- [ ] Testado com cada tipo de notificação
 
 ---
 
-## 🎯 Próximos Passos
-
-1. Importar este workflow no n8n
-2. Configurar credenciais do WhatsApp
-3. Testar com dados reais
-4. Ajustar templates de mensagem
-5. Monitorar primeiras notificações
-6. Coletar feedback dos aprovadores
-
----
-
-**Documentação criada em:** 2024-11-09  
-**Sistema:** MecHidro - Gestão de Ordens de Serviço  
-**Versão:** 1.0
+**Documentação atualizada em:** 2026-01-14  
+**Sistema:** Fixzys - Gestão de Ordens de Serviço  
+**Versão:** 2.0 - Webhook Unificado com Segregação por Empresa

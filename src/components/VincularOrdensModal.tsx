@@ -33,12 +33,6 @@ export function VincularOrdensModal({
   const [saving, setSaving] = useState(false);
   const { empresaAtual } = useEmpresa();
 
-  // Obter webhook da empresa
-  const getWebhookUrl = (): string | null => {
-    if (!empresaAtual) return null;
-    const config = empresaAtual.configuracoes as { webhook_url?: string } | null;
-    return config?.webhook_url || null;
-  };
 
   useEffect(() => {
     if (open && orcamento) {
@@ -129,13 +123,6 @@ export function VincularOrdensModal({
   };
 
   const enviarWebhookOrdemAprovada = async (ordem: any) => {
-    const webhookUrl = getWebhookUrl();
-    
-    if (!webhookUrl) {
-      console.warn('⚠️ Webhook não configurado para esta empresa');
-      return false;
-    }
-
     const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
     const tipoEquipamento = ordem.recebimentos?.tipo_equipamento || ordem.equipamento || 'Equipamento não especificado';
     const valorFormatado = `R$ ${(orcamento.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -148,11 +135,10 @@ export function VincularOrdensModal({
       valor: valorFormatado,
       data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
       orcamento_numero: orcamento.numero,
-      empresa: empresaAtual?.nome || 'N/A',
-      empresa_id: empresaAtual?.id || null
+      empresa: empresaAtual?.nome || 'N/A'
     };
 
-    return await enviarWebhook(webhookUrl, payload);
+    return await enviarWebhook(empresaAtual?.id || null, payload);
   };
 
   const handleSalvar = async () => {
