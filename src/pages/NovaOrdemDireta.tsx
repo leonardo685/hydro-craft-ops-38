@@ -556,7 +556,7 @@ const NovaOrdemDireta = () => {
               {t('novaAnalise.back')}
             </Button>
             <div>
-              <h1 className="text-3xl font-bold">{t('novaAnalise.title')}</h1>
+              <h1 className="text-3xl font-bold">Nova Análise</h1>
               <p className="text-muted-foreground">Ordem sem vinculação a recebimento</p>
             </div>
           </div>
