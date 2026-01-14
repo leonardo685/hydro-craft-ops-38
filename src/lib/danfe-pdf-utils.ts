@@ -176,7 +176,7 @@ export function gerarPdfDanfe(dados: DadosNFe): jsPDF {
 
   // Cabeçalho da tabela de produtos
   const tableX = margin;
-  const colWidths = [20, 85, 20, 30, 30]; // Código, Descrição, Qtd, Vl.Unit, Vl.Total
+  const colWidths = [18, 70, 18, 15, 28, 28]; // Código, Descrição, NCM, Qtd, Vl.Unit, Vl.Total
   
   doc.setFillColor(230, 230, 230);
   doc.rect(tableX, y, pageWidth - margin * 2, 8, 'F');
@@ -189,10 +189,12 @@ export function gerarPdfDanfe(dados: DadosNFe): jsPDF {
   colX += colWidths[0];
   doc.text('DESCRIÇÃO DO PRODUTO / SERVIÇO', colX, y + 5);
   colX += colWidths[1];
-  doc.text('QTD', colX, y + 5);
+  doc.text('NCM', colX, y + 5);
   colX += colWidths[2];
-  doc.text('VL. UNIT.', colX, y + 5);
+  doc.text('QTD', colX, y + 5);
   colX += colWidths[3];
+  doc.text('VL. UNIT.', colX, y + 5);
+  colX += colWidths[4];
   doc.text('VL. TOTAL', colX, y + 5);
   
   y += 8;
@@ -219,20 +221,23 @@ export function gerarPdfDanfe(dados: DadosNFe): jsPDF {
     doc.rect(tableX, y, pageWidth - margin * 2, rowHeight, 'S');
     
     colX = tableX + 2;
-    doc.text(item.codigo?.substring(0, 12) || '-', colX, y + 5);
+    doc.text(item.codigo?.substring(0, 10) || '-', colX, y + 5);
     colX += colWidths[0];
     
     // Truncar descrição se muito longa
-    const descricaoTruncada = item.descricao?.length > 55 
-      ? item.descricao.substring(0, 52) + '...' 
+    const descricaoTruncada = item.descricao?.length > 45 
+      ? item.descricao.substring(0, 42) + '...' 
       : (item.descricao || '-');
     doc.text(descricaoTruncada, colX, y + 5);
     colX += colWidths[1];
     
-    doc.text(item.quantidade?.toString() || '1', colX, y + 5);
+    doc.text(item.ncm?.substring(0, 10) || '-', colX, y + 5);
     colX += colWidths[2];
-    doc.text(formatCurrency(item.valorUnitario || 0), colX, y + 5);
+    
+    doc.text(item.quantidade?.toString() || '1', colX, y + 5);
     colX += colWidths[3];
+    doc.text(formatCurrency(item.valorUnitario || 0), colX, y + 5);
+    colX += colWidths[4];
     doc.text(formatCurrency(item.valorTotal || 0), colX, y + 5);
     
     y += rowHeight;

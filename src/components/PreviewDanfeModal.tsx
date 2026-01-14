@@ -154,6 +154,7 @@ export function PreviewDanfeModal({ open, onClose, dados }: PreviewDanfeModalPro
                     <tr>
                       <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground">CÓDIGO</th>
                       <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground">DESCRIÇÃO</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground">NCM</th>
                       <th className="text-center px-3 py-2 text-xs font-semibold text-muted-foreground">QTD</th>
                       <th className="text-right px-3 py-2 text-xs font-semibold text-muted-foreground">VL. UNIT.</th>
                       <th className="text-right px-3 py-2 text-xs font-semibold text-muted-foreground">VL. TOTAL</th>
@@ -165,6 +166,7 @@ export function PreviewDanfeModal({ open, onClose, dados }: PreviewDanfeModalPro
                         <tr key={index} className="border-b">
                           <td className="px-3 py-3 font-mono text-xs">{item.codigo || '-'}</td>
                           <td className="px-3 py-3">{item.descricao || '-'}</td>
+                          <td className="px-3 py-3 font-mono text-xs">{item.ncm || '-'}</td>
                           <td className="px-3 py-3 text-center">{item.quantidade || 1}</td>
                           <td className="px-3 py-3 text-right">{formatCurrency(item.valorUnitario || 0)}</td>
                           <td className="px-3 py-3 text-right font-medium text-primary">{formatCurrency(item.valorTotal || 0)}</td>
@@ -172,7 +174,7 @@ export function PreviewDanfeModal({ open, onClose, dados }: PreviewDanfeModalPro
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="px-3 py-4 text-center text-muted-foreground italic">
+                        <td colSpan={6} className="px-3 py-4 text-center text-muted-foreground italic">
                           Nenhum item encontrado
                         </td>
                       </tr>

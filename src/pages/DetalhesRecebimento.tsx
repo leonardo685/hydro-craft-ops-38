@@ -100,6 +100,12 @@ export default function DetalhesRecebimento() {
                   <p className="text-sm font-medium text-muted-foreground">Tipo Equipamento</p>
                   <p className="font-medium">{recebimento.tipo_equipamento}</p>
                 </div>
+                {recebimento.descricao_nfe && (
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium text-muted-foreground">Descrição NFe (Original)</p>
+                    <p className="font-medium bg-muted/50 px-2 py-1 rounded text-sm">{recebimento.descricao_nfe}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Nº de Série</p>
                   <p className="font-medium">{recebimento.numero_serie || '-'}</p>

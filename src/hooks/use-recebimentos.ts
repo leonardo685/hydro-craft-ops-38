@@ -13,6 +13,7 @@ export interface Recebimento {
   chave_acesso_nfe?: string;
   categoria_equipamento?: string;
   tipo_equipamento: string;
+  descricao_nfe?: string; // Descrição do equipamento vinda da NFe (imutável)
   numero_serie?: string;
   pressao_trabalho?: string;
   ambiente_trabalho?: string;

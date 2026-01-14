@@ -129,8 +129,9 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
           nota_fiscal: dadosNFe.numero, // Salvar sem prefixo NF-
           chave_acesso_nfe: dadosNFe.chaveAcesso,
           tipo_equipamento: item.descricao,
+          descricao_nfe: item.descricao, // Descrição original da NFe (imutável)
           numero_serie: `${item.codigo}-${new Date().getFullYear()}`,
-          observacoes: `Item da NFe: ${item.codigo} - ${item.descricao}`,
+          observacoes: `Item da NFe: ${item.codigo} - ${item.descricao}${item.ncm ? ` | NCM: ${item.ncm}` : ''}`,
           urgente: false,
           na_empresa: true,
           status: 'recebido'
