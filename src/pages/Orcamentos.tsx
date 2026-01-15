@@ -989,17 +989,32 @@ export default function Orcamentos() {
         doc.setTextColor(0, 0, 0);
         yPosition += 15;
 
-        // Função para processar imagem com canvas (corrige orientação EXIF)
+        // Função para processar imagem com compressão para PDF
         const processarImagem = (img: HTMLImageElement): string => {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           if (!ctx) return img.src;
           
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          ctx.drawImage(img, 0, 0);
+          // Comprimir imagem: máximo 800x600 pixels
+          const maxWidth = 800;
+          const maxHeight = 600;
+          let width = img.naturalWidth;
+          let height = img.naturalHeight;
           
-          return canvas.toDataURL('image/jpeg', 0.85);
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'medium';
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Qualidade 0.6 para menor tamanho de arquivo
+          return canvas.toDataURL('image/jpeg', 0.6);
         };
 
         const maxFotoWidth = 80;

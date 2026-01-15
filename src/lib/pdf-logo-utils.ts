@@ -47,6 +47,39 @@ export async function loadLogoForPDF(logoUrl: string | null | undefined): Promis
 /**
  * Adiciona o logo ao documento PDF
  */
+/**
+ * Comprime uma imagem para uso em PDF
+ */
+function compressImageForPDF(img: HTMLImageElement, format: 'JPEG' | 'PNG'): string {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return img.src;
+
+  // Limitar tamanho do logo para reduzir tamanho do PDF
+  const maxWidth = 200;
+  const maxHeight = 100;
+  let width = img.naturalWidth;
+  let height = img.naturalHeight;
+
+  if (width > maxWidth || height > maxHeight) {
+    const ratio = Math.min(maxWidth / width, maxHeight / height);
+    width = Math.round(width * ratio);
+    height = Math.round(height * ratio);
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'medium';
+  ctx.drawImage(img, 0, 0, width, height);
+
+  // Usar JPEG com qualidade 0.7 para logos
+  return canvas.toDataURL('image/jpeg', 0.7);
+}
+
+/**
+ * Adiciona o logo ao documento PDF com compressão
+ */
 export async function addLogoToPDF(
   doc: any,
   logoUrl: string | null | undefined,
@@ -63,7 +96,9 @@ export async function addLogoToPDF(
     
     await new Promise<void>((resolve) => {
       logoImg.onload = () => {
-        doc.addImage(logoImg, format, x, y, width, height);
+        // Comprimir imagem antes de adicionar ao PDF
+        const compressedDataUrl = compressImageForPDF(logoImg, format);
+        doc.addImage(compressedDataUrl, 'JPEG', x, y, width, height);
         resolve();
       };
       logoImg.onerror = () => {
