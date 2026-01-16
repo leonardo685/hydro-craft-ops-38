@@ -24,7 +24,8 @@ export function ItensNFeModal({
   salvando = false,
   ordensExistentes = 0 
 }: ItensNFeModalProps) {
-  const [itensSelecionados, setItensSelecionados] = useState<string[]>([]);
+  // Usa índices como identificador único para permitir itens com códigos duplicados
+  const [itensSelecionados, setItensSelecionados] = useState<number[]>([]);
 
   const totalItens = dadosNFe.itens?.length || 0;
   const ordensDisponiveis = Math.max(0, totalItens - ordensExistentes);
@@ -36,16 +37,16 @@ export function ItensNFeModal({
     }
   }, [open]);
 
-  const handleItemToggle = (codigoItem: string) => {
+  const handleItemToggle = (index: number) => {
     setItensSelecionados(prev => {
-      if (prev.includes(codigoItem)) {
-        return prev.filter(id => id !== codigoItem);
+      if (prev.includes(index)) {
+        return prev.filter(i => i !== index);
       } else {
         // Verificar se ainda pode selecionar mais
         if (prev.length >= ordensDisponiveis) {
           return prev; // Não permite selecionar mais
         }
-        return [...prev, codigoItem];
+        return [...prev, index];
       }
     });
   };
@@ -55,17 +56,18 @@ export function ItensNFeModal({
       if (itensSelecionados.length > 0) {
         setItensSelecionados([]);
       } else {
-        // Seleciona apenas até o limite disponível
-        const itensParaSelecionar = dadosNFe.itens.slice(0, ordensDisponiveis);
-        setItensSelecionados(itensParaSelecionar.map(item => item.codigo));
+        // Seleciona índices até o limite disponível
+        const indices = dadosNFe.itens.slice(0, ordensDisponiveis).map((_, i) => i);
+        setItensSelecionados(indices);
       }
     }
   };
 
   const handleConfirmar = () => {
     if (dadosNFe.itens) {
-      const itensParaCriarOrdens = dadosNFe.itens.filter(item => 
-        itensSelecionados.includes(item.codigo)
+      // Filtra por índice em vez de código
+      const itensParaCriarOrdens = dadosNFe.itens.filter((_, index) => 
+        itensSelecionados.includes(index)
       );
       onConfirm(dadosNFe, itensParaCriarOrdens);
     }
@@ -153,18 +155,18 @@ export function ItensNFeModal({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dadosNFe.itens?.map((item) => {
-                  const isDisabled = !itensSelecionados.includes(item.codigo) && 
+                {dadosNFe.itens?.map((item, index) => {
+                  const isDisabled = !itensSelecionados.includes(index) && 
                                      itensSelecionados.length >= ordensDisponiveis;
                   return (
                     <TableRow 
-                      key={item.codigo}
+                      key={index}
                       className={isDisabled ? 'opacity-50' : ''}
                     >
                       <TableCell>
                         <Checkbox
-                          checked={itensSelecionados.includes(item.codigo)}
-                          onCheckedChange={() => handleItemToggle(item.codigo)}
+                          checked={itensSelecionados.includes(index)}
+                          onCheckedChange={() => handleItemToggle(index)}
                           disabled={isDisabled}
                         />
                       </TableCell>
