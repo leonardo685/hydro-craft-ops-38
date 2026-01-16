@@ -12,6 +12,7 @@ import { ItensNFeModal } from "./ItensNFeModal";
 import { EditarDadosNFeModal } from "./EditarDadosNFeModal";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
 import { useEmpresaId } from "@/hooks/use-empresa-id";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChaveAcessoModalProps {
   open: boolean;
@@ -117,7 +118,7 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
         return;
       }
 
-      // 2. Criar ordens de serviço para cada item selecionado
+      // 2. Criar recebimentos e ordens de serviço para cada item selecionado
       for (const item of itensSelecionados) {
         const numeroOrdem = await gerarNumeroOrdem();
         
@@ -137,7 +138,23 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
           status: 'recebido'
         };
 
-        await criarRecebimento(recebimentoData);
+        const recebimentoCriado = await criarRecebimento(recebimentoData);
+        
+        // Criar ordem de serviço vinculada ao recebimento
+        if (recebimentoCriado) {
+          const ordemData = {
+            numero_ordem: numeroOrdem,
+            recebimento_id: recebimentoCriado.id,
+            cliente_nome: cliente,
+            equipamento: item.descricao,
+            status: 'recebida',
+            data_entrada: new Date().toISOString().split('T')[0],
+            empresa_id: empresaId,
+            prioridade: 'normal'
+          };
+
+          await supabase.from('ordens_servico').insert([ordemData]);
+        }
       }
 
       // Recarregar dados para mostrar na listagem
