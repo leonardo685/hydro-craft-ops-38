@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Package, CheckCircle2 } from "lucide-react";
-import { useState } from "react";
+import { Package, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
 import { type DadosNFe, type ItemNFe } from "@/lib/nfe-utils";
 
 interface ItensNFeModalProps {
@@ -13,25 +13,51 @@ interface ItensNFeModalProps {
   onConfirm: (dadosNFe: DadosNFe, itensSelecionados: ItemNFe[]) => void;
   dadosNFe: DadosNFe;
   salvando?: boolean;
+  ordensExistentes?: number;
 }
 
-export function ItensNFeModal({ open, onClose, onConfirm, dadosNFe, salvando = false }: ItensNFeModalProps) {
+export function ItensNFeModal({ 
+  open, 
+  onClose, 
+  onConfirm, 
+  dadosNFe, 
+  salvando = false,
+  ordensExistentes = 0 
+}: ItensNFeModalProps) {
   const [itensSelecionados, setItensSelecionados] = useState<string[]>([]);
 
+  const totalItens = dadosNFe.itens?.length || 0;
+  const ordensDisponiveis = Math.max(0, totalItens - ordensExistentes);
+
+  // Reset seleção quando modal abre
+  useEffect(() => {
+    if (open) {
+      setItensSelecionados([]);
+    }
+  }, [open]);
+
   const handleItemToggle = (codigoItem: string) => {
-    setItensSelecionados(prev => 
-      prev.includes(codigoItem)
-        ? prev.filter(id => id !== codigoItem)
-        : [...prev, codigoItem]
-    );
+    setItensSelecionados(prev => {
+      if (prev.includes(codigoItem)) {
+        return prev.filter(id => id !== codigoItem);
+      } else {
+        // Verificar se ainda pode selecionar mais
+        if (prev.length >= ordensDisponiveis) {
+          return prev; // Não permite selecionar mais
+        }
+        return [...prev, codigoItem];
+      }
+    });
   };
 
   const handleSelecionarTodos = () => {
     if (dadosNFe.itens) {
-      if (itensSelecionados.length === dadosNFe.itens.length) {
+      if (itensSelecionados.length > 0) {
         setItensSelecionados([]);
       } else {
-        setItensSelecionados(dadosNFe.itens.map(item => item.codigo));
+        // Seleciona apenas até o limite disponível
+        const itensParaSelecionar = dadosNFe.itens.slice(0, ordensDisponiveis);
+        setItensSelecionados(itensParaSelecionar.map(item => item.codigo));
       }
     }
   };
@@ -63,6 +89,21 @@ export function ItensNFeModal({ open, onClose, onConfirm, dadosNFe, salvando = f
         </DialogHeader>
         
         <div className="space-y-4">
+          {ordensExistentes > 0 && (
+            <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-800">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <p className="font-medium">
+                  Esta nota já possui {ordensExistentes} ordem{ordensExistentes !== 1 ? 's' : ''} de serviço criada{ordensExistentes !== 1 ? 's' : ''}.
+                </p>
+                <p className="text-sm">
+                  Você pode criar no máximo mais {ordensDisponiveis} ordem{ordensDisponiveis !== 1 ? 's' : ''} 
+                  (total de itens: {totalItens}).
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Alert>
             <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>
@@ -71,22 +112,32 @@ export function ItensNFeModal({ open, onClose, onConfirm, dadosNFe, salvando = f
                 <div className="text-sm space-y-1">
                   <p><strong>Cliente:</strong> {dadosNFe.cnpjEmitente}</p>
                   <p><strong>Nota Fiscal:</strong> {dadosNFe.numero} - Série {dadosNFe.serie}</p>
-                  <p><strong>Total de itens:</strong> {dadosNFe.itens?.length || 0}</p>
+                  <p><strong>Total de itens:</strong> {totalItens}</p>
+                  {ordensExistentes > 0 && (
+                    <p className="text-amber-600">
+                      <strong>Ordens disponíveis:</strong> {ordensDisponiveis} de {totalItens}
+                    </p>
+                  )}
                 </div>
               </div>
             </AlertDescription>
           </Alert>
 
-          <div className="flex items-center gap-2 mb-4">
-            <Checkbox
-              id="selecionar-todos"
-              checked={itensSelecionados.length === dadosNFe.itens?.length && dadosNFe.itens?.length > 0}
-              onCheckedChange={handleSelecionarTodos}
-            />
-            <label htmlFor="selecionar-todos" className="text-sm font-medium cursor-pointer">
-              Selecionar todos os itens
-            </label>
-          </div>
+          {ordensDisponiveis > 0 && (
+            <div className="flex items-center gap-2 mb-4">
+              <Checkbox
+                id="selecionar-todos"
+                checked={itensSelecionados.length === ordensDisponiveis && ordensDisponiveis > 0}
+                onCheckedChange={handleSelecionarTodos}
+              />
+              <label htmlFor="selecionar-todos" className="text-sm font-medium cursor-pointer">
+                {ordensDisponiveis < totalItens 
+                  ? `Selecionar ${ordensDisponiveis} itens disponíveis`
+                  : 'Selecionar todos os itens'
+                }
+              </label>
+            </div>
+          )}
 
           <div className="border rounded-lg">
             <Table>
@@ -102,32 +153,40 @@ export function ItensNFeModal({ open, onClose, onConfirm, dadosNFe, salvando = f
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dadosNFe.itens?.map((item) => (
-                  <TableRow key={item.codigo}>
-                    <TableCell>
-                      <Checkbox
-                        checked={itensSelecionados.includes(item.codigo)}
-                        onCheckedChange={() => handleItemToggle(item.codigo)}
-                      />
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{item.codigo}</TableCell>
-                    <TableCell className="max-w-md">
-                      <div className="truncate" title={item.descricao}>
-                        {item.descricao}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{item.ncm}</TableCell>
-                    <TableCell className="text-right">
-                      {item.quantidade.toFixed(2)} {item.unidade}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      R$ {item.valorUnitario.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      R$ {item.valorTotal.toFixed(2)}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {dadosNFe.itens?.map((item) => {
+                  const isDisabled = !itensSelecionados.includes(item.codigo) && 
+                                     itensSelecionados.length >= ordensDisponiveis;
+                  return (
+                    <TableRow 
+                      key={item.codigo}
+                      className={isDisabled ? 'opacity-50' : ''}
+                    >
+                      <TableCell>
+                        <Checkbox
+                          checked={itensSelecionados.includes(item.codigo)}
+                          onCheckedChange={() => handleItemToggle(item.codigo)}
+                          disabled={isDisabled}
+                        />
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">{item.codigo}</TableCell>
+                      <TableCell className="max-w-md">
+                        <div className="truncate" title={item.descricao}>
+                          {item.descricao}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">{item.ncm}</TableCell>
+                      <TableCell className="text-right">
+                        {item.quantidade.toFixed(2)} {item.unidade}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        R$ {item.valorUnitario.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        R$ {item.valorTotal.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -139,7 +198,7 @@ export function ItensNFeModal({ open, onClose, onConfirm, dadosNFe, salvando = f
             <Button 
               onClick={handleConfirmar} 
               className="flex-1"
-              disabled={itensSelecionados.length === 0 || salvando}
+              disabled={itensSelecionados.length === 0 || salvando || ordensDisponiveis === 0}
             >
               {salvando ? "Salvando..." : `Criar ${itensSelecionados.length} Ordem${itensSelecionados.length !== 1 ? 's' : ''}`}
             </Button>
