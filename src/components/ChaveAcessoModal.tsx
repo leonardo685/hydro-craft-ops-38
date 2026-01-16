@@ -29,6 +29,7 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
   const [erro, setErro] = useState("");
   const [mostrarItens, setMostrarItens] = useState(false);
   const [mostrarEdicao, setMostrarEdicao] = useState(false);
+  const [ordensExistentes, setOrdensExistentes] = useState(0);
   const [salvando, setSalvando] = useState(false);
 
   const handleChaveChange = (valor: string) => {
@@ -60,6 +61,23 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
 
     const dados = await extrairDadosNFe(chaveAcesso);
     setDadosExtraidos(dados);
+    
+    // Verificar quantas ordens já existem para esta nota
+    const chaveNormalizada = chaveAcesso.replace(/\s/g, '');
+    const { data: recebimentosExistentes } = await supabase
+      .from('recebimentos')
+      .select('id')
+      .eq('chave_acesso_nfe', chaveNormalizada);
+    
+    const qtdOrdensExistentes = recebimentosExistentes?.length || 0;
+    setOrdensExistentes(qtdOrdensExistentes);
+    const totalItens = dados.itens?.length || 0;
+    
+    if (qtdOrdensExistentes >= totalItens && totalItens > 0) {
+      setErro(`Esta nota fiscal já possui ordens de serviço para todos os ${totalItens} itens. Não é possível criar novas ordens.`);
+      setDadosExtraidos(null);
+      return;
+    }
     
     // Buscar cliente pelo CNPJ
     const clienteEncontrado = await buscarClientePorCNPJ(dados.cnpjEmitente);
@@ -327,6 +345,7 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
               onConfirm={handleConfirmarItens}
               dadosNFe={dadosExtraidos}
               salvando={salvando}
+              ordensExistentes={ordensExistentes}
             />
             <EditarDadosNFeModal
               open={mostrarEdicao}
