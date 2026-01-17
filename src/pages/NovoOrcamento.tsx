@@ -1253,14 +1253,29 @@ export default function NovoOrcamento() {
           .eq('orcamento_id', orcamentoId);
       }
 
-      // Salvar itens do orçamento
+      // Salvar itens do orçamento com deduplicação
       const todosItens = [
         ...itensAnalise.pecas.map(item => ({ ...item, tipo: 'peca' })),
         ...itensAnalise.servicos.map(item => ({ ...item, tipo: 'servico' })),
         ...itensAnalise.usinagem.map(item => ({ ...item, tipo: 'usinagem' }))
       ];
 
-      const itensParaInserir = todosItens.map(item => ({
+      // Deduplicar itens baseado em tipo + descricao + quantidade
+      const itensUnicos = todosItens.reduce((acc, item) => {
+        const chave = `${item.tipo}|${item.descricao}|${item.quantidade}`;
+        if (!acc.has(chave)) {
+          acc.set(chave, item);
+        } else {
+          // Se encontrar duplicata, manter o que tem maior valor (provavelmente o mais atualizado)
+          const existente = acc.get(chave);
+          if (item.valorTotal > existente.valorTotal) {
+            acc.set(chave, item);
+          }
+        }
+        return acc;
+      }, new Map());
+
+      const itensParaInserir = Array.from(itensUnicos.values()).map(item => ({
         orcamento_id: orcamentoId,
         tipo: item.tipo,
         descricao: item.descricao,
