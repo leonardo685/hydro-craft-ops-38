@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Settings, Globe, Building2, Upload, Loader2, Search, Webhook } from "lucide-react";
+import { Settings, Globe, Building2, Upload, Loader2, Search, Webhook, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +25,7 @@ export default function Configuracoes() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [searchingCNPJ, setSearchingCNPJ] = useState(false);
+  const [limpandoDuplicatas, setLimpandoDuplicatas] = useState(false);
   
   // Form state
   const [tipoIdentificacao, setTipoIdentificacao] = useState<TipoIdentificacao>('cnpj');
@@ -278,7 +279,32 @@ export default function Configuracoes() {
     }
   };
 
-  // Labels dinâmicos baseados no tipo de identificação
+  // Função para limpar itens duplicados de todos os orçamentos
+  const handleLimparDuplicatas = async () => {
+    if (!confirm('Tem certeza que deseja limpar todos os itens duplicados de todos os orçamentos? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    setLimpandoDuplicatas(true);
+    try {
+      const { data, error } = await supabase.rpc('limpar_itens_duplicados');
+
+      if (error) throw error;
+
+      const itensRemovidos = data as number;
+      if (itensRemovidos > 0) {
+        toast.success(`${itensRemovidos} item(ns) duplicado(s) removido(s) com sucesso!`);
+      } else {
+        toast.info('Nenhum item duplicado encontrado.');
+      }
+    } catch (error: any) {
+      console.error('Erro ao limpar duplicatas:', error);
+      toast.error('Erro ao limpar itens duplicados');
+    } finally {
+      setLimpandoDuplicatas(false);
+    }
+  };
+
   const labels = {
     identificacao: tipoIdentificacao === 'cnpj' ? 'CNPJ' : 'EIN',
     placeholderIdentificacao: tipoIdentificacao === 'cnpj' ? '00.000.000/0000-00' : '00-0000000',
@@ -605,6 +631,48 @@ export default function Configuracoes() {
               </RadioGroup>
             </CardContent>
           </Card>
+
+          {/* Manutenção do Sistema */}
+          {canEdit && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trash2 className="h-5 w-5" />
+                  Manutenção do Sistema
+                </CardTitle>
+                <CardDescription>
+                  Ferramentas de manutenção e limpeza de dados
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-medium">Limpar Itens Duplicados</p>
+                    <p className="text-sm text-muted-foreground">
+                      Remove itens duplicados de todos os orçamentos (mesma descrição, tipo e quantidade)
+                    </p>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleLimparDuplicatas}
+                    disabled={limpandoDuplicatas}
+                  >
+                    {limpandoDuplicatas ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Limpando...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Limpar Duplicatas
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </AppLayout>

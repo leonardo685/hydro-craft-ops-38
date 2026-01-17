@@ -2143,6 +2143,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      limpar_itens_duplicados: { Args: never; Returns: number }
       registrar_atividade: {
         Args: {
           p_descricao: string
