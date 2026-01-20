@@ -1450,18 +1450,32 @@ const NovaOrdemServico = () => {
       console.log('fotosChegada array:', fotosChegada);
       console.log('previewsChegada array:', previewsChegada);
       
+      // Definir IDs para vincular fotos - usar recebimento_id se disponível, senão ordem_servico_id
+      const fotoRecebimentoId = recebimento?.id || null;
+      const fotoOrdemId = ordemExistente?.id || ordemId;
+      const hasValidFotoOwner = fotoRecebimentoId || fotoOrdemId;
+      
+      console.log('IDs para fotos:', { fotoRecebimentoId, fotoOrdemId, hasValidFotoOwner });
+      
       // Se for edição, primeiro remover fotos de chegada antigas que não estão mais presentes
-      if (isEdicao && recebimento?.id) {
+      if (isEdicao && hasValidFotoOwner) {
         // Obter URLs atuais de fotos de chegada
         const urlsAtuais = previewsChegada.filter(url => url && typeof url === 'string');
         console.log('URLs atuais de fotos de CHEGADA:', urlsAtuais);
         
-        // Buscar fotos de chegada existentes no banco
-        const { data: fotosExistentes } = await supabase
+        // Buscar fotos de chegada existentes no banco - por recebimento OU ordem
+        let queryChegada = supabase
           .from('fotos_equipamentos')
           .select('id, arquivo_url, apresentar_orcamento')
-          .eq('recebimento_id', recebimento.id)
           .eq('apresentar_orcamento', true);
+        
+        if (fotoRecebimentoId) {
+          queryChegada = queryChegada.eq('recebimento_id', fotoRecebimentoId);
+        } else if (fotoOrdemId) {
+          queryChegada = queryChegada.eq('ordem_servico_id', fotoOrdemId);
+        }
+        
+        const { data: fotosExistentes } = await queryChegada;
         
         console.log('Fotos de CHEGADA existentes no banco:', fotosExistentes);
         
@@ -1484,13 +1498,14 @@ const NovaOrdemServico = () => {
       // Upload de novas fotos de chegada
       for (let i = 0; i < fotosChegada.length; i++) {
         const foto = fotosChegada[i];
-        if (foto && recebimento?.id) {
+        if (foto && hasValidFotoOwner) {
           // Verificar se é um arquivo novo (File) ou URL existente (string)
           if (typeof foto !== 'string' && foto instanceof File) {
             console.log(`Fazendo upload da foto de chegada ${i + 1}...`);
             try {
+              const idForFilename = fotoRecebimentoId || fotoOrdemId;
               const fileExt = foto.name.split('.').pop();
-              const fileName = `${recebimento.id}_chegada_${i}_${Date.now()}.${fileExt}`;
+              const fileName = `${idForFilename}_chegada_${i}_${Date.now()}.${fileExt}`;
               const filePath = `${fileName}`;
 
               const { error: uploadError } = await supabase.storage
@@ -1507,10 +1522,12 @@ const NovaOrdemServico = () => {
                 .getPublicUrl(filePath);
 
               // Salvar foto com apresentar_orcamento = true
+              // Usar recebimento_id se disponível, senão usar ordem_servico_id
               await supabase
                 .from('fotos_equipamentos')
                 .insert({
-                  recebimento_id: recebimento.id,
+                  recebimento_id: fotoRecebimentoId || null,
+                  ordem_servico_id: fotoRecebimentoId ? null : fotoOrdemId,
                   arquivo_url: publicUrl,
                   nome_arquivo: fileName,
                   apresentar_orcamento: true,
@@ -1533,17 +1550,24 @@ const NovaOrdemServico = () => {
       console.log('previewsAnalise array:', previewsAnalise);
       
       // Se for edição, primeiro remover fotos de análise antigas que não estão mais presentes
-      if (isEdicao && recebimento?.id) {
+      if (isEdicao && hasValidFotoOwner) {
         // Obter URLs atuais de fotos de análise
         const urlsAtuais = previewsAnalise.filter(url => url && typeof url === 'string');
         console.log('URLs atuais de fotos de ANÁLISE:', urlsAtuais);
         
-        // Buscar fotos de análise existentes no banco
-        const { data: fotosExistentes } = await supabase
+        // Buscar fotos de análise existentes no banco - por recebimento OU ordem
+        let queryAnalise = supabase
           .from('fotos_equipamentos')
           .select('id, arquivo_url, apresentar_orcamento')
-          .eq('recebimento_id', recebimento.id)
           .eq('apresentar_orcamento', false);
+        
+        if (fotoRecebimentoId) {
+          queryAnalise = queryAnalise.eq('recebimento_id', fotoRecebimentoId);
+        } else if (fotoOrdemId) {
+          queryAnalise = queryAnalise.eq('ordem_servico_id', fotoOrdemId);
+        }
+        
+        const { data: fotosExistentes } = await queryAnalise;
         
         console.log('Fotos de ANÁLISE existentes no banco:', fotosExistentes);
         
@@ -1566,13 +1590,14 @@ const NovaOrdemServico = () => {
       // Upload de novas fotos de análise
       for (let i = 0; i < fotosAnalise.length; i++) {
         const foto = fotosAnalise[i];
-        if (foto && recebimento?.id) {
+        if (foto && hasValidFotoOwner) {
           // Verificar se é um arquivo novo (File) ou URL existente (string)
           if (typeof foto !== 'string' && foto instanceof File) {
             console.log(`Fazendo upload da foto de análise ${i + 1}...`);
             try {
+              const idForFilename = fotoRecebimentoId || fotoOrdemId;
               const fileExt = foto.name.split('.').pop();
-              const fileName = `${recebimento.id}_analise_${i}_${Date.now()}.${fileExt}`;
+              const fileName = `${idForFilename}_analise_${i}_${Date.now()}.${fileExt}`;
               const filePath = `${fileName}`;
 
               const { error: uploadError } = await supabase.storage
@@ -1588,10 +1613,12 @@ const NovaOrdemServico = () => {
                 .from('equipamentos')
                 .getPublicUrl(filePath);
 
+              // Usar recebimento_id se disponível, senão usar ordem_servico_id
               await supabase
                 .from('fotos_equipamentos')
                 .insert({
-                  recebimento_id: recebimento.id,
+                  recebimento_id: fotoRecebimentoId || null,
+                  ordem_servico_id: fotoRecebimentoId ? null : fotoOrdemId,
                   arquivo_url: publicUrl,
                   nome_arquivo: fileName,
                   apresentar_orcamento: false,
