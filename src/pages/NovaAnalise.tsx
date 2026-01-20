@@ -913,20 +913,21 @@ const NovaOrdemServico = () => {
               motivoFalha: ordem.motivo_falha || ""
             });
 
-            // Dados técnicos básicos
+            // Dados técnicos - carregar da ordem se disponíveis (para ordens diretas)
+            console.log('📊 Carregando dados técnicos da ordem direta:', ordem);
             setDadosTecnicos({
               tipoEquipamento: ordem.equipamento || "",
-              pressaoTrabalho: "",
-              camisa: "",
-              hasteComprimento: "",
-              curso: "",
-              conexaoA: "",
-              conexaoB: "",
-              temperaturaTrabalho: "",
-              fluidoTrabalho: "",
-              localInstalacao: "",
-              potencia: "",
-              numeroSerie: ""
+              pressaoTrabalho: (ordem as any).pressao_trabalho || "",
+              camisa: (ordem as any).camisa || "",
+              hasteComprimento: (ordem as any).haste_comprimento || "",
+              curso: (ordem as any).curso || "",
+              conexaoA: (ordem as any).conexao_a || "",
+              conexaoB: (ordem as any).conexao_b || "",
+              temperaturaTrabalho: (ordem as any).temperatura_trabalho || "",
+              fluidoTrabalho: (ordem as any).fluido_trabalho || "",
+              localInstalacao: (ordem as any).local_instalacao || "",
+              potencia: (ordem as any).potencia || "",
+              numeroSerie: (ordem as any).numero_serie || ""
             });
 
             // Carregar peças
@@ -1248,7 +1249,20 @@ const NovaOrdemServico = () => {
             motivo_falha: formData.motivoFalha || null,
             prioridade: formData.prioridade.toLowerCase(),
             data_analise: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            // Salvar dados técnicos diretamente na ordem
+            equipamento: dadosTecnicos.tipoEquipamento || ordemExistente.equipamento,
+            camisa: dadosTecnicos.camisa || null,
+            haste_comprimento: dadosTecnicos.hasteComprimento || null,
+            curso: dadosTecnicos.curso || null,
+            conexao_a: dadosTecnicos.conexaoA || null,
+            conexao_b: dadosTecnicos.conexaoB || null,
+            pressao_trabalho: dadosTecnicos.pressaoTrabalho || null,
+            temperatura_trabalho: dadosTecnicos.temperaturaTrabalho || null,
+            fluido_trabalho: dadosTecnicos.fluidoTrabalho || null,
+            local_instalacao: dadosTecnicos.localInstalacao || null,
+            potencia: dadosTecnicos.potencia || null,
+            numero_serie: dadosTecnicos.numeroSerie || null
           })
           .eq('id', ordemExistente.id)
           .select()
@@ -1335,7 +1349,19 @@ const NovaOrdemServico = () => {
                 prioridade: formData.prioridade.toLowerCase(),
                 data_analise: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
-                equipamento: dadosTecnicos.tipoEquipamento || ''
+                // Salvar dados técnicos diretamente na ordem
+                equipamento: dadosTecnicos.tipoEquipamento || '',
+                camisa: dadosTecnicos.camisa || null,
+                haste_comprimento: dadosTecnicos.hasteComprimento || null,
+                curso: dadosTecnicos.curso || null,
+                conexao_a: dadosTecnicos.conexaoA || null,
+                conexao_b: dadosTecnicos.conexaoB || null,
+                pressao_trabalho: dadosTecnicos.pressaoTrabalho || null,
+                temperatura_trabalho: dadosTecnicos.temperaturaTrabalho || null,
+                fluido_trabalho: dadosTecnicos.fluidoTrabalho || null,
+                local_instalacao: dadosTecnicos.localInstalacao || null,
+                potencia: dadosTecnicos.potencia || null,
+                numero_serie: dadosTecnicos.numeroSerie || null
               })
               .eq('id', ordemExistenteParaRecebimento.id)
               .select()
@@ -1401,7 +1427,19 @@ const NovaOrdemServico = () => {
                 usinagem_necessaria: usinagemSelecionada,
                 tempo_estimado: formData.prazoEstimado,
                 observacoes_tecnicas: formData.observacoes,
-                empresa_id: empresaAtual?.id || null
+                empresa_id: empresaAtual?.id || null,
+                // Salvar dados técnicos na ordem também
+                camisa: dadosTecnicos.camisa || null,
+                haste_comprimento: dadosTecnicos.hasteComprimento || null,
+                curso: dadosTecnicos.curso || null,
+                conexao_a: dadosTecnicos.conexaoA || null,
+                conexao_b: dadosTecnicos.conexaoB || null,
+                pressao_trabalho: dadosTecnicos.pressaoTrabalho || null,
+                temperatura_trabalho: dadosTecnicos.temperaturaTrabalho || null,
+                fluido_trabalho: dadosTecnicos.fluidoTrabalho || null,
+                local_instalacao: dadosTecnicos.localInstalacao || null,
+                potencia: dadosTecnicos.potencia || null,
+                numero_serie: dadosTecnicos.numeroSerie || null
               })
               .select()
               .single();

@@ -1659,27 +1659,40 @@ export type Database = {
       }
       ordens_servico: {
         Row: {
+          ambiente_trabalho: string | null
+          camisa: string | null
+          categoria_equipamento: string | null
           cliente_nome: string
+          conexao_a: string | null
+          conexao_b: string | null
           created_at: string
+          curso: string | null
           data_analise: string | null
           data_entrada: string
           data_finalizacao: string | null
           descricao_problema: string | null
           empresa_id: string | null
           equipamento: string
+          fluido_trabalho: string | null
+          haste_comprimento: string | null
           id: string
+          local_instalacao: string | null
           motivo_falha: string | null
           numero_ordem: string
+          numero_serie: string | null
           observacoes_tecnicas: string | null
           orcamento_id: string | null
           pdf_nota_fiscal: string | null
           pecas_necessarias: Json | null
+          potencia: string | null
+          pressao_trabalho: string | null
           prioridade: string
           recebimento_id: number | null
           servicos_necessarios: Json | null
           solucao_proposta: string | null
           status: string
           tecnico: string | null
+          temperatura_trabalho: string | null
           tempo_estimado: string | null
           tipo_problema: string | null
           updated_at: string
@@ -1687,27 +1700,40 @@ export type Database = {
           valor_estimado: number | null
         }
         Insert: {
+          ambiente_trabalho?: string | null
+          camisa?: string | null
+          categoria_equipamento?: string | null
           cliente_nome: string
+          conexao_a?: string | null
+          conexao_b?: string | null
           created_at?: string
+          curso?: string | null
           data_analise?: string | null
           data_entrada: string
           data_finalizacao?: string | null
           descricao_problema?: string | null
           empresa_id?: string | null
           equipamento: string
+          fluido_trabalho?: string | null
+          haste_comprimento?: string | null
           id?: string
+          local_instalacao?: string | null
           motivo_falha?: string | null
           numero_ordem: string
+          numero_serie?: string | null
           observacoes_tecnicas?: string | null
           orcamento_id?: string | null
           pdf_nota_fiscal?: string | null
           pecas_necessarias?: Json | null
+          potencia?: string | null
+          pressao_trabalho?: string | null
           prioridade?: string
           recebimento_id?: number | null
           servicos_necessarios?: Json | null
           solucao_proposta?: string | null
           status?: string
           tecnico?: string | null
+          temperatura_trabalho?: string | null
           tempo_estimado?: string | null
           tipo_problema?: string | null
           updated_at?: string
@@ -1715,27 +1741,40 @@ export type Database = {
           valor_estimado?: number | null
         }
         Update: {
+          ambiente_trabalho?: string | null
+          camisa?: string | null
+          categoria_equipamento?: string | null
           cliente_nome?: string
+          conexao_a?: string | null
+          conexao_b?: string | null
           created_at?: string
+          curso?: string | null
           data_analise?: string | null
           data_entrada?: string
           data_finalizacao?: string | null
           descricao_problema?: string | null
           empresa_id?: string | null
           equipamento?: string
+          fluido_trabalho?: string | null
+          haste_comprimento?: string | null
           id?: string
+          local_instalacao?: string | null
           motivo_falha?: string | null
           numero_ordem?: string
+          numero_serie?: string | null
           observacoes_tecnicas?: string | null
           orcamento_id?: string | null
           pdf_nota_fiscal?: string | null
           pecas_necessarias?: Json | null
+          potencia?: string | null
+          pressao_trabalho?: string | null
           prioridade?: string
           recebimento_id?: number | null
           servicos_necessarios?: Json | null
           solucao_proposta?: string | null
           status?: string
           tecnico?: string | null
+          temperatura_trabalho?: string | null
           tempo_estimado?: string | null
           tipo_problema?: string | null
           updated_at?: string
