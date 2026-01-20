@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Package, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Package, CheckCircle2, AlertTriangle, CheckCircle, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { type DadosNFe, type ItemNFe } from "@/lib/nfe-utils";
-
 interface ItensNFeModalProps {
   open: boolean;
   onClose: () => void;
@@ -38,6 +38,10 @@ export function ItensNFeModal({
   }, [open]);
 
   const handleItemToggle = (index: number) => {
+    const item = dadosNFe.itens?.[index];
+    // Não permitir toggle de itens que já têm ordem
+    if (item?.ordemExistente) return;
+    
     setItensSelecionados(prev => {
       if (prev.includes(index)) {
         return prev.filter(i => i !== index);
@@ -56,9 +60,13 @@ export function ItensNFeModal({
       if (itensSelecionados.length > 0) {
         setItensSelecionados([]);
       } else {
-        // Seleciona índices até o limite disponível
-        const indices = dadosNFe.itens.slice(0, ordensDisponiveis).map((_, i) => i);
-        setItensSelecionados(indices);
+        // Seleciona apenas itens que não têm ordem existente, até o limite disponível
+        const indicesDisponiveis = dadosNFe.itens
+          .map((item, i) => ({ item, index: i }))
+          .filter(({ item }) => !item.ordemExistente)
+          .slice(0, ordensDisponiveis)
+          .map(({ index }) => index);
+        setItensSelecionados(indicesDisponiveis);
       }
     }
   };
@@ -141,27 +149,28 @@ export function ItensNFeModal({
             </div>
           )}
 
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
                   <TableHead className="w-[120px]">Código</TableHead>
                   <TableHead>Descrição</TableHead>
-                  <TableHead className="w-[100px]">NCM</TableHead>
-                  <TableHead className="w-[80px]">Qtd</TableHead>
                   <TableHead className="w-[100px]">Valor Unit.</TableHead>
                   <TableHead className="w-[100px]">Valor Total</TableHead>
+                  <TableHead className="w-[140px]">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {dadosNFe.itens?.map((item, index) => {
-                  const isDisabled = !itensSelecionados.includes(index) && 
-                                     itensSelecionados.length >= ordensDisponiveis;
+                  const temOrdem = !!item.ordemExistente;
+                  const isDisabled = temOrdem || 
+                                     (!itensSelecionados.includes(index) && 
+                                      itensSelecionados.length >= ordensDisponiveis);
                   return (
                     <TableRow 
                       key={index}
-                      className={isDisabled ? 'opacity-50' : ''}
+                      className={temOrdem ? 'bg-green-50 dark:bg-green-950/20' : isDisabled ? 'opacity-50' : ''}
                     >
                       <TableCell>
                         <Checkbox
@@ -176,15 +185,24 @@ export function ItensNFeModal({
                           {item.descricao}
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono text-sm">{item.ncm}</TableCell>
-                      <TableCell className="text-right">
-                        {item.quantidade.toFixed(2)} {item.unidade}
-                      </TableCell>
                       <TableCell className="text-right">
                         R$ {item.valorUnitario.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         R$ {item.valorTotal.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        {temOrdem ? (
+                          <Badge variant="default" className="bg-green-600 hover:bg-green-700 gap-1">
+                            <CheckCircle className="h-3 w-3" />
+                            {item.ordemExistente?.numeroOrdem}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="gap-1 text-muted-foreground">
+                            <FileText className="h-3 w-3" />
+                            Disponível
+                          </Badge>
+                        )}
                       </TableCell>
                     </TableRow>
                   );

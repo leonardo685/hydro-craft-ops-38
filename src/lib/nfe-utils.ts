@@ -1,6 +1,11 @@
 // Utilitários para validação e extração de dados de chave de acesso NFe
 import { supabase } from "@/integrations/supabase/client";
 
+export interface OrdemExistente {
+  numeroOrdem: string;
+  recebimentoId: number;
+}
+
 export interface ItemNFe {
   codigo: string;
   descricao: string;
@@ -9,6 +14,45 @@ export interface ItemNFe {
   valorUnitario: number;
   valorTotal: number;
   unidade: string;
+  ordemExistente?: OrdemExistente;
+}
+
+/**
+ * Buscar recebimentos existentes para uma chave de acesso NFe
+ */
+export async function buscarOrdensExistentesPorNota(chaveAcesso: string): Promise<Map<number, OrdemExistente>> {
+  const chaveNormalizada = chaveAcesso.replace(/\s/g, '');
+  const resultado = new Map<number, OrdemExistente>();
+  
+  try {
+    const { data: recebimentos } = await supabase
+      .from('recebimentos')
+      .select('id, numero_ordem, observacoes')
+      .eq('chave_acesso_nfe', chaveNormalizada);
+    
+    if (!recebimentos) return resultado;
+    
+    // Para cada recebimento, extrair o índice do item baseado no valor unitário nas observações
+    recebimentos.forEach((rec) => {
+      if (rec.observacoes) {
+        // Extrair código do item das observações (formato: "Item da NFe: CODIGO - DESCRICAO")
+        const match = rec.observacoes.match(/Item da NFe: ([^\s-]+)/);
+        if (match) {
+          const codigo = match[1];
+          // Guardar temporariamente por código - será mapeado para índice depois
+          resultado.set(rec.id, {
+            numeroOrdem: rec.numero_ordem,
+            recebimentoId: rec.id
+          });
+        }
+      }
+    });
+    
+    return resultado;
+  } catch (error) {
+    console.error('Erro ao buscar ordens existentes:', error);
+    return resultado;
+  }
 }
 
 export interface DadosNFe {
