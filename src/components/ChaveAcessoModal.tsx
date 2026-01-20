@@ -66,29 +66,28 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
     const { data: recebimentosExistentes } = await supabase
       .from('recebimentos')
       .select('id, numero_ordem, observacoes')
-      .eq('chave_acesso_nfe', chaveNormalizada);
+      .or(`chave_acesso_nfe.eq.${chaveNormalizada},chave_acesso_nfe.eq.${chaveAcesso}`);
     
-    // Mapear recebimentos existentes por código + valor para identificar itens únicos
+    console.log('Recebimentos existentes encontrados:', recebimentosExistentes);
+    
+    // Mapear recebimentos existentes por código + valor unitário para identificar itens únicos
     const recebimentosPorItem = new Map<string, { numeroOrdem: string; recebimentoId: number }>();
     recebimentosExistentes?.forEach(rec => {
       if (rec.observacoes) {
-        // Extrair código do item das observações
-        const match = rec.observacoes.match(/Item da NFe: ([^\s-]+)/);
-        if (match) {
-          const codigo = match[1];
-          // Usar apenas código como chave inicial
-          if (!recebimentosPorItem.has(codigo)) {
-            recebimentosPorItem.set(codigo, {
-              numeroOrdem: rec.numero_ordem,
-              recebimentoId: rec.id
-            });
-          } else {
-            // Se há múltiplos itens com mesmo código, criar chaves com sufixo numérico
-            let idx = 2;
-            while (recebimentosPorItem.has(`${codigo}_${idx}`)) {
-              idx++;
-            }
-            recebimentosPorItem.set(`${codigo}_${idx}`, {
+        // Extrair código e valor das observações - formato: "Item da NFe: CODIGO | Valor: VALOR - DESCRICAO"
+        const matchCodigo = rec.observacoes.match(/Item da NFe: ([^\s|-]+)/);
+        const matchValor = rec.observacoes.match(/Valor: ([\d.,]+)/);
+        
+        if (matchCodigo) {
+          const codigo = matchCodigo[1];
+          const valor = matchValor ? matchValor[1].replace(',', '.') : '';
+          // Chave única: código + valor unitário
+          const chaveItem = valor ? `${codigo}|${valor}` : codigo;
+          
+          console.log('Mapeando recebimento:', { codigo, valor, chaveItem, numeroOrdem: rec.numero_ordem });
+          
+          if (!recebimentosPorItem.has(chaveItem)) {
+            recebimentosPorItem.set(chaveItem, {
               numeroOrdem: rec.numero_ordem,
               recebimentoId: rec.id
             });
@@ -97,19 +96,24 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
       }
     });
     
+    console.log('Mapa de recebimentos:', Array.from(recebimentosPorItem.entries()));
+    
     // Enriquecer itens da NFe com informações de ordens existentes
-    const contadorPorCodigo = new Map<string, number>();
     const itensEnriquecidos = dados.itens?.map(item => {
-      const contador = (contadorPorCodigo.get(item.codigo) || 0) + 1;
-      contadorPorCodigo.set(item.codigo, contador);
+      // Criar chave de busca: código + valor unitário
+      const valorFormatado = item.valorUnitario.toFixed(2);
+      const chaveItem = `${item.codigo}|${valorFormatado}`;
       
-      // Tentar encontrar o recebimento: primeiro pelo código simples, depois com sufixo
-      const chaveBusca = contador === 1 ? item.codigo : `${item.codigo}_${contador}`;
-      const ordemExistente = recebimentosPorItem.get(chaveBusca) || recebimentosPorItem.get(item.codigo);
+      console.log('Buscando item:', { codigo: item.codigo, valor: valorFormatado, chaveItem });
       
-      // Marcar como usado para não reutilizar
-      if (ordemExistente && recebimentosPorItem.has(chaveBusca)) {
-        recebimentosPorItem.delete(chaveBusca);
+      // Tentar encontrar pelo código + valor, ou só pelo código como fallback
+      const ordemExistente = recebimentosPorItem.get(chaveItem) || recebimentosPorItem.get(item.codigo);
+      
+      if (ordemExistente) {
+        console.log('Ordem existente encontrada:', ordemExistente);
+        // Remover do mapa para não reutilizar em itens duplicados
+        recebimentosPorItem.delete(chaveItem);
+        recebimentosPorItem.delete(item.codigo);
       }
       
       return {
@@ -197,12 +201,13 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
           cliente_nome: cliente,
           cliente_cnpj: dadosNFe.cnpjEmitente,
           data_entrada: new Date().toISOString(),
-          nota_fiscal: dadosNFe.numero, // Salvar sem prefixo NF-
-          chave_acesso_nfe: dadosNFe.chaveAcesso,
+          nota_fiscal: dadosNFe.numero,
+          chave_acesso_nfe: dadosNFe.chaveAcesso.replace(/\s/g, ''), // Normalizar: sempre sem espaços
           tipo_equipamento: item.descricao,
-          descricao_nfe: item.descricao, // Descrição original da NFe (imutável)
+          descricao_nfe: item.descricao,
           numero_serie: `${item.codigo}-${new Date().getFullYear()}`,
-          observacoes: `Item da NFe: ${item.codigo} - ${item.descricao}${item.ncm ? ` | NCM: ${item.ncm}` : ''}`,
+          // Formato: "Item da NFe: CODIGO | Valor: VALOR - DESCRICAO" para matching preciso
+          observacoes: `Item da NFe: ${item.codigo} | Valor: ${item.valorUnitario.toFixed(2)} - ${item.descricao}${item.ncm ? ` | NCM: ${item.ncm}` : ''}`,
           urgente: false,
           na_empresa: true,
           status: 'recebido'
