@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, AlertCircle, FileText, UserPlus, FileDown, Pencil } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { formatarChaveAcesso, validarChaveAcesso, extrairDadosNFe, buscarClientePorCNPJ, type DadosNFe, type ItemNFe } from "@/lib/nfe-utils";
+import { formatarChaveAcesso, validarChaveAcesso, extrairDadosNFe, buscarClientePorCNPJ, type DadosNFe, type ItemNFe, type OrdemExistente } from "@/lib/nfe-utils";
 import { baixarPdfDanfe } from "@/lib/danfe-pdf-utils";
 import { ItensNFeModal } from "./ItensNFeModal";
 import { EditarDadosNFeModal } from "./EditarDadosNFeModal";
@@ -60,14 +60,66 @@ export function ChaveAcessoModal({ open, onClose }: ChaveAcessoModalProps) {
     }
 
     const dados = await extrairDadosNFe(chaveAcesso);
-    setDadosExtraidos(dados);
     
-    // Verificar quantas ordens já existem para esta nota
+    // Buscar recebimentos existentes para esta nota e enriquecer os itens
     const chaveNormalizada = chaveAcesso.replace(/\s/g, '');
     const { data: recebimentosExistentes } = await supabase
       .from('recebimentos')
-      .select('id')
+      .select('id, numero_ordem, observacoes')
       .eq('chave_acesso_nfe', chaveNormalizada);
+    
+    // Mapear recebimentos existentes por código + valor para identificar itens únicos
+    const recebimentosPorItem = new Map<string, { numeroOrdem: string; recebimentoId: number }>();
+    recebimentosExistentes?.forEach(rec => {
+      if (rec.observacoes) {
+        // Extrair código do item das observações
+        const match = rec.observacoes.match(/Item da NFe: ([^\s-]+)/);
+        if (match) {
+          const codigo = match[1];
+          // Usar apenas código como chave inicial
+          if (!recebimentosPorItem.has(codigo)) {
+            recebimentosPorItem.set(codigo, {
+              numeroOrdem: rec.numero_ordem,
+              recebimentoId: rec.id
+            });
+          } else {
+            // Se há múltiplos itens com mesmo código, criar chaves com sufixo numérico
+            let idx = 2;
+            while (recebimentosPorItem.has(`${codigo}_${idx}`)) {
+              idx++;
+            }
+            recebimentosPorItem.set(`${codigo}_${idx}`, {
+              numeroOrdem: rec.numero_ordem,
+              recebimentoId: rec.id
+            });
+          }
+        }
+      }
+    });
+    
+    // Enriquecer itens da NFe com informações de ordens existentes
+    const contadorPorCodigo = new Map<string, number>();
+    const itensEnriquecidos = dados.itens?.map(item => {
+      const contador = (contadorPorCodigo.get(item.codigo) || 0) + 1;
+      contadorPorCodigo.set(item.codigo, contador);
+      
+      // Tentar encontrar o recebimento: primeiro pelo código simples, depois com sufixo
+      const chaveBusca = contador === 1 ? item.codigo : `${item.codigo}_${contador}`;
+      const ordemExistente = recebimentosPorItem.get(chaveBusca) || recebimentosPorItem.get(item.codigo);
+      
+      // Marcar como usado para não reutilizar
+      if (ordemExistente && recebimentosPorItem.has(chaveBusca)) {
+        recebimentosPorItem.delete(chaveBusca);
+      }
+      
+      return {
+        ...item,
+        ordemExistente: ordemExistente
+      };
+    }) || [];
+    
+    const dadosEnriquecidos = { ...dados, itens: itensEnriquecidos };
+    setDadosExtraidos(dadosEnriquecidos);
     
     const qtdOrdensExistentes = recebimentosExistentes?.length || 0;
     setOrdensExistentes(qtdOrdensExistentes);
