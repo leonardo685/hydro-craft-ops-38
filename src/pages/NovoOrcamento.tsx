@@ -1304,25 +1304,51 @@ export default function NovoOrcamento() {
 
       // Salvar fotos apenas se for orçamento em branco (sem ordem de serviço)
       if (!ordemServicoId) {
-        // Deletar fotos existentes se for atualização
-        if (dadosOrcamento.id) {
-          await supabase
-            .from('fotos_orcamento')
-            .delete()
-            .eq('orcamento_id', orcamentoId);
+        // Obter URLs atuais das fotos no estado
+        const urlsAtuais = fotos
+          .map(f => f.arquivo_url)
+          .filter(url => url && url.startsWith('https://'));
+        
+        // Buscar fotos existentes no banco para este orçamento
+        const { data: fotosExistentes } = await supabase
+          .from('fotos_orcamento')
+          .select('id, arquivo_url')
+          .eq('orcamento_id', orcamentoId);
+        
+        // Criar set de URLs existentes para comparação rápida
+        const urlsExistentes = new Set(fotosExistentes?.map(f => f.arquivo_url) || []);
+        
+        // Deletar apenas fotos que foram removidas pelo usuário
+        if (fotosExistentes && fotosExistentes.length > 0) {
+          const fotosParaDeletar = fotosExistentes.filter(
+            fotoExistente => !urlsAtuais.includes(fotoExistente.arquivo_url)
+          );
+          
+          for (const foto of fotosParaDeletar) {
+            await supabase
+              .from('fotos_orcamento')
+              .delete()
+              .eq('id', foto.id);
+          }
         }
+        
+        // Inserir APENAS fotos novas (que não existem no banco)
+        const fotosNovas = fotos.filter(foto => 
+          foto.arquivo_url && 
+          foto.arquivo_url.startsWith('https://') &&
+          !urlsExistentes.has(foto.arquivo_url)
+        );
+        
+        if (fotosNovas.length > 0) {
+          const fotosParaInserir = fotosNovas.map(foto => ({
+            orcamento_id: orcamentoId,
+            arquivo_url: foto.arquivo_url,
+            nome_arquivo: foto.nome_arquivo,
+            apresentar_orcamento: foto.apresentar_orcamento || false,
+            legenda: foto.legenda || null,
+            empresa_id: empresaAtual?.id || null
+          }));
 
-        // Inserir fotos do orçamento
-        const fotosParaInserir = fotos.map(foto => ({
-          orcamento_id: orcamentoId,
-          arquivo_url: foto.arquivo_url,
-          nome_arquivo: foto.nome_arquivo,
-          apresentar_orcamento: foto.apresentar_orcamento || false,
-          legenda: foto.legenda || null,
-          empresa_id: empresaAtual?.id || null
-        }));
-
-        if (fotosParaInserir.length > 0) {
           const { error: fotosError } = await supabase
             .from('fotos_orcamento')
             .insert(fotosParaInserir);
@@ -1334,6 +1360,24 @@ export default function NovoOrcamento() {
               description: "Orçamento salvo, mas houve erro ao salvar algumas fotos",
               variant: "destructive"
             });
+          }
+        }
+        
+        // Atualizar metadados de fotos existentes (legenda, apresentar_orcamento)
+        const fotosParaAtualizar = fotos.filter(foto => 
+          foto.arquivo_url && urlsExistentes.has(foto.arquivo_url)
+        );
+        
+        for (const foto of fotosParaAtualizar) {
+          const fotoExistente = fotosExistentes?.find(f => f.arquivo_url === foto.arquivo_url);
+          if (fotoExistente) {
+            await supabase
+              .from('fotos_orcamento')
+              .update({
+                apresentar_orcamento: foto.apresentar_orcamento || false,
+                legenda: foto.legenda || null
+              })
+              .eq('id', fotoExistente.id);
           }
         }
       }
