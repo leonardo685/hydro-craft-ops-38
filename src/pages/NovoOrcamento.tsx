@@ -406,30 +406,71 @@ export default function NovoOrcamento() {
           setItensAnalise({ pecas, servicos, usinagem });
         }
 
-        // Carregar fotos do orçamento (se não tem ordem de serviço associada) ou de ordem de serviço
+        // Carregar fotos e dados técnicos do orçamento
         if (orcamentoEdicao.ordem_servico_id) {
-          // Buscar fotos de equipamentos através da ordem de serviço
+          // Buscar fotos e dados técnicos através da ordem de serviço
           const { data: osData } = await supabase
             .from('ordens_servico')
-            .select('recebimento_id')
+            .select(`
+              *,
+              recebimentos!ordens_servico_recebimento_id_fkey (
+                pressao_trabalho,
+                temperatura_trabalho,
+                fluido_trabalho,
+                camisa,
+                haste_comprimento,
+                curso,
+                conexao_a,
+                conexao_b,
+                local_instalacao,
+                potencia,
+                ambiente_trabalho,
+                categoria_equipamento
+              )
+            `)
             .eq('id', orcamentoEdicao.ordem_servico_id)
             .single();
 
-          if (osData?.recebimento_id) {
-            const { data: fotosData } = await supabase
-              .from('fotos_equipamentos')
-              .select('*')
-              .eq('recebimento_id', osData.recebimento_id);
+          if (osData) {
+            // Carregar dados técnicos - priorizar recebimento, fallback para ordem de serviço
+            const rec = osData.recebimentos;
+            const dadosTecnicosCarregados = {
+              pressaoTrabalho: rec?.pressao_trabalho || osData.pressao_trabalho || '',
+              temperaturaTrabalho: rec?.temperatura_trabalho || osData.temperatura_trabalho || '',
+              fluidoTrabalho: rec?.fluido_trabalho || osData.fluido_trabalho || '',
+              camisa: rec?.camisa || osData.camisa || '',
+              hasteComprimento: rec?.haste_comprimento || osData.haste_comprimento || '',
+              curso: rec?.curso || osData.curso || '',
+              conexaoA: rec?.conexao_a || osData.conexao_a || '',
+              conexaoB: rec?.conexao_b || osData.conexao_b || '',
+              localInstalacao: rec?.local_instalacao || osData.local_instalacao || '',
+              potencia: rec?.potencia || osData.potencia || '',
+              ambienteTrabalho: rec?.ambiente_trabalho || osData.ambiente_trabalho || '',
+              categoriaEquipamento: rec?.categoria_equipamento || osData.categoria_equipamento || ''
+            };
+            
+            const temDadosTecnicos = Object.values(dadosTecnicosCarregados).some(v => v && v.trim() !== '');
+            if (temDadosTecnicos) {
+              setDadosTecnicos(dadosTecnicosCarregados);
+            }
 
-            if (fotosData) {
-              setFotos(fotosData.map(f => ({
-                id: f.id,
-                arquivo_url: f.arquivo_url,
-                nome_arquivo: f.nome_arquivo,
-                apresentar_orcamento: f.apresentar_orcamento || false,
-                recebimento_id: f.recebimento_id,
-                legenda: f.legenda || null
-              })));
+            // Carregar fotos
+            if (osData.recebimento_id) {
+              const { data: fotosData } = await supabase
+                .from('fotos_equipamentos')
+                .select('*')
+                .eq('recebimento_id', osData.recebimento_id);
+
+              if (fotosData) {
+                setFotos(fotosData.map(f => ({
+                  id: f.id,
+                  arquivo_url: f.arquivo_url,
+                  nome_arquivo: f.nome_arquivo,
+                  apresentar_orcamento: f.apresentar_orcamento || false,
+                  recebimento_id: f.recebimento_id,
+                  legenda: f.legenda || null
+                })));
+              }
             }
           }
         } else {
@@ -3002,8 +3043,8 @@ export default function NovoOrcamento() {
           </CardContent>
         </Card>
 
-        {/* Dados Técnicos - Apenas quando baseado em ordem de serviço */}
-        {ordemServicoId && dadosTecnicos && (
+        {/* Dados Técnicos - Quando há dados técnicos carregados (de ordem de serviço) */}
+        {dadosTecnicos && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
