@@ -1580,9 +1580,33 @@ const NovaOrdemServico = () => {
         if (foto && hasValidFotoOwner) {
           // Verificar se é um arquivo novo (File) ou URL existente (string)
           if (typeof foto !== 'string' && foto instanceof File) {
-            console.log(`Fazendo upload da foto de chegada ${i + 1}...`);
+            console.log(`Verificando foto de chegada ${i + 1}...`);
             try {
               const idForFilename = fotoRecebimentoId || fotoOrdemId;
+              
+              // IMPORTANTE: Verificar se já existe uma foto com esse índice no banco
+              // Isso evita fazer upload duplicado quando a foto já foi salva anteriormente
+              const padraoBusca = `${idForFilename}_chegada_${i}_`;
+              let queryExistente = supabase
+                .from('fotos_equipamentos')
+                .select('id, arquivo_url')
+                .eq('apresentar_orcamento', true)
+                .like('arquivo_url', `%${padraoBusca}%`);
+              
+              if (fotoRecebimentoId) {
+                queryExistente = queryExistente.eq('recebimento_id', fotoRecebimentoId);
+              } else if (fotoOrdemId) {
+                queryExistente = queryExistente.eq('ordem_servico_id', fotoOrdemId);
+              }
+              
+              const { data: fotoJaExiste } = await queryExistente.maybeSingle();
+              
+              if (fotoJaExiste) {
+                console.log(`✅ Foto de chegada ${i + 1} já existe no índice ${i}, pulando upload:`, fotoJaExiste.arquivo_url);
+                continue;
+              }
+              
+              console.log(`📤 Fazendo upload da foto de chegada ${i + 1}...`);
               const fileExt = foto.name.split('.').pop();
               const fileName = `${idForFilename}_chegada_${i}_${Date.now()}.${fileExt}`;
               const filePath = `${fileName}`;
@@ -1600,31 +1624,20 @@ const NovaOrdemServico = () => {
                 .from('equipamentos')
                 .getPublicUrl(filePath);
 
-              // Verificar se foto já existe antes de inserir (prevenir duplicatas)
-              const { data: fotoExistente } = await supabase
+              // Salvar foto com apresentar_orcamento = true
+              // Usar recebimento_id se disponível, senão usar ordem_servico_id
+              await supabase
                 .from('fotos_equipamentos')
-                .select('id')
-                .eq('arquivo_url', publicUrl)
-                .maybeSingle();
-
-              if (!fotoExistente) {
-                // Salvar foto com apresentar_orcamento = true
-                // Usar recebimento_id se disponível, senão usar ordem_servico_id
-                await supabase
-                  .from('fotos_equipamentos')
-                  .insert({
-                    recebimento_id: fotoRecebimentoId || null,
-                    ordem_servico_id: fotoRecebimentoId ? null : fotoOrdemId,
-                    arquivo_url: publicUrl,
-                    nome_arquivo: fileName,
-                    apresentar_orcamento: true,
-                    empresa_id: empresaAtual?.id || null
-                  });
-                
-                console.log(`Foto de chegada ${i + 1} salva com apresentar_orcamento = true`);
-              } else {
-                console.log(`Foto de chegada ${i + 1} já existe no banco, ignorando inserção duplicada`);
-              }
+                .insert({
+                  recebimento_id: fotoRecebimentoId || null,
+                  ordem_servico_id: fotoRecebimentoId ? null : fotoOrdemId,
+                  arquivo_url: publicUrl,
+                  nome_arquivo: fileName,
+                  apresentar_orcamento: true,
+                  empresa_id: empresaAtual?.id || null
+                });
+              
+              console.log(`✅ Foto de chegada ${i + 1} salva com apresentar_orcamento = true`);
             } catch (error) {
               console.error('Erro ao processar foto de chegada:', error);
             }
@@ -1685,9 +1698,33 @@ const NovaOrdemServico = () => {
         if (foto && hasValidFotoOwner) {
           // Verificar se é um arquivo novo (File) ou URL existente (string)
           if (typeof foto !== 'string' && foto instanceof File) {
-            console.log(`Fazendo upload da foto de análise ${i + 1}...`);
+            console.log(`Verificando foto de análise ${i + 1}...`);
             try {
               const idForFilename = fotoRecebimentoId || fotoOrdemId;
+              
+              // IMPORTANTE: Verificar se já existe uma foto com esse índice no banco
+              // Isso evita fazer upload duplicado quando a foto já foi salva anteriormente
+              const padraoBusca = `${idForFilename}_analise_${i}_`;
+              let queryExistente = supabase
+                .from('fotos_equipamentos')
+                .select('id, arquivo_url')
+                .eq('apresentar_orcamento', false)
+                .like('arquivo_url', `%${padraoBusca}%`);
+              
+              if (fotoRecebimentoId) {
+                queryExistente = queryExistente.eq('recebimento_id', fotoRecebimentoId);
+              } else if (fotoOrdemId) {
+                queryExistente = queryExistente.eq('ordem_servico_id', fotoOrdemId);
+              }
+              
+              const { data: fotoJaExiste } = await queryExistente.maybeSingle();
+              
+              if (fotoJaExiste) {
+                console.log(`✅ Foto de análise ${i + 1} já existe no índice ${i}, pulando upload:`, fotoJaExiste.arquivo_url);
+                continue;
+              }
+              
+              console.log(`📤 Fazendo upload da foto de análise ${i + 1}...`);
               const fileExt = foto.name.split('.').pop();
               const fileName = `${idForFilename}_analise_${i}_${Date.now()}.${fileExt}`;
               const filePath = `${fileName}`;
@@ -1705,30 +1742,19 @@ const NovaOrdemServico = () => {
                 .from('equipamentos')
                 .getPublicUrl(filePath);
 
-              // Verificar se foto já existe antes de inserir (prevenir duplicatas)
-              const { data: fotoExistente } = await supabase
+              // Usar recebimento_id se disponível, senão usar ordem_servico_id
+              await supabase
                 .from('fotos_equipamentos')
-                .select('id')
-                .eq('arquivo_url', publicUrl)
-                .maybeSingle();
-
-              if (!fotoExistente) {
-                // Usar recebimento_id se disponível, senão usar ordem_servico_id
-                await supabase
-                  .from('fotos_equipamentos')
-                  .insert({
-                    recebimento_id: fotoRecebimentoId || null,
-                    ordem_servico_id: fotoRecebimentoId ? null : fotoOrdemId,
-                    arquivo_url: publicUrl,
-                    nome_arquivo: fileName,
-                    apresentar_orcamento: false,
-                    empresa_id: empresaAtual?.id || null
-                  });
-                
-                console.log(`Foto de análise ${i + 1} salva com sucesso!`);
-              } else {
-                console.log(`Foto de análise ${i + 1} já existe no banco, ignorando inserção duplicada`);
-              }
+                .insert({
+                  recebimento_id: fotoRecebimentoId || null,
+                  ordem_servico_id: fotoRecebimentoId ? null : fotoOrdemId,
+                  arquivo_url: publicUrl,
+                  nome_arquivo: fileName,
+                  apresentar_orcamento: false,
+                  empresa_id: empresaAtual?.id || null
+                });
+              
+              console.log(`✅ Foto de análise ${i + 1} salva com sucesso!`);
             } catch (error) {
               console.error('Erro ao processar foto de análise:', error);
             }
