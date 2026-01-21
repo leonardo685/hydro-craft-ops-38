@@ -3043,6 +3043,97 @@ export default function NovoOrcamento() {
           </Card>
         </div>
 
+        {/* Dados Técnicos - Quando há dados técnicos carregados (de ordem de serviço) */}
+        {dadosTecnicos && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-primary" />
+                {t('novoOrcamento.technicalData')}
+              </CardTitle>
+              <CardDescription>
+                {t('novoOrcamento.technicalDataDesc')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                {dadosTecnicos.pressaoTrabalho && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.workPressure')}</Label>
+                    <p className="font-medium">{dadosTecnicos.pressaoTrabalho}</p>
+                  </div>
+                )}
+                {dadosTecnicos.temperaturaTrabalho && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.workTemperature')}</Label>
+                    <p className="font-medium">{dadosTecnicos.temperaturaTrabalho}</p>
+                  </div>
+                )}
+                {dadosTecnicos.fluidoTrabalho && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.workFluid')}</Label>
+                    <p className="font-medium">{dadosTecnicos.fluidoTrabalho}</p>
+                  </div>
+                )}
+                {dadosTecnicos.camisa && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.shirt')}</Label>
+                    <p className="font-medium">{dadosTecnicos.camisa}</p>
+                  </div>
+                )}
+                {dadosTecnicos.hasteComprimento && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.rodLength')}</Label>
+                    <p className="font-medium">{dadosTecnicos.hasteComprimento}</p>
+                  </div>
+                )}
+                {dadosTecnicos.curso && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.stroke')}</Label>
+                    <p className="font-medium">{dadosTecnicos.curso}</p>
+                  </div>
+                )}
+                {dadosTecnicos.conexaoA && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.connectionA')}</Label>
+                    <p className="font-medium">{dadosTecnicos.conexaoA}</p>
+                  </div>
+                )}
+                {dadosTecnicos.conexaoB && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.connectionB')}</Label>
+                    <p className="font-medium">{dadosTecnicos.conexaoB}</p>
+                  </div>
+                )}
+                {dadosTecnicos.localInstalacao && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.installationLocation')}</Label>
+                    <p className="font-medium">{dadosTecnicos.localInstalacao}</p>
+                  </div>
+                )}
+                {dadosTecnicos.potencia && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.power')}</Label>
+                    <p className="font-medium">{dadosTecnicos.potencia}</p>
+                  </div>
+                )}
+                {dadosTecnicos.ambienteTrabalho && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.workEnvironment')}</Label>
+                    <p className="font-medium">{dadosTecnicos.ambienteTrabalho}</p>
+                  </div>
+                )}
+                {dadosTecnicos.categoriaEquipamento && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.equipmentCategory')}</Label>
+                    <p className="font-medium">{dadosTecnicos.categoriaEquipamento}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
          {/* Fotos do Equipamento */}
         <Card>
           <CardHeader>
@@ -3153,97 +3244,6 @@ export default function NovoOrcamento() {
             )}
           </CardContent>
         </Card>
-
-        {/* Dados Técnicos - Quando há dados técnicos carregados (de ordem de serviço) */}
-        {dadosTecnicos && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-primary" />
-                {t('novoOrcamento.technicalData')}
-              </CardTitle>
-              <CardDescription>
-                {t('novoOrcamento.technicalDataDesc')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
-                {dadosTecnicos.pressaoTrabalho && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.workPressure')}</Label>
-                    <p className="font-medium">{dadosTecnicos.pressaoTrabalho}</p>
-                  </div>
-                )}
-                {dadosTecnicos.temperaturaTrabalho && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.workTemperature')}</Label>
-                    <p className="font-medium">{dadosTecnicos.temperaturaTrabalho}</p>
-                  </div>
-                )}
-                {dadosTecnicos.fluidoTrabalho && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.workFluid')}</Label>
-                    <p className="font-medium">{dadosTecnicos.fluidoTrabalho}</p>
-                  </div>
-                )}
-                {dadosTecnicos.camisa && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.shirt')}</Label>
-                    <p className="font-medium">{dadosTecnicos.camisa}</p>
-                  </div>
-                )}
-                {dadosTecnicos.hasteComprimento && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.rodLength')}</Label>
-                    <p className="font-medium">{dadosTecnicos.hasteComprimento}</p>
-                  </div>
-                )}
-                {dadosTecnicos.curso && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.stroke')}</Label>
-                    <p className="font-medium">{dadosTecnicos.curso}</p>
-                  </div>
-                )}
-                {dadosTecnicos.conexaoA && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.connectionA')}</Label>
-                    <p className="font-medium">{dadosTecnicos.conexaoA}</p>
-                  </div>
-                )}
-                {dadosTecnicos.conexaoB && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.connectionB')}</Label>
-                    <p className="font-medium">{dadosTecnicos.conexaoB}</p>
-                  </div>
-                )}
-                {dadosTecnicos.localInstalacao && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.installationLocation')}</Label>
-                    <p className="font-medium">{dadosTecnicos.localInstalacao}</p>
-                  </div>
-                )}
-                {dadosTecnicos.potencia && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.power')}</Label>
-                    <p className="font-medium">{dadosTecnicos.potencia}</p>
-                  </div>
-                )}
-                {dadosTecnicos.ambienteTrabalho && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.workEnvironment')}</Label>
-                    <p className="font-medium">{dadosTecnicos.ambienteTrabalho}</p>
-                  </div>
-                )}
-                {dadosTecnicos.categoriaEquipamento && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">{t('novoOrcamento.equipmentCategory')}</Label>
-                    <p className="font-medium">{dadosTecnicos.categoriaEquipamento}</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Fotos da Análise - apenas se vier de análise */}
         {analiseId && analiseData && (analiseData.fotosChegada || analiseData.fotosAnalise) && <Card>
