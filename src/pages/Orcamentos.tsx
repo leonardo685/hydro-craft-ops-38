@@ -353,6 +353,73 @@ export default function Orcamentos() {
         fotosData = fotos || [];
       }
 
+      // Buscar dados técnicos do equipamento
+      let dadosTecnicos: any = null;
+
+      if (orcamento.ordem_servico_id) {
+        const { data: osData } = await supabase
+          .from('ordens_servico')
+          .select(`
+            *,
+            recebimentos!ordens_servico_recebimento_id_fkey (
+              pressao_trabalho, temperatura_trabalho, fluido_trabalho,
+              camisa, haste_comprimento, curso, conexao_a, conexao_b,
+              local_instalacao, potencia, ambiente_trabalho, categoria_equipamento
+            )
+          `)
+          .eq('id', orcamento.ordem_servico_id)
+          .maybeSingle();
+
+        if (osData) {
+          const rec = osData.recebimentos;
+          dadosTecnicos = {
+            pressaoTrabalho: rec?.pressao_trabalho || osData.pressao_trabalho || '',
+            temperaturaTrabalho: rec?.temperatura_trabalho || osData.temperatura_trabalho || '',
+            fluidoTrabalho: rec?.fluido_trabalho || osData.fluido_trabalho || '',
+            camisa: rec?.camisa || osData.camisa || '',
+            hasteComprimento: rec?.haste_comprimento || osData.haste_comprimento || '',
+            curso: rec?.curso || osData.curso || '',
+            conexaoA: rec?.conexao_a || osData.conexao_a || '',
+            conexaoB: rec?.conexao_b || osData.conexao_b || '',
+            localInstalacao: rec?.local_instalacao || osData.local_instalacao || '',
+            potencia: rec?.potencia || osData.potencia || '',
+            ambienteTrabalho: rec?.ambiente_trabalho || osData.ambiente_trabalho || '',
+            categoriaEquipamento: rec?.categoria_equipamento || osData.categoria_equipamento || ''
+          };
+        }
+      } else if (orcamento.ordem_referencia) {
+        const { data: osData } = await supabase
+          .from('ordens_servico')
+          .select(`
+            *,
+            recebimentos!ordens_servico_recebimento_id_fkey (
+              pressao_trabalho, temperatura_trabalho, fluido_trabalho,
+              camisa, haste_comprimento, curso, conexao_a, conexao_b,
+              local_instalacao, potencia, ambiente_trabalho, categoria_equipamento
+            )
+          `)
+          .eq('numero_ordem', orcamento.ordem_referencia)
+          .maybeSingle();
+
+        if (osData) {
+          const rec = osData.recebimentos;
+          dadosTecnicos = {
+            pressaoTrabalho: rec?.pressao_trabalho || osData.pressao_trabalho || '',
+            temperaturaTrabalho: rec?.temperatura_trabalho || osData.temperatura_trabalho || '',
+            fluidoTrabalho: rec?.fluido_trabalho || osData.fluido_trabalho || '',
+            camisa: rec?.camisa || osData.camisa || '',
+            hasteComprimento: rec?.haste_comprimento || osData.haste_comprimento || '',
+            curso: rec?.curso || osData.curso || '',
+            conexaoA: rec?.conexao_a || osData.conexao_a || '',
+            conexaoB: rec?.conexao_b || osData.conexao_b || '',
+            localInstalacao: rec?.local_instalacao || osData.local_instalacao || '',
+            potencia: rec?.potencia || osData.potencia || '',
+            ambienteTrabalho: rec?.ambiente_trabalho || osData.ambiente_trabalho || '',
+            categoriaEquipamento: rec?.categoria_equipamento || osData.categoria_equipamento || ''
+          };
+        }
+      }
+
       // Separar itens por tipo
       const pecas = itensData?.filter(i => i.tipo === 'peca') || [];
       const servicos = itensData?.filter(i => i.tipo === 'servico') || [];
@@ -775,6 +842,98 @@ export default function Orcamentos() {
         });
         
         yPosition += boxHeight + 2;
+      }
+
+      // === DADOS TÉCNICOS DO EQUIPAMENTO ===
+      if (dadosTecnicos) {
+        const temDadosTecnicos = Object.values(dadosTecnicos).some(v => v && String(v).trim() !== '');
+        
+        if (temDadosTecnicos) {
+          yPosition += 5;
+          
+          // Verificar se precisa de nova página
+          if (yPosition + 50 > pageHeight - 30) {
+            adicionarRodape(currentPage);
+            doc.addPage();
+            currentPage++;
+            yPosition = 20;
+          }
+          
+          // Título centralizado com fundo cinza
+          doc.setFillColor(220, 220, 220);
+          doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(0, 0, 0);
+          doc.text(language === 'en' ? 'Technical Equipment Data' : 'Dados Técnicos do Equipamento', 
+                   pageWidth / 2, yPosition + 7, { align: "center" });
+          yPosition += 12;
+          
+          // Coletar campos preenchidos
+          const camposTecnicos: { label: string; valor: string }[] = [];
+          if (dadosTecnicos.pressaoTrabalho) camposTecnicos.push({ label: language === 'en' ? 'Working Pressure' : 'Pressão de Trabalho', valor: dadosTecnicos.pressaoTrabalho });
+          if (dadosTecnicos.camisa) camposTecnicos.push({ label: language === 'en' ? 'Bore (Ø)' : 'Camisa (Ø)', valor: dadosTecnicos.camisa });
+          if (dadosTecnicos.hasteComprimento) camposTecnicos.push({ label: language === 'en' ? 'Rod (Ø x Length)' : 'Haste (Ø x Comp.)', valor: dadosTecnicos.hasteComprimento });
+          if (dadosTecnicos.curso) camposTecnicos.push({ label: language === 'en' ? 'Stroke' : 'Curso', valor: dadosTecnicos.curso });
+          if (dadosTecnicos.categoriaEquipamento) camposTecnicos.push({ label: language === 'en' ? 'Category' : 'Categoria', valor: dadosTecnicos.categoriaEquipamento });
+          if (dadosTecnicos.conexaoA) camposTecnicos.push({ label: language === 'en' ? 'Connection A' : 'Conexão A', valor: dadosTecnicos.conexaoA });
+          if (dadosTecnicos.conexaoB) camposTecnicos.push({ label: language === 'en' ? 'Connection B' : 'Conexão B', valor: dadosTecnicos.conexaoB });
+          if (dadosTecnicos.temperaturaTrabalho) camposTecnicos.push({ label: language === 'en' ? 'Working Temperature' : 'Temp. Trabalho', valor: dadosTecnicos.temperaturaTrabalho });
+          if (dadosTecnicos.fluidoTrabalho) camposTecnicos.push({ label: language === 'en' ? 'Working Fluid' : 'Fluido Trabalho', valor: dadosTecnicos.fluidoTrabalho });
+          if (dadosTecnicos.localInstalacao) camposTecnicos.push({ label: language === 'en' ? 'Installation Location' : 'Local Instalação', valor: dadosTecnicos.localInstalacao });
+          if (dadosTecnicos.potencia) camposTecnicos.push({ label: language === 'en' ? 'Power' : 'Potência', valor: dadosTecnicos.potencia });
+          if (dadosTecnicos.ambienteTrabalho) camposTecnicos.push({ label: language === 'en' ? 'Work Environment' : 'Ambiente Trabalho', valor: dadosTecnicos.ambienteTrabalho });
+          
+          // Renderizar em grid de 3 colunas
+          const col3Width = (pageWidth - 40) / 3;
+          doc.setFontSize(9);
+          
+          for (let i = 0; i < camposTecnicos.length; i += 3) {
+            // Verificar se precisa de nova página
+            if (yPosition + 10 > pageHeight - 30) {
+              adicionarRodape(currentPage);
+              doc.addPage();
+              currentPage++;
+              yPosition = 20;
+            }
+            
+            doc.setDrawColor(200, 200, 200);
+            
+            // Primeira coluna
+            if (camposTecnicos[i]) {
+              doc.rect(20, yPosition, col3Width, 8);
+              doc.setFont("helvetica", "bold");
+              doc.text(`${camposTecnicos[i].label}:`, 22, yPosition + 5.5);
+              const labelWidth = doc.getTextWidth(`${camposTecnicos[i].label}: `);
+              doc.setFont("helvetica", "normal");
+              doc.text(camposTecnicos[i].valor, 22 + labelWidth, yPosition + 5.5);
+            }
+            
+            // Segunda coluna
+            if (camposTecnicos[i + 1]) {
+              doc.rect(20 + col3Width, yPosition, col3Width, 8);
+              doc.setFont("helvetica", "bold");
+              doc.text(`${camposTecnicos[i + 1].label}:`, 22 + col3Width, yPosition + 5.5);
+              const labelWidth = doc.getTextWidth(`${camposTecnicos[i + 1].label}: `);
+              doc.setFont("helvetica", "normal");
+              doc.text(camposTecnicos[i + 1].valor, 22 + col3Width + labelWidth, yPosition + 5.5);
+            }
+            
+            // Terceira coluna
+            if (camposTecnicos[i + 2]) {
+              doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+              doc.setFont("helvetica", "bold");
+              doc.text(`${camposTecnicos[i + 2].label}:`, 22 + col3Width * 2, yPosition + 5.5);
+              const labelWidth = doc.getTextWidth(`${camposTecnicos[i + 2].label}: `);
+              doc.setFont("helvetica", "normal");
+              doc.text(camposTecnicos[i + 2].valor, 22 + col3Width * 2 + labelWidth, yPosition + 5.5);
+            }
+            
+            yPosition += 8;
+          }
+          
+          yPosition += 5;
+        }
       }
 
       // === PEÇAS NECESSÁRIAS ===
