@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +23,7 @@ export function UploadProdutoProntoModal({
   const [uploading, setUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
   const { empresaAtual } = useEmpresa();
 
@@ -123,7 +125,7 @@ export function UploadProdutoProntoModal({
     }
   };
 
-  const handleUploadAndFinalize = async () => {
+  const handleRequestFinalize = () => {
     if (selectedFiles.length === 0) {
       toast({
         title: "Atenção",
@@ -132,6 +134,11 @@ export function UploadProdutoProntoModal({
       });
       return;
     }
+    setShowConfirmDialog(true);
+  };
+
+  const handleUploadAndFinalize = async () => {
+    setShowConfirmDialog(false);
 
     setUploading(true);
     try {
@@ -263,7 +270,7 @@ export function UploadProdutoProntoModal({
               )}
             </Button>
             <Button
-              onClick={handleUploadAndFinalize}
+              onClick={handleRequestFinalize}
               disabled={uploading || selectedFiles.length === 0}
               className="bg-gradient-primary"
             >
@@ -282,6 +289,26 @@ export function UploadProdutoProntoModal({
           </div>
         </div>
       </DialogContent>
+
+      {/* Dialog de confirmação */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Finalização</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja finalizar a produção da ordem <strong>{ordem.recebimentos?.numero_ordem || ordem.numero_ordem}</strong>?
+              <br /><br />
+              Esta ação irá enviar as fotos e marcar a ordem como finalizada para faturamento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUploadAndFinalize} className="bg-gradient-primary">
+              Sim, Finalizar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
