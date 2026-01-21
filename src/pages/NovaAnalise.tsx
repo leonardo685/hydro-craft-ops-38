@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Save, Upload, Camera, FileText, Trash2, Download } from "lucide-react";
 import { QuantityInput } from "@/components/QuantityInput";
 import { useNavigate, useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -139,8 +139,16 @@ const NovaOrdemServico = () => {
     usinagemCabecoteTraseiro: t('novaAnalise.rearHeadMachining')
   });
 
-  // Atualizar nomes quando o idioma mudar
+  // Ref para controlar se dados de edição já foram carregados (evitar sobrescrever nomes)
+  const dadosCarregadosRef = useRef(false);
+
+  // Atualizar nomes quando o idioma mudar - MAS NÃO se já carregou dados de edição
   useEffect(() => {
+    // Não sobrescrever nomes se já carregou dados de edição
+    if (dadosCarregadosRef.current) {
+      return;
+    }
+    
     setServicosNomes({
       desmontagem: t('novaAnalise.disassemblyAssembly'),
       limpeza: t('novaAnalise.equipmentCleaning'),
@@ -831,6 +839,9 @@ const NovaOrdemServico = () => {
               setUsinagemNomes(prev => ({ ...prev, ...nomes }));
               setUsinagemPersonalizada(personalizada);
               setUsinagemAdicional(adicionais);
+              
+              // Marcar que dados de edição foram carregados para evitar sobrescrever nomes
+              dadosCarregadosRef.current = true;
             }
 
             // Dados técnicos - Carregar TODOS os dados do recebimento
@@ -1574,20 +1585,31 @@ const NovaOrdemServico = () => {
                 .from('equipamentos')
                 .getPublicUrl(filePath);
 
-              // Salvar foto com apresentar_orcamento = true
-              // Usar recebimento_id se disponível, senão usar ordem_servico_id
-              await supabase
+              // Verificar se foto já existe antes de inserir (prevenir duplicatas)
+              const { data: fotoExistente } = await supabase
                 .from('fotos_equipamentos')
-                .insert({
-                  recebimento_id: fotoRecebimentoId || null,
-                  ordem_servico_id: fotoRecebimentoId ? null : fotoOrdemId,
-                  arquivo_url: publicUrl,
-                  nome_arquivo: fileName,
-                  apresentar_orcamento: true,
-                  empresa_id: empresaAtual?.id || null
-                });
-              
-              console.log(`Foto de chegada ${i + 1} salva com apresentar_orcamento = true`);
+                .select('id')
+                .eq('arquivo_url', publicUrl)
+                .maybeSingle();
+
+              if (!fotoExistente) {
+                // Salvar foto com apresentar_orcamento = true
+                // Usar recebimento_id se disponível, senão usar ordem_servico_id
+                await supabase
+                  .from('fotos_equipamentos')
+                  .insert({
+                    recebimento_id: fotoRecebimentoId || null,
+                    ordem_servico_id: fotoRecebimentoId ? null : fotoOrdemId,
+                    arquivo_url: publicUrl,
+                    nome_arquivo: fileName,
+                    apresentar_orcamento: true,
+                    empresa_id: empresaAtual?.id || null
+                  });
+                
+                console.log(`Foto de chegada ${i + 1} salva com apresentar_orcamento = true`);
+              } else {
+                console.log(`Foto de chegada ${i + 1} já existe no banco, ignorando inserção duplicada`);
+              }
             } catch (error) {
               console.error('Erro ao processar foto de chegada:', error);
             }
@@ -1668,19 +1690,30 @@ const NovaOrdemServico = () => {
                 .from('equipamentos')
                 .getPublicUrl(filePath);
 
-              // Usar recebimento_id se disponível, senão usar ordem_servico_id
-              await supabase
+              // Verificar se foto já existe antes de inserir (prevenir duplicatas)
+              const { data: fotoExistente } = await supabase
                 .from('fotos_equipamentos')
-                .insert({
-                  recebimento_id: fotoRecebimentoId || null,
-                  ordem_servico_id: fotoRecebimentoId ? null : fotoOrdemId,
-                  arquivo_url: publicUrl,
-                  nome_arquivo: fileName,
-                  apresentar_orcamento: false,
-                  empresa_id: empresaAtual?.id || null
-                });
-              
-              console.log(`Foto de análise ${i + 1} salva com sucesso!`);
+                .select('id')
+                .eq('arquivo_url', publicUrl)
+                .maybeSingle();
+
+              if (!fotoExistente) {
+                // Usar recebimento_id se disponível, senão usar ordem_servico_id
+                await supabase
+                  .from('fotos_equipamentos')
+                  .insert({
+                    recebimento_id: fotoRecebimentoId || null,
+                    ordem_servico_id: fotoRecebimentoId ? null : fotoOrdemId,
+                    arquivo_url: publicUrl,
+                    nome_arquivo: fileName,
+                    apresentar_orcamento: false,
+                    empresa_id: empresaAtual?.id || null
+                  });
+                
+                console.log(`Foto de análise ${i + 1} salva com sucesso!`);
+              } else {
+                console.log(`Foto de análise ${i + 1} já existe no banco, ignorando inserção duplicada`);
+              }
             } catch (error) {
               console.error('Erro ao processar foto de análise:', error);
             }
