@@ -604,22 +604,27 @@ export default function NovoOrcamento() {
               setFotos(ordemServico.recebimentos.fotos_equipamentos);
             }
 
-            // Carregar dados técnicos do recebimento
-            if (ordemServico.recebimentos) {
-              setDadosTecnicos({
-                pressaoTrabalho: ordemServico.recebimentos.pressao_trabalho || '',
-                temperaturaTrabalho: ordemServico.recebimentos.temperatura_trabalho || '',
-                fluidoTrabalho: ordemServico.recebimentos.fluido_trabalho || '',
-                camisa: ordemServico.recebimentos.camisa || '',
-                hasteComprimento: ordemServico.recebimentos.haste_comprimento || '',
-                curso: ordemServico.recebimentos.curso || '',
-                conexaoA: ordemServico.recebimentos.conexao_a || '',
-                conexaoB: ordemServico.recebimentos.conexao_b || '',
-                localInstalacao: ordemServico.recebimentos.local_instalacao || '',
-                potencia: ordemServico.recebimentos.potencia || '',
-                ambienteTrabalho: ordemServico.recebimentos.ambiente_trabalho || '',
-                categoriaEquipamento: ordemServico.recebimentos.categoria_equipamento || ''
-              });
+            // Carregar dados técnicos - priorizar recebimento, fallback para ordem de serviço
+            const rec = ordemServico.recebimentos;
+            const dadosTecnicosCarregados = {
+              pressaoTrabalho: rec?.pressao_trabalho || ordemServico.pressao_trabalho || '',
+              temperaturaTrabalho: rec?.temperatura_trabalho || ordemServico.temperatura_trabalho || '',
+              fluidoTrabalho: rec?.fluido_trabalho || ordemServico.fluido_trabalho || '',
+              camisa: rec?.camisa || ordemServico.camisa || '',
+              hasteComprimento: rec?.haste_comprimento || ordemServico.haste_comprimento || '',
+              curso: rec?.curso || ordemServico.curso || '',
+              conexaoA: rec?.conexao_a || ordemServico.conexao_a || '',
+              conexaoB: rec?.conexao_b || ordemServico.conexao_b || '',
+              localInstalacao: rec?.local_instalacao || ordemServico.local_instalacao || '',
+              potencia: rec?.potencia || ordemServico.potencia || '',
+              ambienteTrabalho: rec?.ambiente_trabalho || ordemServico.ambiente_trabalho || '',
+              categoriaEquipamento: rec?.categoria_equipamento || ordemServico.categoria_equipamento || ''
+            };
+            
+            // Verificar se há pelo menos um dado técnico preenchido
+            const temDadosTecnicos = Object.values(dadosTecnicosCarregados).some(v => v && v.trim() !== '');
+            if (temDadosTecnicos) {
+              setDadosTecnicos(dadosTecnicosCarregados);
             }
           }
         } catch (error) {
