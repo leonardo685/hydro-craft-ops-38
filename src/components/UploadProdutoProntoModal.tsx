@@ -47,6 +47,82 @@ export function UploadProdutoProntoModal({
     setPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  const uploadPhotos = async () => {
+    // Upload das fotos para o bucket 'equipamentos'
+    const uploadPromises = selectedFiles.map(async (file, index) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `produto_pronto_${ordem.id}_${Date.now()}_${index}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('equipamentos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Obter URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('equipamentos')
+        .getPublicUrl(filePath);
+
+      // Salvar referência no banco (usando a tabela fotos_equipamentos)
+      const { error: insertError } = await supabase
+        .from('fotos_equipamentos')
+        .insert({
+          recebimento_id: ordem.recebimento_id || null,
+          ordem_servico_id: ordem.id,
+          arquivo_url: publicUrl,
+          nome_arquivo: fileName,
+          apresentar_orcamento: false, // Fotos do produto pronto
+          empresa_id: empresaAtual?.id
+        });
+
+      if (insertError) {
+        console.error('Erro ao salvar foto no banco:', insertError);
+        throw insertError;
+      }
+
+      return publicUrl;
+    });
+
+    await Promise.all(uploadPromises);
+  };
+
+  const handleUploadOnly = async () => {
+    if (selectedFiles.length === 0) {
+      toast({
+        title: "Atenção",
+        description: "Por favor, selecione pelo menos uma foto do produto pronto",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      await uploadPhotos();
+
+      toast({
+        title: "Upload concluído",
+        description: `${selectedFiles.length} foto(s) do produto pronto enviada(s) com sucesso`,
+      });
+
+      // Limpar estado e fechar modal
+      setSelectedFiles([]);
+      setPreviews([]);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Erro detalhado no upload:', error);
+      toast({
+        title: "Erro no upload",
+        description: error instanceof Error ? error.message : "Erro ao enviar as fotos do produto pronto",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleUploadAndFinalize = async () => {
     if (selectedFiles.length === 0) {
       toast({
@@ -59,44 +135,7 @@ export function UploadProdutoProntoModal({
 
     setUploading(true);
     try {
-      // Upload das fotos para o bucket 'equipamentos'
-      const uploadPromises = selectedFiles.map(async (file, index) => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `produto_pronto_${ordem.id}_${Date.now()}_${index}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError, data } = await supabase.storage
-          .from('equipamentos')
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        // Obter URL pública
-        const { data: { publicUrl } } = supabase.storage
-          .from('equipamentos')
-          .getPublicUrl(filePath);
-
-        // Salvar referência no banco (usando a tabela fotos_equipamentos)
-        const { error: insertError } = await supabase
-          .from('fotos_equipamentos')
-          .insert({
-            recebimento_id: ordem.recebimento_id || null,
-            ordem_servico_id: ordem.id,
-            arquivo_url: publicUrl,
-            nome_arquivo: fileName,
-            apresentar_orcamento: false, // Fotos do produto pronto
-            empresa_id: empresaAtual?.id
-          });
-
-        if (insertError) {
-          console.error('Erro ao salvar foto no banco:', insertError);
-          throw insertError;
-        }
-
-        return publicUrl;
-      });
-
-      await Promise.all(uploadPromises);
+      await uploadPhotos();
 
       toast({
         title: "Upload concluído",
@@ -205,6 +244,23 @@ export function UploadProdutoProntoModal({
               disabled={uploading}
             >
               Cancelar
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleUploadOnly}
+              disabled={uploading || selectedFiles.length === 0}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Apenas Enviar Fotos
+                </>
+              )}
             </Button>
             <Button
               onClick={handleUploadAndFinalize}
