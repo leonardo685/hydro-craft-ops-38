@@ -473,8 +473,97 @@ export default function NovoOrcamento() {
               }
             }
           }
+        } else if (orcamentoEdicao.ordem_referencia) {
+          // Fallback: buscar ordem de serviço pelo número de referência
+          const { data: osData } = await supabase
+            .from('ordens_servico')
+            .select(`
+              *,
+              recebimentos!ordens_servico_recebimento_id_fkey (
+                pressao_trabalho,
+                temperatura_trabalho,
+                fluido_trabalho,
+                camisa,
+                haste_comprimento,
+                curso,
+                conexao_a,
+                conexao_b,
+                local_instalacao,
+                potencia,
+                ambiente_trabalho,
+                categoria_equipamento
+              )
+            `)
+            .eq('numero_ordem', orcamentoEdicao.ordem_referencia)
+            .maybeSingle();
+
+          if (osData) {
+            // Carregar dados técnicos - priorizar recebimento, fallback para ordem de serviço
+            const rec = osData.recebimentos;
+            const dadosTecnicosCarregados = {
+              pressaoTrabalho: rec?.pressao_trabalho || osData.pressao_trabalho || '',
+              temperaturaTrabalho: rec?.temperatura_trabalho || osData.temperatura_trabalho || '',
+              fluidoTrabalho: rec?.fluido_trabalho || osData.fluido_trabalho || '',
+              camisa: rec?.camisa || osData.camisa || '',
+              hasteComprimento: rec?.haste_comprimento || osData.haste_comprimento || '',
+              curso: rec?.curso || osData.curso || '',
+              conexaoA: rec?.conexao_a || osData.conexao_a || '',
+              conexaoB: rec?.conexao_b || osData.conexao_b || '',
+              localInstalacao: rec?.local_instalacao || osData.local_instalacao || '',
+              potencia: rec?.potencia || osData.potencia || '',
+              ambienteTrabalho: rec?.ambiente_trabalho || osData.ambiente_trabalho || '',
+              categoriaEquipamento: rec?.categoria_equipamento || osData.categoria_equipamento || ''
+            };
+            
+            const temDadosTecnicos = Object.values(dadosTecnicosCarregados).some(v => v && v.trim() !== '');
+            if (temDadosTecnicos) {
+              setDadosTecnicos(dadosTecnicosCarregados);
+            }
+
+            // Carregar fotos do recebimento se existir
+            if (osData.recebimento_id) {
+              const { data: fotosReceb } = await supabase
+                .from('fotos_equipamentos')
+                .select('*')
+                .eq('recebimento_id', osData.recebimento_id);
+
+              if (fotosReceb && fotosReceb.length > 0) {
+                setFotos(fotosReceb.map(f => ({
+                  id: f.id,
+                  arquivo_url: f.arquivo_url,
+                  nome_arquivo: f.nome_arquivo,
+                  apresentar_orcamento: f.apresentar_orcamento || false,
+                  recebimento_id: f.recebimento_id,
+                  legenda: f.legenda || null
+                })));
+              }
+            }
+          }
+
+          // Também buscar fotos do próprio orçamento (podem existir adicionais)
+          const { data: fotosOrcamento } = await supabase
+            .from('fotos_orcamento')
+            .select('*')
+            .eq('orcamento_id', orcamentoEdicao.id);
+
+          if (fotosOrcamento && fotosOrcamento.length > 0) {
+            setFotos(prev => {
+              const existingIds = new Set(prev.map(f => f.id));
+              const novasFotos = fotosOrcamento
+                .filter((f: any) => !existingIds.has(f.id))
+                .map((f: any) => ({
+                  id: f.id,
+                  arquivo_url: f.arquivo_url,
+                  nome_arquivo: f.nome_arquivo,
+                  apresentar_orcamento: f.apresentar_orcamento || false,
+                  recebimento_id: null,
+                  legenda: f.legenda || null
+                }));
+              return [...prev, ...novasFotos];
+            });
+          }
         } else {
-          // Buscar fotos do próprio orçamento
+          // Sem ordem vinculada - só buscar fotos do orçamento
           const { data: fotosData } = await supabase
             .from('fotos_orcamento')
             .select('*')
