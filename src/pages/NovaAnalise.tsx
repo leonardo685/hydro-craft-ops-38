@@ -634,11 +634,9 @@ const NovaOrdemServico = () => {
       };
       reader.readAsDataURL(file);
     } else {
-      setPreviewsChegada(prev => {
-        const newPreviews = [...prev];
-        newPreviews[index] = '';
-        return newPreviews;
-      });
+      // Usar filter para remover efetivamente ao invés de definir como string vazia
+      setPreviewsChegada(prev => prev.filter((_, i) => i !== index));
+      setFotosChegada(prev => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -856,30 +854,35 @@ const NovaOrdemServico = () => {
             if (recebimentoData.fotos_equipamentos && recebimentoData.fotos_equipamentos.length > 0) {
               console.log('Carregando fotos do banco:', recebimentoData.fotos_equipamentos);
               
-              // Fotos de chegada (apresentar_orcamento = true)
-              const fotosChegadaUrls = recebimentoData.fotos_equipamentos
-                .filter((foto: any) => foto.apresentar_orcamento === true)
-                .map((foto: any) => foto.arquivo_url);
+              // Fotos de chegada (apresentar_orcamento = true) - usar Set para URLs únicas
+              const fotosChegadaUrls = [...new Set(
+                recebimentoData.fotos_equipamentos
+                  .filter((foto: any) => foto.apresentar_orcamento === true)
+                  .map((foto: any) => foto.arquivo_url)
+              )];
               
               if (fotosChegadaUrls.length > 0) {
-                console.log('✅ Fotos de CHEGADA carregadas:', fotosChegadaUrls.length, fotosChegadaUrls);
-                // Manter apenas nos previews, fotosChegada fica vazio até adicionar novas
+                console.log('✅ Fotos de CHEGADA carregadas:', fotosChegadaUrls.length);
                 setPreviewsChegada(fotosChegadaUrls);
-                // Marcar como URLs existentes (string) para não fazer re-upload
                 setFotosChegada(fotosChegadaUrls as any);
               }
               
-              // Fotos de análise (apresentar_orcamento = false)
-              const fotosAnaliseUrls = recebimentoData.fotos_equipamentos
-                .filter((foto: any) => foto.apresentar_orcamento === false)
-                .map((foto: any) => foto.arquivo_url);
+              // Fotos de análise (apresentar_orcamento = false) - usar Set para URLs únicas
+              const fotosAnaliseUrls = [...new Set(
+                recebimentoData.fotos_equipamentos
+                  .filter((foto: any) => foto.apresentar_orcamento === false)
+                  .map((foto: any) => foto.arquivo_url)
+              )];
               
               if (fotosAnaliseUrls.length > 0) {
-                console.log('✅ Fotos de ANÁLISE carregadas:', fotosAnaliseUrls.length, fotosAnaliseUrls);
-                // Manter apenas nos previews, fotosAnalise fica vazio até adicionar novas
-                setPreviewsAnalise(fotosAnaliseUrls);
-                // Marcar como URLs existentes (string) para não fazer re-upload
-                setFotosAnalise(fotosAnaliseUrls as any);
+                // Limitar a 20 fotos para evitar problemas de performance
+                const limitedFotos = fotosAnaliseUrls.slice(0, 20);
+                if (fotosAnaliseUrls.length > 20) {
+                  console.warn(`⚠️ ${fotosAnaliseUrls.length} fotos de análise encontradas, exibindo apenas 20`);
+                }
+                console.log('✅ Fotos de ANÁLISE carregadas:', limitedFotos.length);
+                setPreviewsAnalise(limitedFotos);
+                setFotosAnalise(limitedFotos as any);
               }
             }
           } else if (ordem) {
@@ -1015,13 +1018,18 @@ const NovaOrdemServico = () => {
             if (fotos && fotos.length > 0) {
               console.log('Carregando fotos da ordem:', fotos);
               
-              const fotosChegadaUrls = fotos
-                .filter(foto => foto.apresentar_orcamento === true)
-                .map(foto => foto.arquivo_url);
+              // Usar Set para URLs únicas
+              const fotosChegadaUrls = [...new Set(
+                fotos
+                  .filter(foto => foto.apresentar_orcamento === true)
+                  .map(foto => foto.arquivo_url)
+              )];
               
-              const fotosAnaliseUrls = fotos
-                .filter(foto => foto.apresentar_orcamento === false)
-                .map(foto => foto.arquivo_url);
+              const fotosAnaliseUrls = [...new Set(
+                fotos
+                  .filter(foto => foto.apresentar_orcamento === false)
+                  .map(foto => foto.arquivo_url)
+              )];
                 
               if (fotosChegadaUrls.length > 0) {
                 setPreviewsChegada(fotosChegadaUrls);
@@ -1029,8 +1037,13 @@ const NovaOrdemServico = () => {
               }
               
               if (fotosAnaliseUrls.length > 0) {
-                setPreviewsAnalise(fotosAnaliseUrls);
-                setFotosAnalise(fotosAnaliseUrls as any);
+                // Limitar a 20 fotos
+                const limitedFotos = fotosAnaliseUrls.slice(0, 20);
+                if (fotosAnaliseUrls.length > 20) {
+                  console.warn(`⚠️ ${fotosAnaliseUrls.length} fotos encontradas, exibindo apenas 20`);
+                }
+                setPreviewsAnalise(limitedFotos);
+                setFotosAnalise(limitedFotos as any);
               }
             }
 
@@ -1497,9 +1510,11 @@ const NovaOrdemServico = () => {
       
       // Se for edição, primeiro remover fotos de chegada antigas que não estão mais presentes
       if (isEdicao && hasValidFotoOwner) {
-        // Obter URLs atuais de fotos de chegada
-        const urlsAtuais = previewsChegada.filter(url => url && typeof url === 'string');
-        console.log('URLs atuais de fotos de CHEGADA:', urlsAtuais);
+        // Obter URLs atuais de fotos de chegada - apenas URLs válidas do Supabase
+        const urlsAtuais = previewsChegada.filter(url => 
+          url && typeof url === 'string' && url.startsWith('https://')
+        );
+        console.log('URLs atuais de fotos de CHEGADA:', urlsAtuais.length, urlsAtuais);
         
         // Buscar fotos de chegada existentes no banco - por recebimento OU ordem
         let queryChegada = supabase
@@ -1589,9 +1604,11 @@ const NovaOrdemServico = () => {
       
       // Se for edição, primeiro remover fotos de análise antigas que não estão mais presentes
       if (isEdicao && hasValidFotoOwner) {
-        // Obter URLs atuais de fotos de análise
-        const urlsAtuais = previewsAnalise.filter(url => url && typeof url === 'string');
-        console.log('URLs atuais de fotos de ANÁLISE:', urlsAtuais);
+        // Obter URLs atuais de fotos de análise - apenas URLs válidas do Supabase
+        const urlsAtuais = previewsAnalise.filter(url => 
+          url && typeof url === 'string' && url.startsWith('https://')
+        );
+        console.log('URLs atuais de fotos de ANÁLISE:', urlsAtuais.length, urlsAtuais);
         
         // Buscar fotos de análise existentes no banco - por recebimento OU ordem
         let queryAnalise = supabase
@@ -1995,13 +2012,9 @@ const NovaOrdemServico = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          const newPreviews = [...previewsAnalise];
-                          newPreviews[index] = '';
-                          setPreviewsAnalise(newPreviews);
-                          
-                          const newFotos = [...fotosAnalise];
-                          newFotos[index] = undefined as any;
-                          setFotosAnalise(newFotos);
+                          // Usar filter para remover efetivamente ao invés de definir como string vazia
+                          setPreviewsAnalise(prev => prev.filter((_, i) => i !== index));
+                          setFotosAnalise(prev => prev.filter((_, i) => i !== index));
                         }}
                         className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-destructive/80"
                       >
