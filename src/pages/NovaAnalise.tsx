@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, Upload, Camera, FileText, Trash2, Download } from "lucide-react";
+import { ArrowLeft, Save, Upload, Camera, FileText, Trash2, Download, Loader2 } from "lucide-react";
 import { QuantityInput } from "@/components/QuantityInput";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
@@ -24,6 +24,8 @@ const NovaOrdemServico = () => {
   const { recebimentos, loading } = useRecebimentos();
   const [recebimento, setRecebimento] = useState<any>(null);
   const [ordemExistente, setOrdemExistente] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const submittingRef = useRef(false);
   const [isEdicao, setIsEdicao] = useState(false);
   const { empresaAtual } = useEmpresa();
   const { t, language } = useLanguage();
@@ -695,7 +697,7 @@ const NovaOrdemServico = () => {
       
       console.log('🔎 Verificando se existe ordem de serviço:', decodedId);
       try {
-        const { data: ordem, error } = await supabase
+        const { data: ordens, error } = await supabase
           .from('ordens_servico')
           .select(`
             *,
@@ -723,12 +725,16 @@ const NovaOrdemServico = () => {
             )
           `)
           .eq('numero_ordem', decodedId)
-          .maybeSingle();
+          .order('created_at', { ascending: true })
+          .limit(1);
 
         if (error) {
           console.error('❌ Erro ao buscar ordem de serviço:', error);
           return false;
         }
+        
+        // Pegar a primeira ordem (mais antiga)
+        const ordem = ordens && ordens.length > 0 ? ordens[0] : null;
 
         if (ordem && ordem.recebimentos) {
           console.log('✅ Ordem de serviço encontrada - MODO EDIÇÃO');
@@ -1168,6 +1174,15 @@ const NovaOrdemServico = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // BLOQUEAR submissão dupla
+    if (submittingRef.current || isSaving) {
+      console.log('⚠️ Submissão bloqueada - já está salvando');
+      return;
+    }
+    
+    submittingRef.current = true;
+    setIsSaving(true);
     
     console.log('=== HANDLESUBMIT CHAMADO ===');
     console.log('isEdicao:', isEdicao);
@@ -1737,6 +1752,9 @@ const NovaOrdemServico = () => {
         description: t('novaAnalise.errorSaving'),
         variant: "destructive",
       });
+    } finally {
+      submittingRef.current = false;
+      setIsSaving(false);
     }
   };
 
@@ -3247,9 +3265,18 @@ const NovaOrdemServico = () => {
               <FileText className="mr-2 h-4 w-4" />
               {t('novaAnalise.exportPdf')}
             </Button>
-            <Button type="submit">
-              <Save className="mr-2 h-4 w-4" />
-              {isEdicao ? t('novaAnalise.saveChanges') : t('novaAnalise.createServiceOrder')}
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isEdicao ? t('novaAnalise.saveChanges') : t('novaAnalise.createServiceOrder')}
+                </>
+              )}
             </Button>
           </div>
         </form>
