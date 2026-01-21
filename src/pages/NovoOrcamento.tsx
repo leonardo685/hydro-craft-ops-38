@@ -48,10 +48,14 @@ export default function NovoOrcamento() {
   // Usar ref para persistir o orçamento e evitar perda de dados em re-renders
   const orcamentoRef = useRef(orcamentoParaEdicao);
   
+  // Ref para controlar se o número já foi gerado (evitar race condition)
+  const numeroGeradoRef = useRef(false);
+  
   // Atualizar ref apenas quando receber novo orçamento
   useEffect(() => {
     if (orcamentoParaEdicao) {
       orcamentoRef.current = orcamentoParaEdicao;
+      numeroGeradoRef.current = true; // Número já definido pelo orçamento existente
     }
   }, [orcamentoParaEdicao]);
   
@@ -171,27 +175,32 @@ export default function NovoOrcamento() {
     try {
       const anoAtual = new Date().getFullYear().toString().slice(-2);
       
-      // Buscar o último orçamento do ano atual
+      // Buscar TODOS os orçamentos do ano atual para encontrar o MAIOR número
       const { data, error } = await supabase
         .from('orcamentos')
         .select('numero')
-        .ilike('numero', `%/${anoAtual}`)
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .ilike('numero', `%/${anoAtual}`);
 
       if (error) {
-        console.error('Erro ao buscar último orçamento:', error);
+        console.error('Erro ao buscar orçamentos:', error);
         return `0001/${anoAtual}`;
       }
 
       if (data && data.length > 0) {
-        // Extrair o número sequencial do último orçamento
-        const ultimoNumero = data[0].numero;
-        const partes = ultimoNumero.split('/');
-        if (partes.length === 2 && partes[1] === anoAtual) {
-          const sequencial = parseInt(partes[0]) + 1;
-          return `${sequencial.toString().padStart(4, '0')}/${anoAtual}`;
-        }
+        // Encontrar o MAIOR número sequencial (não o mais recente)
+        let maiorSequencial = 0;
+        data.forEach(orc => {
+          const partes = orc.numero.split('/');
+          if (partes.length === 2 && partes[1] === anoAtual) {
+            const seq = parseInt(partes[0]);
+            if (seq > maiorSequencial) {
+              maiorSequencial = seq;
+            }
+          }
+        });
+        
+        const proximoSequencial = maiorSequencial + 1;
+        return `${proximoSequencial.toString().padStart(4, '0')}/${anoAtual}`;
       }
 
       // Se não encontrou nenhum orçamento do ano atual, começar com 0001
@@ -584,13 +593,16 @@ export default function NovoOrcamento() {
         return; // Skip other loading logic for editing
       }
 
-      // Gerar apenas número do orçamento se for novo
-      const proximoNumero = await gerarProximoNumero();
-      setDadosOrcamento(prev => ({
-        ...prev,
-        numeroOrdem: proximoNumero,
-        numeroSerie: '' // Deixar vazio - será gerado apenas se baseado em ordem de serviço
-      }));
+      // Gerar apenas número do orçamento se for novo e ainda não foi gerado
+      if (!numeroGeradoRef.current) {
+        const proximoNumero = await gerarProximoNumero();
+        numeroGeradoRef.current = true; // Marcar como gerado para evitar re-geração
+        setDadosOrcamento(prev => ({
+          ...prev,
+          numeroOrdem: proximoNumero,
+          numeroSerie: '' // Deixar vazio - será gerado apenas se baseado em ordem de serviço
+        }));
+      }
 
       if (ordemServicoId) {
         try {
