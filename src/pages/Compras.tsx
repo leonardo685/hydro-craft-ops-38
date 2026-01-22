@@ -26,6 +26,7 @@ interface Compra {
     numero_ordem: string;
     cliente_nome: string;
     equipamento: string;
+    status: string;
     pecas_necessarias: any[];
     usinagem_necessaria: any[];
     servicos_necessarios: any[];
@@ -55,11 +56,12 @@ export default function Compras() {
         .from("compras")
         .select(`
           *,
-          ordens_servico (
+          ordens_servico!inner (
             id,
             numero_ordem,
             cliente_nome,
             equipamento,
+            status,
             pecas_necessarias,
             usinagem_necessaria,
             servicos_necessarios,
@@ -74,6 +76,7 @@ export default function Compras() {
           )
         `)
         .eq("empresa_id", empresaAtual.id)
+        .not("ordens_servico.status", "in", "(finalizada,faturado,aguardando_retorno)")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
