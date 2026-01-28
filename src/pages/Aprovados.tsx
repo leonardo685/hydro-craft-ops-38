@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera, Video, ClipboardCheck, ExternalLink, Search, History, AlertCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ItemSelectionModal } from "@/components/ItemSelectionModal";
@@ -18,6 +18,7 @@ import { format, parseISO } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { enviarWebhook } from "@/lib/webhook-utils";
+import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,18 @@ export default function Aprovados() {
       }
     }
   }, []);
+
+  const loadOrdensAprovadasCallback = useCallback(() => {
+    loadOrdensAprovadas();
+  }, [empresaAtual?.id]);
+
+  // Realtime subscription para atualizações automáticas
+  useRealtimeSubscription({
+    tables: ["ordens_servico", "compras", "orcamentos", "testes_equipamentos"],
+    empresaId: empresaAtual?.id,
+    onDataChange: loadOrdensAprovadasCallback,
+    enabled: !!empresaAtual?.id,
+  });
 
   useEffect(() => {
     if (empresaAtual?.id) {

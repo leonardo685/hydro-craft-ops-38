@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,7 @@ import { useEmpresa } from "@/contexts/EmpresaContext";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { HistoricoManutencaoModal } from "@/components/HistoricoManutencaoModal";
 import { enviarWebhook } from "@/lib/webhook-utils";
+import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 
 export default function OrdensServico() {
   const navigate = useNavigate();
@@ -38,6 +39,18 @@ export default function OrdensServico() {
   const [selectedOrdemForLabel, setSelectedOrdemForLabel] = useState<any>(null);
   const [historicoModalOpen, setHistoricoModalOpen] = useState(false);
 
+
+  const loadOrdensServicoCallback = useCallback(() => {
+    loadOrdensServico();
+  }, [empresaAtual?.id]);
+
+  // Realtime subscription para atualizações automáticas
+  useRealtimeSubscription({
+    tables: ["ordens_servico", "orcamentos", "recebimentos"],
+    empresaId: empresaAtual?.id,
+    onDataChange: loadOrdensServicoCallback,
+    enabled: !!empresaAtual?.id,
+  });
 
   useEffect(() => {
     if (empresaAtual?.id) {

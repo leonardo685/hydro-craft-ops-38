@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Receipt, DollarSign, Calendar, FileText, Download, Eye, Filter, ChevronUp, ChevronDown, QrCode, Search } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getOrcamentosEmFaturamento, getOrcamentosFinalizados, emitirNotaFiscal, type Orcamento } from "@/lib/orcamento-utils";
 import { OrdensAguardandoRetorno } from "@/components/OrdensAguardandoRetorno";
@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 
 interface NotaFaturada {
   id: string;
@@ -55,6 +56,18 @@ export default function Faturamento() {
   const [dataFimFat, setDataFimFat] = useState("");
   const [clienteFiltroFat, setClienteFiltroFat] = useState("");
   const [numeroFiltroFat, setNumeroFiltroFat] = useState("");
+
+  const loadDataCallback = useCallback(() => {
+    loadData();
+  }, [empresaAtual?.id]);
+
+  // Realtime subscription para atualizações automáticas
+  useRealtimeSubscription({
+    tables: ["ordens_servico", "orcamentos", "recebimentos", "notas_fiscais"],
+    empresaId: empresaAtual?.id,
+    onDataChange: loadDataCallback,
+    enabled: !!empresaAtual?.id,
+  });
 
   useEffect(() => {
     if (empresaAtual?.id) {

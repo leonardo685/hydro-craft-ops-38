@@ -17,7 +17,7 @@ import { CriarOrdemModal } from "@/components/CriarOrdemModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { PreviewDanfeModal } from "@/components/PreviewDanfeModal";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { DadosNFe, ItemNFe } from "@/lib/nfe-utils";
+import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 
 // Removed localStorage function since we're now using Supabase data
 
