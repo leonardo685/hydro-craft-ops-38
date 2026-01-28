@@ -261,6 +261,149 @@ export default function Orcamentos() {
     setShowPrecificacaoModal(true);
   };
 
+  // Estado para controlar loading de cópia
+  const [copiando, setCopiando] = useState(false);
+
+  // Função para copiar orçamento
+  const copiarOrcamento = async (orcamento: any) => {
+    if (!empresaAtual?.id) {
+      toast.error(t('orcamentos.copyQuoteError'));
+      return;
+    }
+
+    setCopiando(true);
+    toast(t('orcamentos.copyingQuote'));
+
+    try {
+      // 1. Gerar novo número sequencial (mesma lógica do NovoOrcamento)
+      const anoAtual = new Date().getFullYear().toString().slice(-2);
+      
+      const { data: orcamentosExistentes } = await supabase
+        .from('orcamentos')
+        .select('numero')
+        .eq('empresa_id', empresaAtual.id);
+
+      let maiorNumero = 0;
+      orcamentosExistentes?.forEach(o => {
+        const match = o.numero?.match(/^(\d+)\/(\d{2})$/);
+        if (match && match[2] === anoAtual) {
+          const num = parseInt(match[1], 10);
+          if (num > maiorNumero) maiorNumero = num;
+        }
+      });
+
+      const proximoNumero = String(maiorNumero + 1).padStart(4, '0');
+      const novoNumeroOrcamento = `${proximoNumero}/${anoAtual}`;
+
+      // 2. Criar cópia do orçamento (sem ordem_referencia e ordem_servico_id)
+      const { data: novoOrcamento, error: errorOrcamento } = await supabase
+        .from('orcamentos')
+        .insert({
+          numero: novoNumeroOrcamento,
+          empresa_id: empresaAtual.id,
+          cliente_id: orcamento.cliente_id,
+          cliente_nome: orcamento.cliente_nome,
+          equipamento: orcamento.equipamento,
+          valor: orcamento.valor,
+          desconto_percentual: orcamento.desconto_percentual,
+          condicao_pagamento: orcamento.condicao_pagamento,
+          prazo_entrega: orcamento.prazo_entrega,
+          prazo_pagamento: orcamento.prazo_pagamento,
+          garantia: orcamento.garantia,
+          validade_proposta: orcamento.validade_proposta,
+          frete: orcamento.frete,
+          assunto_proposta: orcamento.assunto_proposta,
+          descricao: orcamento.descricao,
+          observacoes: orcamento.observacoes,
+          observacoes_nota: orcamento.observacoes_nota,
+          numero_nota_entrada: orcamento.numero_nota_entrada,
+          // Campos de precificação
+          impostos_percentual: orcamento.impostos_percentual,
+          comissao_percentual: orcamento.comissao_percentual,
+          margem_contribuicao: orcamento.margem_contribuicao,
+          custos_variaveis: orcamento.custos_variaveis,
+          percentuais_customizados: orcamento.percentuais_customizados,
+          preco_desejado: orcamento.preco_desejado,
+          total_custos_variaveis: orcamento.total_custos_variaveis,
+          percentual_margem: orcamento.percentual_margem,
+          impostos_valor: orcamento.impostos_valor,
+          comissao_valor: orcamento.comissao_valor,
+          // Status inicial
+          status: 'pendente',
+          data_criacao: new Date().toISOString().split('T')[0],
+          // NÃO copiar estes campos:
+          // ordem_referencia, ordem_servico_id, data_aprovacao, 
+          // data_aprovacao_gestor, aprovado_por_gestor, numero_nf, 
+          // pdf_nota_fiscal, forma_pagamento, data_negociacao, 
+          // status_negociacao, data_vencimento
+        })
+        .select()
+        .single();
+
+      if (errorOrcamento || !novoOrcamento) {
+        console.error('Erro ao copiar orçamento:', errorOrcamento);
+        toast.error(t('orcamentos.copyQuoteError'));
+        setCopiando(false);
+        return;
+      }
+
+      // 3. Copiar itens do orçamento
+      const { data: itensOriginais } = await supabase
+        .from('itens_orcamento')
+        .select('*')
+        .eq('orcamento_id', orcamento.id);
+
+      if (itensOriginais && itensOriginais.length > 0) {
+        const novosItens = itensOriginais.map(item => ({
+          orcamento_id: novoOrcamento.id,
+          empresa_id: empresaAtual.id,
+          tipo: item.tipo,
+          descricao: item.descricao,
+          codigo: item.codigo,
+          quantidade: item.quantidade,
+          valor_unitario: item.valor_unitario,
+          valor_total: item.valor_total,
+          detalhes: item.detalhes,
+        }));
+
+        await supabase.from('itens_orcamento').insert(novosItens);
+      }
+
+      // 4. Copiar fotos do orçamento
+      const { data: fotosOriginais } = await supabase
+        .from('fotos_orcamento')
+        .select('*')
+        .eq('orcamento_id', orcamento.id);
+
+      if (fotosOriginais && fotosOriginais.length > 0) {
+        const novasFotos = fotosOriginais.map(foto => ({
+          orcamento_id: novoOrcamento.id,
+          empresa_id: empresaAtual.id,
+          arquivo_url: foto.arquivo_url,
+          nome_arquivo: foto.nome_arquivo,
+          legenda: foto.legenda,
+          apresentar_orcamento: foto.apresentar_orcamento,
+          tipo: foto.tipo,
+        }));
+
+        await supabase.from('fotos_orcamento').insert(novasFotos);
+      }
+
+      // 5. Recarregar lista e navegar para edição
+      await carregarOrcamentos();
+      toast.success(t('orcamentos.copyQuoteSuccess'));
+      
+      // Navegar para edição do novo orçamento
+      navigate('/orcamentos/novo', { state: { orcamento: novoOrcamento } });
+
+    } catch (error) {
+      console.error('Erro ao copiar orçamento:', error);
+      toast.error(t('orcamentos.copyQuoteError'));
+    } finally {
+      setCopiando(false);
+    }
+  };
+
   // Função para aplicar filtros
   const aplicarFiltros = (orcamentosLista: any[]) => {
     return orcamentosLista.filter((orc) => {
@@ -1909,6 +2052,15 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => copiarOrcamento(item)}
+                          title={t('orcamentos.copyQuote')}
+                          disabled={copiando}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => abrirPrecificacao(item)}
                         >
                           <DollarSign className="h-4 w-4" />
@@ -2001,6 +2153,15 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => copiarOrcamento(item)}
+                          title={t('orcamentos.copyQuote')}
+                          disabled={copiando}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => abrirPrecificacao(item)}
                         >
                           <DollarSign className="h-4 w-4" />
@@ -2080,6 +2241,15 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => copiarOrcamento(item)}
+                          title={t('orcamentos.copyQuote')}
+                          disabled={copiando}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => abrirPrecificacao(item)}
                         >
                           <DollarSign className="h-4 w-4" />
@@ -2140,6 +2310,15 @@ export default function Orcamentos() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copiarOrcamento(item)}
+                          title={t('orcamentos.copyQuote')}
+                          disabled={copiando}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
