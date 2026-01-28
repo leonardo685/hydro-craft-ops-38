@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useEmpresaId } from '@/hooks/use-empresa-id';
+import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
 export interface Recebimento {
   id: number;
   numero_ordem: string;
@@ -432,6 +433,19 @@ export const useRecebimentos = () => {
       return `MH-${timestamp}-${anoAbreviado}`;
     }
   };
+
+  const recarregarDadosCallback = useCallback(() => {
+    carregarRecebimentos();
+    carregarNotasFiscais();
+  }, [empresaId]);
+
+  // Realtime subscription para atualizações automáticas
+  useRealtimeSubscription({
+    tables: ["recebimentos", "notas_fiscais", "fotos_equipamentos", "ordens_servico"],
+    empresaId: empresaId,
+    onDataChange: recarregarDadosCallback,
+    enabled: !!empresaId,
+  });
 
   useEffect(() => {
     const carregarDados = async () => {

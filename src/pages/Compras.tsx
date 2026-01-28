@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import { EditableItemsModal } from "@/components/EditableItemsModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 
 interface Compra {
   id: string;
@@ -87,6 +88,18 @@ export default function Compras() {
       setLoading(false);
     }
   };
+
+  const loadComprasCallback = useCallback(() => {
+    loadCompras();
+  }, [empresaAtual?.id]);
+
+  // Realtime subscription para atualizações automáticas
+  useRealtimeSubscription({
+    tables: ["compras", "ordens_servico"],
+    empresaId: empresaAtual?.id,
+    onDataChange: loadComprasCallback,
+    enabled: !!empresaAtual?.id,
+  });
 
   useEffect(() => {
     if (empresaAtual?.id) {

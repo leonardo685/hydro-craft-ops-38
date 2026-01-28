@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations } from "@/i18n/translations";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 
 // Custom Tooltip for mini charts (valores monetários)
 const CustomTooltip = ({ active, payload }: any) => {
@@ -68,6 +69,19 @@ export default function Orcamentos() {
   const [dataFim, setDataFim] = useState<Date | undefined>();
   const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroNumero, setFiltroNumero] = useState("");
+
+  const recarregarDadosCallback = useCallback(() => {
+    carregarOrdensServico();
+    carregarOrcamentos();
+  }, [empresaAtual?.id]);
+
+  // Realtime subscription para atualizações automáticas
+  useRealtimeSubscription({
+    tables: ["orcamentos", "ordens_servico", "itens_orcamento", "fotos_orcamento"],
+    empresaId: empresaAtual?.id,
+    onDataChange: recarregarDadosCallback,
+    enabled: !!empresaAtual?.id,
+  });
 
   useEffect(() => {
     if (empresaAtual?.id) {
