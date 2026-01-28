@@ -309,6 +309,11 @@ export const translations = {
       quoteRejectedDesc: 'O orçamento foi marcado como rejeitado.',
       errorLoadingOrders: 'Erro ao carregar ordens de serviço',
       errorLoadingQuotes: 'Erro ao carregar orçamentos',
+      // Copy quote
+      copyQuote: 'Copiar Orçamento',
+      copyQuoteSuccess: 'Orçamento copiado com sucesso',
+      copyQuoteError: 'Erro ao copiar orçamento',
+      copyingQuote: 'Copiando orçamento...',
       errorRejectingQuote: 'Erro ao reprovar orçamento',
     },
     // Novo Orçamento
@@ -1200,6 +1205,11 @@ export const translations = {
       errorLoadingOrders: 'Error loading service orders',
       errorLoadingQuotes: 'Error loading quotes',
       errorRejectingQuote: 'Error rejecting quote',
+      // Copy quote
+      copyQuote: 'Copy Quote',
+      copyQuoteSuccess: 'Quote copied successfully',
+      copyQuoteError: 'Error copying quote',
+      copyingQuote: 'Copying quote...',
     },
     // Novo Orçamento
     novoOrcamento: {
