@@ -435,6 +435,26 @@ export default function DFC() {
   }, [lancamentos, getNomeCategoriaMae]);
   const saldoTotal = contasBancariasAtualizadas.reduce((acc, conta) => acc + conta.saldo, 0);
 
+  // Função helper para obter IDs de categorias filhas quando uma categoria mãe é selecionada
+  const getCategoriasFilhasIds = useMemo(
+    () => (categoriaId: string): string[] => {
+      const categoria = categorias.find(c => c.id === categoriaId);
+      if (!categoria) return [categoriaId];
+      
+      // Se for categoria mãe, incluir ela e todas as filhas
+      if (categoria.tipo === 'mae') {
+        const filhas = categorias
+          .filter(c => c.categoriaMaeId === categoriaId)
+          .map(c => c.id);
+        return [categoriaId, ...filhas];
+      }
+      
+      // Se for categoria filha, retorna apenas ela
+      return [categoriaId];
+    },
+    [categorias]
+  );
+
   // Calcular entradas e saídas do mês atual
   const hoje = new Date();
   const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
@@ -509,8 +529,11 @@ export default function DFC() {
     // Filtro de conta
     if (filtrosExtrato.conta !== 'todas' && item.conta !== filtrosExtrato.conta) return false;
 
-    // Filtro de categoria (comparando IDs)
-    if (filtrosExtrato.categoria !== 'todas' && item.categoriaId !== filtrosExtrato.categoria) return false;
+    // Filtro de categoria (comparando IDs) - inclui categorias filhas quando mãe é selecionada
+    if (filtrosExtrato.categoria !== 'todas') {
+      const categoriasPermitidas = getCategoriasFilhasIds(filtrosExtrato.categoria);
+      if (!categoriasPermitidas.includes(item.categoriaId)) return false;
+    }
 
     // Filtro de fornecedor - agora aceita múltiplos
     if (filtrosExtrato.fornecedor.length > 0 && !filtrosExtrato.fornecedor.includes(item.fornecedor)) {
