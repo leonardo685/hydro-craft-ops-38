@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { DetalhesCategoriaDREModal } from "@/components/DetalhesCategoriaDREModal";
 
 interface DREItem {
   codigo?: string;
@@ -17,6 +18,7 @@ interface DREItem {
   tipo: 'categoria_mae' | 'categoria_filha' | 'calculo';
   nivel: number;
   codigoMae?: string;
+  categoriaId?: string;
 }
 
 export default function DRE() {
@@ -29,6 +31,11 @@ export default function DRE() {
   });
 
   const [categoriasExpandidas, setCategoriasExpandidas] = useState<Set<string>>(new Set());
+  const [modalDetalhes, setModalDetalhes] = useState<{
+    open: boolean;
+    categoria: { codigo?: string; nome: string; valor: number } | null;
+    categoriaIds: string[];
+  }>({ open: false, categoria: null, categoriaIds: [] });
 
   const toggleCategoria = (codigo: string) => {
     setCategoriasExpandidas(prev => {
@@ -111,7 +118,8 @@ export default function DRE() {
         valor: 0, // Será atualizado depois
         percentual: 0,
         tipo: 'categoria_mae',
-        nivel: 1
+        nivel: 1,
+        categoriaId: categoriaMae.id
       });
 
       // Adicionar todas as filhas (mesmo com valor zero)
@@ -126,7 +134,8 @@ export default function DRE() {
           percentual: totalReceitas > 0 ? (valorFilha / totalReceitas) * 100 : 0,
           tipo: 'categoria_filha',
           nivel: 2,
-          codigoMae: categoriaMae.codigo
+          codigoMae: categoriaMae.codigo,
+          categoriaId: filha.id
         });
       });
 
@@ -139,7 +148,8 @@ export default function DRE() {
           percentual: totalReceitas > 0 ? (valorDiretoMae / totalReceitas) * 100 : 0,
           tipo: 'categoria_filha',
           nivel: 2,
-          codigoMae: categoriaMae.codigo
+          codigoMae: categoriaMae.codigo,
+          categoriaId: categoriaMae.id
         });
       }
 
@@ -273,6 +283,73 @@ export default function DRE() {
     if (tipo === 'categoria_mae') return "font-semibold";
     return "";
   };
+
+  // Função para obter lançamentos filtrados do período
+  const lancamentosFiltradosPeriodo = useMemo(() => {
+    return lancamentos.filter(l => {
+      if (l.tipo === 'transferencia') return false;
+      if (l.lancamentoPaiId) return false;
+      
+      const ehRecorrencia = !!l.frequenciaRepeticao;
+      const dataReferencia = ehRecorrencia ? l.dataEsperada : l.dataEmissao;
+      
+      if (!dataReferencia) return false;
+      
+      const data = new Date(dataReferencia);
+      const ano = data.getFullYear().toString();
+      const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+      return ano === filtrosDRE.ano && mes === filtrosDRE.mes;
+    });
+  }, [lancamentos, filtrosDRE]);
+
+  // Função para abrir modal com detalhes da categoria
+  const handleClickValor = useCallback((item: DREItem) => {
+    if (item.tipo === 'calculo' || !item.categoriaId) return;
+
+    // Se for categoria mãe, incluir todas as filhas
+    let categoriaIds: string[] = [];
+    if (item.tipo === 'categoria_mae') {
+      const categoriaMae = categorias.find(c => c.id === item.categoriaId);
+      if (categoriaMae) {
+        const filhas = categorias
+          .filter(c => c.categoriaMaeId === categoriaMae.id)
+          .map(c => c.id);
+        categoriaIds = [categoriaMae.id, ...filhas];
+      }
+    } else {
+      categoriaIds = [item.categoriaId];
+    }
+
+    setModalDetalhes({
+      open: true,
+      categoria: {
+        codigo: item.codigo,
+        nome: item.conta,
+        valor: item.valor
+      },
+      categoriaIds
+    });
+  }, [categorias]);
+
+  // Lançamentos para o modal de detalhes
+  const lancamentosModal = useMemo(() => {
+    if (!modalDetalhes.open || modalDetalhes.categoriaIds.length === 0) return [];
+    
+    return lancamentosFiltradosPeriodo
+      .filter(l => l.categoriaId && modalDetalhes.categoriaIds.includes(l.categoriaId))
+      .map(l => {
+        const dataRef = l.frequenciaRepeticao ? l.dataEsperada : l.dataEmissao;
+        return {
+          id: l.id,
+          descricao: l.descricao,
+          valor: l.valor,
+          data: dataRef instanceof Date ? dataRef.toISOString() : String(dataRef),
+          fornecedorCliente: l.fornecedorCliente,
+          contaBancaria: l.contaBancaria,
+          pago: l.pago
+        };
+      });
+  }, [lancamentosFiltradosPeriodo, modalDetalhes]);
 
   return (
     <AppLayout>
@@ -435,10 +512,15 @@ export default function DRE() {
                           <span>{item.conta}</span>
                         </div>
                       </TableCell>
-                      <TableCell 
-                        className={`text-right ${getDreValueStyle(item.valor, item.tipo)}`}
-                      >
-                        {formatCurrency(item.valor)}
+                      <TableCell className={cn("text-right", getDreValueStyle(item.valor, item.tipo))}>
+                        <span 
+                          className={cn(
+                            item.tipo !== 'calculo' && item.categoriaId && "cursor-pointer hover:underline hover:text-primary"
+                          )}
+                          onClick={() => handleClickValor(item)}
+                        >
+                          {formatCurrency(item.valor)}
+                        </span>
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
                         {item.percentual.toFixed(1)}%
@@ -451,6 +533,13 @@ export default function DRE() {
           </CardContent>
         </Card>
       </div>
+
+      <DetalhesCategoriaDREModal
+        open={modalDetalhes.open}
+        onOpenChange={(open) => setModalDetalhes(prev => ({ ...prev, open }))}
+        categoria={modalDetalhes.categoria}
+        lancamentos={lancamentosModal}
+      />
     </AppLayout>
   );
 }
