@@ -522,6 +522,13 @@ export default function DFC() {
     setSelectedFornecedores([]);
     setSelectedStatus([]);
   };
+
+  // Pré-calcular categorias permitidas fora do loop para melhor performance
+  const categoriasPermitidasExtrato = useMemo(() => {
+    if (filtrosExtrato.categoria === 'todas') return null;
+    return getCategoriasFilhasIds(filtrosExtrato.categoria);
+  }, [filtrosExtrato.categoria, getCategoriasFilhasIds]);
+
   const extratoFiltrado = extratoData.filter(item => {
     // Filtro de tipo
     if (filtrosExtrato.tipo !== 'todos' && item.tipo !== filtrosExtrato.tipo) return false;
@@ -530,9 +537,8 @@ export default function DFC() {
     if (filtrosExtrato.conta !== 'todas' && item.conta !== filtrosExtrato.conta) return false;
 
     // Filtro de categoria (comparando IDs) - inclui categorias filhas quando mãe é selecionada
-    if (filtrosExtrato.categoria !== 'todas') {
-      const categoriasPermitidas = getCategoriasFilhasIds(filtrosExtrato.categoria);
-      if (!categoriasPermitidas.includes(item.categoriaId)) return false;
+    if (categoriasPermitidasExtrato !== null) {
+      if (!item.categoriaId || !categoriasPermitidasExtrato.includes(item.categoriaId)) return false;
     }
 
     // Filtro de fornecedor - agora aceita múltiplos
