@@ -59,6 +59,8 @@ export default function NovoRecebimento() {
   // Preencher formulário com dados da nota fiscal se fornecidos
   useEffect(() => {
     const notaFiscal = location.state?.notaFiscal;
+    const itemNFe = location.state?.itemNFe;
+    
     if (notaFiscal && clientes.length > 0) {
       // Tentar encontrar o cliente pelo CNPJ (removendo caracteres especiais para comparação)
       const cnpjNota = (notaFiscal.cliente_cnpj || '').replace(/\D/g, '');
@@ -74,11 +76,24 @@ export default function NovoRecebimento() {
       
       const clienteEncontrado = clientePorCnpj || clientePorNome;
       
+      // Construir observações incluindo dados do item NFe se disponível
+      let observacoes = `Chave de acesso NFe: ${notaFiscal.chave_acesso}`;
+      if (notaFiscal.cliente_cnpj) {
+        observacoes += `\nCNPJ: ${notaFiscal.cliente_cnpj}`;
+      }
+      if (itemNFe) {
+        observacoes += `\nItem da NFe: ${itemNFe.codigo} | Valor: ${itemNFe.valor_unitario?.toFixed(2)} - ${itemNFe.descricao}`;
+      }
+      
       setFormData(prev => ({
         ...prev,
         cliente: clienteEncontrado?.id || prev.cliente,
         numeroNota: notaFiscal.numero || prev.numeroNota,
-        observacoesEntrada: `Chave de acesso NFe: ${notaFiscal.chave_acesso}${notaFiscal.cliente_cnpj ? `\nCNPJ: ${notaFiscal.cliente_cnpj}` : ''}` || prev.observacoesEntrada
+        // Preencher tipo de equipamento com a descrição do item da NFe
+        tipoEquipamento: itemNFe?.descricao || prev.tipoEquipamento,
+        // Preencher número de série com código do item + ano
+        numeroSerie: itemNFe ? `${itemNFe.codigo}-${new Date().getFullYear()}` : prev.numeroSerie,
+        observacoesEntrada: observacoes
       }));
     }
   }, [location.state, clientes]);
