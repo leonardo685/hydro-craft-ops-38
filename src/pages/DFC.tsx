@@ -26,7 +26,8 @@ import { useClientes } from '@/hooks/use-clientes';
 import { useFornecedores } from '@/hooks/use-fornecedores';
 import { useContasBancarias } from '@/hooks/use-contas-bancarias';
 import { MultipleSelector, type Option } from "@/components/ui/multiple-selector";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState as useReactState, useCallback } from "react";
+import { DetalhesCategoriaDREModal } from "@/components/DetalhesCategoriaDREModal";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -987,7 +988,15 @@ export default function DFC() {
     tipo: 'categoria_mae' | 'categoria_filha' | 'calculo';
     nivel: number;
     codigoMae?: string;
+    categoriaId?: string;
   }
+
+  // Estado para modal de detalhes do DFC
+  const [modalDetalhesDFC, setModalDetalhesDFC] = useState<{
+    open: boolean;
+    categoria: { codigo?: string; nome: string; valor: number } | null;
+    categoriaIds: string[];
+  }>({ open: false, categoria: null, categoriaIds: [] });
 
   // Calcular DFC hierárquico baseado nas categorias (apenas lançamentos PAGOS)
   const dfcData = useMemo(() => {
@@ -1044,7 +1053,8 @@ export default function DFC() {
         valor: 0, // Será atualizado depois
         percentual: 0,
         tipo: 'categoria_mae',
-        nivel: 1
+        nivel: 1,
+        categoriaId: categoriaMae.id
       });
 
       // Adicionar todas as filhas (mesmo com valor zero)
@@ -1059,7 +1069,8 @@ export default function DFC() {
           percentual: totalReceitas > 0 ? valorFilha / totalReceitas * 100 : 0,
           tipo: 'categoria_filha',
           nivel: 2,
-          codigoMae: categoriaMae.codigo
+          codigoMae: categoriaMae.codigo,
+          categoriaId: filha.id
         });
       });
 
@@ -1128,6 +1139,73 @@ export default function DFC() {
     });
     return resultado;
   }, [lancamentos, categorias, dfcDataInicio, dfcDataFim]);
+
+  // Memo para lançamentos filtrados do período DFC (para modal de detalhes)
+  const lancamentosFiltradosPeriodoDFC = useMemo(() => {
+    return lancamentos.filter(l => {
+      if (l.tipo === 'transferencia') return false;
+      if (!l.lancamentoPaiId && l.numeroParcelas && l.numeroParcelas > 1) return false;
+      if (!l.pago || !l.dataRealizada) return false;
+      
+      const dataRealizada = new Date(l.dataRealizada);
+      if (dfcDataInicio) {
+        const inicio = new Date(dfcDataInicio);
+        inicio.setHours(0, 0, 0, 0);
+        if (dataRealizada < inicio) return false;
+      }
+      if (dfcDataFim) {
+        const fim = new Date(dfcDataFim);
+        fim.setHours(23, 59, 59, 999);
+        if (dataRealizada > fim) return false;
+      }
+      return true;
+    });
+  }, [lancamentos, dfcDataInicio, dfcDataFim]);
+
+  // Handler para clique no valor do DFC
+  const handleClickValorDFC = useCallback((item: DFCItem) => {
+    if (item.tipo === 'calculo' || !item.categoriaId) return;
+
+    let categoriaIds: string[] = [];
+    if (item.tipo === 'categoria_mae') {
+      const categoriaMae = categorias.find(c => c.id === item.categoriaId);
+      if (categoriaMae) {
+        const filhas = categorias
+          .filter(c => c.categoriaMaeId === categoriaMae.id)
+          .map(c => c.id);
+        categoriaIds = [categoriaMae.id, ...filhas];
+      }
+    } else {
+      categoriaIds = [item.categoriaId];
+    }
+
+    setModalDetalhesDFC({
+      open: true,
+      categoria: {
+        codigo: item.codigo,
+        nome: item.conta,
+        valor: item.valor
+      },
+      categoriaIds
+    });
+  }, [categorias]);
+
+  // Memo para lançamentos do modal DFC
+  const lancamentosModalDFC = useMemo(() => {
+    if (!modalDetalhesDFC.open || modalDetalhesDFC.categoriaIds.length === 0) return [];
+    
+    return lancamentosFiltradosPeriodoDFC
+      .filter(l => l.categoriaId && modalDetalhesDFC.categoriaIds.includes(l.categoriaId))
+      .map(l => ({
+        id: l.id,
+        descricao: l.descricao,
+        valor: l.valor,
+        data: l.dataRealizada instanceof Date ? l.dataRealizada.toISOString() : String(l.dataRealizada),
+        fornecedorCliente: l.fornecedorCliente,
+        contaBancaria: l.contaBancaria,
+        pago: l.pago
+      }));
+  }, [lancamentosFiltradosPeriodoDFC, modalDetalhesDFC]);
 
   const dfcDataFiltrado = useMemo(() => {
     return dfcData.filter(item => {
@@ -1322,7 +1400,14 @@ export default function DFC() {
                           </div>
                         </TableCell>
                         <TableCell className={cn("text-right", getDfcValueStyle(item.valor, item.tipo))}>
-                          {formatCurrency(item.valor)}
+                          <span 
+                            className={cn(
+                              item.tipo !== 'calculo' && item.categoriaId && "cursor-pointer hover:underline hover:text-primary"
+                            )}
+                            onClick={() => handleClickValorDFC(item)}
+                          >
+                            {formatCurrency(item.valor)}
+                          </span>
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">
                           {item.percentual.toFixed(1)}%
@@ -3048,5 +3133,12 @@ export default function DFC() {
       <UploadExtratoModal open={isExtratoUploadOpen} onOpenChange={setIsExtratoUploadOpen} onImportComplete={() => {
       refetch();
     }} categorias={categorias} contasBancarias={contasAtivas} fornecedores={fornecedoresData} clientes={clientes} />
+
+      <DetalhesCategoriaDREModal
+        open={modalDetalhesDFC.open}
+        onOpenChange={(open) => setModalDetalhesDFC(prev => ({ ...prev, open }))}
+        categoria={modalDetalhesDFC.categoria}
+        lancamentos={lancamentosModalDFC}
+      />
     </AppLayout>;
 }
