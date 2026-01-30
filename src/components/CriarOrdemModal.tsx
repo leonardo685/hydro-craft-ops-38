@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Info, Plus, CheckCircle, FileText } from "lucide-react";
+import { Info, Plus, CheckCircle, FileText, ExternalLink } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRecebimentos, type NotaFiscal, type ItemNFe } from "@/hooks/use-recebimentos";
 import { useNavigate } from "react-router-dom";
@@ -21,9 +21,8 @@ interface ItemEnriquecido extends ItemNFe {
 }
 
 export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalProps) {
-  const { criarRecebimento, gerarNumeroOrdem, recebimentos } = useRecebimentos();
-  const [itensSelecionados, setItensSelecionados] = useState<number[]>([]);
-  const [criando, setCriando] = useState(false);
+  const { recebimentos } = useRecebimentos();
+  const [itemSelecionado, setItemSelecionado] = useState<number | null>(null);
   const navigate = useNavigate();
 
   // Verificar se é nota agrupada ou NFe importada
@@ -90,23 +89,8 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
   }, [isNotaAgrupada, notaFiscal, recebimentos, chaveAcessoNormalizada]);
 
   const handleItemToggle = (indice: number) => {
-    setItensSelecionados(prev => 
-      prev.includes(indice)
-        ? prev.filter(id => id !== indice)
-        : [...prev, indice]
-    );
-  };
-
-  const handleSelecionarTodos = () => {
-    if (itensSelecionados.length === itensDisponiveis.length) {
-      setItensSelecionados([]);
-    } else {
-      if (isNotaAgrupada) {
-        setItensSelecionados(itensDisponiveis.map((_: any, index: number) => index));
-      } else {
-        setItensSelecionados(itensDisponiveis.map((item: ItemEnriquecido) => item.indiceOriginal));
-      }
-    }
+    // Selecionar apenas um item por vez
+    setItemSelecionado(prev => prev === indice ? null : indice);
   };
 
   const handleAdicionarNovoItem = () => {
@@ -121,87 +105,49 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
         }
       }
     });
+    handleFechar();
   };
 
-  const handleCriarOrdens = async () => {
-    setCriando(true);
-    try {
-      // Criar ordens dos itens selecionados
-      let itensSelecionadosData: any[];
-      
-      if (isNotaAgrupada) {
-        itensSelecionadosData = itensDisponiveis.filter((_: any, index: number) => 
-          itensSelecionados.includes(index)
-        );
-      } else {
-        itensSelecionadosData = itensEnriquecidos.filter((item: ItemEnriquecido) => 
-          itensSelecionados.includes(item.indiceOriginal)
-        );
-      }
+  // Navegar para o formulário completo com dados pré-preenchidos
+  const handleCriarOrdem = () => {
+    if (itemSelecionado === null) return;
 
-      for (const item of itensSelecionadosData) {
-        if (isNotaAgrupada) {
-          // Para notas agrupadas, criar ordem de serviço
-          const numeroOrdem = await gerarNumeroOrdem();
-          await criarRecebimento({
-            ...item,
-            numero_ordem: numeroOrdem,
-            status: 'em_analise'
-          });
-        } else {
-          // Para NFe importada
-          const numeroOrdem = await gerarNumeroOrdem();
-          const valorUnitario = item.valor_unitario || item.valorUnitario;
-          const recebimentoData = {
-            numero_ordem: numeroOrdem,
-            // Para NFe de entrada, o emitente é quem enviou o equipamento = cliente do serviço
-            cliente_nome: notaFiscal.nome_emitente || notaFiscal.cliente_nome,
-            cliente_cnpj: notaFiscal.cnpjEmitente || notaFiscal.cnpj_emitente || notaFiscal.cliente_cnpj,
-            data_entrada: new Date().toISOString(),
-            nota_fiscal: notaFiscal.numero, // Salvar sem prefixo NF-
-            chave_acesso_nfe: chaveAcessoNormalizada, // Usar chave normalizada
-            nota_fiscal_id: notaFiscal.id,
-            tipo_equipamento: item.descricao,
-            numero_serie: `${item.codigo}-${new Date().getFullYear()}`,
-            // Incluir valor unitário nas observações para matching futuro
-            observacoes: `Item da NFe: ${item.codigo} | Valor: ${valorUnitario?.toFixed(2)} - ${item.descricao}`,
-            urgente: false,
-            na_empresa: true,
-            status: 'recebido'
-          };
-          await criarRecebimento(recebimentoData);
+    let itemData: any;
+    
+    if (isNotaAgrupada) {
+      itemData = itensDisponiveis[itemSelecionado];
+    } else {
+      itemData = itensEnriquecidos.find((item: ItemEnriquecido) => 
+        item.indiceOriginal === itemSelecionado
+      );
+    }
+
+    if (!itemData) return;
+
+    // Navegar para o formulário de novo recebimento com dados pré-preenchidos
+    navigate('/recebimentos/novo', {
+      state: {
+        notaFiscal: {
+          id: notaFiscal.id,
+          numero: isNotaAgrupada ? notaFiscal.numero_nota : notaFiscal.numero,
+          chave_acesso: chaveAcessoNormalizada,
+          cliente_nome: notaFiscal.nome_emitente || notaFiscal.cliente_nome,
+          cliente_cnpj: notaFiscal.cnpj_emitente || notaFiscal.cliente_cnpj
+        },
+        itemNFe: {
+          codigo: itemData.codigo,
+          descricao: itemData.descricao,
+          valor_unitario: itemData.valor_unitario || itemData.valorUnitario,
+          quantidade: itemData.quantidade
         }
       }
+    });
 
-      handleFechar();
-    } catch (error: any) {
-      console.error('Erro ao criar ordens:', error);
-      const { toast } = await import("@/hooks/use-toast");
-      
-      // Extrair mensagem de erro detalhada do Supabase
-      let mensagemErro = "Erro desconhecido ao criar recebimento";
-      if (error?.message) {
-        mensagemErro = error.message;
-      }
-      if (error?.details) {
-        mensagemErro += ` - ${error.details}`;
-      }
-      if (error?.hint) {
-        mensagemErro += ` (${error.hint})`;
-      }
-      
-      toast({
-        title: "Erro ao criar recebimento",
-        description: mensagemErro,
-        variant: "destructive",
-      });
-    } finally {
-      setCriando(false);
-    }
+    handleFechar();
   };
 
   const handleFechar = () => {
-    setItensSelecionados([]);
+    setItemSelecionado(null);
     onClose();
   };
 
@@ -214,7 +160,7 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
-            Criar Ordens de Serviço - {isNotaAgrupada ? notaFiscal.numero_nota : `NF ${notaFiscal.numero}`}
+            Criar Ordem de Serviço - {isNotaAgrupada ? notaFiscal.numero_nota : `NF ${notaFiscal.numero}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -223,7 +169,7 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
             <Info className="h-4 w-4" />
             <AlertDescription>
               <div className="space-y-1">
-                <p><strong>Cliente:</strong> {notaFiscal.cliente_nome}</p>
+                <p><strong>Cliente:</strong> {notaFiscal.nome_emitente || notaFiscal.cliente_nome}</p>
                 {!isNotaAgrupada && (
                   <>
                     <p><strong>Série:</strong> {notaFiscal.serie}</p>
@@ -235,21 +181,14 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
             </AlertDescription>
           </Alert>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              {itensDisponiveis.length > 0 && (
-                <>
-                  <Checkbox
-                    id="selecionarTodos"
-                    checked={itensSelecionados.length === itensDisponiveis.length && itensDisponiveis.length > 0}
-                    onCheckedChange={handleSelecionarTodos}
-                  />
-                  <label htmlFor="selecionarTodos" className="text-sm font-medium">
-                    Selecionar todos disponíveis ({itensDisponiveis.length})
-                  </label>
-                </>
-              )}
-            </div>
+          <Alert variant="default" className="bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900">
+            <ExternalLink className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="text-blue-700 dark:text-blue-300">
+              Selecione um item para abrir o formulário completo com dados técnicos e campo de OS Anterior.
+            </AlertDescription>
+          </Alert>
+
+          <div className="flex items-center justify-end">
             <Button
               variant="outline"
               size="sm"
@@ -294,7 +233,7 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
                       <TableRow key={isNotaAgrupada ? item.id : `${item.codigo}-${index}`} className={isDisabled ? "opacity-60" : ""}>
                         <TableCell>
                           <Checkbox
-                            checked={itensSelecionados.includes(indice)}
+                            checked={itemSelecionado === indice}
                             onCheckedChange={() => handleItemToggle(indice)}
                             disabled={isDisabled}
                           />
@@ -348,11 +287,12 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
             </Button>
             {itensDisponiveis.length > 0 && (
               <Button
-                onClick={handleCriarOrdens}
-                disabled={itensSelecionados.length === 0 || criando}
+                onClick={handleCriarOrdem}
+                disabled={itemSelecionado === null}
                 className="flex-1"
               >
-                {criando ? "Criando..." : `Criar Ordens (${itensSelecionados.length})`}
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Abrir Formulário Completo
               </Button>
             )}
           </div>
