@@ -6,22 +6,26 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { RecentActivity } from "@/components/RecentActivity";
+import { useEmpresaId } from "@/hooks/use-empresa-id";
+
 const Index = () => {
   const navigate = useNavigate();
+  const { empresaId, loading: empresaLoading } = useEmpresaId();
 
-  // Buscar estatísticas reais do banco de dados
+  // Buscar estatísticas reais do banco de dados - filtrado por empresa
   const {
     data: statsData
   } = useQuery({
-    queryKey: ['dashboard-stats'],
+    queryKey: ['dashboard-stats', empresaId],
     queryFn: async () => {
-      const [recebimentos, orcamentos, ordensAprovadas] = await Promise.all([supabase.from('recebimentos').select('status', {
-        count: 'exact'
-      }), supabase.from('orcamentos').select('status', {
-        count: 'exact'
-      }).eq('status', 'pendente'), supabase.from('orcamentos').select('status', {
-        count: 'exact'
-      }).eq('status', 'aprovado')]);
+      if (!empresaId) return null;
+      
+      const [recebimentos, orcamentos, ordensAprovadas] = await Promise.all([
+        supabase.from('recebimentos').select('status', { count: 'exact' }).eq('empresa_id', empresaId),
+        supabase.from('orcamentos').select('status', { count: 'exact' }).eq('status', 'pendente').eq('empresa_id', empresaId),
+        supabase.from('orcamentos').select('status', { count: 'exact' }).eq('status', 'aprovado').eq('empresa_id', empresaId)
+      ]);
+      
       const aguardandoAnalise = recebimentos.data?.filter(r => r.status === 'recebido').length || 0;
       return {
         totalRecebimentos: recebimentos.count || 0,
@@ -29,24 +33,29 @@ const Index = () => {
         orcamentosPendentes: orcamentos.count || 0,
         ordensAprovadas: ordensAprovadas.count || 0
       };
-    }
+    },
+    enabled: !!empresaId
   });
 
-  // Buscar atividades recentes do banco de dados
+  // Buscar atividades recentes do banco de dados - filtrado por empresa
   const {
     data: atividadesRecentes
   } = useQuery({
-    queryKey: ['atividades-recentes'],
+    queryKey: ['atividades-recentes', empresaId],
     queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('atividades_sistema').select('*').order('created_at', {
-        ascending: false
-      }).limit(5);
+      if (!empresaId) return [];
+      
+      const { data, error } = await supabase
+        .from('atividades_sistema')
+        .select('*')
+        .eq('empresa_id', empresaId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+        
       if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: !!empresaId
   });
 
   // Função para formatar tempo relativo
