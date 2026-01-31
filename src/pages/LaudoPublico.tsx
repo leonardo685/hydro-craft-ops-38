@@ -21,10 +21,13 @@ import {
   Gauge,
   Thermometer,
   Clock,
-  FileCheck
+  FileCheck,
+  TrendingUp,
+  BarChart3
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { HistoricoManutencaoPublicoModal } from "@/components/HistoricoManutencaoPublicoModal";
 
 interface OrdemServico {
   id: string;
@@ -106,6 +109,7 @@ export default function LaudoPublico() {
   const [empresaLogo, setEmpresaLogo] = useState<string | null>(null);
   const [empresaData, setEmpresaData] = useState<EmpresaData | null>(null);
   const [dadosDimensionais, setDadosDimensionais] = useState<DadosDimensionais | null>(null);
+  const [historicoModalOpen, setHistoricoModalOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1111,6 +1115,29 @@ export default function LaudoPublico() {
           </Card>
         )}
 
+        {/* Histórico de Manutenções */}
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Tendência de Manutenções
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Visualize o histórico completo de manutenções deste equipamento, incluindo gráficos de tempo entre reformas e análise de tendências.
+            </p>
+            <Button 
+              onClick={() => setHistoricoModalOpen(true)}
+              className="w-full"
+              variant="outline"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Ver Gráficos de Histórico
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Rodapé */}
         <Card className="bg-muted/50">
           <CardContent className="pt-6 text-center text-sm text-muted-foreground">
@@ -1121,6 +1148,13 @@ export default function LaudoPublico() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de Histórico */}
+      <HistoricoManutencaoPublicoModal
+        open={historicoModalOpen}
+        onOpenChange={setHistoricoModalOpen}
+        numeroOrdem={numeroOrdem || ""}
+      />
     </div>
   );
 }
