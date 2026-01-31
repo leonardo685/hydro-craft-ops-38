@@ -243,6 +243,7 @@ export default function OrdensServico() {
         .from('ordens_servico')
         .update({ 
           status: novoStatus,
+          data_finalizacao: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('id', ordemId)

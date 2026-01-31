@@ -98,19 +98,22 @@ export function OrdensAguardandoRetorno({
   };
   const handleEmitirNotaRetorno = async (ordemId: string) => {
     try {
-      // Buscar o recebimento_id da ordem
+      // Buscar o recebimento_id e data_finalizacao da ordem
       const { data: ordem, error: ordemError } = await supabase
         .from('ordens_servico')
-        .select('recebimento_id')
+        .select('recebimento_id, data_finalizacao')
         .eq('id', ordemId)
         .single();
 
       if (ordemError) throw ordemError;
 
-      // Atualizar status da ordem para faturado
+      // Atualizar status da ordem para faturado (mantém data_finalizacao se já existe, senão define agora)
       const { error } = await supabase
         .from('ordens_servico')
-        .update({ status: 'faturado' })
+        .update({ 
+          status: 'faturado',
+          data_finalizacao: ordem?.data_finalizacao || new Date().toISOString()
+        })
         .eq('id', ordemId);
       
       if (error) throw error;
