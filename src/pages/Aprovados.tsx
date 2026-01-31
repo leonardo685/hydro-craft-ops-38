@@ -557,7 +557,8 @@ export default function Aprovados() {
           const {
             error
           } = await supabase.from('ordens_servico').update({
-            status: novoStatus
+            status: novoStatus,
+            data_finalizacao: new Date().toISOString()
           }).eq('id', ordemSelecionada.id);
           if (error) throw error;
 
