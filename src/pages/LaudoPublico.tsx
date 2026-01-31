@@ -23,7 +23,8 @@ import {
   Clock,
   FileCheck,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  AlertTriangle
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,6 +42,7 @@ interface OrdemServico {
   pecas_necessarias: any;
   servicos_necessarios: any;
   usinagem_necessaria: any;
+  motivo_falha: string | null;
   recebimentos?: {
     numero_ordem: string;
   };
@@ -717,6 +719,23 @@ export default function LaudoPublico() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Card de Motivo da Falha */}
+        {ordemServico.motivo_falha && (
+          <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                <AlertTriangle className="w-5 h-5" />
+                Motivo da Falha / Diagnóstico
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-foreground whitespace-pre-wrap">
+                {ordemServico.motivo_falha}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Laudo do Teste */}
         {teste && (
