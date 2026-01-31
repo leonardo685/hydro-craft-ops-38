@@ -1,219 +1,65 @@
 
 
-## Plano: Adicionar Modal de Detalhes ao Clicar em Valores do DFC
+## Exibir o Campo "Motivo da Falha" no Laudo Público
 
-### Objetivo
-Ao clicar no valor de uma categoria no DFC (Demonstracao do Fluxo de Caixa), como "R$ 108.363,00" de "Reforma de Cilindros Hidraulicos", abrir uma janela modal mostrando a lista detalhada de todos os lancamentos que compoem esse valor.
+### Problema Identificado
+O campo "Motivo da Falha" é preenchido durante a criação da Ordem de Serviço (na página Nova Análise ou Nova Ordem Direta), porém não está sendo exibido na página de laudo público acessada via QR code. Atualmente, ele só aparece dentro do modal de histórico de manutenções.
+
+### Solução
+Adicionar o campo `motivo_falha` à interface da ordem de serviço no laudo público e exibi-lo de forma destacada na página, junto às informações do equipamento.
 
 ---
 
-### Alteracoes Necessarias
+### Alterações no Arquivo: `src/pages/LaudoPublico.tsx`
 
-#### 1. Atualizar a Interface `DFCItem` (linha 982)
+**1. Atualizar a Interface `OrdemServico`**
 
-Adicionar o campo `categoriaId` para rastrear qual categoria cada linha representa:
+Adicionar o campo `motivo_falha` à interface para que ele seja reconhecido no TypeScript:
 
 ```typescript
-interface DFCItem {
-  codigo?: string;
-  conta: string;
-  valor: number;
-  percentual: number;
-  tipo: 'categoria_mae' | 'categoria_filha' | 'calculo';
-  nivel: number;
-  codigoMae?: string;
-  categoriaId?: string; // NOVO CAMPO
+interface OrdemServico {
+  // ... campos existentes
+  motivo_falha: string | null;  // ADICIONAR
 }
 ```
 
----
+**2. Incluir o campo na query de busca**
 
-#### 2. Atualizar o calculo `dfcData` para incluir `categoriaId`
+A query atual já usa `*` (select all), então o campo já está sendo buscado. Basta adicioná-lo à interface.
 
-Modificar a funcao `adicionarCategoriaPorCodigo` (linha 1033) para incluir o ID da categoria em cada item:
+**3. Exibir o "Motivo da Falha" na UI**
 
-- Na categoria mae (linha 1041-1048): adicionar `categoriaId: categoriaMae.id`
-- Nas categorias filhas (linha 1055-1063): adicionar `categoriaId: filha.id`
+Adicionar uma seção visualmente destacada após as informações básicas da ordem, exibindo o motivo da falha quando preenchido:
 
----
-
-#### 3. Adicionar estado para o modal de detalhes
-
-Adicionar novo estado apos os outros estados existentes:
-
-```typescript
-const [modalDetalhesDFC, setModalDetalhesDFC] = useState<{
-  open: boolean;
-  categoria: { codigo?: string; nome: string; valor: number } | null;
-  categoriaIds: string[];
-}>({ open: false, categoria: null, categoriaIds: [] });
-```
-
----
-
-#### 4. Criar memo para lancamentos filtrados do periodo DFC
-
-Criar um `useMemo` para obter os lancamentos que correspondem aos filtros de periodo do DFC:
-
-```typescript
-const lancamentosFiltradosPeriodoDFC = useMemo(() => {
-  return lancamentos.filter(l => {
-    if (l.tipo === 'transferencia') return false;
-    if (!l.lancamentoPaiId && l.numeroParcelas && l.numeroParcelas > 1) return false;
-    if (!l.pago || !l.dataRealizada) return false;
-    
-    const dataRealizada = new Date(l.dataRealizada);
-    if (dfcDataInicio) {
-      const inicio = new Date(dfcDataInicio);
-      inicio.setHours(0, 0, 0, 0);
-      if (dataRealizada < inicio) return false;
-    }
-    if (dfcDataFim) {
-      const fim = new Date(dfcDataFim);
-      fim.setHours(23, 59, 59, 999);
-      if (dataRealizada > fim) return false;
-    }
-    return true;
-  });
-}, [lancamentos, dfcDataInicio, dfcDataFim]);
-```
-
----
-
-#### 5. Criar funcao handler para clique no valor
-
-Adicionar funcao `useCallback` para tratar o clique:
-
-```typescript
-const handleClickValorDFC = useCallback((item: DFCItem) => {
-  if (item.tipo === 'calculo' || !item.categoriaId) return;
-
-  let categoriaIds: string[] = [];
-  if (item.tipo === 'categoria_mae') {
-    const categoriaMae = categorias.find(c => c.id === item.categoriaId);
-    if (categoriaMae) {
-      const filhas = categorias
-        .filter(c => c.categoriaMaeId === categoriaMae.id)
-        .map(c => c.id);
-      categoriaIds = [categoriaMae.id, ...filhas];
-    }
-  } else {
-    categoriaIds = [item.categoriaId];
-  }
-
-  setModalDetalhesDFC({
-    open: true,
-    categoria: {
-      codigo: item.codigo,
-      nome: item.conta,
-      valor: item.valor
-    },
-    categoriaIds
-  });
-}, [categorias]);
-```
-
----
-
-#### 6. Criar memo para lancamentos do modal
-
-```typescript
-const lancamentosModalDFC = useMemo(() => {
-  if (!modalDetalhesDFC.open || modalDetalhesDFC.categoriaIds.length === 0) return [];
-  
-  return lancamentosFiltradosPeriodoDFC
-    .filter(l => l.categoriaId && modalDetalhesDFC.categoriaIds.includes(l.categoriaId))
-    .map(l => ({
-      id: l.id,
-      descricao: l.descricao,
-      valor: l.valor,
-      data: l.dataRealizada instanceof Date ? l.dataRealizada.toISOString() : String(l.dataRealizada),
-      fornecedorCliente: l.fornecedorCliente,
-      contaBancaria: l.contaBancaria,
-      pago: l.pago
-    }));
-}, [lancamentosFiltradosPeriodoDFC, modalDetalhesDFC]);
-```
-
----
-
-#### 7. Atualizar a celula de valor na tabela do DFC (linha 1324-1326)
-
-Modificar para adicionar o click handler e estilos:
-
-**De:**
 ```tsx
-<TableCell className={cn("text-right", getDfcValueStyle(item.valor, item.tipo))}>
-  {formatCurrency(item.valor)}
-</TableCell>
+{/* Card de Motivo da Falha - após o card de informações da ordem */}
+{ordemServico.motivo_falha && (
+  <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+        <AlertTriangle className="w-5 h-5" />
+        Motivo da Falha / Diagnóstico
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p className="text-foreground whitespace-pre-wrap">
+        {ordemServico.motivo_falha}
+      </p>
+    </CardContent>
+  </Card>
+)}
 ```
 
-**Para:**
-```tsx
-<TableCell className={cn("text-right", getDfcValueStyle(item.valor, item.tipo))}>
-  <span 
-    className={cn(
-      item.tipo !== 'calculo' && item.categoriaId && "cursor-pointer hover:underline hover:text-primary"
-    )}
-    onClick={() => handleClickValorDFC(item)}
-  >
-    {formatCurrency(item.valor)}
-  </span>
-</TableCell>
-```
+**4. Importar o ícone necessário**
+
+Adicionar `AlertTriangle` aos imports do Lucide React (já está importado, conforme verificado no código).
 
 ---
 
-#### 8. Adicionar o componente modal ao final do DFC
+### Resultado Esperado
 
-Importar e renderizar o `DetalhesCategoriaDREModal` (que pode ser reutilizado):
+Quando o usuário acessar o laudo público via QR code, verá uma seção destacada em cor âmbar/amarela mostrando o "Motivo da Falha" diagnosticado durante a análise técnica. Esta informação só aparecerá quando o campo estiver preenchido na ordem de serviço.
 
-No inicio do arquivo, adicionar:
-```typescript
-import { DetalhesCategoriaDREModal } from "@/components/DetalhesCategoriaDREModal";
-```
+### Benefício
+O cliente terá acesso imediato à causa raiz da falha do equipamento diretamente na página do laudo, sem precisar abrir o modal de histórico de manutenções.
 
-Antes do fechamento do `</AppLayout>`, adicionar:
-```tsx
-<DetalhesCategoriaDREModal
-  open={modalDetalhesDFC.open}
-  onOpenChange={(open) => setModalDetalhesDFC(prev => ({ ...prev, open }))}
-  categoria={modalDetalhesDFC.categoria}
-  lancamentos={lancamentosModalDFC}
-/>
-```
-
----
-
-### Arquivos a Modificar
-
-1. **src/pages/DFC.tsx**
-   - Adicionar import do `DetalhesCategoriaDREModal`
-   - Adicionar `categoriaId` na interface `DFCItem`
-   - Atualizar `dfcData` para incluir `categoriaId` nas categorias mae e filhas
-   - Adicionar estado `modalDetalhesDFC`
-   - Adicionar `lancamentosFiltradosPeriodoDFC` useMemo
-   - Adicionar `handleClickValorDFC` useCallback
-   - Adicionar `lancamentosModalDFC` useMemo
-   - Modificar a TableCell do valor para ter onClick e estilos hover
-   - Renderizar o modal no final do componente
-
----
-
-### Comportamento Esperado
-
-| Acao | Resultado |
-|------|-----------|
-| Clique em "R$ 108.363,00" (Reforma de Cilindros) | Abre modal com lista de todos os lancamentos pagos dessa categoria |
-| Clique em "R$ 192.844,95" (Receitas Operacionais - mae) | Abre modal com lancamentos de todas as subcategorias (1.1, 1.2, etc.) |
-| Clique em valor de linha de calculo (MARGEM, LUCRO) | Nada acontece (nao sao categorias clicaveis) |
-
----
-
-### Detalhes Tecnicos
-
-- Reutiliza o componente `DetalhesCategoriaDREModal` ja existente
-- O modal mostra: Data, Descricao, Fornecedor/Cliente, Conta Bancaria, Status (Pago/Pendente), Valor
-- Para DFC, todos os lancamentos sao pagos (status sempre "Pago")
-- Filtragem respeita o periodo selecionado no filtro de data do DFC
-- Ao clicar em categoria mae, inclui todos os lancamentos das categorias filhas
