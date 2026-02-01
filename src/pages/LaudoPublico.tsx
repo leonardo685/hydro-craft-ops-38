@@ -27,8 +27,9 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR, enUS } from "date-fns/locale";
 import { HistoricoManutencaoPublicoModal } from "@/components/HistoricoManutencaoPublicoModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface OrdemServico {
   id: string;
@@ -104,6 +105,8 @@ interface EmpresaData {
 export default function LaudoPublico() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
+  const dateLocale = language === 'pt-BR' ? ptBR : enUS;
   const [loading, setLoading] = useState(true);
   const [ordemServico, setOrdemServico] = useState<OrdemServico | null>(null);
   const [teste, setTeste] = useState<TesteEquipamento | null>(null);
@@ -117,7 +120,7 @@ export default function LaudoPublico() {
   useEffect(() => {
     const verificarAcessoECarregarDados = async () => {
       if (!numeroOrdem) {
-        toast.error("Número da ordem não encontrado");
+        toast.error(t('laudoPublico.orderNumberNotFound'));
         navigate("/");
         return;
       }
@@ -136,7 +139,7 @@ export default function LaudoPublico() {
         if (ordemError) throw ordemError;
 
         if (!ordem) {
-          toast.error("Ordem não encontrada");
+          toast.error(t('laudoPublico.orderNotFound'));
           navigate("/");
           return;
         }
@@ -191,7 +194,7 @@ export default function LaudoPublico() {
 
         // Se não existe laudo técnico, nota de retorno NEM fotos, ordem não está pronta
         if (!testeCheck && !pdfNotaRetorno && !temFotos) {
-          toast.error("Esta ordem ainda não foi finalizada");
+          toast.error(t('laudoPublico.orderNotFinished'));
           navigate("/");
           return;
         }
@@ -256,7 +259,7 @@ export default function LaudoPublico() {
         }
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
-        toast.error("Erro ao carregar laudo");
+        toast.error(t('laudoPublico.loadError'));
         navigate("/");
       } finally {
         setLoading(false);
@@ -264,13 +267,13 @@ export default function LaudoPublico() {
     };
 
     verificarAcessoECarregarDados();
-  }, [numeroOrdem, navigate]);
+  }, [numeroOrdem, navigate, t]);
 
   const handleExportPDF = async () => {
     if (!ordemServico) return;
     
     try {
-      toast.loading("Gerando PDF...");
+      toast.loading(t('laudoPublico.pdfGenerating'));
       
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.width;
@@ -615,11 +618,11 @@ export default function LaudoPublico() {
       doc.save(`Laudo_${numeroOrdemCorreto}.pdf`);
       
       toast.dismiss();
-      toast.success("PDF exportado com sucesso!");
+      toast.success(t('laudoPublico.pdfSuccess'));
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
       toast.dismiss();
-      toast.error("Erro ao gerar PDF");
+      toast.error(t('laudoPublico.pdfError'));
     }
   };
 
@@ -628,7 +631,7 @@ export default function LaudoPublico() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Carregando laudo...</p>
+          <p className="mt-4 text-muted-foreground">{t('laudoPublico.loading')}</p>
         </div>
       </div>
     );
@@ -640,9 +643,9 @@ export default function LaudoPublico() {
 
   const ResultadoBadge = ({ resultado }: { resultado: string }) => {
     if (resultado === 'aprovado') {
-      return <Badge className="bg-green-500 hover:bg-green-600"><CheckCircle className="w-3 h-3 mr-1" /> Aprovado</Badge>;
+      return <Badge className="bg-green-500 hover:bg-green-600"><CheckCircle className="w-3 h-3 mr-1" /> {t('laudoPublico.approved')}</Badge>;
     }
-    return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" /> Reprovado</Badge>;
+    return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" /> {t('laudoPublico.rejected')}</Badge>;
   };
 
   return (
@@ -660,9 +663,9 @@ export default function LaudoPublico() {
               />
             </div>
             <div>
-              <CardTitle className="text-3xl font-bold">Laudo Técnico</CardTitle>
+              <CardTitle className="text-3xl font-bold">{t('laudoPublico.technicalReport')}</CardTitle>
               <p className="text-muted-foreground text-lg mt-2">
-                Ordem de Serviço <span className="font-semibold text-primary">#{ordemServico.recebimentos?.numero_ordem || ordemServico.numero_ordem}</span>
+                {t('laudoPublico.serviceOrder')} <span className="font-semibold text-primary">#{ordemServico.recebimentos?.numero_ordem || ordemServico.numero_ordem}</span>
               </p>
               <Button
                 onClick={handleExportPDF}
@@ -670,7 +673,7 @@ export default function LaudoPublico() {
                 variant="outline"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Exportar Laudo em PDF
+                {t('laudoPublico.exportPdf')}
               </Button>
             </div>
           </CardHeader>
@@ -681,7 +684,7 @@ export default function LaudoPublico() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />
-              Informações da Ordem
+              {t('laudoPublico.orderInfo')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -689,31 +692,31 @@ export default function LaudoPublico() {
               <div className="flex items-start gap-3">
                 <Building2 className="w-5 h-5 text-muted-foreground mt-0.5" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Cliente</p>
+                  <p className="text-sm text-muted-foreground">{t('laudoPublico.client')}</p>
                   <p className="font-semibold">{ordemServico.cliente_nome}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Wrench className="w-5 h-5 text-muted-foreground mt-0.5" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Equipamento</p>
+                  <p className="text-sm text-muted-foreground">{t('laudoPublico.equipment')}</p>
                   <p className="font-semibold">{ordemServico.equipamento}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Data de Entrada</p>
+                  <p className="text-sm text-muted-foreground">{t('laudoPublico.entryDate')}</p>
                   <p className="font-semibold">
-                    {format(new Date(ordemServico.data_entrada), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    {format(new Date(ordemServico.data_entrada), language === 'pt-BR' ? "dd 'de' MMMM 'de' yyyy" : "MMMM dd, yyyy", { locale: dateLocale })}
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <FileCheck className="w-5 h-5 text-muted-foreground mt-0.5" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <Badge variant="outline" className="mt-1">Finalizado</Badge>
+                  <p className="text-sm text-muted-foreground">{t('laudoPublico.status')}</p>
+                  <Badge variant="outline" className="mt-1">{t('laudoPublico.finished')}</Badge>
                 </div>
               </div>
             </div>
@@ -726,7 +729,7 @@ export default function LaudoPublico() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="w-5 h-5" />
-                Motivo da Falha / Diagnóstico
+                {t('laudoPublico.failureDiagnosis')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -744,7 +747,7 @@ export default function LaudoPublico() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Gauge className="w-5 h-5" />
-                  Resultado do Teste
+                  {t('laudoPublico.testResult')}
                 </CardTitle>
                 <ResultadoBadge resultado={teste.resultado_teste} />
               </div>
@@ -753,13 +756,13 @@ export default function LaudoPublico() {
               {/* Informações Básicas do Teste */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Tipo de Teste</p>
+                  <p className="text-sm text-muted-foreground">{t('laudoPublico.testType')}</p>
                   <p className="font-semibold capitalize">{teste.tipo_teste}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Data do Teste</p>
+                  <p className="text-sm text-muted-foreground">{t('laudoPublico.testDate')}</p>
                   <p className="font-semibold">
-                    {format(new Date(teste.data_hora_teste), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    {format(new Date(teste.data_hora_teste), language === 'pt-BR' ? "dd/MM/yyyy 'às' HH:mm" : "MM/dd/yyyy 'at' HH:mm", { locale: dateLocale })}
                   </p>
                 </div>
               </div>
@@ -768,13 +771,13 @@ export default function LaudoPublico() {
 
               {/* Parâmetros de Teste ISO10100 */}
               <div>
-                <p className="font-semibold mb-3">Parâmetros de Teste ISO10100</p>
+                <p className="font-semibold mb-3">{t('laudoPublico.testParametersISO')}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {teste.pressao_teste && (
                     <div className="flex items-start gap-3">
                       <Gauge className="w-5 h-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Pressão de Teste</p>
+                        <p className="text-sm text-muted-foreground">{t('laudoPublico.testPressure')}</p>
                         <p className="font-semibold">{teste.pressao_teste}</p>
                       </div>
                     </div>
@@ -783,7 +786,7 @@ export default function LaudoPublico() {
                     <div className="flex items-start gap-3">
                       <Thermometer className="w-5 h-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Temperatura de Operação</p>
+                        <p className="text-sm text-muted-foreground">{t('laudoPublico.operatingTemp')}</p>
                         <p className="font-semibold">{teste.temperatura_operacao}</p>
                       </div>
                     </div>
@@ -792,44 +795,44 @@ export default function LaudoPublico() {
                     <div className="flex items-start gap-3">
                       <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Tempo de Teste</p>
-                        <p className="font-semibold">{teste.tempo_minutos} minutos</p>
+                        <p className="text-sm text-muted-foreground">{t('laudoPublico.testTime')}</p>
+                        <p className="font-semibold">{teste.tempo_minutos} {t('laudoPublico.minutes')}</p>
                       </div>
                     </div>
                   )}
                   {teste.curso && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Curso</p>
+                      <p className="text-sm text-muted-foreground">{t('laudoPublico.stroke')}</p>
                       <p className="font-semibold">{teste.curso}</p>
                     </div>
                   )}
                   {teste.qtd_ciclos && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Quantidade de Ciclos</p>
+                      <p className="text-sm text-muted-foreground">{t('laudoPublico.cycleQty')}</p>
                       <p className="font-semibold">{teste.qtd_ciclos}</p>
                     </div>
                   )}
                   {teste.pressao_maxima_trabalho && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Pressão Máxima de Trabalho</p>
+                      <p className="text-sm text-muted-foreground">{t('laudoPublico.maxWorkPressure')}</p>
                       <p className="font-semibold">{teste.pressao_maxima_trabalho}</p>
                     </div>
                   )}
                   {teste.pressao_avanco && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Pressão de Avanço</p>
+                      <p className="text-sm text-muted-foreground">{t('laudoPublico.advancePressure')}</p>
                       <p className="font-semibold">{teste.pressao_avanco}</p>
                     </div>
                   )}
                   {teste.pressao_retorno && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Pressão de Retorno</p>
+                      <p className="text-sm text-muted-foreground">{t('laudoPublico.returnPressure')}</p>
                       <p className="font-semibold">{teste.pressao_retorno}</p>
                     </div>
                   )}
                   {teste.espessura_camada && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Espessura da Camada</p>
+                      <p className="text-sm text-muted-foreground">{t('laudoPublico.layerThickness')}</p>
                       <p className="font-semibold">{teste.espessura_camada}</p>
                     </div>
                   )}
@@ -843,7 +846,7 @@ export default function LaudoPublico() {
                 <>
                   <Separator />
                   <div>
-                    <p className="font-semibold mb-3">Verificações de Vazamento</p>
+                    <p className="font-semibold mb-3">{t('laudoPublico.leakChecks')}</p>
                     <div className="space-y-2">
                       {teste.check_vazamento_pistao !== null && (
                         <div className="flex items-center gap-2">
@@ -852,7 +855,7 @@ export default function LaudoPublico() {
                           ) : (
                             <XCircle className="w-4 h-4 text-red-500" />
                           )}
-                          <span>Vazamento no Pistão</span>
+                          <span>{t('laudoPublico.pistonLeak')}</span>
                         </div>
                       )}
                       {teste.check_vazamento_vedacoes_estaticas !== null && (
@@ -862,7 +865,7 @@ export default function LaudoPublico() {
                           ) : (
                             <XCircle className="w-4 h-4 text-red-500" />
                           )}
-                          <span>Vazamento nas Vedações Estáticas</span>
+                          <span>{t('laudoPublico.staticSealsLeak')}</span>
                         </div>
                       )}
                       {teste.check_vazamento_haste !== null && (
@@ -872,7 +875,7 @@ export default function LaudoPublico() {
                           ) : (
                             <XCircle className="w-4 h-4 text-red-500" />
                           )}
-                          <span>Vazamento na Haste</span>
+                          <span>{t('laudoPublico.stemLeak')}</span>
                         </div>
                       )}
                       {/* Verificação Geral calculada */}
@@ -888,7 +891,7 @@ export default function LaudoPublico() {
                             ) : (
                               <XCircle className="w-4 h-4 text-red-500" />
                             )}
-                            <span className="font-semibold">Verificação Geral</span>
+                            <span className="font-semibold">{t('laudoPublico.generalCheck')}</span>
                           </div>
                         );
                       })()}
@@ -902,7 +905,7 @@ export default function LaudoPublico() {
                 <>
                   <Separator />
                   <div>
-                    <p className="font-semibold mb-2">Observações</p>
+                    <p className="font-semibold mb-2">{t('laudoPublico.observations')}</p>
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                       {teste.observacoes_teste || teste.observacao}
                     </p>
@@ -919,68 +922,68 @@ export default function LaudoPublico() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Gauge className="w-5 h-5 text-amber-500" />
-                Dados Dimensionais
+                {t('laudoPublico.dimensionalData')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {dadosDimensionais.camisa && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Diâmetro Camisa</p>
+                    <p className="text-sm text-muted-foreground">{t('laudoPublico.shirtDiameter')}</p>
                     <p className="font-semibold">{dadosDimensionais.camisa}</p>
                   </div>
                 )}
                 {dadosDimensionais.curso && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Curso</p>
+                    <p className="text-sm text-muted-foreground">{t('laudoPublico.stroke')}</p>
                     <p className="font-semibold">{dadosDimensionais.curso}</p>
                   </div>
                 )}
                 {dadosDimensionais.haste_comprimento && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Haste (Ø x Compr.)</p>
+                    <p className="text-sm text-muted-foreground">{t('laudoPublico.rodLength')}</p>
                     <p className="font-semibold">{dadosDimensionais.haste_comprimento}</p>
                   </div>
                 )}
                 {dadosDimensionais.conexao_a && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Conexão A</p>
+                    <p className="text-sm text-muted-foreground">{t('laudoPublico.connectionA')}</p>
                     <p className="font-semibold">{dadosDimensionais.conexao_a}</p>
                   </div>
                 )}
                 {dadosDimensionais.conexao_b && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Conexão B</p>
+                    <p className="text-sm text-muted-foreground">{t('laudoPublico.connectionB')}</p>
                     <p className="font-semibold">{dadosDimensionais.conexao_b}</p>
                   </div>
                 )}
                 {dadosDimensionais.pressao_trabalho && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Pressão de Trabalho</p>
+                    <p className="text-sm text-muted-foreground">{t('laudoPublico.workPressure')}</p>
                     <p className="font-semibold">{dadosDimensionais.pressao_trabalho}</p>
                   </div>
                 )}
                 {dadosDimensionais.temperatura_trabalho && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Temperatura de Trabalho</p>
+                    <p className="text-sm text-muted-foreground">{t('laudoPublico.workTemperature')}</p>
                     <p className="font-semibold">{dadosDimensionais.temperatura_trabalho}</p>
                   </div>
                 )}
                 {dadosDimensionais.fluido_trabalho && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Fluido de Trabalho</p>
+                    <p className="text-sm text-muted-foreground">{t('laudoPublico.workFluid')}</p>
                     <p className="font-semibold">{dadosDimensionais.fluido_trabalho}</p>
                   </div>
                 )}
                 {dadosDimensionais.ambiente_trabalho && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Ambiente de Trabalho</p>
+                    <p className="text-sm text-muted-foreground">{t('laudoPublico.workEnvironment')}</p>
                     <p className="font-semibold">{dadosDimensionais.ambiente_trabalho}</p>
                   </div>
                 )}
                 {dadosDimensionais.potencia && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Potência</p>
+                    <p className="text-sm text-muted-foreground">{t('laudoPublico.power')}</p>
                     <p className="font-semibold">{dadosDimensionais.potencia}</p>
                   </div>
                 )}
@@ -995,7 +998,7 @@ export default function LaudoPublico() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-blue-500" />
-                Peças Utilizadas
+                {t('laudoPublico.partsUsed')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1004,8 +1007,8 @@ export default function LaudoPublico() {
                   <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded">
                     <span className="font-medium">{item.peca || item.descricao || item.nome || 'Peça'}</span>
                     <span className="text-sm text-muted-foreground">
-                      Qtd: {item.quantidade || 1}
-                      {item.codigo && ` | Cód: ${item.codigo}`}
+                      {t('laudoPublico.qty')}: {item.quantidade || 1}
+                      {item.codigo && ` | ${t('laudoPublico.code')}: ${item.codigo}`}
                     </span>
                   </div>
                 ))}
@@ -1020,7 +1023,7 @@ export default function LaudoPublico() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileCheck className="w-5 h-5 text-green-500" />
-                Serviços Realizados
+                {t('laudoPublico.servicesPerformed')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1044,7 +1047,7 @@ export default function LaudoPublico() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Gauge className="w-5 h-5 text-purple-500" />
-                Usinagem
+                {t('laudoPublico.machining')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1068,7 +1071,7 @@ export default function LaudoPublico() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                Fotos do Equipamento
+                {t('laudoPublico.equipmentPhotos')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1094,7 +1097,7 @@ export default function LaudoPublico() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Video className="w-5 h-5" />
-                Vídeo do Teste
+                {t('laudoPublico.testVideo')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1106,7 +1109,7 @@ export default function LaudoPublico() {
                       className="w-full h-full"
                       src={teste.video_url}
                     >
-                      Seu navegador não suporta a reprodução de vídeos.
+                      {t('laudoPublico.browserNotSupported')}
                     </video>
                   </div>
                   <Button
@@ -1119,14 +1122,14 @@ export default function LaudoPublico() {
                     }}
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    Baixar Vídeo
+                    {t('laudoPublico.downloadVideo')}
                   </Button>
                 </>
               ) : (
                 <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
                   <div className="text-center text-muted-foreground">
                     <Video className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>Nenhum vídeo foi anexado a este teste</p>
+                    <p>{t('laudoPublico.noVideoAttached')}</p>
                   </div>
                 </div>
               )}
@@ -1139,12 +1142,12 @@ export default function LaudoPublico() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
-              Tendência de Manutenções
+              {t('laudoPublico.maintenanceTrend')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Visualize o histórico completo de manutenções deste equipamento, incluindo gráficos de tempo entre reformas e análise de tendências.
+              {t('laudoPublico.maintenanceTrendDesc')}
             </p>
             <Button 
               onClick={() => setHistoricoModalOpen(true)}
@@ -1152,7 +1155,7 @@ export default function LaudoPublico() {
               variant="outline"
             >
               <BarChart3 className="w-4 h-4 mr-2" />
-              Ver Gráficos de Histórico
+              {t('laudoPublico.viewHistoryCharts')}
             </Button>
           </CardContent>
         </Card>
@@ -1160,9 +1163,9 @@ export default function LaudoPublico() {
         {/* Rodapé */}
         <Card className="bg-muted/50">
           <CardContent className="pt-6 text-center text-sm text-muted-foreground">
-            <p>Este laudo foi gerado automaticamente pelo sistema MEC-HIDRO</p>
+            <p>{t('laudoPublico.footerGenerated')}</p>
             <p className="mt-1">
-              Data de emissão: {format(new Date(), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+              {t('laudoPublico.issueDate')}: {format(new Date(), language === 'pt-BR' ? "dd 'de' MMMM 'de' yyyy 'às' HH:mm" : "MMMM dd, yyyy 'at' HH:mm", { locale: dateLocale })}
             </p>
           </CardContent>
         </Card>
