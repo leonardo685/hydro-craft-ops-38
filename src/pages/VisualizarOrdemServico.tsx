@@ -13,8 +13,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+
 const VisualizarOrdemServico = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const {
     id
   } = useParams();
@@ -65,8 +68,8 @@ const VisualizarOrdemServico = () => {
     } catch (error) {
       console.error('Erro ao carregar ordem de serviço:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao carregar ordem de serviço",
+        title: t('visualizarOrdem.error'),
+        description: t('visualizarOrdem.errorLoading'),
         variant: "destructive"
       });
     } finally {
@@ -83,14 +86,14 @@ const VisualizarOrdemServico = () => {
       }).eq('id', ordem.id);
       if (error) throw error;
       toast({
-        title: "Sucesso",
-        description: "Prazo de entrega atualizado com sucesso"
+        title: t('visualizarOrdem.success'),
+        description: t('visualizarOrdem.deliveryTimeUpdated')
       });
     } catch (error) {
       console.error('Erro ao atualizar prazo:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao atualizar prazo de entrega",
+        title: t('visualizarOrdem.error'),
+        description: t('visualizarOrdem.errorUpdatingDelivery'),
         variant: "destructive"
       });
     }
@@ -397,10 +400,10 @@ const VisualizarOrdemServico = () => {
                 {item.descricao || item.nome || 'Item não especificado'}
               </div>
               {item.quantidade && <div className="text-sm text-muted-foreground">
-                  Quantidade: {item.quantidade}
+                  {t('visualizarOrdem.quantity')}: {item.quantidade}
                 </div>}
               {item.observacoes && <div className="text-sm text-muted-foreground">
-                  Obs: {item.observacoes}
+                  {t('visualizarOrdem.obs')}: {item.observacoes}
                 </div>}
             </div>)}
         </CardContent>
@@ -409,14 +412,14 @@ const VisualizarOrdemServico = () => {
   if (loading) {
     return <AppLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Carregando...</div>
+          <div className="text-lg">{t('visualizarOrdem.loading')}</div>
         </div>
       </AppLayout>;
   }
   if (!ordem) {
     return <AppLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Ordem de serviço não encontrada</div>
+          <div className="text-lg">{t('visualizarOrdem.orderNotFound')}</div>
         </div>
       </AppLayout>;
   }
@@ -427,18 +430,18 @@ const VisualizarOrdemServico = () => {
           <div className="flex items-center gap-4">
             <Button variant="outline" onClick={() => navigate('/aprovados')} className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Voltar
+              {t('visualizarOrdem.back')}
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">Visualizar Ordem de Serviço</h1>
+              <h1 className="text-2xl font-bold">{t('visualizarOrdem.pageTitle')}</h1>
               <p className="text-muted-foreground">
-                Visualizando ordem: {recebimento?.numero_ordem} - {ordem.cliente_nome}
+                {t('visualizarOrdem.viewingOrder')}: {recebimento?.numero_ordem} - {ordem.cliente_nome}
               </p>
             </div>
           </div>
           <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth" onClick={exportToPDF}>
             <FileText className="mr-2 h-4 w-4" />
-            Exportar PDF
+            {t('visualizarOrdem.exportPdf')}
           </Button>
         </div>
 
@@ -446,34 +449,34 @@ const VisualizarOrdemServico = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              📋 Informações Básicas
+              📋 {t('visualizarOrdem.basicInfo')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label>Cliente</Label>
+                <Label>{t('visualizarOrdem.client')}</Label>
                 <div className="text-red-600 font-medium">{ordem.cliente_nome}</div>
                 {recebimento?.cliente_cnpj && <div className="text-sm text-muted-foreground">{recebimento.cliente_cnpj}</div>}
               </div>
               <div>
-                <Label>Data de Entrada</Label>
+                <Label>{t('visualizarOrdem.entryDate')}</Label>
                 <div>{new Date(ordem.data_entrada).toLocaleDateString('pt-BR')}</div>
               </div>
               <div>
-                <Label>Nota Fiscal</Label>
+                <Label>{t('visualizarOrdem.invoice')}</Label>
                 <div>{recebimento?.nota_fiscal || '-'}</div>
               </div>
               <div>
-                <Label>Nº da Ordem</Label>
+                <Label>{t('visualizarOrdem.orderNumber')}</Label>
                 <div>{ordem.numero_ordem}</div>
               </div>
               <div>
-                <Label>Tipo de Equipamento</Label>
+                <Label>{t('visualizarOrdem.equipmentType')}</Label>
                 <div>{ordem.equipamento}</div>
               </div>
               <div>
-                <Label>Nº de Série</Label>
+                <Label>{t('visualizarOrdem.serialNumber')}</Label>
                 <div>{recebimento?.numero_serie || '-'}</div>
               </div>
             </div>
@@ -485,7 +488,7 @@ const VisualizarOrdemServico = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Camera className="h-5 w-5" />
-                Fotos da Chegada do Equipamento
+                {t('visualizarOrdem.arrivalPhotos')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -501,45 +504,45 @@ const VisualizarOrdemServico = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              ⚙️ Dados Técnicos (Editáveis)
+              ⚙️ {t('visualizarOrdem.technicalData')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label>Tipo Equipamento</Label>
+                <Label>{t('visualizarOrdem.equipmentType')}</Label>
                 <div>{ordem.equipamento}</div>
               </div>
               <div>
-                <Label>Pressão de Trabalho</Label>
+                <Label>{t('visualizarOrdem.workPressure')}</Label>
                 <div>{recebimento?.pressao_trabalho || 'Ex: 350 bar'}</div>
               </div>
               <div>
-                <Label>Camisa</Label>
+                <Label>{t('visualizarOrdem.shirt')}</Label>
                 <div>Ex: 100mm</div>
               </div>
               <div>
-                <Label>Haste x Comprimento</Label>
+                <Label>{t('visualizarOrdem.rodLength')}</Label>
                 <div>Ex: 800mm</div>
               </div>
               <div>
-                <Label>Curso</Label>
+                <Label>{t('visualizarOrdem.stroke')}</Label>
                 <div>Ex: 600mm</div>
               </div>
               <div>
-                <Label>Conexão A</Label>
+                <Label>{t('visualizarOrdem.connectionA')}</Label>
                 <div>Ex: 3/4 NPT</div>
               </div>
               <div>
-                <Label>Conexão B</Label>
+                <Label>{t('visualizarOrdem.connectionB')}</Label>
                 <div>Ex: 1/2 NPT</div>
               </div>
               <div>
-                <Label>Prazo de Entrega</Label>
+                <Label>{t('visualizarOrdem.deliveryTime')}</Label>
                 <div className="flex gap-2">
-                  <Input value={prazoEntrega} onChange={e => setPrazoEntrega(e.target.value)} placeholder="Ex: 5 dias úteis" />
+                  <Input value={prazoEntrega} onChange={e => setPrazoEntrega(e.target.value)} placeholder={t('visualizarOrdem.deliveryTimePlaceholder')} />
                   <Button onClick={atualizarPrazoEntrega} size="sm">
-                    Salvar
+                    {t('visualizarOrdem.save')}
                   </Button>
                 </div>
               </div>
@@ -551,19 +554,19 @@ const VisualizarOrdemServico = () => {
         {(ordem.observacoes_tecnicas || recebimento?.problemas_apresentados) && <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                📝 Acompanha o Equipamento     
+                📝 {t('visualizarOrdem.accompaniesEquipment')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {recebimento?.problemas_apresentados && <div>
-                    <Label>Problemas Apresentados</Label>
+                    <Label>{t('visualizarOrdem.problemsPresented')}</Label>
                     <div className="p-3 bg-muted/50 rounded-lg">
                       {recebimento.problemas_apresentados}
                     </div>
                   </div>}
                 {ordem.observacoes_tecnicas && <div>
-                    <Label>Observações Técnicas</Label>
+                    <Label>{t('visualizarOrdem.technicalObservations')}</Label>
                     <div className="p-3 bg-muted/50 rounded-lg">
                       {ordem.observacoes_tecnicas}
                     </div>
@@ -575,15 +578,15 @@ const VisualizarOrdemServico = () => {
         {/* Dados de Peritagem */}
         {recebimento && <Card>
             <CardHeader>
-              <CardTitle>Dados de Peritagem</CardTitle>
-              <CardDescription>Informações da peritagem técnica</CardDescription>
+              <CardTitle>{t('visualizarOrdem.expertiseData')}</CardTitle>
+              <CardDescription>{t('visualizarOrdem.expertiseInfo')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 <div>
-                  <Label className="text-sm font-medium">Motivo da Falha</Label>
+                  <Label className="text-sm font-medium">{t('visualizarOrdem.failureReason')}</Label>
                   <div className="p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg mt-2">
-                    {ordem.motivo_falha || 'Nenhum motivo de falha registrado'}
+                    {ordem.motivo_falha || t('visualizarOrdem.noFailureReason')}
                   </div>
                 </div>
               </div>
@@ -591,13 +594,13 @@ const VisualizarOrdemServico = () => {
           </Card>}
 
         {/* Serviços */}
-        {renderItems(ordem.servicos_necessarios, "Serviços", <Wrench className="h-5 w-5" />)}
+        {renderItems(ordem.servicos_necessarios, t('visualizarOrdem.services'), <Wrench className="h-5 w-5" />)}
 
         {/* Peças Utilizadas */}
-        {renderItems(ordem.pecas_necessarias, "Peças Utilizadas", <Package className="h-5 w-5" />)}
+        {renderItems(ordem.pecas_necessarias, t('visualizarOrdem.partsUsed'), <Package className="h-5 w-5" />)}
 
         {/* Usinagem */}
-        {renderItems(ordem.usinagem_necessaria, "Usinagem", <Settings className="h-5 w-5" />)}
+        {renderItems(ordem.usinagem_necessaria, t('visualizarOrdem.machining'), <Settings className="h-5 w-5" />)}
       </div>
     </AppLayout>;
 };
