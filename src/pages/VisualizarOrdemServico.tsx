@@ -581,16 +581,9 @@ const VisualizarOrdemServico = () => {
             <CardContent>
               <div className="space-y-6">
                 <div>
-                  <Label className="text-sm font-medium">Problemas Identificados</Label>
-                  <div className="p-3 bg-muted/50 rounded-lg mt-2">
-                    {ordem.descricao_problema || ordem.tipo_problema || 'Nenhum problema específico identificado'}
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium">Observações Adicionais</Label>
-                  <div className="p-3 bg-muted/50 rounded-lg mt-2">
-                    {ordem.solucao_proposta || 'Nenhuma observação adicional'}
+                  <Label className="text-sm font-medium">Motivo da Falha</Label>
+                  <div className="p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg mt-2">
+                    {ordem.motivo_falha || 'Nenhum motivo de falha registrado'}
                   </div>
                 </div>
               </div>
