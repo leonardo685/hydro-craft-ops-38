@@ -20,11 +20,17 @@ export const useMetasGastos = (modeloGestao?: 'dre' | 'esperado' | 'realizado') 
   const { empresaId } = useEmpresaId();
 
   const fetchMetas = async () => {
+    if (!empresaId) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       let query = supabase
         .from('metas_gastos')
         .select('*')
+        .eq('empresa_id', empresaId)
         .order('data_inicio', { ascending: false });
 
       if (modeloGestao) {
@@ -57,7 +63,7 @@ export const useMetasGastos = (modeloGestao?: 'dre' | 'esperado' | 'realizado') 
 
   useEffect(() => {
     fetchMetas();
-  }, [modeloGestao]);
+  }, [modeloGestao, empresaId]);
 
   const adicionarMeta = async (
     meta: Omit<MetaGasto, 'id'>

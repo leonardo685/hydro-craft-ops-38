@@ -27,10 +27,13 @@ export const useClientes = () => {
   const { empresaId } = useEmpresaId();
 
   const carregarClientes = async () => {
+    if (!empresaId) return;
+    
     try {
       const { data, error } = await supabase
         .from('clientes')
         .select('*')
+        .eq('empresa_id', empresaId)
         .order('nome', { ascending: true });
 
       if (error) throw error;
@@ -103,13 +106,14 @@ export const useClientes = () => {
 
   useEffect(() => {
     const carregarDados = async () => {
+      if (!empresaId) return;
       setLoading(true);
       await carregarClientes();
       setLoading(false);
     };
 
     carregarDados();
-  }, []);
+  }, [empresaId]);
 
   return {
     clientes,

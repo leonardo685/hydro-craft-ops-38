@@ -5,20 +5,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useEmpresaId } from "@/hooks/use-empresa-id";
 
 export const RecentActivity = () => {
+  const { empresaId } = useEmpresaId();
+  
   const { data: atividades } = useQuery({
-    queryKey: ['atividades-recentes'],
+    queryKey: ['atividades-recentes', empresaId],
     queryFn: async () => {
+      if (!empresaId) return [];
+      
       const { data, error } = await supabase
         .from('atividades_sistema')
         .select('*')
+        .eq('empresa_id', empresaId)
         .order('created_at', { ascending: false })
         .limit(5);
 
       if (error) throw error;
       return data;
     },
+    enabled: !!empresaId,
     refetchInterval: 30000, // Atualiza a cada 30 segundos
   });
 
