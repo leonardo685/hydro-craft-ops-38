@@ -435,17 +435,17 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
                             </div>
                           </div>
                           
-                          {item.motivo_falha && (
-                            <div className="mt-2 p-2 bg-destructive/10 rounded">
-                              <span className="text-xs text-muted-foreground">Motivo da Falha:</span>
-                              <p className="text-sm">{item.motivo_falha}</p>
-                            </div>
-                          )}
-                          
                           {item.ordem_anterior && (
                             <p className="text-xs text-muted-foreground mt-2">
                               OS Anterior: {item.ordem_anterior}
                             </p>
+                          )}
+                          
+                          {item.motivo_falha && (
+                            <div className="mt-2 p-2 bg-amber-100 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800">
+                              <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">Motivo da Falha:</span>
+                              <p className="text-sm text-foreground">{item.motivo_falha}</p>
+                            </div>
                           )}
                         </div>
                       </div>
