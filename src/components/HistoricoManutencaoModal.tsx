@@ -9,10 +9,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
 import { gerarPDFHistorico } from "@/lib/historico-pdf-utils";
 import { format, differenceInDays, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR, enUS } from "date-fns/locale";
 
 interface HistoricoManutencaoModalProps {
   open: boolean;
@@ -36,6 +37,8 @@ interface ManutencaoHistorico {
 export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManutencaoModalProps) {
   const { toast } = useToast();
   const { empresaAtual } = useEmpresa();
+  const { t, language } = useLanguage();
+  const dateLocale = language === 'pt-BR' ? ptBR : enUS;
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [historico, setHistorico] = useState<ManutencaoHistorico[]>([]);
@@ -87,8 +90,8 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
     const termo = termoBusca || searchTerm;
     if (!termo.trim()) {
       toast({
-        title: "Digite um número de ordem",
-        description: "Informe o número da ordem de serviço para buscar o histórico.",
+        title: t('historicoManutencao.enterOrderNumber'),
+        description: t('historicoManutencao.enterOrderNumberDesc'),
         variant: "destructive",
       });
       return;
@@ -124,8 +127,8 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
       if (!ordemInicial) {
         setHistorico([]);
         toast({
-          title: "Ordem não encontrada",
-          description: "Nenhuma ordem de serviço encontrada com este número.",
+          title: t('historicoManutencao.orderNotFound'),
+          description: t('historicoManutencao.orderNotFoundDesc'),
           variant: "destructive",
         });
         setLoading(false);
@@ -305,20 +308,20 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
 
       if (historicoCompleto.length === 1) {
         toast({
-          title: "Histórico encontrado",
-          description: "Esta é a primeira manutenção registrada para este equipamento.",
+          title: t('historicoManutencao.historyFound'),
+          description: t('historicoManutencao.firstMaintenance'),
         });
       } else {
         toast({
-          title: "Histórico encontrado",
-          description: `Encontradas ${historicoCompleto.length} manutenções no histórico.`,
+          title: t('historicoManutencao.historyFound'),
+          description: t('historicoManutencao.maintenancesFound').replace('{count}', String(historicoCompleto.length)),
         });
       }
     } catch (error) {
       console.error('Erro ao buscar histórico:', error);
       toast({
-        title: "Erro ao buscar histórico",
-        description: "Ocorreu um erro ao buscar o histórico de manutenções.",
+        title: t('historicoManutencao.searchError'),
+        description: t('historicoManutencao.searchErrorDesc'),
         variant: "destructive",
       });
     } finally {
@@ -332,14 +335,14 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
     try {
       await gerarPDFHistorico(historico, empresaAtual);
       toast({
-        title: "PDF gerado com sucesso",
-        description: "O histórico de manutenções foi exportado para PDF.",
+        title: t('historicoManutencao.pdfGenerated'),
+        description: t('historicoManutencao.pdfGeneratedDesc'),
       });
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       toast({
-        title: "Erro ao gerar PDF",
-        description: "Ocorreu um erro ao gerar o PDF do histórico.",
+        title: t('historicoManutencao.pdfError'),
+        description: t('historicoManutencao.pdfErrorDesc'),
         variant: "destructive",
       });
     }
@@ -347,14 +350,14 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      recebido: { label: "Recebido", variant: "secondary" },
-      em_andamento: { label: "Em Andamento", variant: "default" },
-      aguardando_orcamento: { label: "Aguardando Orçamento", variant: "outline" },
-      aguardando_aprovacao: { label: "Aguardando Aprovação", variant: "outline" },
-      aprovada: { label: "Aprovada", variant: "default" },
-      em_producao: { label: "Em Produção", variant: "default" },
-      finalizada: { label: "Finalizada", variant: "secondary" },
-      reprovada: { label: "Reprovada", variant: "destructive" },
+      recebido: { label: t('historicoManutencao.received'), variant: "secondary" },
+      em_andamento: { label: t('historicoManutencao.inProgress'), variant: "default" },
+      aguardando_orcamento: { label: t('historicoManutencao.awaitingQuote'), variant: "outline" },
+      aguardando_aprovacao: { label: t('historicoManutencao.awaitingApproval'), variant: "outline" },
+      aprovada: { label: t('historicoManutencao.approved'), variant: "default" },
+      em_producao: { label: t('historicoManutencao.inProduction'), variant: "default" },
+      finalizada: { label: t('historicoManutencao.finished'), variant: "secondary" },
+      reprovada: { label: t('historicoManutencao.rejected'), variant: "destructive" },
     };
     
     const config = statusMap[status] || { label: status, variant: "outline" as const };
@@ -393,7 +396,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wrench className="h-5 w-5" />
-            Histórico de Manutenção
+            {t('historicoManutencao.title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -401,7 +404,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
           {/* Busca */}
           <div className="flex gap-4">
             <div className="flex-1">
-              <Label htmlFor="searchOrdem">Número da Ordem</Label>
+              <Label htmlFor="searchOrdem">{t('historicoManutencao.orderNumber')}</Label>
               <div className="flex gap-2 mt-1">
                 <div className="flex flex-1">
                   <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm font-medium">
@@ -418,11 +421,11 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
                 </div>
                 <Button onClick={() => buscarHistorico()} disabled={loading}>
                   <Search className="h-4 w-4 mr-2" />
-                  {loading ? "Buscando..." : "Buscar"}
+                  {loading ? t('historicoManutencao.searching') : t('historicoManutencao.search')}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Digite apenas o número (ex: 1-25 ou 001-25)
+                {t('historicoManutencao.typeNumberHint')}
               </p>
             </div>
           </div>
@@ -432,7 +435,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                Recentes:
+                {t('historicoManutencao.recentSearches')}:
               </span>
               {buscasRecentes.map((busca) => (
                 <Badge
@@ -461,7 +464,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
             <Card className="border-dashed">
               <CardContent className="py-8 text-center">
                 <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Nenhum histórico encontrado para esta ordem.</p>
+                <p className="text-muted-foreground">{t('historicoManutencao.noHistoryFoundOrder')}</p>
               </CardContent>
             </Card>
           )}
@@ -473,7 +476,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
                 <Card>
                   <CardContent className="pt-4">
                     <div className="text-2xl font-bold">{historico.length}</div>
-                    <p className="text-sm text-muted-foreground">Manutenções Registradas</p>
+                    <p className="text-sm text-muted-foreground">{t('historicoManutencao.registeredMaintenances')}</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -481,7 +484,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
                     <div className="text-2xl font-bold">
                       {historico[0]?.cliente_nome || "-"}
                     </div>
-                    <p className="text-sm text-muted-foreground">Cliente</p>
+                    <p className="text-sm text-muted-foreground">{t('historicoManutencao.client')}</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -490,26 +493,26 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
                       {tendencia === "aumentando" && (
                         <>
                           <TrendingUp className="h-6 w-6 text-green-500" />
-                          <span className="text-lg font-medium text-green-600">Tempo Aumentando</span>
+                          <span className="text-lg font-medium text-green-600">{t('historicoManutencao.timeIncreasing')}</span>
                         </>
                       )}
                       {tendencia === "diminuindo" && (
                         <>
                           <TrendingDown className="h-6 w-6 text-red-500" />
-                          <span className="text-lg font-medium text-red-600">Tempo Diminuindo</span>
+                          <span className="text-lg font-medium text-red-600">{t('historicoManutencao.timeDecreasing')}</span>
                         </>
                       )}
                       {tendencia === "estavel" && (
                         <>
                           <Minus className="h-6 w-6 text-yellow-500" />
-                          <span className="text-lg font-medium text-yellow-600">Tempo Estável</span>
+                          <span className="text-lg font-medium text-yellow-600">{t('historicoManutencao.timeStable')}</span>
                         </>
                       )}
                       {!tendencia && (
                         <span className="text-lg font-medium text-muted-foreground">-</span>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">Tendência Entre Reformas</p>
+                    <p className="text-sm text-muted-foreground">{t('historicoManutencao.trendBetweenReforms')}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -518,7 +521,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
               {historico.length > 1 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm">Tempo Entre Manutenções (dias)</CardTitle>
+                    <CardTitle className="text-sm">{t('historicoManutencao.timeBetweenMaintenances')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={250}>
@@ -530,12 +533,12 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
                         <Legend />
                         <Bar 
                           dataKey="diasEntreManutencoes" 
-                          name="Dias até retornar"
+                          name={t('historicoManutencao.daysToReturn')}
                           fill="hsl(var(--primary))"
                         />
                         <Bar 
                           dataKey="diasNoServico" 
-                          name="Dias no serviço"
+                          name={t('historicoManutencao.daysInService')}
                           fill="hsl(var(--muted-foreground))"
                         />
                       </BarChart>
@@ -547,10 +550,10 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
               {/* Timeline */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-sm">Timeline de Manutenções</CardTitle>
+                  <CardTitle className="text-sm">{t('historicoManutencao.maintenanceTimeline')}</CardTitle>
                   <Button onClick={handleGerarPDF} variant="outline" size="sm">
                     <FileText className="h-4 w-4 mr-2" />
-                    Gerar PDF
+                    {t('historicoManutencao.generatePdf')}
                   </Button>
                 </CardHeader>
                 <CardContent>
@@ -567,44 +570,44 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
                           
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                             <div>
-                              <span className="text-muted-foreground">Entrada:</span>
+                              <span className="text-muted-foreground">{t('historicoManutencao.entry')}:</span>
                               <p className="font-medium">
-                                {format(parseISO(item.data_entrada), "dd/MM/yyyy", { locale: ptBR })}
+                                {format(parseISO(item.data_entrada), "dd/MM/yyyy", { locale: dateLocale })}
                               </p>
                             </div>
                             <div>
-                              <span className="text-muted-foreground">Saída:</span>
+                              <span className="text-muted-foreground">{t('historicoManutencao.exit')}:</span>
                               <p className="font-medium">
                                 {item.data_finalizacao 
-                                  ? format(parseISO(item.data_finalizacao), "dd/MM/yyyy", { locale: ptBR })
+                                  ? format(parseISO(item.data_finalizacao), "dd/MM/yyyy", { locale: dateLocale })
                                   : "-"
                                 }
                               </p>
                             </div>
                             <div>
-                              <span className="text-muted-foreground">Dias no serviço:</span>
+                              <span className="text-muted-foreground">{t('historicoManutencao.daysInService')}:</span>
                               <p className="font-medium">
-                                {item.dias_no_servico !== null ? `${item.dias_no_servico} dias` : "-"}
+                                {item.dias_no_servico !== null ? `${item.dias_no_servico} ${t('historicoManutencao.days')}` : "-"}
                               </p>
                             </div>
                             <div>
-                              <span className="text-muted-foreground">Dias desde última:</span>
+                              <span className="text-muted-foreground">{t('historicoManutencao.daysSinceLast')}:</span>
                               <p className="font-medium">
-                                {item.dias_desde_ultima !== null ? `${item.dias_desde_ultima} dias` : "-"}
+                                {item.dias_desde_ultima !== null ? `${item.dias_desde_ultima} ${t('historicoManutencao.days')}` : "-"}
                               </p>
                             </div>
                           </div>
                           
                           {item.motivo_falha && (
-                            <div className="mt-2 p-2 bg-destructive/10 rounded">
-                              <span className="text-xs text-muted-foreground">Motivo da Falha:</span>
-                              <p className="text-sm">{item.motivo_falha}</p>
+                            <div className="mt-2 p-2 bg-amber-100 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800">
+                              <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">{t('historicoManutencao.failureReason')}:</span>
+                              <p className="text-sm text-foreground">{item.motivo_falha}</p>
                             </div>
                           )}
                           
                           {item.ordem_anterior && (
                             <p className="text-xs text-muted-foreground mt-2">
-                              OS Anterior: {item.ordem_anterior}
+                              {t('historicoManutencao.previousOrder')}: {item.ordem_anterior}
                             </p>
                           )}
                         </div>
