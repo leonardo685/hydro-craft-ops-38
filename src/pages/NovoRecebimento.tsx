@@ -546,12 +546,12 @@ export default function NovoRecebimento() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="observacoesEntrada">Problemas Apresentados</Label>
+                <Label htmlFor="observacoesEntrada">Acompanhando o Equipamento</Label>
                 <Textarea 
                   id="observacoesEntrada"
                   value={formData.observacoesEntrada}
                   onChange={(e) => setFormData({...formData, observacoesEntrada: e.target.value})}
-                  placeholder="Descreva os problemas/falhas apresentados pelo equipamento..."
+                  placeholder="Informações adicionais sobre o equipamento..."
                   rows={3}
                 />
               </div>
