@@ -1,65 +1,71 @@
 
 
-## Exibir o Campo "Motivo da Falha" no Laudo Público
+## Reordenar "Motivo da Falha" na Timeline de Manutenções
 
-### Problema Identificado
-O campo "Motivo da Falha" é preenchido durante a criação da Ordem de Serviço (na página Nova Análise ou Nova Ordem Direta), porém não está sendo exibido na página de laudo público acessada via QR code. Atualmente, ele só aparece dentro do modal de histórico de manutenções.
-
-### Solução
-Adicionar o campo `motivo_falha` à interface da ordem de serviço no laudo público e exibi-lo de forma destacada na página, junto às informações do equipamento.
+### Objetivo
+Mover a exibição do campo "Motivo da Falha" para aparecer **abaixo** da informação "OS Anterior" na timeline de manutenções do modal de histórico público.
 
 ---
 
-### Alterações no Arquivo: `src/pages/LaudoPublico.tsx`
+### Alteração no Arquivo: `src/components/HistoricoManutencaoPublicoModal.tsx`
 
-**1. Atualizar a Interface `OrdemServico`**
+**Reordenar os elementos da timeline (linhas 438-449)**
 
-Adicionar o campo `motivo_falha` à interface para que ele seja reconhecido no TypeScript:
+Atualmente a ordem é:
+1. Grid com datas e dias
+2. Motivo da Falha (se existir)
+3. OS Anterior (se existir)
 
-```typescript
-interface OrdemServico {
-  // ... campos existentes
-  motivo_falha: string | null;  // ADICIONAR
-}
-```
+A nova ordem será:
+1. Grid com datas e dias
+2. OS Anterior (se existir)
+3. Motivo da Falha (se existir)
 
-**2. Incluir o campo na query de busca**
-
-A query atual já usa `*` (select all), então o campo já está sendo buscado. Basta adicioná-lo à interface.
-
-**3. Exibir o "Motivo da Falha" na UI**
-
-Adicionar uma seção visualmente destacada após as informações básicas da ordem, exibindo o motivo da falha quando preenchido:
-
+**Código atual:**
 ```tsx
-{/* Card de Motivo da Falha - após o card de informações da ordem */}
-{ordemServico.motivo_falha && (
-  <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-        <AlertTriangle className="w-5 h-5" />
-        Motivo da Falha / Diagnóstico
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      <p className="text-foreground whitespace-pre-wrap">
-        {ordemServico.motivo_falha}
-      </p>
-    </CardContent>
-  </Card>
+{item.motivo_falha && (
+  <div className="mt-2 p-2 bg-destructive/10 rounded">
+    <span className="text-xs text-muted-foreground">Motivo da Falha:</span>
+    <p className="text-sm">{item.motivo_falha}</p>
+  </div>
+)}
+
+{item.ordem_anterior && (
+  <p className="text-xs text-muted-foreground mt-2">
+    OS Anterior: {item.ordem_anterior}
+  </p>
 )}
 ```
 
-**4. Importar o ícone necessário**
+**Código novo (invertido):**
+```tsx
+{item.ordem_anterior && (
+  <p className="text-xs text-muted-foreground mt-2">
+    OS Anterior: {item.ordem_anterior}
+  </p>
+)}
 
-Adicionar `AlertTriangle` aos imports do Lucide React (já está importado, conforme verificado no código).
+{item.motivo_falha && (
+  <div className="mt-2 p-2 bg-amber-100 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800">
+    <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">Motivo da Falha:</span>
+    <p className="text-sm text-foreground">{item.motivo_falha}</p>
+  </div>
+)}
+```
+
+---
+
+### Melhorias Adicionais
+
+Além da reordenação, vou melhorar o estilo visual do "Motivo da Falha" usando cores âmbar (como no laudo público) em vez de vermelho destrutivo, para manter consistência visual com o resto do sistema.
 
 ---
 
 ### Resultado Esperado
 
-Quando o usuário acessar o laudo público via QR code, verá uma seção destacada em cor âmbar/amarela mostrando o "Motivo da Falha" diagnosticado durante a análise técnica. Esta informação só aparecerá quando o campo estiver preenchido na ordem de serviço.
-
-### Benefício
-O cliente terá acesso imediato à causa raiz da falha do equipamento diretamente na página do laudo, sem precisar abrir o modal de histórico de manutenções.
+Na timeline de manutenções, cada item mostrará:
+1. Número da ordem e status
+2. Grid com Entrada, Saída, Dias no serviço, Dias desde última
+3. OS Anterior (se existir) - texto pequeno
+4. **Motivo da Falha** (se existir) - card destacado em âmbar abaixo do OS Anterior
 
