@@ -385,7 +385,7 @@ export const useRecebimentos = () => {
   };
 
   const validarOrdemExistente = async (numeroOrdem: string): Promise<boolean> => {
-    if (!numeroOrdem || numeroOrdem.trim() === '') {
+    if (!numeroOrdem || numeroOrdem.trim() === '' || !empresaId) {
       return false;
     }
     
@@ -393,6 +393,7 @@ export const useRecebimentos = () => {
       const { data, error } = await supabase
         .from('ordens_servico')
         .select('id')
+        .eq('empresa_id', empresaId)
         .eq('numero_ordem', numeroOrdem.trim())
         .maybeSingle();
 

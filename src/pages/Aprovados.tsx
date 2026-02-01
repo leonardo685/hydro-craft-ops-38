@@ -93,7 +93,7 @@ export default function Aprovados() {
     const numeroCompleto = `MH-${buscaNumeroOrdem.trim()}`;
 
     try {
-      // Buscar ordem pelo número
+      // Buscar ordem pelo número - FILTRAR POR EMPRESA
       const { data: ordemData, error: ordemError } = await supabase
         .from('ordens_servico')
         .select(`
@@ -103,15 +103,17 @@ export default function Aprovados() {
           equipamento,
           recebimentos (numero_ordem, cliente_nome, tipo_equipamento)
         `)
+        .eq('empresa_id', empresaAtual?.id)
         .or(`numero_ordem.ilike.%${numeroCompleto}%`)
         .limit(1)
         .single();
 
       if (ordemError || !ordemData) {
-        // Tentar buscar pelo número do recebimento
+        // Tentar buscar pelo número do recebimento - FILTRAR POR EMPRESA
         const { data: recData, error: recError } = await supabase
           .from('recebimentos')
           .select('id')
+          .eq('empresa_id', empresaAtual?.id)
           .ilike('numero_ordem', `%${numeroCompleto}%`)
           .limit(1)
           .single();
@@ -122,7 +124,7 @@ export default function Aprovados() {
           return;
         }
 
-        // Buscar ordem pelo recebimento_id
+        // Buscar ordem pelo recebimento_id - FILTRAR POR EMPRESA
         const { data: ordemByRec, error: ordemByRecError } = await supabase
           .from('ordens_servico')
           .select(`
@@ -132,6 +134,7 @@ export default function Aprovados() {
             equipamento,
             recebimentos (numero_ordem, cliente_nome, tipo_equipamento)
           `)
+          .eq('empresa_id', empresaAtual?.id)
           .eq('recebimento_id', recData.id)
           .limit(1)
           .single();
@@ -203,6 +206,7 @@ export default function Aprovados() {
       const { data: ordemData } = await supabase
         .from('ordens_servico')
         .select('id, numero_ordem, recebimentos (numero_ordem)')
+        .eq('empresa_id', empresaAtual?.id)
         .or(`numero_ordem.ilike.%${numeroOrdem}%`)
         .limit(1)
         .single();

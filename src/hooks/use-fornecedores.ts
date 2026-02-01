@@ -27,10 +27,13 @@ export const useFornecedores = () => {
   const { empresaId } = useEmpresaId();
 
   const carregarFornecedores = async () => {
+    if (!empresaId) return;
+    
     try {
       const { data, error } = await supabase
         .from('fornecedores')
         .select('*')
+        .eq('empresa_id', empresaId)
         .order('nome', { ascending: true });
 
       if (error) throw error;
@@ -103,13 +106,14 @@ export const useFornecedores = () => {
 
   useEffect(() => {
     const carregarDados = async () => {
+      if (!empresaId) return;
       setLoading(true);
       await carregarFornecedores();
       setLoading(false);
     };
 
     carregarDados();
-  }, []);
+  }, [empresaId]);
 
   return {
     fornecedores,

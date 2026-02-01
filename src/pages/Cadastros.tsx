@@ -114,10 +114,13 @@ const Cadastros = () => {
   }, [location.state]);
 
   const loadClientes = async () => {
+    if (!empresaAtual?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('clientes')
         .select('*')
+        .eq('empresa_id', empresaAtual.id)
         .order('nome');
       
       if (error) throw error;
@@ -129,10 +132,13 @@ const Cadastros = () => {
   };
 
   const loadFornecedores = async () => {
+    if (!empresaAtual?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('fornecedores')
         .select('*')
+        .eq('empresa_id', empresaAtual.id)
         .order('nome');
       
       if (error) throw error;
