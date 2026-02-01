@@ -946,6 +946,57 @@ export const translations = {
       billed: 'Faturado',
       rejected: 'Reprovada',
     },
+    // Visualizar Ordem de Serviço
+    visualizarOrdem: {
+      pageTitle: 'Visualizar Ordem de Serviço',
+      viewingOrder: 'Visualizando ordem',
+      exportPdf: 'Exportar PDF',
+      loading: 'Carregando...',
+      orderNotFound: 'Ordem de serviço não encontrada',
+      back: 'Voltar',
+      // Basic info
+      basicInfo: 'Informações Básicas',
+      client: 'Cliente',
+      entryDate: 'Data de Entrada',
+      invoice: 'Nota Fiscal',
+      orderNumber: 'Nº da Ordem',
+      equipmentType: 'Tipo de Equipamento',
+      serialNumber: 'Nº de Série',
+      // Photos
+      arrivalPhotos: 'Fotos da Chegada do Equipamento',
+      // Technical data
+      technicalData: 'Dados Técnicos (Editáveis)',
+      workPressure: 'Pressão de Trabalho',
+      shirt: 'Camisa',
+      rodLength: 'Haste x Comprimento',
+      stroke: 'Curso',
+      connectionA: 'Conexão A',
+      connectionB: 'Conexão B',
+      deliveryTime: 'Prazo de Entrega',
+      deliveryTimePlaceholder: 'Ex: 5 dias úteis',
+      save: 'Salvar',
+      // Accompanies equipment
+      accompaniesEquipment: 'Acompanha o Equipamento',
+      problemsPresented: 'Problemas Apresentados',
+      technicalObservations: 'Observações Técnicas',
+      // Expertise data
+      expertiseData: 'Dados de Peritagem',
+      expertiseInfo: 'Informações da peritagem técnica',
+      failureReason: 'Motivo da Falha',
+      noFailureReason: 'Nenhum motivo de falha registrado',
+      // Items
+      services: 'Serviços',
+      partsUsed: 'Peças Utilizadas',
+      machining: 'Usinagem',
+      quantity: 'Quantidade',
+      obs: 'Obs',
+      // Toast messages
+      error: 'Erro',
+      errorLoading: 'Erro ao carregar ordem de serviço',
+      success: 'Sucesso',
+      deliveryTimeUpdated: 'Prazo de entrega atualizado com sucesso',
+      errorUpdatingDelivery: 'Erro ao atualizar prazo de entrega',
+    },
     // Laudo Público
     laudoPublico: {
       loading: 'Carregando laudo...',
@@ -1962,6 +2013,57 @@ export const translations = {
       awaitingReturn: 'Awaiting Return',
       billed: 'Billed',
       rejected: 'Rejected',
+    },
+    // View Service Order
+    visualizarOrdem: {
+      pageTitle: 'View Service Order',
+      viewingOrder: 'Viewing order',
+      exportPdf: 'Export PDF',
+      loading: 'Loading...',
+      orderNotFound: 'Service order not found',
+      back: 'Back',
+      // Basic info
+      basicInfo: 'Basic Information',
+      client: 'Client',
+      entryDate: 'Entry Date',
+      invoice: 'Invoice',
+      orderNumber: 'Order #',
+      equipmentType: 'Equipment Type',
+      serialNumber: 'Serial Number',
+      // Photos
+      arrivalPhotos: 'Equipment Arrival Photos',
+      // Technical data
+      technicalData: 'Technical Data (Editable)',
+      workPressure: 'Work Pressure',
+      shirt: 'Shirt',
+      rodLength: 'Rod x Length',
+      stroke: 'Stroke',
+      connectionA: 'Connection A',
+      connectionB: 'Connection B',
+      deliveryTime: 'Delivery Time',
+      deliveryTimePlaceholder: 'E.g.: 5 business days',
+      save: 'Save',
+      // Accompanies equipment
+      accompaniesEquipment: 'Accompanies Equipment',
+      problemsPresented: 'Problems Presented',
+      technicalObservations: 'Technical Observations',
+      // Expertise data
+      expertiseData: 'Expertise Data',
+      expertiseInfo: 'Technical expertise information',
+      failureReason: 'Failure Reason',
+      noFailureReason: 'No failure reason registered',
+      // Items
+      services: 'Services',
+      partsUsed: 'Parts Used',
+      machining: 'Machining',
+      quantity: 'Quantity',
+      obs: 'Obs',
+      // Toast messages
+      error: 'Error',
+      errorLoading: 'Error loading service order',
+      success: 'Success',
+      deliveryTimeUpdated: 'Delivery time updated successfully',
+      errorUpdatingDelivery: 'Error updating delivery time',
     },
     // Public Report
     laudoPublico: {
