@@ -36,7 +36,8 @@ const NovaOrdemServico = () => {
     prazoEstimado: "",
     prioridade: "Média",
     observacoes: "",
-    motivoFalha: ""
+    motivoFalha: "",
+    motivoFalhaOutro: ""
   });
 
   const [dadosTecnicos, setDadosTecnicos] = useState({
@@ -765,7 +766,8 @@ const NovaOrdemServico = () => {
             prioridade: ordem.prioridade === 'alta' ? 'Alta' : 
                        ordem.prioridade === 'baixa' ? 'Baixa' : 'Média',
             observacoes: ordem.observacoes_tecnicas || "",
-            motivoFalha: ordem.motivo_falha || ""
+            motivoFalha: ordem.motivo_falha || "",
+            motivoFalhaOutro: ""
           });
 
           // Carregar peças se existirem
@@ -930,7 +932,8 @@ const NovaOrdemServico = () => {
               prioridade: ordem.prioridade === 'alta' ? 'Alta' : 
                          ordem.prioridade === 'baixa' ? 'Baixa' : 'Média',
               observacoes: ordem.observacoes_tecnicas || "",
-              motivoFalha: ordem.motivo_falha || ""
+              motivoFalha: ordem.motivo_falha || "",
+              motivoFalhaOutro: ""
             });
 
             // Dados técnicos - carregar da ordem se disponíveis (para ordens diretas)
@@ -1285,7 +1288,7 @@ const NovaOrdemServico = () => {
             usinagem_necessaria: usinagemSelecionada,
             tempo_estimado: formData.prazoEstimado,
             observacoes_tecnicas: formData.observacoes,
-            motivo_falha: formData.motivoFalha || null,
+            motivo_falha: formData.motivoFalha === 'outros' ? formData.motivoFalhaOutro : (formData.motivoFalha === 'revisao_completa' ? 'Revisão Completa' : formData.motivoFalha === 'haste_quebrada' ? 'Haste Quebrada' : formData.motivoFalha === 'vazamento_vedacoes' ? 'Vazamento nas Vedações' : formData.motivoFalha) || null,
             prioridade: formData.prioridade.toLowerCase(),
             data_analise: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -1466,6 +1469,7 @@ const NovaOrdemServico = () => {
                 usinagem_necessaria: usinagemSelecionada,
                 tempo_estimado: formData.prazoEstimado,
                 observacoes_tecnicas: formData.observacoes,
+                motivo_falha: formData.motivoFalha === 'outros' ? formData.motivoFalhaOutro : (formData.motivoFalha === 'revisao_completa' ? 'Revisão Completa' : formData.motivoFalha === 'haste_quebrada' ? 'Haste Quebrada' : formData.motivoFalha === 'vazamento_vedacoes' ? 'Vazamento nas Vedações' : formData.motivoFalha) || null,
                 empresa_id: empresaAtual?.id || null,
                 // Salvar dados técnicos na ordem também
                 camisa: dadosTecnicos.camisa || null,
@@ -2025,38 +2029,35 @@ const NovaOrdemServico = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="problemas">{t('novaAnalise.identifiedProblems')}</Label>
-                <Textarea
-                  id="problemas"
-                  value={formData.problemas}
-                  onChange={(e) => setFormData({ ...formData, problemas: e.target.value })}
-                  placeholder={t('novaAnalise.identifiedProblemsPlaceholder')}
-                  rows={4}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="motivoFalha">Motivo da Falha / Diagnóstico</Label>
-                <Textarea
-                  id="motivoFalha"
+                <Label htmlFor="motivoFalha">Motivo da Falha</Label>
+                <Select
                   value={formData.motivoFalha}
-                  onChange={(e) => setFormData({ ...formData, motivoFalha: e.target.value })}
-                  placeholder="Descreva a causa raiz da falha do equipamento..."
-                  rows={3}
-                />
+                  onValueChange={(value) => setFormData({ ...formData, motivoFalha: value, motivoFalhaOutro: value !== 'outros' ? '' : formData.motivoFalhaOutro })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o motivo da falha" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="revisao_completa">Revisão Completa</SelectItem>
+                    <SelectItem value="haste_quebrada">Haste Quebrada</SelectItem>
+                    <SelectItem value="vazamento_vedacoes">Vazamento nas Vedações</SelectItem>
+                    <SelectItem value="outros">Outros</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div>
-                <Label htmlFor="observacoes">{t('novaAnalise.additionalObservations')}</Label>
-                <Textarea
-                  id="observacoes"
-                  value={formData.observacoes}
-                  onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                  placeholder={t('novaAnalise.additionalObservationsPlaceholder')}
-                  rows={3}
-                />
-              </div>
+              {formData.motivoFalha === 'outros' && (
+                <div>
+                  <Label htmlFor="motivoFalhaOutro">Descreva o motivo da falha</Label>
+                  <Textarea
+                    id="motivoFalhaOutro"
+                    value={formData.motivoFalhaOutro}
+                    onChange={(e) => setFormData({ ...formData, motivoFalhaOutro: e.target.value })}
+                    placeholder="Descreva a causa raiz da falha do equipamento..."
+                    rows={3}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
