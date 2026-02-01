@@ -132,6 +132,7 @@ export default function Faturamento() {
           const { data: osVinculadas } = await supabase
             .from('ordens_servico')
             .select('id, numero_ordem, recebimento_id, recebimentos(numero_ordem, nota_fiscal)')
+            .eq('empresa_id', empresaAtual.id)
             .eq('orcamento_id', orc.id);
           
           const ordensVinculadas = osVinculadas?.map(os => ({
