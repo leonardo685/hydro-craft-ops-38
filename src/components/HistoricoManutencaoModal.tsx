@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { gerarPDFHistorico } from "@/lib/historico-pdf-utils";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ptBR, enUS } from "date-fns/locale";
@@ -525,23 +525,47 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={250}>
-                      <BarChart data={dadosGrafico}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" fontSize={12} />
-                        <YAxis fontSize={12} />
-                        <Tooltip />
+                      <LineChart data={dadosGrafico}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="name" 
+                          fontSize={12} 
+                          tick={{ fill: 'hsl(var(--foreground))' }}
+                          axisLine={{ stroke: 'hsl(var(--border))' }}
+                        />
+                        <YAxis 
+                          fontSize={12} 
+                          tick={{ fill: 'hsl(var(--foreground))' }}
+                          axisLine={{ stroke: 'hsl(var(--border))' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                        />
                         <Legend />
-                        <Bar 
+                        <Line 
+                          type="monotone"
                           dataKey="diasEntreManutencoes" 
                           name={t('historicoManutencao.daysToReturn')}
-                          fill="hsl(var(--primary))"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2 }}
+                          activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
                         />
-                        <Bar 
+                        <Line 
+                          type="monotone"
                           dataKey="diasNoServico" 
                           name={t('historicoManutencao.daysInService')}
-                          fill="hsl(var(--muted-foreground))"
+                          stroke="hsl(var(--muted-foreground))"
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          dot={{ fill: 'hsl(var(--muted-foreground))', strokeWidth: 2 }}
+                          activeDot={{ r: 6, fill: 'hsl(var(--muted-foreground))' }}
                         />
-                      </BarChart>
+                      </LineChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
