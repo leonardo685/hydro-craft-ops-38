@@ -22,11 +22,13 @@ interface OrdemAguardandoRetorno {
 export function OrdensAguardandoRetorno({
   isExpanded = true,
   onToggleExpand,
-  ordensExternas
+  ordensExternas,
+  empresaId
 }: {
   isExpanded?: boolean;
   onToggleExpand?: () => void;
   ordensExternas?: OrdemAguardandoRetorno[];
+  empresaId?: string;
 }) {
   const [ordens, setOrdens] = useState<OrdemAguardandoRetorno[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,9 +47,16 @@ export function OrdensAguardandoRetorno({
     } else {
       loadOrdens();
     }
-  }, [ordensExternas]);
+  }, [ordensExternas, empresaId]);
   
   const loadOrdens = async () => {
+    // Não carrega se não tiver empresaId para garantir isolamento multi-tenant
+    if (!empresaId) {
+      setOrdens([]);
+      setLoading(false);
+      return;
+    }
+    
     try {
       const {
         data,
@@ -56,9 +65,10 @@ export function OrdensAguardandoRetorno({
           *,
           recebimentos!left(nota_fiscal, numero_ordem),
           orcamentos!orcamento_id(numero)
-        `).eq('status', 'aguardando_retorno').order('created_at', {
-        ascending: false
-      });
+        `)
+        .eq('empresa_id', empresaId)
+        .eq('status', 'aguardando_retorno')
+        .order('created_at', { ascending: false });
       if (error) throw error;
       
       const ordensFormatadas = data?.map(ordem => {

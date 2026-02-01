@@ -605,7 +605,7 @@ export default function Faturamento() {
               {/* Aba Ordens Aguardando Retorno */}
               <TabsContent value="ordens-retorno" className="mt-4">
                 {ordensRetornoFiltradas.length > 0 ? (
-                  <OrdensAguardandoRetorno ordensExternas={ordensRetornoFiltradas} />
+                  <OrdensAguardandoRetorno ordensExternas={ordensRetornoFiltradas} empresaId={empresaAtual?.id} />
                 ) : (
                   <Card>
                     <CardContent className="p-12 text-center">
