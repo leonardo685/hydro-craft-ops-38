@@ -28,6 +28,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import type { DadosNFe, ItemNFe } from "@/lib/nfe-utils";
 import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { useEmpresaId } from "@/hooks/use-empresa-id";
 
 // Removed localStorage function since we're now using Supabase data
 
@@ -36,6 +37,7 @@ export default function Recebimentos() {
   const { recebimentos, notasFiscais, loading, recarregar } = useRecebimentos();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { empresaId } = useEmpresaId();
   const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
   const [modalChaveAcesso, setModalChaveAcesso] = useState(false);
   const [notaFiscalSelecionada, setNotaFiscalSelecionada] = useState<any>(null);
@@ -59,12 +61,15 @@ export default function Recebimentos() {
     localStorage.removeItem('notasFiscais');
   }, []);
 
-  // Carregar ordens finalizadas (diretas e com recebimento)
+  // Carregar ordens finalizadas (diretas e com recebimento) - filtrar por empresa_id
   useEffect(() => {
     const loadOrdensFinalizadas = async () => {
+      if (!empresaId) return;
+      
       const { data, error } = await supabase
         .from('ordens_servico')
         .select('*, recebimentos!ordens_servico_recebimento_id_fkey(*)')
+        .eq('empresa_id', empresaId)
         .in('status', ['finalizada', 'faturado'])
         .order('updated_at', { ascending: false });
       
@@ -76,7 +81,7 @@ export default function Recebimentos() {
     };
     
     loadOrdensFinalizadas();
-  }, []);
+  }, [empresaId]);
   
   // Filtrar recebimentos em andamento (sem nota de retorno)
   // Quando filtroNotaFiscal está ativo, mostra resultados independente do status
