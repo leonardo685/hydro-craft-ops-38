@@ -47,7 +47,7 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
     setLoading(true);
 
     try {
-      // Primeiro buscar a ordem pelo numero_ordem
+      // Primeiro buscar a ordem pelo numero_ordem - incluindo empresa_id
       const { data: ordemInicial, error: erroOrdemInicial } = await supabase
         .from('ordens_servico')
         .select(`
@@ -59,7 +59,8 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
           data_finalizacao,
           motivo_falha,
           status,
-          recebimento_id
+          recebimento_id,
+          empresa_id
         `)
         .eq('numero_ordem', numeroOrdem)
         .maybeSingle();
@@ -69,6 +70,8 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
         setLoading(false);
         return;
       }
+
+      const empresaId = ordemInicial.empresa_id;
 
       // Buscar ordem_anterior do recebimento
       let ordemAnterior: string | null = null;
@@ -85,11 +88,11 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
       const historicoCompleto: ManutencaoHistorico[] = [];
       const ordensProcessadas = new Set<string>();
 
-      // Função recursiva para buscar ordens anteriores
+      // Função recursiva para buscar ordens anteriores - FILTRAR POR EMPRESA
       const buscarAnterior = async (numOrdem: string): Promise<void> => {
         if (ordensProcessadas.has(numOrdem)) return;
 
-        const { data: ordem } = await supabase
+        const query = supabase
           .from('ordens_servico')
           .select(`
             id,
@@ -102,8 +105,14 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
             status,
             recebimento_id
           `)
-          .ilike('numero_ordem', numOrdem)
-          .maybeSingle();
+          .ilike('numero_ordem', numOrdem);
+        
+        // Filtrar por empresa se disponível
+        if (empresaId) {
+          query.eq('empresa_id', empresaId);
+        }
+
+        const { data: ordem } = await query.maybeSingle();
 
         if (ordem) {
           ordensProcessadas.add(ordem.numero_ordem);
@@ -138,17 +147,23 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
         }
       };
 
-      // Função para buscar ordens posteriores
+      // Função para buscar ordens posteriores - FILTRAR POR EMPRESA
       const buscarPosteriores = async (numOrdem: string): Promise<void> => {
-        const { data: recebimentos } = await supabase
+        const recQuery = supabase
           .from('recebimentos')
           .select('id, ordem_anterior, numero_ordem')
           .ilike('ordem_anterior', numOrdem);
+        
+        if (empresaId) {
+          recQuery.eq('empresa_id', empresaId);
+        }
+
+        const { data: recebimentos } = await recQuery;
 
         if (recebimentos && recebimentos.length > 0) {
           for (const rec of recebimentos) {
             if (!ordensProcessadas.has(rec.numero_ordem)) {
-              const { data: ordem } = await supabase
+              const osQuery = supabase
                 .from('ordens_servico')
                 .select(`
                   id,
@@ -161,8 +176,13 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
                   status,
                   recebimento_id
                 `)
-                .eq('recebimento_id', rec.id)
-                .maybeSingle();
+                .eq('recebimento_id', rec.id);
+              
+              if (empresaId) {
+                osQuery.eq('empresa_id', empresaId);
+              }
+
+              const { data: ordem } = await osQuery.maybeSingle();
 
               if (ordem && !ordensProcessadas.has(ordem.numero_ordem)) {
                 ordensProcessadas.add(ordem.numero_ordem);

@@ -97,6 +97,15 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
       return;
     }
 
+    if (!empresaAtual?.id) {
+      toast({
+        title: t('historicoManutencao.searchError'),
+        description: "Empresa não identificada",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const numeroNormalizado = normalizarNumeroOrdem(termo);
     salvarBuscaRecente(termo);
 
@@ -104,7 +113,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
     setSearched(true);
 
     try {
-      // Primeiro buscar a ordem digitada
+      // Primeiro buscar a ordem digitada - FILTRAR POR EMPRESA
       const { data: ordemInicial, error: erroOrdemInicial } = await supabase
         .from('ordens_servico')
         .select(`
@@ -116,8 +125,10 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
           data_finalizacao,
           motivo_falha,
           status,
-          recebimento_id
+          recebimento_id,
+          empresa_id
         `)
+        .eq('empresa_id', empresaAtual.id)
         .ilike('numero_ordem', `%${numeroNormalizado}%`)
         .limit(1)
         .maybeSingle();
@@ -150,7 +161,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
       const historicoCompleto: ManutencaoHistorico[] = [];
       const ordensProcessadas = new Set<string>();
 
-      // Função recursiva para buscar ordens anteriores
+      // Função recursiva para buscar ordens anteriores - FILTRAR POR EMPRESA
       const buscarAnterior = async (numOrdem: string): Promise<void> => {
         if (ordensProcessadas.has(numOrdem)) return;
 
@@ -167,6 +178,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
             status,
             recebimento_id
           `)
+          .eq('empresa_id', empresaAtual.id)
           .ilike('numero_ordem', numOrdem)
           .maybeSingle();
 
@@ -204,11 +216,12 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
         }
       };
 
-      // Função para buscar ordens posteriores (que referenciam esta ordem)
+      // Função para buscar ordens posteriores (que referenciam esta ordem) - FILTRAR POR EMPRESA
       const buscarPosteriores = async (numOrdem: string): Promise<void> => {
         const { data: recebimentos } = await supabase
           .from('recebimentos')
           .select('id, ordem_anterior, numero_ordem')
+          .eq('empresa_id', empresaAtual.id)
           .ilike('ordem_anterior', numOrdem);
 
         if (recebimentos && recebimentos.length > 0) {
@@ -227,6 +240,7 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
                   status,
                   recebimento_id
                 `)
+                .eq('empresa_id', empresaAtual.id)
                 .eq('recebimento_id', rec.id)
                 .maybeSingle();
 
