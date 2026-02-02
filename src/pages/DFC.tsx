@@ -35,6 +35,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { FileSpreadsheet, Edit, Calculator } from "lucide-react";
 import { UploadExtratoModal } from "@/components/UploadExtratoModal";
 import { SolverLancamentosModal } from "@/components/SolverLancamentosModal";
+import { ResponsiveContainer, ComposedChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar, Line } from "recharts";
 export default function DFC() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1525,6 +1526,149 @@ export default function DFC() {
                     </TableRow>
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+
+            {/* Gráfico de Movimentação Diária */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Movimentação Diária do Mês</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Entradas e saídas diárias com evolução do saldo
+                </p>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  // Determinar o mês a ser exibido baseado nos filtros de data do DFC
+                  const mesReferencia = dfcDataInicio || new Date();
+                  const ano = mesReferencia.getFullYear();
+                  const mes = mesReferencia.getMonth();
+                  const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+                  
+                  // Criar array com todos os dias do mês
+                  const dadosDiarios: { dia: string; entradas: number; saidas: number; saldo: number }[] = [];
+                  
+                  // Calcular saldo inicial (soma de todas as contas)
+                  let saldoAcumulado = saldoTotal;
+                  
+                  // Recalcular saldo inicial do mês (retroceder com base nos lançamentos do mês)
+                  const lancamentosDoMes = lancamentos.filter(l => {
+                    const dataLancamento = new Date(l.dataRealizada || l.dataEsperada);
+                    return dataLancamento.getFullYear() === ano && 
+                           dataLancamento.getMonth() === mes &&
+                           l.pago;
+                  });
+                  
+                  // Total do mês para calcular saldo inicial
+                  const totalEntradasMes = lancamentosDoMes
+                    .filter(l => l.tipo === 'entrada')
+                    .reduce((acc, l) => acc + l.valor, 0);
+                  const totalSaidasMes = lancamentosDoMes
+                    .filter(l => l.tipo === 'saida')
+                    .reduce((acc, l) => acc + l.valor, 0);
+                  
+                  // Saldo no início do mês
+                  saldoAcumulado = saldoTotal - totalEntradasMes + totalSaidasMes;
+                  
+                  for (let dia = 1; dia <= diasNoMes; dia++) {
+                    const dataAtual = new Date(ano, mes, dia);
+                    
+                    // Filtrar lançamentos pagos deste dia
+                    const lancamentosDoDia = lancamentos.filter(l => {
+                      if (!l.pago || !l.dataRealizada) return false;
+                      const dataLanc = new Date(l.dataRealizada);
+                      return dataLanc.getFullYear() === ano && 
+                             dataLanc.getMonth() === mes && 
+                             dataLanc.getDate() === dia;
+                    });
+                    
+                    const entradasDia = lancamentosDoDia
+                      .filter(l => l.tipo === 'entrada')
+                      .reduce((acc, l) => acc + l.valor, 0);
+                    
+                    const saidasDia = lancamentosDoDia
+                      .filter(l => l.tipo === 'saida')
+                      .reduce((acc, l) => acc + l.valor, 0);
+                    
+                    saldoAcumulado = saldoAcumulado + entradasDia - saidasDia;
+                    
+                    dadosDiarios.push({
+                      dia: dia.toString().padStart(2, '0'),
+                      entradas: entradasDia,
+                      saidas: saidasDia,
+                      saldo: saldoAcumulado
+                    });
+                  }
+                  
+                  return (
+                    <div className="h-80 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={dadosDiarios} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis 
+                            dataKey="dia" 
+                            tick={{ fontSize: 12 }}
+                            className="text-muted-foreground"
+                          />
+                          <YAxis 
+                            yAxisId="left"
+                            tick={{ fontSize: 12 }}
+                            tickFormatter={(value) => formatCurrency(value).replace('R$', '').trim()}
+                            className="text-muted-foreground"
+                          />
+                          <YAxis 
+                            yAxisId="right"
+                            orientation="right"
+                            tick={{ fontSize: 12 }}
+                            tickFormatter={(value) => formatCurrency(value).replace('R$', '').trim()}
+                            className="text-muted-foreground"
+                          />
+                          <Tooltip 
+                            formatter={(value: number, name: string) => [
+                              formatCurrency(value),
+                              name === 'entradas' ? 'Entradas' : name === 'saidas' ? 'Saídas' : 'Saldo'
+                            ]}
+                            labelFormatter={(label) => `Dia ${label}`}
+                            contentStyle={{ 
+                              backgroundColor: 'hsl(var(--card))', 
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px'
+                            }}
+                          />
+                          <Legend 
+                            formatter={(value) => 
+                              value === 'entradas' ? 'Entradas' : 
+                              value === 'saidas' ? 'Saídas' : 'Saldo'
+                            }
+                          />
+                          <Bar 
+                            yAxisId="left"
+                            dataKey="entradas" 
+                            fill="hsl(142, 76%, 36%)" 
+                            radius={[4, 4, 0, 0]}
+                            name="entradas"
+                          />
+                          <Bar 
+                            yAxisId="left"
+                            dataKey="saidas" 
+                            fill="hsl(0, 84%, 60%)" 
+                            radius={[4, 4, 0, 0]}
+                            name="saidas"
+                          />
+                          <Line 
+                            yAxisId="right"
+                            type="monotone" 
+                            dataKey="saldo" 
+                            stroke="hsl(var(--primary))" 
+                            strokeWidth={2}
+                            dot={false}
+                            name="saldo"
+                          />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
