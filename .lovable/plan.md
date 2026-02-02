@@ -1,107 +1,69 @@
 
-# Plano: Funcionalidade "Solver" para Identificar Lançamentos por Valor Total
+# Correção: Problema de Precisão Decimal no Solver
 
-## Objetivo
+## Problema Identificado
 
-Criar uma funcionalidade que permite ao usuário inserir um valor recebido (geralmente um pagamento que engloba múltiplas notas) e o sistema identifica automaticamente quais lançamentos pendentes ou atrasados combinados resultam nesse valor.
+O algoritmo de soma no Solver está usando operações de ponto flutuante diretas, o que causa imprecisões com valores decimais (centavos). Em JavaScript:
+- `0.1 + 0.2 = 0.30000000000000004` (não 0.3)
+- Somas acumulativas amplificam esse erro
 
-## Cenário de Uso
+## Solução
 
-Quando um cliente paga várias notas de uma só vez com um único depósito, o usuário precisa descobrir quais notas específicas foram pagas. O "Solver" encontra a combinação exata de lançamentos que totaliza o valor recebido.
+Converter todos os valores para **centavos (inteiros)** durante o cálculo e reconverter para reais apenas na exibição. Isso elimina completamente os problemas de precisão com ponto flutuante.
 
-## Solução Proposta
-
-### Componentes a Criar
-
-1. **Modal SolverLancamentosModal**: Nova janela para a funcionalidade
-   - Seleção de tipo: Entrada ou Saída
-   - Campo para inserir o valor alvo
-   - Lista de resultados com lançamentos que combinam para formar o valor
-   - Botão para marcar todos como pagos de uma vez
-
-### Fluxo do Usuário
-
-1. Clica no botão "Solver" na aba Extrato
-2. Seleciona se é uma Entrada ou Saída
-3. Digita o valor total recebido (ex: R$ 15.000,00)
-4. Sistema busca todos os lançamentos do tipo selecionado que NÃO estão pagos
-5. Executa algoritmo de combinação para encontrar quais lançamentos somam exatamente o valor
-6. Exibe as combinações encontradas
-7. Usuário pode marcar todos os lançamentos da combinação como pagos
-
-## Arquivos a Criar
+## Arquivo a Modificar
 
 ### `src/components/SolverLancamentosModal.tsx`
 
-Novo componente modal com:
-- Select para tipo (entrada/saída)
-- Input numérico para valor alvo
-- Botão "Buscar Combinação"
-- Tabela com resultados mostrando:
-  - Checkbox para seleção
-  - Descrição do lançamento
-  - Fornecedor/Cliente
-  - Valor
-  - Data Esperada
-  - Status (No Prazo/Atrasado)
-- Total selecionado em tempo real
-- Botão "Marcar como Pago" para os itens selecionados
+### Mudanças:
 
-## Arquivos a Modificar
-
-### `src/pages/DFC.tsx`
-
-1. Importar o novo componente `SolverLancamentosModal`
-2. Adicionar estado para controlar abertura do modal: `isSolverModalOpen`
-3. Adicionar botão "Solver" ao lado do botão "Novo Lançamento" na aba Extrato
-4. Passar props necessárias para o modal (lançamentos, função de atualização)
-
-## Algoritmo de Combinação
-
-O algoritmo busca subconjuntos de lançamentos que somam exatamente o valor alvo:
-
-1. Filtra lançamentos do tipo selecionado que NÃO estão pagos
-2. Ordena por valor (descendente) para otimização
-3. Usa busca recursiva com tolerância de R$ 0,01 para arredondamentos
-4. Limita resultados às primeiras 5 combinações encontradas (performance)
-5. Prioriza combinações com menos lançamentos
-
-## Detalhes Técnicos
-
-| Arquivo | Tipo | Descrição |
-|---------|------|-----------|
-| `SolverLancamentosModal.tsx` | Novo | Modal completo da funcionalidade |
-| `DFC.tsx` | Modificar | Adicionar botão e integração |
-
-### Interface do Modal
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Solver - Identificar Lançamentos                      [X] │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Tipo: [Entrada ▼]    Valor Alvo: [R$ ________]  [Buscar]  │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│  Combinação Encontrada:                                     │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ [✓] NF 1234 - Cliente ABC     R$ 5.000,00   01/01/2026 ││
-│  │ [✓] NF 1235 - Cliente ABC     R$ 7.500,00   15/01/2026 ││
-│  │ [✓] NF 1236 - Cliente ABC     R$ 2.500,00   20/01/2026 ││
-│  └─────────────────────────────────────────────────────────┘│
-│                                                             │
-│  Total Selecionado: R$ 15.000,00                           │
-│                                                             │
-│              [Cancelar]  [Marcar Selecionados como Pagos]  │
-└─────────────────────────────────────────────────────────────┘
+1. **Converter valor alvo para centavos** (linha 62):
+```typescript
+const valorNumerico = Math.round(parseFloat(valorAlvo.replace(",", ".")) * 100);
 ```
 
-### Ícone do Botão
+2. **Criar valores em centavos para os lançamentos** (linha 81-83):
+```typescript
+const lancamentosParaBusca = lancamentosPendentes
+  .slice(0, maxLancamentos)
+  .map(l => ({ ...l, valorCentavos: Math.round(l.valor * 100) }))
+  .sort((a, b) => b.valorCentavos - a.valorCentavos);
+```
 
-Usará o ícone `Calculator` do lucide-react com texto "Solver"
+3. **Ajustar tolerância para centavos** (linha 76):
+```typescript
+const tolerancia = 1; // 1 centavo de tolerância
+```
 
-## Considerações de Performance
+4. **Comparar usando valores inteiros no algoritmo de busca** (linhas 86-118):
+- Usar `lancamento.valorCentavos` nas somas
+- Comparar `somaAtual` com `valorNumerico` em centavos
 
-- Limitar busca a 100 lançamentos pendentes por vez
-- Interromper busca após encontrar 5 combinações válidas
-- Timeout de 3 segundos para evitar travamentos em datasets grandes
+5. **Calcular total em centavos e reconverter** (linha 94-96):
+```typescript
+total: somaAtual / 100, // Reconverter para reais
+```
+
+6. **Corrigir cálculo do totalSelecionado** (linha 169-173):
+```typescript
+const totalSelecionado = useMemo(() => {
+  const totalCentavos = lancamentos
+    .filter((l) => itensSelecionados.has(l.id))
+    .reduce((acc, l) => acc + Math.round(l.valor * 100), 0);
+  return totalCentavos / 100;
+}, [lancamentos, itensSelecionados]);
+```
+
+## Lógica da Correção
+
+| Antes (incorreto) | Depois (correto) |
+|-------------------|------------------|
+| `15000.50 + 2500.25` = possível erro | `1500050 + 250025` = 1750075 centavos |
+| Tolerância: 0.01 (reais) | Tolerância: 1 (centavo) |
+| Somas com ponto flutuante | Somas com inteiros |
+
+## Resultado Esperado
+
+- Valores como R$ 1.234,56 + R$ 789,44 = R$ 2.024,00 serão calculados corretamente
+- Não haverá mais erros de arredondamento com centavos
+- A tolerância de 1 centavo continua funcionando para pequenas diferenças
