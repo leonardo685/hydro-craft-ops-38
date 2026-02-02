@@ -32,8 +32,9 @@ import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { FileSpreadsheet, Edit } from "lucide-react";
+import { FileSpreadsheet, Edit, Calculator } from "lucide-react";
 import { UploadExtratoModal } from "@/components/UploadExtratoModal";
+import { SolverLancamentosModal } from "@/components/SolverLancamentosModal";
 export default function DFC() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -69,6 +70,7 @@ export default function DFC() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
   const [isExtratoUploadOpen, setIsExtratoUploadOpen] = useState(false);
+  const [isSolverModalOpen, setIsSolverModalOpen] = useState(false);
   const [colunasVisiveisExpanded, setColunasVisiveisExpanded] = useState(true);
   const [filtrosExpanded, setFiltrosExpanded] = useState(true);
   const [openCategoriaCombobox, setOpenCategoriaCombobox] = useState(false);
@@ -1546,6 +1548,11 @@ export default function DFC() {
                         {contasBancarias.map(conta => <SelectItem key={conta.id} value={conta.id}>{conta.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                    
+                    <Button variant="outline" onClick={() => setIsSolverModalOpen(true)}>
+                      <Calculator className="h-4 w-4 mr-2" />
+                      Solver
+                    </Button>
                     
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -3139,6 +3146,21 @@ export default function DFC() {
         onOpenChange={(open) => setModalDetalhesDFC(prev => ({ ...prev, open }))}
         categoria={modalDetalhesDFC.categoria}
         lancamentos={lancamentosModalDFC}
+      />
+
+      <SolverLancamentosModal
+        open={isSolverModalOpen}
+        onOpenChange={setIsSolverModalOpen}
+        lancamentos={lancamentos}
+        onMarcarComoPago={async (ids, dataRealizada) => {
+          for (const id of ids) {
+            await atualizarLancamento(id, {
+              pago: true,
+              dataRealizada: dataRealizada
+            });
+          }
+          await refetch();
+        }}
       />
     </AppLayout>;
 }
