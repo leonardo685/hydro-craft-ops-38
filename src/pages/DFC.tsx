@@ -86,6 +86,7 @@ export default function DFC() {
   const [planejamentoExpanded, setPlanejamentoExpanded] = useState(true);
   const [buscaAtiva, setBuscaAtiva] = useState(false);
   const [lancamentosOcultosTemporarios, setLancamentosOcultosTemporarios] = useState<Set<string>>(new Set());
+  const [modoGraficoMovimentacao, setModoGraficoMovimentacao] = useState<'realizado' | 'esperado'>('realizado');
 
   const toggleOcultarLancamento = (lancamentoId: string) => {
     setLancamentosOcultosTemporarios(prev => {
@@ -1532,10 +1533,23 @@ export default function DFC() {
             {/* Gráfico de Movimentação Diária */}
             <Card>
               <CardHeader>
-                <CardTitle>Movimentação Diária do Mês</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Entradas e saídas diárias com evolução do saldo
-                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Movimentação Diária do Mês</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Entradas e saídas diárias com evolução do saldo
+                    </p>
+                  </div>
+                  <Select value={modoGraficoMovimentacao} onValueChange={(v) => setModoGraficoMovimentacao(v as 'realizado' | 'esperado')}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="realizado">Realizado</SelectItem>
+                      <SelectItem value="esperado">Esperado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardHeader>
               <CardContent>
                 {(() => {
@@ -1553,10 +1567,14 @@ export default function DFC() {
                   
                   // Recalcular saldo inicial do mês (retroceder com base nos lançamentos do mês)
                   const lancamentosDoMes = lancamentos.filter(l => {
-                    const dataLancamento = new Date(l.dataRealizada || l.dataEsperada);
-                    return dataLancamento.getFullYear() === ano && 
-                           dataLancamento.getMonth() === mes &&
-                           l.pago;
+                    if (modoGraficoMovimentacao === 'realizado') {
+                      if (!l.pago || !l.dataRealizada) return false;
+                      const dataLancamento = new Date(l.dataRealizada);
+                      return dataLancamento.getFullYear() === ano && dataLancamento.getMonth() === mes;
+                    } else {
+                      const dataLancamento = new Date(l.dataEsperada);
+                      return dataLancamento.getFullYear() === ano && dataLancamento.getMonth() === mes;
+                    }
                   });
                   
                   // Total do mês para calcular saldo inicial
@@ -1571,15 +1589,20 @@ export default function DFC() {
                   saldoAcumulado = saldoTotal - totalEntradasMes + totalSaidasMes;
                   
                   for (let dia = 1; dia <= diasNoMes; dia++) {
-                    const dataAtual = new Date(ano, mes, dia);
-                    
-                    // Filtrar lançamentos pagos deste dia
+                    // Filtrar lançamentos deste dia baseado no modo selecionado
                     const lancamentosDoDia = lancamentos.filter(l => {
-                      if (!l.pago || !l.dataRealizada) return false;
-                      const dataLanc = new Date(l.dataRealizada);
-                      return dataLanc.getFullYear() === ano && 
-                             dataLanc.getMonth() === mes && 
-                             dataLanc.getDate() === dia;
+                      if (modoGraficoMovimentacao === 'realizado') {
+                        if (!l.pago || !l.dataRealizada) return false;
+                        const dataLanc = new Date(l.dataRealizada);
+                        return dataLanc.getFullYear() === ano && 
+                               dataLanc.getMonth() === mes && 
+                               dataLanc.getDate() === dia;
+                      } else {
+                        const dataLanc = new Date(l.dataEsperada);
+                        return dataLanc.getFullYear() === ano && 
+                               dataLanc.getMonth() === mes && 
+                               dataLanc.getDate() === dia;
+                      }
                     });
                     
                     const entradasDia = lancamentosDoDia
