@@ -57,9 +57,10 @@ export function SolverLancamentosModal({
     });
   }, [lancamentos, tipo]);
 
-  // Algoritmo de busca de combinações (subset sum)
+  // Algoritmo de busca de combinações (subset sum) - usando centavos para precisão
   const buscarCombinacoes = () => {
-    const valorNumerico = parseFloat(valorAlvo.replace(",", "."));
+    // Converter para centavos (inteiros) para evitar erros de ponto flutuante
+    const valorNumerico = Math.round(parseFloat(valorAlvo.replace(",", ".")) * 100);
     if (isNaN(valorNumerico) || valorNumerico <= 0) {
       toast.error("Digite um valor válido maior que zero");
       return;
@@ -73,26 +74,29 @@ export function SolverLancamentosModal({
     // Timeout para não travar a UI
     setTimeout(() => {
       const resultados: CombinacaoEncontrada[] = [];
-      const tolerancia = 0.01; // R$ 0,01 de tolerância para arredondamentos
+      const tolerancia = 1; // 1 centavo de tolerância
       const maxCombinacoes = 5;
       const maxLancamentos = 100;
 
-      // Limitar para performance
+      // Limitar para performance e adicionar valorCentavos
       const lancamentosParaBusca = lancamentosPendentes
         .slice(0, maxLancamentos)
-        .sort((a, b) => b.valor - a.valor); // Ordenar por valor descendente
+        .map((l) => ({ ...l, valorCentavos: Math.round(l.valor * 100) }))
+        .sort((a, b) => b.valorCentavos - a.valorCentavos); // Ordenar por valor descendente
 
-      // Função recursiva de busca
+      type LancamentoComCentavos = LancamentoFinanceiro & { valorCentavos: number };
+
+      // Função recursiva de busca usando centavos
       const buscar = (
         indiceAtual: number,
         somaAtual: number,
-        combinacaoAtual: LancamentoFinanceiro[]
+        combinacaoAtual: LancamentoComCentavos[]
       ): boolean => {
-        // Encontrou uma combinação válida
+        // Encontrou uma combinação válida (comparação em centavos)
         if (Math.abs(somaAtual - valorNumerico) <= tolerancia) {
           resultados.push({
             lancamentos: [...combinacaoAtual],
-            total: somaAtual,
+            total: somaAtual / 100, // Reconverter para reais
           });
           return resultados.length >= maxCombinacoes;
         }
@@ -102,9 +106,9 @@ export function SolverLancamentosModal({
           return false;
         }
 
-        // Tentar incluir o lançamento atual
+        // Tentar incluir o lançamento atual (usando valorCentavos)
         combinacaoAtual.push(lancamentosParaBusca[indiceAtual]);
-        if (buscar(indiceAtual + 1, somaAtual + lancamentosParaBusca[indiceAtual].valor, combinacaoAtual)) {
+        if (buscar(indiceAtual + 1, somaAtual + lancamentosParaBusca[indiceAtual].valorCentavos, combinacaoAtual)) {
           return true;
         }
         combinacaoAtual.pop();
@@ -122,7 +126,7 @@ export function SolverLancamentosModal({
       const buscarComTimeout = (
         indiceAtual: number,
         somaAtual: number,
-        combinacaoAtual: LancamentoFinanceiro[]
+        combinacaoAtual: LancamentoComCentavos[]
       ): boolean => {
         if (Date.now() - startTime > 3000) {
           return true; // Timeout
@@ -130,7 +134,7 @@ export function SolverLancamentosModal({
         return buscar(indiceAtual, somaAtual, combinacaoAtual);
       };
 
-      buscarComTimeout(0, 0, []);
+      buscarComTimeout(0, 0, [] as LancamentoComCentavos[]);
 
       // Ordenar por quantidade de lançamentos (menos é melhor)
       resultados.sort((a, b) => a.lancamentos.length - b.lancamentos.length);
@@ -167,9 +171,11 @@ export function SolverLancamentosModal({
   };
 
   const totalSelecionado = useMemo(() => {
-    return lancamentos
+    // Calcular em centavos para evitar erros de ponto flutuante
+    const totalCentavos = lancamentos
       .filter((l) => itensSelecionados.has(l.id))
-      .reduce((acc, l) => acc + l.valor, 0);
+      .reduce((acc, l) => acc + Math.round(l.valor * 100), 0);
+    return totalCentavos / 100;
   }, [lancamentos, itensSelecionados]);
 
   const handleMarcarComoPago = async () => {
