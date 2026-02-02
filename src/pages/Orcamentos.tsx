@@ -28,6 +28,13 @@ import { translations } from "@/i18n/translations";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 
+// Função para extrair número do pedido do campo descricao
+const extrairNumeroPedido = (descricao: string | null): string | null => {
+  if (!descricao) return null;
+  const match = descricao.match(/- Número do Pedido:\s*(.+?)(?:\n|$)/);
+  return match ? match[1].trim() : null;
+};
+
 // Custom Tooltip for mini charts (valores monetários)
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
@@ -2240,6 +2247,9 @@ export default function Orcamentos() {
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
                           <p><span className="font-medium">{t('orcamentos.value')}:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          {extrairNumeroPedido(item.descricao) && (
+                            <p><span className="font-medium">Nº Pedido:</span> {extrairNumeroPedido(item.descricao)}</p>
+                          )}
                           {item.numero_nf && (
                             <p><span className="font-medium">{t('orcamentos.invoiceNumber')}:</span> {item.numero_nf}</p>
                           )}
