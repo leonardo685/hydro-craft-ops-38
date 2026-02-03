@@ -2029,31 +2029,31 @@ const NovaOrdemServico = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="motivoFalha">Motivo da Falha</Label>
+                <Label htmlFor="motivoFalha">{t('novaAnalise.failureReason')}</Label>
                 <Select
                   value={formData.motivoFalha}
                   onValueChange={(value) => setFormData({ ...formData, motivoFalha: value, motivoFalhaOutro: value !== 'outros' ? '' : formData.motivoFalhaOutro })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o motivo da falha" />
+                    <SelectValue placeholder={t('novaAnalise.selectFailureReason')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="revisao_completa">Revisão Completa</SelectItem>
-                    <SelectItem value="haste_quebrada">Haste Quebrada</SelectItem>
-                    <SelectItem value="vazamento_vedacoes">Vazamento nas Vedações</SelectItem>
-                    <SelectItem value="outros">Outros</SelectItem>
+                    <SelectItem value="revisao_completa">{t('novaAnalise.completeRevision')}</SelectItem>
+                    <SelectItem value="haste_quebrada">{t('novaAnalise.brokenRod')}</SelectItem>
+                    <SelectItem value="vazamento_vedacoes">{t('novaAnalise.sealLeakage')}</SelectItem>
+                    <SelectItem value="outros">{t('novaAnalise.others')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {formData.motivoFalha === 'outros' && (
                 <div>
-                  <Label htmlFor="motivoFalhaOutro">Descreva o motivo da falha</Label>
+                  <Label htmlFor="motivoFalhaOutro">{t('novaAnalise.describeFailureReason')}</Label>
                   <Textarea
                     id="motivoFalhaOutro"
                     value={formData.motivoFalhaOutro}
                     onChange={(e) => setFormData({ ...formData, motivoFalhaOutro: e.target.value })}
-                    placeholder="Descreva a causa raiz da falha do equipamento..."
+                    placeholder={t('novaAnalise.failureReasonPlaceholder')}
                     rows={3}
                   />
                 </div>
