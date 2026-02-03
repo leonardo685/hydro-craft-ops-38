@@ -187,6 +187,15 @@ export const translations = {
       identifiedProblemsPlaceholder: 'Descreva os problemas encontrados no equipamento...',
       additionalObservations: 'Observações Adicionais',
       additionalObservationsPlaceholder: 'Observações gerais sobre o equipamento ou análise...',
+      // Failure reason section
+      failureReason: 'Motivo da Falha',
+      selectFailureReason: 'Selecione o motivo da falha',
+      completeRevision: 'Revisão Completa',
+      brokenRod: 'Haste Quebrada',
+      sealLeakage: 'Vazamento nas Vedações',
+      others: 'Outros',
+      describeFailureReason: 'Descreva o motivo da falha',
+      failureReasonPlaceholder: 'Descreva a causa raiz da falha do equipamento...',
       // Expertise photos section
       expertisePhotos: 'Fotos da Peritagem',
       expertisePhotosDesc: 'Fotos capturadas durante a análise técnica do equipamento',
@@ -1255,6 +1264,15 @@ export const translations = {
       identifiedProblemsPlaceholder: 'Describe the problems found in the equipment...',
       additionalObservations: 'Additional Observations',
       additionalObservationsPlaceholder: 'General observations about the equipment or analysis...',
+      // Failure reason section
+      failureReason: 'Failure Reason',
+      selectFailureReason: 'Select the failure reason',
+      completeRevision: 'Complete Revision',
+      brokenRod: 'Broken Rod',
+      sealLeakage: 'Seal Leakage',
+      others: 'Others',
+      describeFailureReason: 'Describe the failure reason',
+      failureReasonPlaceholder: 'Describe the root cause of the equipment failure...',
       // Expertise photos section
       expertisePhotos: 'Expertise Photos',
       expertisePhotosDesc: 'Photos captured during technical analysis of the equipment',
