@@ -563,62 +563,6 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
                 </Card>
               </div>
 
-              {/* Gráfico de Motivos de Falha */}
-              {totalWithFailureReason > 0 && (
-                <Card>
-                  <CardHeader className="items-center pb-4">
-                    <CardTitle className="flex items-center gap-2 text-sm">
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                      {language === 'pt-BR' ? 'Motivos de Falha' : 'Failure Reasons'}
-                      <Badge
-                        variant="outline"
-                        className="text-primary bg-primary/10 border-none ml-2"
-                      >
-                        <span>{totalWithFailureReason} {language === 'pt-BR' ? 'registros' : 'records'}</span>
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription>
-                      {language === 'pt-BR' 
-                        ? 'Distribuição dos motivos de falha no histórico' 
-                        : 'Distribution of failure reasons in history'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pb-0">
-                    <ChartContainer
-                      config={failureChartConfig}
-                      className="mx-auto aspect-square max-h-[220px]"
-                    >
-                      <RadarChart data={failureReasonData}>
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                        <PolarAngleAxis 
-                          dataKey="reason" 
-                          tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
-                        />
-                        <PolarGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <Radar
-                          stroke="hsl(var(--primary))"
-                          dataKey="count"
-                          fill="hsl(var(--primary))"
-                          fillOpacity={0.3}
-                          filter="url(#stroke-line-glow-modal)"
-                        />
-                        <defs>
-                          <filter
-                            id="stroke-line-glow-modal"
-                            x="-20%"
-                            y="-20%"
-                            width="140%"
-                            height="140%"
-                          >
-                            <feGaussianBlur stdDeviation="6" result="blur" />
-                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                          </filter>
-                        </defs>
-                      </RadarChart>
-                    </ChartContainer>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Gráfico de Tendência */}
               {historico.length > 1 && (
@@ -743,6 +687,63 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Gráfico de Motivos de Falha */}
+              {totalWithFailureReason > 0 && (
+                <Card>
+                  <CardHeader className="items-center pb-4">
+                    <CardTitle className="flex items-center gap-2 text-sm">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      {language === 'pt-BR' ? 'Motivos de Falha' : 'Failure Reasons'}
+                      <Badge
+                        variant="outline"
+                        className="text-primary bg-primary/10 border-none ml-2"
+                      >
+                        <span>{totalWithFailureReason} {language === 'pt-BR' ? 'registros' : 'records'}</span>
+                      </Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      {language === 'pt-BR' 
+                        ? 'Distribuição dos motivos de falha no histórico' 
+                        : 'Distribution of failure reasons in history'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pb-0">
+                    <ChartContainer
+                      config={failureChartConfig}
+                      className="mx-auto aspect-square max-h-[220px]"
+                    >
+                      <RadarChart data={failureReasonData}>
+                        <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                        <PolarAngleAxis 
+                          dataKey="reason" 
+                          tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
+                        />
+                        <PolarGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <Radar
+                          stroke="hsl(var(--primary))"
+                          dataKey="count"
+                          fill="hsl(var(--primary))"
+                          fillOpacity={0.3}
+                          filter="url(#stroke-line-glow-modal)"
+                        />
+                        <defs>
+                          <filter
+                            id="stroke-line-glow-modal"
+                            x="-20%"
+                            y="-20%"
+                            width="140%"
+                            height="140%"
+                          >
+                            <feGaussianBlur stdDeviation="6" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                          </filter>
+                        </defs>
+                      </RadarChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              )}
             </>
           )}
         </div>
