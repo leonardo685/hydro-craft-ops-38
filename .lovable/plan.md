@@ -1,49 +1,98 @@
 
-# Atualização de Datas das Ordens de Serviço
 
-## Dados a Atualizar
+# Plano: Mover Gráfico de Motivos de Falha para Histórico de Manutenções
 
-| Ordem | Entrada Atual | Nova Entrada | Saída Atual | Nova Saída |
-|-------|---------------|--------------|-------------|------------|
-| MH-002-25 | 26/12/2025 | **20/11/2025** | 31/01/2026 | **01/12/2025** |
-| MH-003-25 | 01/02/2026 | **20/12/2025** | 03/01/2026 | **30/12/2025** |
-| MH-001-26 | 05/01/2026 | **03/01/2026** | 31/01/2026 | **05/01/2026** |
-| MH-002-26 | 31/01/2026 | **29/01/2026** | 31/01/2026 | **03/02/2026** |
+## Resumo
 
-## Operação
+Vou remover o gráfico de radar "Motivos de Falha" do Dashboard financeiro e integrá-lo no modal de **Histórico de Manutenção**, onde ele será mais relevante para análise de equipamentos.
 
-Executar 4 comandos UPDATE na tabela `ordens_servico` para atualizar os campos:
-- `data_entrada`: Data de entrada/recebimento do equipamento
-- `data_finalizacao`: Data de saída/finalização do serviço
+---
 
-## Queries SQL a Executar
+## Mudanças a Realizar
 
-```sql
--- MH-002-25
-UPDATE ordens_servico 
-SET data_entrada = '2025-11-20', data_finalizacao = '2025-12-01' 
-WHERE id = 'd571ab93-237a-4c1f-9730-f4b99179e56a';
+### 1. Remover do Dashboard
 
--- MH-003-25
-UPDATE ordens_servico 
-SET data_entrada = '2025-12-20', data_finalizacao = '2025-12-30' 
-WHERE id = '1eea3e8d-9048-41f7-8881-729f6ebbfcfc';
+Vou remover a importação e o uso do `FailureReasonChart` da página `Dashboard.tsx`:
 
--- MH-001-26
-UPDATE ordens_servico 
-SET data_entrada = '2026-01-03', data_finalizacao = '2026-01-05' 
-WHERE id = '76f7b0b5-a1ff-438f-8783-79875af5b8ee';
+- **Linha 25**: Remover import do `FailureReasonChart`
+- **Linha 841-842**: Remover o componente do grid e ajustar layout de `md:grid-cols-3` para `md:grid-cols-2`
 
--- MH-002-26
-UPDATE ordens_servico 
-SET data_entrada = '2026-01-29', data_finalizacao = '2026-02-03' 
-WHERE id = 'b640a132-4d40-4b24-9324-264d6c69a2a7';
+### 2. Integrar no Modal de Histórico de Manutenção
+
+Vou adicionar o gráfico de radar no modal `HistoricoManutencaoModal.tsx`:
+
+- Adicionar import do `ChartContainer`, `ChartTooltip`, `ChartTooltipContent` e componentes do `recharts` para RadarChart
+- O gráfico vai aparecer após os cards de resumo e antes do gráfico de tendência
+- O gráfico vai agregar os motivos de falha das ordens encontradas na pesquisa do histórico
+
+### 3. Adaptar o Componente para Contexto do Modal
+
+O gráfico atual busca dados de toda a empresa. Para o modal de histórico, vou:
+
+- Utilizar os dados já carregados do `historico` (array de manutenções)
+- Agregar os `motivo_falha` das ordens no histórico pesquisado
+- Exibir a distribuição específica do equipamento/cliente consultado
+
+---
+
+## Seção Técnica
+
+### Alterações no Dashboard.tsx:
+
+```tsx
+// REMOVER linha 25:
+import { FailureReasonChart } from "@/components/FailureReasonChart";
+
+// MODIFICAR linha 841 - grid de 3 para 2 colunas:
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {/* Remover: <FailureReasonChart /> */}
+  <Card> {/* Faturamento por Categoria */}
 ```
 
-## Resultado Esperado
+### Alterações no HistoricoManutencaoModal.tsx:
 
-Após as atualizações, o histórico de manutenção mostrará a sequência cronológica correta:
-1. MH-002-25: Nov/2025 → Dez/2025
-2. MH-003-25: Dez/2025 → Dez/2025  
-3. MH-001-26: Jan/2026 → Jan/2026
-4. MH-002-26: Jan/2026 → Fev/2026
+```tsx
+// Adicionar imports
+import { RadarChart, PolarAngleAxis, PolarGrid, Radar } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+
+// Mapeamento de motivos
+const FAILURE_REASONS = {
+  revisao_completa: { ptBR: "Revisão Completa", en: "Complete Revision" },
+  haste_quebrada: { ptBR: "Haste Quebrada", en: "Broken Rod" },
+  vazamento_vedacoes: { ptBR: "Vazamento nas Vedações", en: "Seal Leakage" },
+  outros: { ptBR: "Outros", en: "Others" },
+};
+
+// Dentro do componente, após definir historico:
+const failureReasonData = useMemo(() => {
+  const counts: Record<string, number> = {};
+  historico.forEach((item) => {
+    const motivo = item.motivo_falha || 'outros';
+    counts[motivo] = (counts[motivo] || 0) + 1;
+  });
+  
+  return Object.entries(FAILURE_REASONS).map(([key, labels]) => ({
+    reason: language === 'pt-BR' ? labels.ptBR : labels.en,
+    count: counts[key] || 0,
+  }));
+}, [historico, language]);
+```
+
+### Resultado Visual
+
+O gráfico de radar será exibido:
+- Dentro do modal de histórico de manutenção
+- Após o grid de resumo (quantidade de manutenções, cliente, tendência)
+- Com estilo consistente (glowing stroke effect)
+- Agregando apenas os motivos de falha das ordens encontradas na pesquisa
+
+---
+
+## Arquivos Afetados
+
+| Arquivo | Ação |
+|---------|------|
+| `src/pages/Dashboard.tsx` | Remover import e uso do FailureReasonChart |
+| `src/components/HistoricoManutencaoModal.tsx` | Adicionar gráfico de radar de motivos de falha |
+
