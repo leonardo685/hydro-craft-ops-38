@@ -22,7 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
-import { FailureReasonChart } from "@/components/FailureReasonChart";
+
 
 // Custom Tooltip for mini charts
 const CustomTooltip = ({ active, payload }: any) => {
@@ -838,8 +838,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <FailureReasonChart />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Faturamento por Categoria - {getPeriodoLabel()}</CardTitle>
