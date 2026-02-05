@@ -212,7 +212,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
               <div className="flex items-center gap-2">
                 <img src={engrenagemLogo} alt="Logo" className="w-10 h-10" />
                 <div className="flex flex-col justify-center">
-                  <div className="text-red-600 font-bold text-sm mb-1">MEC-HIDRO</div>
+                  <div className="text-red-600 font-bold text-sm mb-1">MEC HYDRO</div>
                   <div className="text-xl font-bold text-foreground">{equipment.numeroOrdem}</div>
                 </div>
               </div>
