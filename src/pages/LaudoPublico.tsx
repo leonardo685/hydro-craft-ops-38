@@ -1219,6 +1219,7 @@ export default function LaudoPublico() {
         open={historicoModalOpen}
         onOpenChange={setHistoricoModalOpen}
         numeroOrdem={numeroOrdem || ""}
+        ordemId={ordemServico?.id}
       />
     </div>
   );

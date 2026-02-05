@@ -13,6 +13,7 @@ interface HistoricoManutencaoPublicoModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   numeroOrdem: string;
+  ordemId?: string;
 }
 
 interface ManutencaoHistorico {
@@ -29,7 +30,7 @@ interface ManutencaoHistorico {
   dias_desde_ultima: number | null;
 }
 
-export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrdem }: HistoricoManutencaoPublicoModalProps) {
+export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrdem, ordemId }: HistoricoManutencaoPublicoModalProps) {
   const { t, language } = useLanguage();
   const dateLocale = language === 'pt-BR' ? ptBR : enUS;
   const [loading, setLoading] = useState(false);
@@ -39,7 +40,7 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
     if (open && numeroOrdem) {
       buscarHistorico();
     }
-  }, [open, numeroOrdem]);
+  }, [open, numeroOrdem, ordemId]);
 
   const buscarHistorico = async () => {
     if (!numeroOrdem) return;
@@ -47,25 +48,53 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
     setLoading(true);
 
     try {
-      // Primeiro buscar a ordem pelo numero_ordem - incluindo empresa_id
-      const { data: ordemInicial, error: erroOrdemInicial } = await supabase
-        .from('ordens_servico')
-        .select(`
-          id,
-          numero_ordem,
-          cliente_nome,
-          equipamento,
-          data_entrada,
-          data_finalizacao,
-          motivo_falha,
-          status,
-          recebimento_id,
-          empresa_id
-        `)
-        .eq('numero_ordem', numeroOrdem)
-        .maybeSingle();
+      let ordemInicial;
 
-      if (erroOrdemInicial || !ordemInicial) {
+      // Se temos o ID da ordem, buscar diretamente por ele (evita ambiguidade com duplicatas)
+      if (ordemId) {
+        const { data, error } = await supabase
+          .from('ordens_servico')
+          .select(`
+            id,
+            numero_ordem,
+            cliente_nome,
+            equipamento,
+            data_entrada,
+            data_finalizacao,
+            motivo_falha,
+            status,
+            recebimento_id,
+            empresa_id
+          `)
+          .eq('id', ordemId)
+          .maybeSingle();
+        
+        if (error) throw error;
+        ordemInicial = data;
+      } else {
+        // Fallback: buscar por numero_ordem (comportamento antigo)
+        const { data, error } = await supabase
+          .from('ordens_servico')
+          .select(`
+            id,
+            numero_ordem,
+            cliente_nome,
+            equipamento,
+            data_entrada,
+            data_finalizacao,
+            motivo_falha,
+            status,
+            recebimento_id,
+            empresa_id
+          `)
+          .eq('numero_ordem', numeroOrdem)
+          .maybeSingle();
+        
+        if (error) throw error;
+        ordemInicial = data;
+      }
+
+      if (!ordemInicial) {
         setHistorico([]);
         setLoading(false);
         return;
