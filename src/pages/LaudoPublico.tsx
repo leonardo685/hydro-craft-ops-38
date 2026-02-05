@@ -44,6 +44,7 @@ interface OrdemServico {
   servicos_necessarios: any;
   usinagem_necessaria: any;
   motivo_falha: string | null;
+  recebimento_id: number | null;
   recebimentos?: {
     numero_ordem: string;
   };
@@ -102,6 +103,46 @@ interface EmpresaData {
   tipo_identificacao: string | null;
 }
 
+// Função para verificar se ordem está finalizada
+const verificarOrdemFinalizada = async (ordemId: string, recebimentoId: number | null): Promise<boolean> => {
+  const { data: teste } = await supabase
+    .from("testes_equipamentos")
+    .select("id")
+    .eq("ordem_servico_id", ordemId)
+    .limit(1);
+  if (teste && teste.length > 0) return true;
+
+  if (recebimentoId) {
+    const { data: recebimento } = await supabase
+      .from("recebimentos")
+      .select("pdf_nota_retorno")
+      .eq("id", recebimentoId)
+      .maybeSingle();
+    if (recebimento?.pdf_nota_retorno) return true;
+  }
+
+  const { data: fotos } = await supabase
+    .from("fotos_equipamentos")
+    .select("id")
+    .eq("ordem_servico_id", ordemId)
+    .limit(1);
+  return fotos && fotos.length > 0;
+};
+
+// Função para encontrar a ordem correta (prioriza finalizada)
+const encontrarOrdemCorreta = async (
+  ordens: Array<OrdemServico & { recebimento_id: number | null }>
+): Promise<OrdemServico | null> => {
+  if (!ordens || ordens.length === 0) return null;
+  if (ordens.length === 1) return ordens[0];
+  
+  for (const ordem of ordens) {
+    const finalizada = await verificarOrdemFinalizada(ordem.id, ordem.recebimento_id);
+    if (finalizada) return ordem;
+  }
+  return ordens[0];
+};
+
 export default function LaudoPublico() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
   const navigate = useNavigate();
@@ -126,17 +167,19 @@ export default function LaudoPublico() {
       }
 
       try {
-        // Buscar ordem de serviço diretamente pelo numero_ordem
-        const { data: ordem, error: ordemError } = await supabase
+        // Buscar TODAS as ordens de serviço com este número (pode haver duplicatas)
+        const { data: ordensServico, error: ordemError } = await supabase
           .from("ordens_servico")
           .select(`
             *,
             recebimentos(numero_ordem)
           `)
-          .eq("numero_ordem", numeroOrdem)
-          .maybeSingle();
+          .eq("numero_ordem", numeroOrdem);
 
         if (ordemError) throw ordemError;
+
+        // Encontrar a ordem correta (prioriza finalizada)
+        const ordem = await encontrarOrdemCorreta(ordensServico || []);
 
         if (!ordem) {
           toast.error(t('laudoPublico.orderNotFound'));

@@ -11,6 +11,45 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Building2, User, Phone, CheckCircle2 } from "lucide-react";
 
+// Função para encontrar a ordem correta (prioriza finalizada)
+const encontrarOrdemCorreta = async (
+  ordens: Array<{ id: string; status?: string; recebimento_id?: number | null }>
+): Promise<{ id: string; status?: string; recebimento_id?: number | null } | null> => {
+  if (!ordens || ordens.length === 0) return null;
+  if (ordens.length === 1) return ordens[0];
+  
+  // Verificar cada ordem
+  for (const ordem of ordens) {
+    // Verificar laudo
+    const { data: teste } = await supabase
+      .from("testes_equipamentos")
+      .select("id")
+      .eq("ordem_servico_id", ordem.id)
+      .limit(1);
+    if (teste && teste.length > 0) return ordem;
+
+    // Verificar nota de retorno
+    if (ordem.recebimento_id) {
+      const { data: recebimento } = await supabase
+        .from("recebimentos")
+        .select("pdf_nota_retorno")
+        .eq("id", ordem.recebimento_id)
+        .maybeSingle();
+      if (recebimento?.pdf_nota_retorno) return ordem;
+    }
+
+    // Verificar fotos
+    const { data: fotos } = await supabase
+      .from("fotos_equipamentos")
+      .select("id")
+      .eq("ordem_servico_id", ordem.id)
+      .limit(1);
+    if (fotos && fotos.length > 0) return ordem;
+  }
+  
+  return ordens[0];
+};
+
 // Schema para etapa 1 (telefone)
 const telefoneSchema = z.object({
   telefone: z.string()
@@ -130,14 +169,16 @@ export default function AcessoOrdemPublica() {
     try {
       const telefoneFormatado = formatarTelefoneParaSalvar(data.telefone);
 
-      // Buscar ordem de serviço
-      const { data: ordemServico, error: ordemError } = await supabase
+      // Buscar TODAS as ordens de serviço com este número
+      const { data: ordensServico, error: ordemError } = await supabase
         .from("ordens_servico")
         .select("id, status, recebimento_id")
-        .eq("numero_ordem", numeroOrdem)
-        .maybeSingle();
+        .eq("numero_ordem", numeroOrdem);
 
       if (ordemError) throw ordemError;
+
+      // Encontrar a ordem correta (prioriza finalizada)
+      const ordemServico = await encontrarOrdemCorreta(ordensServico || []);
 
       if (!ordemServico) {
         toast.error("Ordem não encontrada");
@@ -209,14 +250,16 @@ export default function AcessoOrdemPublica() {
     setLoading(true);
 
     try {
-      // Buscar ordem de serviço novamente
-      const { data: ordemServico, error: ordemError } = await supabase
+      // Buscar TODAS as ordens de serviço com este número
+      const { data: ordensServico, error: ordemError } = await supabase
         .from("ordens_servico")
         .select("id")
-        .eq("numero_ordem", numeroOrdem)
-        .maybeSingle();
+        .eq("numero_ordem", numeroOrdem);
 
       if (ordemError) throw ordemError;
+
+      // Encontrar a ordem correta (prioriza finalizada)
+      const ordemServico = await encontrarOrdemCorreta(ordensServico || []);
 
       if (!ordemServico) {
         toast.error("Ordem não encontrada");
