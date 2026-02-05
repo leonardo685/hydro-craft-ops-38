@@ -1,13 +1,53 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Minus, Wrench, AlertTriangle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, RadarChart, PolarAngleAxis, PolarGrid, Radar } from "recharts";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ptBR, enUS } from "date-fns/locale";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+
+// Mapeamento das chaves de motivo de falha para tradução
+const FAILURE_REASONS = {
+  revisao_completa: { 
+    ptBR: "Revisão Completa", 
+    en: "Complete Revision",
+    matches: ["revisao_completa", "Revisão Completa", "Complete Revision", "REVISÃO COMPLETA"]
+  },
+  haste_quebrada: { 
+    ptBR: "Haste Quebrada", 
+    en: "Broken Rod",
+    matches: ["haste_quebrada", "Haste Quebrada", "Broken Rod", "HASTE QUEBRADA"]
+  },
+  vazamento_vedacoes: { 
+    ptBR: "Vazamento nas Vedações", 
+    en: "Seal Leakage",
+    matches: ["vazamento_vedacoes", "Vazamento nas Vedações", "Seal Leakage", "VAZAMENTO NAS VEDAÇÕES", "TROCA DE VEDAÇÕES"]
+  },
+  outros: { 
+    ptBR: "Outros", 
+    en: "Others",
+    matches: ["outros", "Outros", "Others", "OUTROS"]
+  },
+};
+
+// Função para encontrar a chave do motivo de falha baseado no texto
+const findFailureReasonKey = (motivo: string | null): string => {
+  if (!motivo) return 'outros';
+  
+  const motivoLower = motivo.toLowerCase().trim();
+  
+  for (const [key, config] of Object.entries(FAILURE_REASONS)) {
+    if (config.matches.some(m => m.toLowerCase() === motivoLower)) {
+      return key;
+    }
+  }
+  
+  return 'outros';
+};
 
 interface HistoricoManutencaoPublicoModalProps {
   open: boolean;
@@ -336,6 +376,30 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
     diasNoServico: item.dias_no_servico || 0,
   }));
 
+  // Dados para o gráfico de motivos de falha
+  const failureReasonData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    
+    historico.forEach((item) => {
+      const key = findFailureReasonKey(item.motivo_falha);
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    
+    return Object.entries(FAILURE_REASONS).map(([key, labels]) => ({
+      reason: language === 'pt-BR' ? labels.ptBR : labels.en,
+      count: counts[key] || 0,
+    }));
+  }, [historico, language]);
+
+  const totalWithFailureReason = failureReasonData.reduce((acc, item) => acc + item.count, 0);
+
+  const failureChartConfig: ChartConfig = {
+    count: {
+      label: language === 'pt-BR' ? "Quantidade" : "Count",
+      color: "hsl(var(--primary))",
+    },
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -505,6 +569,63 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Gráfico de Motivos de Falha (Radar) */}
+              {totalWithFailureReason > 0 && (
+                <Card>
+                  <CardHeader className="items-center pb-4">
+                    <CardTitle className="flex items-center gap-2 text-sm">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      {language === 'pt-BR' ? 'Motivos de Falha' : 'Failure Reasons'}
+                      <Badge
+                        variant="outline"
+                        className="text-primary bg-primary/10 border-none ml-2"
+                      >
+                        <span>{totalWithFailureReason} {language === 'pt-BR' ? 'registros' : 'records'}</span>
+                      </Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      {language === 'pt-BR' 
+                        ? 'Distribuição dos motivos de falha no histórico' 
+                        : 'Distribution of failure reasons in history'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pb-0">
+                    <ChartContainer
+                      config={failureChartConfig}
+                      className="mx-auto aspect-square max-h-[220px]"
+                    >
+                      <RadarChart data={failureReasonData}>
+                        <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                        <PolarAngleAxis 
+                          dataKey="reason" 
+                          tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
+                        />
+                        <PolarGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <Radar
+                          stroke="hsl(var(--primary))"
+                          dataKey="count"
+                          fill="hsl(var(--primary))"
+                          fillOpacity={0.3}
+                          filter="url(#stroke-line-glow-public)"
+                        />
+                        <defs>
+                          <filter
+                            id="stroke-line-glow-public"
+                            x="-20%"
+                            y="-20%"
+                            width="140%"
+                            height="140%"
+                          >
+                            <feGaussianBlur stdDeviation="6" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                          </filter>
+                        </defs>
+                      </RadarChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              )}
             </>
           )}
         </div>
