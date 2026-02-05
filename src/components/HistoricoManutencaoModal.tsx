@@ -18,10 +18,41 @@ import { ptBR, enUS } from "date-fns/locale";
 
 // Mapeamento das chaves de motivo de falha para tradução
 const FAILURE_REASONS = {
-  revisao_completa: { ptBR: "Revisão Completa", en: "Complete Revision" },
-  haste_quebrada: { ptBR: "Haste Quebrada", en: "Broken Rod" },
-  vazamento_vedacoes: { ptBR: "Vazamento nas Vedações", en: "Seal Leakage" },
-  outros: { ptBR: "Outros", en: "Others" },
+  revisao_completa: { 
+    ptBR: "Revisão Completa", 
+    en: "Complete Revision",
+    matches: ["revisao_completa", "Revisão Completa", "Complete Revision", "REVISÃO COMPLETA"]
+  },
+  haste_quebrada: { 
+    ptBR: "Haste Quebrada", 
+    en: "Broken Rod",
+    matches: ["haste_quebrada", "Haste Quebrada", "Broken Rod", "HASTE QUEBRADA"]
+  },
+  vazamento_vedacoes: { 
+    ptBR: "Vazamento nas Vedações", 
+    en: "Seal Leakage",
+    matches: ["vazamento_vedacoes", "Vazamento nas Vedações", "Seal Leakage", "VAZAMENTO NAS VEDAÇÕES", "TROCA DE VEDAÇÕES"]
+  },
+  outros: { 
+    ptBR: "Outros", 
+    en: "Others",
+    matches: ["outros", "Outros", "Others", "OUTROS"]
+  },
+};
+
+// Função para encontrar a chave do motivo de falha baseado no texto
+const findFailureReasonKey = (motivo: string | null): string => {
+  if (!motivo) return 'outros';
+  
+  const motivoLower = motivo.toLowerCase().trim();
+  
+  for (const [key, config] of Object.entries(FAILURE_REASONS)) {
+    if (config.matches.some(m => m.toLowerCase() === motivoLower)) {
+      return key;
+    }
+  }
+  
+  return 'outros';
 };
 
 interface HistoricoManutencaoModalProps {
@@ -416,9 +447,11 @@ export function HistoricoManutencaoModal({ open, onOpenChange }: HistoricoManute
   // Dados para o gráfico de motivos de falha
   const failureReasonData = useMemo(() => {
     const counts: Record<string, number> = {};
+    
     historico.forEach((item) => {
-      const motivo = item.motivo_falha || 'outros';
-      counts[motivo] = (counts[motivo] || 0) + 1;
+      // Usar a função para encontrar a chave correta baseada no texto do banco
+      const key = findFailureReasonKey(item.motivo_falha);
+      counts[key] = (counts[key] || 0) + 1;
     });
     
     return Object.entries(FAILURE_REASONS).map(([key, labels]) => ({
