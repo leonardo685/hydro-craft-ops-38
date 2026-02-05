@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function UploadVideoTeste() {
   const navigate = useNavigate();
-  const [testeId, setTesteId] = useState("b461d197-208e-4a0f-98c6-0110d42689b6");
+  const [testeId, setTesteId] = useState("cc90dc45-423d-4679-9b1e-a502b740e171");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -118,7 +118,7 @@ export default function UploadVideoTeste() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Video className="h-6 w-6" />
-            Upload de Vídeo para Teste MH-013-25
+            Upload de Vídeo para Teste MH-001-26
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -131,7 +131,7 @@ export default function UploadVideoTeste() {
               placeholder="ID do teste"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              ID já preenchido para MH-013-25
+              ID já preenchido para MH-001-26
             </p>
           </div>
 
