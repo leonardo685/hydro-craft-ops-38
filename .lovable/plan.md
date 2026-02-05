@@ -1,91 +1,137 @@
 
-# Plano: Corrigir Gráfico de Motivos de Falha
+# Plano: Corrigir Acesso ao Laudo com Ordens Duplicadas
 
 ## Problema Identificado
 
-O gráfico de motivos de falha não está aparecendo porque a lógica de contagem espera chaves internas (ex: `revisao_completa`, `haste_quebrada`), mas os dados no banco de dados estão salvos em texto traduzido (ex: `"Complete Revision"`, `"Broken Rod"`, `"Seal Leakage"`).
+Existem **duas ordens de serviço** com o mesmo número `MH-001-26`:
 
-### Dados atuais no banco:
-| Ordem | motivo_falha |
-|-------|--------------|
-| MH-003-25 | Broken Rod |
-| MH-002-25 | Seal Leakage |
-| MH-001-26 | Complete Revision |
-| MH-002-26 | Broken Rod |
+| ID | Status | Tem Laudo | Tem Fotos | Nota Retorno | Criada em |
+|----|--------|-----------|-----------|--------------|-----------|
+| `76f7b0b5...` | faturado | ✅ Sim (1) | ✅ Sim (2) | ✅ Sim | 11:44 |
+| `2047f9f7...` | em_andamento | ❌ Não | ❌ Não | ❌ Não | 12:49 |
 
-### Problema no código:
-O código verifica se o `motivo_falha` é igual a chaves como `"revisao_completa"`, mas o valor real é `"Broken Rod"`. Resultado: contagem fica zero para todos.
+Quando o usuário escaneia o QR code, o sistema usa `.maybeSingle()` que pode retornar a **ordem errada** (a mais recente sem laudo), causando a mensagem de erro "Esta ordem ainda não possui laudo disponível".
 
 ---
 
 ## Solução
 
-Vou atualizar o mapeamento `FAILURE_REASONS` para incluir **todas as variantes possíveis** (chave interna, português e inglês) e ajustar a função de agregação para reconhecer os valores de texto.
+Modificar as queries nas 3 páginas afetadas para:
+1. Buscar **todas** as ordens com o mesmo número
+2. **Priorizar** a ordem que está finalizada (tem laudo, fotos ou nota de retorno)
+3. Se houver múltiplas finalizadas, usar a mais recente
 
 ---
 
 ## Mudanças a Realizar
 
-### Arquivo: `src/components/HistoricoManutencaoModal.tsx`
+### 1. Arquivo: `src/pages/OrdemPorQRCode.tsx`
 
-1. **Atualizar o mapeamento de motivos de falha** para incluir todas as variantes de texto:
+**Linha ~23-27**: Alterar query de `.maybeSingle()` para buscar múltiplas e filtrar:
 
 ```tsx
-const FAILURE_REASONS = {
-  revisao_completa: { 
-    ptBR: "Revisão Completa", 
-    en: "Complete Revision",
-    matches: ["revisao_completa", "Revisão Completa", "Complete Revision"]
-  },
-  haste_quebrada: { 
-    ptBR: "Haste Quebrada", 
-    en: "Broken Rod",
-    matches: ["haste_quebrada", "Haste Quebrada", "Broken Rod"]
-  },
-  vazamento_vedacoes: { 
-    ptBR: "Vazamento nas Vedações", 
-    en: "Seal Leakage",
-    matches: ["vazamento_vedacoes", "Vazamento nas Vedações", "Seal Leakage"]
-  },
-  outros: { 
-    ptBR: "Outros", 
-    en: "Others",
-    matches: ["outros", "Outros", "Others"]
-  },
+// ANTES
+const { data: ordemServico, error: ordemError } = await supabase
+  .from("ordens_servico")
+  .select("id, status, recebimento_id")
+  .eq("numero_ordem", numeroOrdem)
+  .maybeSingle();
+
+// DEPOIS
+const { data: ordensServico, error: ordemError } = await supabase
+  .from("ordens_servico")
+  .select("id, status, recebimento_id")
+  .eq("numero_ordem", numeroOrdem);
+
+// Encontrar a ordem mais adequada (priorizar finalizadas)
+let ordemServico = null;
+if (ordensServico && ordensServico.length > 0) {
+  // Tentar encontrar uma ordem finalizada
+  for (const ordem of ordensServico) {
+    const temLaudo = await verificarOrdemTemLaudo(ordem);
+    if (temLaudo) {
+      ordemServico = ordem;
+      break;
+    }
+  }
+  // Se nenhuma tem laudo, usar a primeira
+  if (!ordemServico) {
+    ordemServico = ordensServico[0];
+  }
+}
+```
+
+### 2. Arquivo: `src/pages/AcessoOrdemPublica.tsx`
+
+**Linhas ~134-138 e ~213-217**: Mesma alteração para buscar múltiplas ordens e priorizar a finalizada.
+
+### 3. Arquivo: `src/pages/LaudoPublico.tsx`
+
+**Linhas ~130-137**: Alterar query para priorizar ordem com laudo existente.
+
+---
+
+## Seção Técnica
+
+### Lógica de Priorização
+
+Criar uma função auxiliar para verificar se uma ordem está finalizada:
+
+```tsx
+const verificarOrdemFinalizada = async (ordem: { id: string, recebimento_id: number | null }) => {
+  // Verificar laudo técnico
+  const { data: teste } = await supabase
+    .from("testes_equipamentos")
+    .select("id")
+    .eq("ordem_servico_id", ordem.id)
+    .limit(1);
+  
+  if (teste && teste.length > 0) return true;
+
+  // Verificar nota de retorno
+  if (ordem.recebimento_id) {
+    const { data: recebimento } = await supabase
+      .from("recebimentos")
+      .select("pdf_nota_retorno")
+      .eq("id", ordem.recebimento_id)
+      .maybeSingle();
+    
+    if (recebimento?.pdf_nota_retorno) return true;
+  }
+
+  // Verificar fotos
+  const { data: fotos } = await supabase
+    .from("fotos_equipamentos")
+    .select("id")
+    .eq("ordem_servico_id", ordem.id)
+    .limit(1);
+
+  return fotos && fotos.length > 0;
 };
 ```
 
-2. **Ajustar a lógica de agregação** no `useMemo` para reconhecer os textos:
+### Fluxo de Seleção
 
-```tsx
-const failureReasonData = useMemo(() => {
-  const counts: Record<string, number> = {
-    revisao_completa: 0,
-    haste_quebrada: 0,
-    vazamento_vedacoes: 0,
-    outros: 0,
-  };
-  
-  historico.forEach((item) => {
-    const motivo = item.motivo_falha;
-    if (!motivo) return;
-    
-    // Encontrar a chave correta baseado no texto
-    let foundKey = 'outros';
-    for (const [key, config] of Object.entries(FAILURE_REASONS)) {
-      if (config.matches.includes(motivo)) {
-        foundKey = key;
-        break;
-      }
-    }
-    counts[foundKey]++;
-  });
-  
-  return Object.entries(FAILURE_REASONS).map(([key, labels]) => ({
-    reason: language === 'pt-BR' ? labels.ptBR : labels.en,
-    count: counts[key] || 0,
-  }));
-}, [historico, language]);
+```text
++------------------------+
+| Buscar TODAS as ordens |
+| com numero_ordem       |
++------------------------+
+           |
+           v
++------------------------+
+| Para cada ordem:       |
+| - Tem teste?           |
+| - Tem nota retorno?    |
+| - Tem fotos?           |
++------------------------+
+           |
+           v
++------------------------+
+| Retornar primeira      |
+| ordem finalizada       |
+| OU primeira da lista   |
++------------------------+
 ```
 
 ---
@@ -93,9 +139,10 @@ const failureReasonData = useMemo(() => {
 ## Resultado Esperado
 
 Após a correção:
-- O gráfico de radar irá aparecer abaixo da timeline
-- Os motivos "Broken Rod", "Seal Leakage" e "Complete Revision" serão contabilizados corretamente
-- O total de registros será exibido no badge do card
+- Usuário escaneia QR code de `MH-001-26`
+- Sistema encontra 2 ordens
+- Sistema identifica que `76f7b0b5` tem laudo/fotos/nota
+- Redireciona para o laudo correto
 
 ---
 
@@ -103,4 +150,6 @@ Após a correção:
 
 | Arquivo | Ação |
 |---------|------|
-| `src/components/HistoricoManutencaoModal.tsx` | Corrigir mapeamento e lógica de agregação |
+| `src/pages/OrdemPorQRCode.tsx` | Modificar query para buscar múltiplas ordens e priorizar finalizadas |
+| `src/pages/AcessoOrdemPublica.tsx` | Mesma modificação em 2 locais |
+| `src/pages/LaudoPublico.tsx` | Mesma modificação na busca inicial |
