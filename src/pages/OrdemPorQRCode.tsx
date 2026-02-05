@@ -1,13 +1,62 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+
+// Função para verificar se uma ordem está finalizada (tem laudo, fotos ou nota de retorno)
+const verificarOrdemFinalizada = async (ordemId: string, recebimentoId: number | null): Promise<boolean> => {
+  // Verificar se existe laudo técnico
+  const { data: teste } = await supabase
+    .from("testes_equipamentos")
+    .select("id")
+    .eq("ordem_servico_id", ordemId)
+    .limit(1);
+  
+  if (teste && teste.length > 0) return true;
+
+  // Verificar nota de retorno
+  if (recebimentoId) {
+    const { data: recebimento } = await supabase
+      .from("recebimentos")
+      .select("pdf_nota_retorno")
+      .eq("id", recebimentoId)
+      .maybeSingle();
+    
+    if (recebimento?.pdf_nota_retorno) return true;
+  }
+
+  // Verificar fotos
+  const { data: fotos } = await supabase
+    .from("fotos_equipamentos")
+    .select("id")
+    .eq("ordem_servico_id", ordemId)
+    .limit(1);
+
+  return fotos && fotos.length > 0;
+};
+
+// Função para encontrar a ordem correta (prioriza finalizada)
+const encontrarOrdemCorreta = async (
+  ordens: Array<{ id: string; status: string; recebimento_id: number | null }>
+): Promise<{ id: string; status: string; recebimento_id: number | null } | null> => {
+  if (!ordens || ordens.length === 0) return null;
+  
+  // Se só tem uma ordem, retorna ela
+  if (ordens.length === 1) return ordens[0];
+  
+  // Tentar encontrar uma ordem finalizada
+  for (const ordem of ordens) {
+    const finalizada = await verificarOrdemFinalizada(ordem.id, ordem.recebimento_id);
+    if (finalizada) return ordem;
+  }
+  
+  // Se nenhuma está finalizada, retorna a primeira
+  return ordens[0];
+};
 
 export default function OrdemPorQRCode() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
 
   useEffect(() => {
     const buscarOrdem = async () => {
@@ -18,54 +67,41 @@ export default function OrdemPorQRCode() {
       }
 
       try {
-        // Buscar ordem de serviço diretamente pelo numero_ordem
-        console.log("🔍 Buscando ordem com numero_ordem:", numeroOrdem);
-        const { data: ordemServico, error: ordemError } = await supabase
+        // Buscar TODAS as ordens de serviço com este número (pode haver duplicatas)
+        console.log("🔍 Buscando ordens com numero_ordem:", numeroOrdem);
+        const { data: ordensServico, error: ordemError } = await supabase
           .from("ordens_servico")
           .select("id, status, recebimento_id")
-          .eq("numero_ordem", numeroOrdem)
-          .maybeSingle();
+          .eq("numero_ordem", numeroOrdem);
 
-        console.log("📦 Ordem encontrada:", ordemServico);
         if (ordemError) {
-          console.error("❌ Erro na query ordens_servico:", ordemError);
+          console.error("❌ Erro na query:", ordemError);
           throw ordemError;
         }
 
+        console.log("📦 Ordens encontradas:", ordensServico?.length || 0);
+
+        // Encontrar a ordem correta (prioriza a que está finalizada)
+        const ordemServico = await encontrarOrdemCorreta(ordensServico || []);
+        
         if (!ordemServico) {
           toast.error("Ordem não encontrada");
           navigate("/");
           return;
         }
 
+        console.log("✅ Ordem selecionada:", ordemServico.id);
+
         // Buscar recebimento se existir (para verificar nota de retorno)
-        let pdfNotaRetorno = null;
-        if (ordemServico.recebimento_id) {
-          const { data: recebimento } = await supabase
-            .from("recebimentos")
-            .select("pdf_nota_retorno")
-            .eq("id", ordemServico.recebimento_id)
-            .maybeSingle();
-          
-          pdfNotaRetorno = recebimento?.pdf_nota_retorno;
-        }
+        const ordemFinalizada = await verificarOrdemFinalizada(
+          ordemServico.id, 
+          ordemServico.recebimento_id
+        );
 
-        // Verificar se existe laudo técnico criado (teste) para a ordem
-        const { data: teste, error: testeError } = await supabase
-          .from("testes_equipamentos")
-          .select("id")
-          .eq("ordem_servico_id", ordemServico.id)
-          .maybeSingle();
-
-        if (testeError) throw testeError;
-
-        // Se existe laudo técnico OU nota de retorno, permite acesso público
-        if (teste || pdfNotaRetorno) {
-          // Sempre redirecionar para formulário de telefone primeiro
-          // A verificação de acesso anterior será feita após informar o telefone
+        // Se a ordem está finalizada, permite acesso público
+        if (ordemFinalizada) {
           navigate(`/acesso-ordem/${numeroOrdem}`);
         } else {
-          // Ordem não finalizada, bloquear acesso público
           toast.error("Esta ordem ainda não possui laudo disponível");
           navigate("/");
         }
