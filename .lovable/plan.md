@@ -1,137 +1,114 @@
 
-# Plano: Corrigir Acesso ao Laudo com Ordens Duplicadas
+# Plano: Corrigir Histórico de Manutenção Não Aparecendo no Laudo Público
 
 ## Problema Identificado
 
-Existem **duas ordens de serviço** com o mesmo número `MH-001-26`:
+Existem **duas ordens** com o número `MH-001-26` em **empresas diferentes**:
 
-| ID | Status | Tem Laudo | Tem Fotos | Nota Retorno | Criada em |
-|----|--------|-----------|-----------|--------------|-----------|
-| `76f7b0b5...` | faturado | ✅ Sim (1) | ✅ Sim (2) | ✅ Sim | 11:44 |
-| `2047f9f7...` | em_andamento | ❌ Não | ❌ Não | ❌ Não | 12:49 |
+| ID | Status | Empresa | 
+|----|--------|---------|
+| `76f7b0b5...` | faturado ✅ | Empresa A (correta - com laudo) |
+| `2047f9f7...` | em_andamento | Empresa B (sem laudo) |
 
-Quando o usuário escaneia o QR code, o sistema usa `.maybeSingle()` que pode retornar a **ordem errada** (a mais recente sem laudo), causando a mensagem de erro "Esta ordem ainda não possui laudo disponível".
+**Fluxo atual com bug:**
+1. `LaudoPublico.tsx` busca TODAS as ordens e seleciona a correta (a faturada com laudo)
+2. Abre o modal de histórico passando apenas `numeroOrdem="MH-001-26"`
+3. `HistoricoManutencaoPublicoModal` faz uma nova busca com `.maybeSingle()` 
+4. Supabase retorna a ordem ERRADA (da empresa B)
+5. O modal filtra o histórico pela empresa B, onde não há registros
+6. Resultado: "Nenhum histórico de manutenção encontrado"
 
 ---
 
 ## Solução
 
-Modificar as queries nas 3 páginas afetadas para:
-1. Buscar **todas** as ordens com o mesmo número
-2. **Priorizar** a ordem que está finalizada (tem laudo, fotos ou nota de retorno)
-3. Se houver múltiplas finalizadas, usar a mais recente
+Passar o **ID da ordem correta** (já validada) para o modal de histórico, evitando uma segunda busca ambígua.
 
 ---
 
 ## Mudanças a Realizar
 
-### 1. Arquivo: `src/pages/OrdemPorQRCode.tsx`
+### 1. Arquivo: `src/components/HistoricoManutencaoPublicoModal.tsx`
 
-**Linha ~23-27**: Alterar query de `.maybeSingle()` para buscar múltiplas e filtrar:
+**Adicionar nova prop `ordemId`:**
 
 ```tsx
-// ANTES
-const { data: ordemServico, error: ordemError } = await supabase
-  .from("ordens_servico")
-  .select("id, status, recebimento_id")
-  .eq("numero_ordem", numeroOrdem)
-  .maybeSingle();
-
-// DEPOIS
-const { data: ordensServico, error: ordemError } = await supabase
-  .from("ordens_servico")
-  .select("id, status, recebimento_id")
-  .eq("numero_ordem", numeroOrdem);
-
-// Encontrar a ordem mais adequada (priorizar finalizadas)
-let ordemServico = null;
-if (ordensServico && ordensServico.length > 0) {
-  // Tentar encontrar uma ordem finalizada
-  for (const ordem of ordensServico) {
-    const temLaudo = await verificarOrdemTemLaudo(ordem);
-    if (temLaudo) {
-      ordemServico = ordem;
-      break;
-    }
-  }
-  // Se nenhuma tem laudo, usar a primeira
-  if (!ordemServico) {
-    ordemServico = ordensServico[0];
-  }
+interface HistoricoManutencaoPublicoModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  numeroOrdem: string;
+  ordemId?: string; // NOVO: ID da ordem já validada
 }
 ```
 
-### 2. Arquivo: `src/pages/AcessoOrdemPublica.tsx`
-
-**Linhas ~134-138 e ~213-217**: Mesma alteração para buscar múltiplas ordens e priorizar a finalizada.
-
-### 3. Arquivo: `src/pages/LaudoPublico.tsx`
-
-**Linhas ~130-137**: Alterar query para priorizar ordem com laudo existente.
-
----
-
-## Seção Técnica
-
-### Lógica de Priorização
-
-Criar uma função auxiliar para verificar se uma ordem está finalizada:
+**Modificar a busca inicial para usar o ID quando disponível:**
 
 ```tsx
-const verificarOrdemFinalizada = async (ordem: { id: string, recebimento_id: number | null }) => {
-  // Verificar laudo técnico
-  const { data: teste } = await supabase
-    .from("testes_equipamentos")
-    .select("id")
-    .eq("ordem_servico_id", ordem.id)
-    .limit(1);
-  
-  if (teste && teste.length > 0) return true;
+const buscarHistorico = async () => {
+  if (!numeroOrdem) return;
+  setLoading(true);
 
-  // Verificar nota de retorno
-  if (ordem.recebimento_id) {
-    const { data: recebimento } = await supabase
-      .from("recebimentos")
-      .select("pdf_nota_retorno")
-      .eq("id", ordem.recebimento_id)
-      .maybeSingle();
+  try {
+    let ordemInicial;
+
+    // Se temos o ID da ordem, buscar diretamente por ele
+    if (ordemId) {
+      const { data, error } = await supabase
+        .from('ordens_servico')
+        .select(`id, numero_ordem, cliente_nome, equipamento, 
+                 data_entrada, data_finalizacao, motivo_falha, 
+                 status, recebimento_id, empresa_id`)
+        .eq('id', ordemId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      ordemInicial = data;
+    } else {
+      // Fallback: buscar por numero_ordem (comportamento antigo)
+      const { data, error } = await supabase
+        .from('ordens_servico')
+        .select(`id, numero_ordem, cliente_nome, equipamento, 
+                 data_entrada, data_finalizacao, motivo_falha, 
+                 status, recebimento_id, empresa_id`)
+        .eq('numero_ordem', numeroOrdem)
+        .maybeSingle();
+      
+      if (error) throw error;
+      ordemInicial = data;
+    }
+
+    if (!ordemInicial) {
+      setHistorico([]);
+      setLoading(false);
+      return;
+    }
     
-    if (recebimento?.pdf_nota_retorno) return true;
+    // ... resto da função permanece igual
   }
-
-  // Verificar fotos
-  const { data: fotos } = await supabase
-    .from("fotos_equipamentos")
-    .select("id")
-    .eq("ordem_servico_id", ordem.id)
-    .limit(1);
-
-  return fotos && fotos.length > 0;
 };
 ```
 
-### Fluxo de Seleção
+### 2. Arquivo: `src/pages/LaudoPublico.tsx`
 
-```text
-+------------------------+
-| Buscar TODAS as ordens |
-| com numero_ordem       |
-+------------------------+
-           |
-           v
-+------------------------+
-| Para cada ordem:       |
-| - Tem teste?           |
-| - Tem nota retorno?    |
-| - Tem fotos?           |
-+------------------------+
-           |
-           v
-+------------------------+
-| Retornar primeira      |
-| ordem finalizada       |
-| OU primeira da lista   |
-+------------------------+
+**Passar o ID da ordem ao abrir o modal de histórico:**
+
+Atualmente:
+```tsx
+<HistoricoManutencaoPublicoModal
+  open={historicoModalOpen}
+  onOpenChange={setHistoricoModalOpen}
+  numeroOrdem={ordemServico.numero_ordem}
+/>
+```
+
+Alterar para:
+```tsx
+<HistoricoManutencaoPublicoModal
+  open={historicoModalOpen}
+  onOpenChange={setHistoricoModalOpen}
+  numeroOrdem={ordemServico.numero_ordem}
+  ordemId={ordemServico.id}  // NOVO: passar ID da ordem correta
+/>
 ```
 
 ---
@@ -139,10 +116,11 @@ const verificarOrdemFinalizada = async (ordem: { id: string, recebimento_id: num
 ## Resultado Esperado
 
 Após a correção:
-- Usuário escaneia QR code de `MH-001-26`
-- Sistema encontra 2 ordens
-- Sistema identifica que `76f7b0b5` tem laudo/fotos/nota
-- Redireciona para o laudo correto
+1. Usuário acessa laudo público de MH-001-26
+2. Sistema identifica a ordem correta (76f7b0b5, faturada)
+3. Ao abrir histórico, passa o ID `76f7b0b5`
+4. Modal busca diretamente por esse ID
+5. Histórico é carregado corretamente da empresa certa
 
 ---
 
@@ -150,6 +128,5 @@ Após a correção:
 
 | Arquivo | Ação |
 |---------|------|
-| `src/pages/OrdemPorQRCode.tsx` | Modificar query para buscar múltiplas ordens e priorizar finalizadas |
-| `src/pages/AcessoOrdemPublica.tsx` | Mesma modificação em 2 locais |
-| `src/pages/LaudoPublico.tsx` | Mesma modificação na busca inicial |
+| `src/components/HistoricoManutencaoPublicoModal.tsx` | Adicionar prop `ordemId` e buscar por ID quando disponível |
+| `src/pages/LaudoPublico.tsx` | Passar `ordemId` ao abrir o modal |
