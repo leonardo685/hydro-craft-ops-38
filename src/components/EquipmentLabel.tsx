@@ -198,6 +198,47 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     };
   };
 
+  const addGearToDXF = (
+    dxf: DxfWriter,
+    centerX: number,
+    centerY: number,
+    outerRadius: number,
+    innerRadius: number,
+    teethCount: number
+  ) => {
+    // Círculo interno (furo central)
+    dxf.addCircle(point3d(centerX, centerY), innerRadius * 0.3);
+    
+    // Círculo do corpo da engrenagem
+    dxf.addCircle(point3d(centerX, centerY), innerRadius);
+    
+    // Desenhar dentes da engrenagem
+    const toothHeight = outerRadius - innerRadius;
+    const toothWidth = (2 * Math.PI * innerRadius) / (teethCount * 2.5);
+    
+    for (let i = 0; i < teethCount; i++) {
+      const angle = (i * 2 * Math.PI) / teethCount;
+      const nextAngle = angle + (Math.PI / teethCount) * 0.6;
+      
+      // Base do dente (no círculo interno)
+      const baseX1 = centerX + innerRadius * Math.cos(angle - 0.1);
+      const baseY1 = centerY + innerRadius * Math.sin(angle - 0.1);
+      const baseX2 = centerX + innerRadius * Math.cos(angle + 0.1);
+      const baseY2 = centerY + innerRadius * Math.sin(angle + 0.1);
+      
+      // Topo do dente (no círculo externo)
+      const topX1 = centerX + outerRadius * Math.cos(angle - 0.08);
+      const topY1 = centerY + outerRadius * Math.sin(angle - 0.08);
+      const topX2 = centerX + outerRadius * Math.cos(angle + 0.08);
+      const topY2 = centerY + outerRadius * Math.sin(angle + 0.08);
+      
+      // Desenhar o dente (4 linhas formando um trapézio)
+      dxf.addLine(point3d(baseX1, baseY1), point3d(topX1, topY1));
+      dxf.addLine(point3d(topX1, topY1), point3d(topX2, topY2));
+      dxf.addLine(point3d(topX2, topY2), point3d(baseX2, baseY2));
+    }
+  };
+
   const handleDownloadDXF = async () => {
     const dxf = new DxfWriter();
     
@@ -211,13 +252,16 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     dxf.addLine(point3d(width, height), point3d(0, height));
     dxf.addLine(point3d(0, height), point3d(0, 0));
     
-    // 2. Texto "MEC HYDRO" 
-    dxf.addText(point3d(5, 20), 4, "MEC HYDRO");
+    // 2. Logo da engrenagem vetorial
+    addGearToDXF(dxf, 8, 15, 6, 4, 10);
     
-    // 3. Número da ordem
-    dxf.addText(point3d(5, 10), 6, equipment.numeroOrdem);
+    // 3. Texto "MEC HYDRO" (ajustado para direita do logo)
+    dxf.addText(point3d(16, 20), 4, "MEC HYDRO");
     
-    // 4. QR Code vetorial (converter matriz de pixels para retângulos)
+    // 4. Número da ordem (ajustado para direita do logo)
+    dxf.addText(point3d(16, 10), 6, equipment.numeroOrdem);
+    
+    // 5. QR Code vetorial (converter matriz de pixels para retângulos)
     await addQRCodeToDXF(dxf, width - 22, 3, 20);
     
     // Gerar e baixar
