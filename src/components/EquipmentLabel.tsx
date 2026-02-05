@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, Download } from "lucide-react";
+import { Printer, Download, FileCode } from "lucide-react";
 import QRCode from "qrcode";
+import { DxfWriter, point3d } from "@tarikjabiri/dxf";
 import engrenagemLogo from "@/assets/engrenagem-logo.jpg";
 
 interface EquipmentLabelProps {
@@ -15,7 +16,6 @@ interface EquipmentLabelProps {
 }
 
 export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [logoDataUrl, setLogoDataUrl] = useState<string>("");
 
@@ -198,6 +198,71 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     };
   };
 
+  const handleDownloadDXF = async () => {
+    const dxf = new DxfWriter();
+    
+    // Dimensões em mm (padrão para laser)
+    const width = 80;  // 80mm
+    const height = 30; // 30mm
+    
+    // 1. Borda externa (retângulo)
+    dxf.addLine(point3d(0, 0), point3d(width, 0));
+    dxf.addLine(point3d(width, 0), point3d(width, height));
+    dxf.addLine(point3d(width, height), point3d(0, height));
+    dxf.addLine(point3d(0, height), point3d(0, 0));
+    
+    // 2. Texto "MEC HYDRO" 
+    dxf.addText(point3d(5, 20), 4, "MEC HYDRO");
+    
+    // 3. Número da ordem
+    dxf.addText(point3d(5, 10), 6, equipment.numeroOrdem);
+    
+    // 4. QR Code vetorial (converter matriz de pixels para retângulos)
+    await addQRCodeToDXF(dxf, width - 22, 3, 20);
+    
+    // Gerar e baixar
+    const dxfContent = dxf.stringify();
+    const blob = new Blob([dxfContent], { type: 'application/dxf' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `etiqueta-${equipment.numeroOrdem}.dxf`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const addQRCodeToDXF = async (
+    dxf: DxfWriter,
+    startX: number, 
+    startY: number, 
+    size: number
+  ) => {
+    const baseUrl = window.location.origin;
+    const qrData = `${baseUrl}/ordem/${equipment.numeroOrdem}`;
+    
+    // Gerar QR como matriz usando a API create do qrcode
+    const qr = QRCode.create(qrData, { errorCorrectionLevel: 'M' });
+    const modules = qr.modules.data;
+    const moduleCount = qr.modules.size;
+    const moduleSize = size / moduleCount;
+    
+    // Desenhar cada módulo preto como um retângulo
+    for (let row = 0; row < moduleCount; row++) {
+      for (let col = 0; col < moduleCount; col++) {
+        const index = row * moduleCount + col;
+        if (modules[index]) { // Se o módulo é preto
+          const x = startX + col * moduleSize;
+          const y = startY + (moduleCount - row - 1) * moduleSize;
+          
+          // Adicionar retângulo para cada módulo (4 linhas)
+          dxf.addLine(point3d(x, y), point3d(x + moduleSize, y));
+          dxf.addLine(point3d(x + moduleSize, y), point3d(x + moduleSize, y + moduleSize));
+          dxf.addLine(point3d(x + moduleSize, y + moduleSize), point3d(x, y + moduleSize));
+          dxf.addLine(point3d(x, y + moduleSize), point3d(x, y));
+        }
+      }
+    }
+  };
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -207,7 +272,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
         
         <div className="space-y-4">
           {/* Preview da etiqueta */}
-          <div className="border-2 border-border rounded-lg p-4 bg-white">
+          <div className="border-2 border-border rounded-lg p-4 bg-background">
             <div className="flex items-center justify-between h-20">
               <div className="flex items-center gap-2">
                 <img src={engrenagemLogo} alt="Logo" className="w-10 h-10" />
@@ -243,7 +308,11 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
             </Button>
             <Button onClick={handleDownload} variant="outline" className="flex-1">
               <Download className="h-4 w-4 mr-2" />
-              Download
+              PNG
+            </Button>
+            <Button onClick={handleDownloadDXF} variant="outline" className="flex-1">
+              <FileCode className="h-4 w-4 mr-2" />
+              DXF
             </Button>
           </div>
         </div>
