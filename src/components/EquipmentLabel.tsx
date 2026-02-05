@@ -130,7 +130,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
                 <div class="header">
                   <img src="${logoDataUrl}" alt="Logo" class="logo-img" />
                   <div class="text-content">
-                    <div class="logo">MEC-HIDRO</div>
+                    <div class="logo">MEC HYDRO</div>
                     <div class="order">${equipment.numeroOrdem}</div>
                   </div>
                 </div>
@@ -171,10 +171,10 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
       // Desenhar logo
       ctx.drawImage(logoImg, 10, 25, 30, 30);
       
-      // Texto MEC-HIDRO (ajustado para direita do logo)
+      // Texto MEC HYDRO (ajustado para direita do logo)
       ctx.fillStyle = '#dc2626';
       ctx.font = 'bold 16px Arial';
-      ctx.fillText('MEC-HIDRO', 50, 40);
+      ctx.fillText('MEC HYDRO', 50, 40);
       
       // Número da ordem (ajustado para direita do logo)
       ctx.fillStyle = '#000000';
