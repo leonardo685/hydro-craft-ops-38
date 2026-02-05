@@ -42,6 +42,7 @@
     "@subframe/core": "^1.147.0",
     "@supabase/supabase-js": "^2.57.2",
     "@tanstack/react-query": "^5.83.0",
+    "@tarikjabiri/dxf": "^2.8.9",
     "@types/qrcode": "^1.5.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
