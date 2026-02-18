@@ -1,98 +1,56 @@
 
-# Plano: Correção do Acesso Público via QR Code
+
+# Análise: Lançamento da Prysmian não aparece ao filtrar por "Realizados"
 
 ## Problema Identificado
 
-Alguns celulares mostram a tela de login ao escanear o QR Code, enquanto outros abrem o laudo público corretamente.
+O lançamento da **PRYSMIAN CABOS** tem datas diferentes:
+- **Data Esperada**: 11/02/2026
+- **Data Realizada**: 09/02/2026
 
-### Causa Raiz
+Quando o filtro "Tipo de Data" é alterado para **"Realizada"**, o sistema passa a usar a `dataRealizada` (09/02) para filtrar pelo período. Se o intervalo de datas selecionado cobre apenas a partir de 11/02 (ou outro range que não inclua 09/02), o lançamento da Prysmian é excluído.
 
-O QR Code aponta para `/ordem/MH-XXX-YY`, que é uma rota pública, mas todas as rotas estão dentro do `AuthProvider`. Quando um dispositivo tem um refresh token inválido/expirado no armazenamento local, o cliente Supabase tenta fazer refresh automático e falha. Isso pode causar comportamento inconsistente.
-
-O log de rede confirma: `"Invalid Refresh Token: Refresh Token Not Found"` com status 400.
-
----
+Além disso, existe um **bug secundário**: quando `tipoData` = `'realizada'` e um lançamento **não tem** `dataRealizada` (é null), o código cria `new Date(null)` que retorna 01/01/1970, fazendo com que lançamentos sem data realizada sejam sempre excluídos silenciosamente do filtro de datas.
 
 ## Solução Proposta
 
-Reorganizar a estrutura de rotas para que rotas públicas fiquem **fora** dos providers de autenticação.
+Corrigir a lógica de filtro de datas no extrato para:
 
-### Alterações no `src/App.tsx`
+1. Quando `tipoData = 'realizada'` e o lançamento não tem `dataRealizada`, usar a `dataEsperada` como **fallback** (para não excluir silenciosamente lançamentos pendentes)
+2. Alternativamente, se o objetivo é mostrar **apenas lançamentos com data realizada preenchida** quando esse filtro está ativo, pular o filtro de data para itens sem `dataRealizada` em vez de excluí-los com uma data de 1970
 
-```text
-ANTES (estrutura atual):
-├── AuthProvider
-│   └── EmpresaProvider
-│       └── Routes
-│           ├── /auth
-│           ├── /ordem/:numeroOrdem (público)
-│           ├── /acesso-ordem/:numeroOrdem (público)
-│           ├── /laudo-publico/:numeroOrdem (público)
-│           └── ... rotas protegidas
+## Alteração Técnica
 
-DEPOIS (estrutura corrigida):
-├── Routes
-│   ├── /ordem/:numeroOrdem (público, SEM AuthProvider)
-│   ├── /acesso-ordem/:numeroOrdem (público, SEM AuthProvider)
-│   ├── /laudo-publico/:numeroOrdem (público, SEM AuthProvider)
-│   ├── /convite/:token (público)
-│   ├── /reset-password (público)
-│   └── /* (todas as outras rotas)
-│       └── AuthProvider
-│           └── EmpresaProvider
-│               └── Routes internas
+### Arquivo: `src/pages/DFC.tsx`
+
+Na função `extratoFiltrado` (linhas 569-587), adicionar verificação de null para `dataRealizada`:
+
+```typescript
+// Filtro de data início
+if (filtrosExtrato.dataInicio) {
+  const dataInicio = new Date(filtrosExtrato.dataInicio);
+  dataInicio.setHours(0, 0, 0, 0);
+  const campoData = filtrosExtrato.tipoData === 'esperada' 
+    ? item.dataEsperada 
+    : (item.dataRealizada || item.dataEsperada); // fallback para dataEsperada
+  const dataItem = new Date(campoData);
+  dataItem.setHours(0, 0, 0, 0);
+  if (dataItem < dataInicio) return false;
+}
+
+// Filtro de data fim
+if (filtrosExtrato.dataFim) {
+  const dataFim = new Date(filtrosExtrato.dataFim);
+  dataFim.setHours(23, 59, 59, 999);
+  const campoData = filtrosExtrato.tipoData === 'esperada' 
+    ? item.dataEsperada 
+    : (item.dataRealizada || item.dataEsperada); // fallback para dataEsperada
+  const dataItem = new Date(campoData);
+  dataItem.setHours(0, 0, 0, 0);
+  if (dataItem > dataFim) return false;
+}
 ```
 
----
-
-## Implementação Técnica
-
-### 1. Criar componente wrapper para rotas autenticadas
-
-Criar `src/components/AuthenticatedApp.tsx` que contém:
-- AuthProvider
-- EmpresaProvider
-- Rotas que exigem contexto de autenticação
-
-### 2. Modificar `src/App.tsx`
-
-- Mover rotas públicas para FORA dos providers
-- Rotas públicas: `/ordem`, `/acesso-ordem`, `/laudo-publico`, `/convite`, `/reset-password`
-- Criar uma rota catch-all que usa o `AuthenticatedApp`
-
-### 3. Ajustar `LaudoPublico.tsx`
-
-O componente usa `useLanguage()` que funciona porque `LanguageProvider` está no nível mais alto. Isso continuará funcionando.
-
----
-
-## Arquivos a Modificar
-
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/App.tsx` | Reorganizar estrutura de rotas |
-| `src/components/AuthenticatedApp.tsx` | Novo - wrapper para rotas autenticadas |
-
----
-
-## Benefícios
-
-1. **Rotas públicas 100% isoladas** - não sofrem influência do estado de autenticação
-2. **Consistência entre dispositivos** - mesmo comportamento independente do histórico de sessão
-3. **Melhor performance** - rotas públicas não carregam lógica de autenticação desnecessária
-4. **Elimina erros de refresh token** - páginas públicas não tentam refresh
-
----
-
-## Nota sobre o QR Code
-
-O QR Code está gerando a URL correta: `{origin}/ordem/{numeroOrdem}`
-
-Após esta correção, o fluxo será:
-1. Usuário escaneia QR Code → `/ordem/MH-001-26`
-2. Página carrega **sem** verificar autenticação
-3. Verifica se ordem está finalizada
-4. Redireciona para `/acesso-ordem/MH-001-26` (pede telefone)
-5. Após validação → `/laudo-publico/MH-001-26`
-
-Todos esses passos ocorrerão sem interferência do estado de login do usuário.
+Isso garante que:
+- Lançamentos pagos com `dataRealizada` diferente da `dataEsperada` sejam filtrados pela data correta
+- Lançamentos sem `dataRealizada` usem a `dataEsperada` como fallback em vez de serem excluídos por uma data inválida (1970)
