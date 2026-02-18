@@ -38,15 +38,32 @@ export const useLancamentosFinanceiros = () => {
     
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('lancamentos_financeiros')
-        .select('*')
-        .eq('empresa_id', empresaId)
-        .order('data_esperada', { ascending: false });
+      // Buscar em lotes para evitar limite de 1000 rows do Supabase
+      const PAGE_SIZE = 1000;
+      let allData: any[] = [];
+      let from = 0;
+      let hasMore = true;
 
-      if (error) throw error;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('lancamentos_financeiros')
+          .select('*')
+          .eq('empresa_id', empresaId)
+          .order('data_esperada', { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
 
-      const lancamentosFormatados = (data || []).map(lanc => ({
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          hasMore = data.length === PAGE_SIZE;
+          from += PAGE_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const lancamentosFormatados = allData.map(lanc => ({
         id: lanc.id,
         tipo: lanc.tipo as 'entrada' | 'saida' | 'transferencia',
         descricao: lanc.descricao,
