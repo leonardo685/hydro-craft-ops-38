@@ -570,7 +570,7 @@ export default function DFC() {
     if (filtrosExtrato.dataInicio) {
       const dataInicio = new Date(filtrosExtrato.dataInicio);
       dataInicio.setHours(0, 0, 0, 0);
-      const campoData = filtrosExtrato.tipoData === 'esperada' ? item.dataEsperada : item.dataRealizada;
+      const campoData = filtrosExtrato.tipoData === 'esperada' ? item.dataEsperada : (item.dataRealizada || item.dataEsperada);
       const dataItem = new Date(campoData);
       dataItem.setHours(0, 0, 0, 0);
       if (dataItem < dataInicio) return false;
@@ -580,7 +580,7 @@ export default function DFC() {
     if (filtrosExtrato.dataFim) {
       const dataFim = new Date(filtrosExtrato.dataFim);
       dataFim.setHours(23, 59, 59, 999);
-      const campoData = filtrosExtrato.tipoData === 'esperada' ? item.dataEsperada : item.dataRealizada;
+      const campoData = filtrosExtrato.tipoData === 'esperada' ? item.dataEsperada : (item.dataRealizada || item.dataEsperada);
       const dataItem = new Date(campoData);
       dataItem.setHours(0, 0, 0, 0);
       if (dataItem > dataFim) return false;
