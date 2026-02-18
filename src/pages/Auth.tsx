@@ -76,6 +76,26 @@ export default function Auth() {
   });
 
 
+  // Detectar se veio de um link de recuperação de senha (hash contém type=recovery)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && (hash.includes('type=recovery') || hash.includes('type=magiclink'))) {
+      // Redirecionar para /reset-password mantendo o hash com os tokens
+      navigate('/reset-password' + hash, { replace: true });
+      return;
+    }
+  }, [navigate]);
+
+  // Escutar evento PASSWORD_RECOVERY do Supabase
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/reset-password', { replace: true });
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   // Verificar se há token na URL
   useEffect(() => {
     const tokenFromUrl = searchParams.get('token');
