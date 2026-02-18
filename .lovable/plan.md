@@ -1,46 +1,45 @@
 
 
-# Correção: Fluxo de Recuperação de Senha
+# Correção: Lançamentos financeiros "sumidos" (limite de 1000 rows)
 
-## Problema
+## Problema Identificado
 
-O link de recuperação do Supabase redireciona para `https://fixzys.lovable.app` (raiz). Quando o app carrega, o `AuthProvider` processa os tokens do hash antes do `RecoveryRedirect` conseguir detectar e redirecionar para `/reset-password`. Resultado: o usuario cai na tela de login.
+A empresa **mec-hidro** possui **1.090 lançamentos financeiros** no banco de dados. O Supabase/PostgREST tem um limite padrão de **1.000 registros** por consulta. Como a query ordena por `data_esperada DESC` (mais recentes primeiro), os **90 lançamentos mais antigos ficam de fora** -- exatamente os do periodo 01/11 a 10/11/2025.
+
+Os dados **nao foram deletados**, apenas nao aparecem no app por causa desse limite.
 
 ## Solucao
 
-Adicionar deteccao do evento `PASSWORD_RECOVERY` diretamente no `AuthProvider`, que e onde o Supabase processa os tokens. Quando esse evento for detectado, redirecionar imediatamente para `/reset-password`.
+Modificar o hook `useLancamentosFinanceiros` para buscar os dados em lotes (paginacao interna), garantindo que **todos** os registros sejam carregados independente da quantidade.
 
-## Alteracoes
+## Alteracoes Tecnicas
 
-### 1. `src/contexts/AuthContext.tsx`
-No `onAuthStateChange` (linha 131-147), adicionar tratamento do evento `PASSWORD_RECOVERY`:
+### Arquivo: `src/hooks/use-lancamentos-financeiros.ts`
 
-```typescript
-const { data: { subscription } } = supabase.auth.onAuthStateChange(
-  (event, session) => {
-    // Se for recuperacao de senha, redirecionar imediatamente
-    if (event === 'PASSWORD_RECOVERY') {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      navigate('/reset-password', { replace: true });
-      return;
-    }
+Na funcao `fetchLancamentos`, substituir a query unica por um loop de paginacao:
 
-    setSession(session);
-    setUser(session?.user ?? null);
-    // ... resto do codigo existente
-  }
-);
+```text
+Antes:
+  supabase.from('lancamentos_financeiros')
+    .select('*')
+    .eq('empresa_id', empresaId)
+    .order('data_esperada', { ascending: false })
+  // Retorna no maximo 1000 registros
+
+Depois:
+  Loop buscando em lotes de 1000:
+    - Pagina 0: range(0, 999)
+    - Pagina 1: range(1000, 1999)
+    - ... ate nao ter mais dados
+  Concatenar todos os resultados
 ```
 
-Isso garante que, independente de qual URL o Supabase redirecionou, o app detecta o evento de recuperacao e leva o usuario para a pagina correta.
+A logica sera:
 
-### 2. Acao necessaria do usuario
+1. Buscar a primeira pagina (0-999)
+2. Se retornou exatamente 1000 registros, buscar a proxima pagina
+3. Repetir ate receber menos de 1000 registros
+4. Concatenar todos os resultados
 
-Apos aprovar e publicar esta correcao:
-- O usuario afetado deve solicitar um **novo email de recuperacao** (o link anterior ja expirou ou aponta para URL errada)
-- As URLs no Supabase Dashboard devem estar configuradas:
-  - **Site URL**: `https://fixzys.lovable.app`  
-  - **Redirect URLs**: `https://fixzys.lovable.app/**`
+Nenhuma outra parte do codigo precisa mudar -- as paginas de DFC, Financeiro, DRE etc. continuarao funcionando normalmente pois consomem o array `lancamentos` que agora tera todos os registros.
 
