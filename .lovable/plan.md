@@ -1,56 +1,46 @@
 
 
-# Análise: Lançamento da Prysmian não aparece ao filtrar por "Realizados"
+# Correção: Fluxo de Recuperação de Senha
 
-## Problema Identificado
+## Problema
 
-O lançamento da **PRYSMIAN CABOS** tem datas diferentes:
-- **Data Esperada**: 11/02/2026
-- **Data Realizada**: 09/02/2026
+O link de recuperação do Supabase redireciona para `https://fixzys.lovable.app` (raiz). Quando o app carrega, o `AuthProvider` processa os tokens do hash antes do `RecoveryRedirect` conseguir detectar e redirecionar para `/reset-password`. Resultado: o usuario cai na tela de login.
 
-Quando o filtro "Tipo de Data" é alterado para **"Realizada"**, o sistema passa a usar a `dataRealizada` (09/02) para filtrar pelo período. Se o intervalo de datas selecionado cobre apenas a partir de 11/02 (ou outro range que não inclua 09/02), o lançamento da Prysmian é excluído.
+## Solucao
 
-Além disso, existe um **bug secundário**: quando `tipoData` = `'realizada'` e um lançamento **não tem** `dataRealizada` (é null), o código cria `new Date(null)` que retorna 01/01/1970, fazendo com que lançamentos sem data realizada sejam sempre excluídos silenciosamente do filtro de datas.
+Adicionar deteccao do evento `PASSWORD_RECOVERY` diretamente no `AuthProvider`, que e onde o Supabase processa os tokens. Quando esse evento for detectado, redirecionar imediatamente para `/reset-password`.
 
-## Solução Proposta
+## Alteracoes
 
-Corrigir a lógica de filtro de datas no extrato para:
-
-1. Quando `tipoData = 'realizada'` e o lançamento não tem `dataRealizada`, usar a `dataEsperada` como **fallback** (para não excluir silenciosamente lançamentos pendentes)
-2. Alternativamente, se o objetivo é mostrar **apenas lançamentos com data realizada preenchida** quando esse filtro está ativo, pular o filtro de data para itens sem `dataRealizada` em vez de excluí-los com uma data de 1970
-
-## Alteração Técnica
-
-### Arquivo: `src/pages/DFC.tsx`
-
-Na função `extratoFiltrado` (linhas 569-587), adicionar verificação de null para `dataRealizada`:
+### 1. `src/contexts/AuthContext.tsx`
+No `onAuthStateChange` (linha 131-147), adicionar tratamento do evento `PASSWORD_RECOVERY`:
 
 ```typescript
-// Filtro de data início
-if (filtrosExtrato.dataInicio) {
-  const dataInicio = new Date(filtrosExtrato.dataInicio);
-  dataInicio.setHours(0, 0, 0, 0);
-  const campoData = filtrosExtrato.tipoData === 'esperada' 
-    ? item.dataEsperada 
-    : (item.dataRealizada || item.dataEsperada); // fallback para dataEsperada
-  const dataItem = new Date(campoData);
-  dataItem.setHours(0, 0, 0, 0);
-  if (dataItem < dataInicio) return false;
-}
+const { data: { subscription } } = supabase.auth.onAuthStateChange(
+  (event, session) => {
+    // Se for recuperacao de senha, redirecionar imediatamente
+    if (event === 'PASSWORD_RECOVERY') {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+      navigate('/reset-password', { replace: true });
+      return;
+    }
 
-// Filtro de data fim
-if (filtrosExtrato.dataFim) {
-  const dataFim = new Date(filtrosExtrato.dataFim);
-  dataFim.setHours(23, 59, 59, 999);
-  const campoData = filtrosExtrato.tipoData === 'esperada' 
-    ? item.dataEsperada 
-    : (item.dataRealizada || item.dataEsperada); // fallback para dataEsperada
-  const dataItem = new Date(campoData);
-  dataItem.setHours(0, 0, 0, 0);
-  if (dataItem > dataFim) return false;
-}
+    setSession(session);
+    setUser(session?.user ?? null);
+    // ... resto do codigo existente
+  }
+);
 ```
 
-Isso garante que:
-- Lançamentos pagos com `dataRealizada` diferente da `dataEsperada` sejam filtrados pela data correta
-- Lançamentos sem `dataRealizada` usem a `dataEsperada` como fallback em vez de serem excluídos por uma data inválida (1970)
+Isso garante que, independente de qual URL o Supabase redirecionou, o app detecta o evento de recuperacao e leva o usuario para a pagina correta.
+
+### 2. Acao necessaria do usuario
+
+Apos aprovar e publicar esta correcao:
+- O usuario afetado deve solicitar um **novo email de recuperacao** (o link anterior ja expirou ou aponta para URL errada)
+- As URLs no Supabase Dashboard devem estar configuradas:
+  - **Site URL**: `https://fixzys.lovable.app`  
+  - **Redirect URLs**: `https://fixzys.lovable.app/**`
+
