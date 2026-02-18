@@ -130,6 +130,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Se for recuperação de senha, redirecionar imediatamente
+        if (event === 'PASSWORD_RECOVERY') {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+          navigate('/reset-password', { replace: true });
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         
