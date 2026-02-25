@@ -1,45 +1,60 @@
 
+# Correcao: Percentuais customizados nao aparecem no PDF de Precificacao
 
-# Correção: Lançamentos financeiros "sumidos" (limite de 1000 rows)
+## Problema
 
-## Problema Identificado
+O modal de precificacao permite adicionar **percentuais customizados** (campo `percentuais_customizados`), mas a funcao `gerarPDFPrecificacao` em `src/lib/precificacao-utils.ts` so renderiza:
+- Impostos
+- Comissao
+- Custos Variaveis
 
-A empresa **mec-hidro** possui **1.090 lançamentos financeiros** no banco de dados. O Supabase/PostgREST tem um limite padrão de **1.000 registros** por consulta. Como a query ordena por `data_esperada DESC` (mais recentes primeiro), os **90 lançamentos mais antigos ficam de fora** -- exatamente os do periodo 01/11 a 10/11/2025.
-
-Os dados **nao foram deletados**, apenas nao aparecem no app por causa desse limite.
+Os percentuais customizados sao passados nos dados (`dadosAtualizados.percentuais_customizados`) mas **nunca sao lidos nem exibidos** no PDF.
 
 ## Solucao
 
-Modificar o hook `useLancamentosFinanceiros` para buscar os dados em lotes (paginacao interna), garantindo que **todos** os registros sejam carregados independente da quantidade.
+Adicionar uma secao no PDF para renderizar os percentuais customizados, entre a comissao e os custos variaveis.
 
-## Alteracoes Tecnicas
+## Alteracao
 
-### Arquivo: `src/hooks/use-lancamentos-financeiros.ts`
+### Arquivo: `src/lib/precificacao-utils.ts`
 
-Na funcao `fetchLancamentos`, substituir a query unica por um loop de paginacao:
+Apos a secao de "Comissao" (linha 111), adicionar renderizacao dos percentuais customizados:
 
-```text
-Antes:
-  supabase.from('lancamentos_financeiros')
-    .select('*')
-    .eq('empresa_id', empresaId)
-    .order('data_esperada', { ascending: false })
-  // Retorna no maximo 1000 registros
+```typescript
+// Percentuais Customizados
+const percentuaisCustomizados: CustoVariavel[] = orcamento.percentuais_customizados || [];
+if (percentuaisCustomizados.length > 0) {
+  doc.setFont("helvetica", "bold");
+  doc.text("Outros Percentuais:", 25, yPosition);
+  yPosition += 8;
+  doc.setFont("helvetica", "normal");
 
-Depois:
-  Loop buscando em lotes de 1000:
-    - Pagina 0: range(0, 999)
-    - Pagina 1: range(1000, 1999)
-    - ... ate nao ter mais dados
-  Concatenar todos os resultados
+  percentuaisCustomizados.forEach((item) => {
+    if (yPosition > 250) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    const valorCalculado = (precoDesejado * Number(item.valor)) / 100;
+    doc.text(`- ${item.descricao}`, 30, yPosition);
+    doc.text(`${formatarPercentual(Number(item.valor))}`, 100, yPosition);
+    doc.text(`${formatarMoeda(valorCalculado)}`, pageWidth - 50, yPosition, { align: "right" });
+    yPosition += 7;
+  });
+  yPosition += 5;
+}
 ```
 
-A logica sera:
+Tambem atualizar o calculo de `totalCustos` (linha 134) para incluir os valores dos percentuais customizados, mantendo consistencia com o modal:
 
-1. Buscar a primeira pagina (0-999)
-2. Se retornou exatamente 1000 registros, buscar a proxima pagina
-3. Repetir ate receber menos de 1000 registros
-4. Concatenar todos os resultados
+```typescript
+// Antes:
+const totalCustos = impostosValor + comissaoValor + (orcamento.total_custos_variaveis || 0);
 
-Nenhuma outra parte do codigo precisa mudar -- as paginas de DFC, Financeiro, DRE etc. continuarao funcionando normalmente pois consomem o array `lancamentos` que agora tera todos os registros.
+// Depois:
+const totalPercentuaisCustomizados = percentuaisCustomizados.reduce(
+  (acc, item) => acc + (precoDesejado * Number(item.valor)) / 100, 0
+);
+const totalCustos = impostosValor + comissaoValor + totalPercentuaisCustomizados + (orcamento.total_custos_variaveis || 0);
+```
 
+Nenhuma outra alteracao necessaria -- o modal ja passa os dados corretamente.
