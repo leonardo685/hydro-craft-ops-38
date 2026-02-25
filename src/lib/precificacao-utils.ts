@@ -110,6 +110,29 @@ export const gerarPDFPrecificacao = async (orcamento: any) => {
     doc.text(`${formatarMoeda(comissaoValor)}`, pageWidth - 50, yPosition, { align: "right" });
     yPosition += 12;
 
+    // Percentuais Customizados
+    const precoDesejado = orcamento.preco_desejado || 0;
+    const percentuaisCustomizados: CustoVariavel[] = orcamento.percentuais_customizados || [];
+    if (percentuaisCustomizados.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.text("Outros Percentuais:", 25, yPosition);
+      yPosition += 8;
+      doc.setFont("helvetica", "normal");
+
+      percentuaisCustomizados.forEach((item) => {
+        if (yPosition > 250) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        const valorCalculado = (precoDesejado * Number(item.valor)) / 100;
+        doc.text(`• ${item.descricao}`, 30, yPosition);
+        doc.text(`${formatarPercentual(Number(item.valor))}`, 100, yPosition);
+        doc.text(`${formatarMoeda(valorCalculado)}`, pageWidth - 50, yPosition, { align: "right" });
+        yPosition += 7;
+      });
+      yPosition += 5;
+    }
+
     // Custos Variáveis
     const custosVariaveis: CustoVariavel[] = orcamento.custos_variaveis || [];
     if (custosVariaveis.length > 0) {
@@ -131,7 +154,10 @@ export const gerarPDFPrecificacao = async (orcamento: any) => {
     }
 
     // Total Custos
-    const totalCustos = impostosValor + comissaoValor + (orcamento.total_custos_variaveis || 0);
+    const totalPercentuaisCustomizados = percentuaisCustomizados.reduce(
+      (acc, item) => acc + (precoDesejado * Number(item.valor)) / 100, 0
+    );
+    const totalCustos = impostosValor + comissaoValor + totalPercentuaisCustomizados + (orcamento.total_custos_variaveis || 0);
     doc.setFont("helvetica", "bold");
     doc.line(25, yPosition, pageWidth - 25, yPosition);
     yPosition += 8;
