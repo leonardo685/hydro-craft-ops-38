@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Building2, User, Phone, CheckCircle2 } from "lucide-react";
+import { Shield, Building2, User, Phone, CheckCircle2, Globe } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Language } from "@/i18n/translations";
 
 // Função para encontrar a ordem correta (prioriza finalizada)
 const encontrarOrdemCorreta = async (
@@ -18,9 +21,7 @@ const encontrarOrdemCorreta = async (
   if (!ordens || ordens.length === 0) return null;
   if (ordens.length === 1) return ordens[0];
   
-  // Verificar cada ordem
   for (const ordem of ordens) {
-    // Verificar laudo
     const { data: teste } = await supabase
       .from("testes_equipamentos")
       .select("id")
@@ -28,7 +29,6 @@ const encontrarOrdemCorreta = async (
       .limit(1);
     if (teste && teste.length > 0) return ordem;
 
-    // Verificar nota de retorno
     if (ordem.recebimento_id) {
       const { data: recebimento } = await supabase
         .from("recebimentos")
@@ -38,7 +38,6 @@ const encontrarOrdemCorreta = async (
       if (recebimento?.pdf_nota_retorno) return ordem;
     }
 
-    // Verificar fotos
     const { data: fotos } = await supabase
       .from("fotos_equipamentos")
       .select("id")
@@ -50,7 +49,6 @@ const encontrarOrdemCorreta = async (
   return ordens[0];
 };
 
-// Schema para etapa 1 (telefone)
 const telefoneSchema = z.object({
   telefone: z.string()
     .trim()
@@ -58,7 +56,6 @@ const telefoneSchema = z.object({
       "Telefone inválido. Use formato: (19) 99999-9999 ou 19999999999")
 });
 
-// Schema para etapa 2 (dados adicionais)
 const dadosSchema = z.object({
   nome: z.string()
     .trim()
@@ -76,16 +73,15 @@ type DadosData = z.infer<typeof dadosSchema>;
 export default function AcessoOrdemPublica() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
   const navigate = useNavigate();
+  const { t, language, setLanguage } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [etapa, setEtapa] = useState<'telefone' | 'dados'>('telefone');
   const [telefoneVerificado, setTelefoneVerificado] = useState('');
 
-  // Form para etapa 1 (telefone)
   const telefoneForm = useForm<TelefoneData>({
     resolver: zodResolver(telefoneSchema),
   });
 
-  // Form para etapa 2 (dados adicionais)
   const dadosForm = useForm<DadosData>({
     resolver: zodResolver(dadosSchema),
   });
@@ -93,18 +89,12 @@ export default function AcessoOrdemPublica() {
   // Função para normalizar telefone - extrai apenas os 11 dígitos finais (DDD + número)
   const normalizarTelefone = (telefone: string): string => {
     let numeros = telefone.replace(/\D/g, '');
-    
-    // Remove 55 do início se existir (código do Brasil)
     if (numeros.startsWith('55') && numeros.length > 11) {
       numeros = numeros.slice(2);
     }
-    
-    // Remove 0 do início se existir
     if (numeros.startsWith('0')) {
       numeros = numeros.slice(1);
     }
-    
-    // Retorna os últimos 11 dígitos
     return numeros.slice(-11);
   };
 
@@ -126,7 +116,6 @@ export default function AcessoOrdemPublica() {
 
   // Função para verificar se ordem está finalizada
   const verificarOrdemFinalizada = async (ordemServicoId: string, recebimentoId: number | null) => {
-    // Buscar recebimento se existir (para verificar nota de retorno)
     let pdfNotaRetorno = null;
     if (recebimentoId) {
       const { data: recebimento } = await supabase
@@ -134,18 +123,15 @@ export default function AcessoOrdemPublica() {
         .select("pdf_nota_retorno")
         .eq("id", recebimentoId)
         .maybeSingle();
-      
       pdfNotaRetorno = recebimento?.pdf_nota_retorno;
     }
 
-    // Verificar se existe laudo técnico
     const { data: teste } = await supabase
       .from("testes_equipamentos")
       .select("id")
       .eq("ordem_servico_id", ordemServicoId)
       .maybeSingle();
 
-    // Buscar fotos da ordem
     const { data: fotosOrdem } = await supabase
       .from("fotos_equipamentos")
       .select("id")
@@ -153,14 +139,12 @@ export default function AcessoOrdemPublica() {
       .limit(1);
 
     const temFotos = fotosOrdem && fotosOrdem.length > 0;
-
     return !!(teste || pdfNotaRetorno || temFotos);
   };
 
-  // Etapa 1: Verificar telefone
   const onVerificarTelefone = async (data: TelefoneData) => {
     if (!numeroOrdem) {
-      toast.error("Número da ordem não encontrado");
+      toast.error(t('acessoOrdem.orderNumberNotFound'));
       return;
     }
 
@@ -169,7 +153,6 @@ export default function AcessoOrdemPublica() {
     try {
       const telefoneFormatado = formatarTelefoneParaSalvar(data.telefone);
 
-      // Buscar TODAS as ordens de serviço com este número
       const { data: ordensServico, error: ordemError } = await supabase
         .from("ordens_servico")
         .select("id, status, recebimento_id")
@@ -177,40 +160,35 @@ export default function AcessoOrdemPublica() {
 
       if (ordemError) throw ordemError;
 
-      // Encontrar a ordem correta (prioriza finalizada)
       const ordemServico = await encontrarOrdemCorreta(ordensServico || []);
 
       if (!ordemServico) {
-        toast.error("Ordem não encontrada");
+        toast.error(t('acessoOrdem.orderNotFound'));
         navigate("/");
         return;
       }
 
-      // Verificar se ordem está finalizada
       const ordemFinalizada = await verificarOrdemFinalizada(
         ordemServico.id, 
         ordemServico.recebimento_id
       );
 
       if (!ordemFinalizada) {
-        toast.error("Esta ordem ainda não foi finalizada");
+        toast.error(t('acessoOrdem.orderNotFinished'));
         navigate("/");
         return;
       }
 
-      // Verificar se telefone já existe (busca flexível pelos 11 dígitos)
       const telefoneNormalizado = normalizarTelefone(data.telefone);
       const { data: clientesExistentes } = await supabase
         .from("clientes_marketing")
         .select("id, nome, telefone");
 
-      // Encontrar cliente cujo telefone normalizado corresponde
       const clienteExistente = clientesExistentes?.find(
         c => normalizarTelefone(c.telefone) === telefoneNormalizado
       );
 
       if (clienteExistente) {
-        // Cliente já existe - atualizar acesso e redirecionar
         const ipAcesso = await obterIP();
         const userAgent = navigator.userAgent;
 
@@ -225,32 +203,29 @@ export default function AcessoOrdemPublica() {
           })
           .eq("id", clienteExistente.id);
 
-        toast.success(`Bem-vindo de volta, ${clienteExistente.nome}!`);
+        toast.success(`${t('acessoOrdem.welcomeBack')} ${clienteExistente.nome}!`);
         navigate(`/laudo-publico/${numeroOrdem}`);
       } else {
-        // Cliente não existe - mostrar campos adicionais
         setTelefoneVerificado(telefoneFormatado);
         setEtapa('dados');
       }
     } catch (error) {
       console.error("Erro ao verificar telefone:", error);
-      toast.error("Erro ao verificar telefone. Tente novamente.");
+      toast.error(t('acessoOrdem.phoneError'));
     } finally {
       setLoading(false);
     }
   };
 
-  // Etapa 2: Registrar dados completos
   const onSubmitDados = async (data: DadosData) => {
     if (!numeroOrdem || !telefoneVerificado) {
-      toast.error("Dados incompletos");
+      toast.error(t('acessoOrdem.incompleteData'));
       return;
     }
 
     setLoading(true);
 
     try {
-      // Buscar TODAS as ordens de serviço com este número
       const { data: ordensServico, error: ordemError } = await supabase
         .from("ordens_servico")
         .select("id")
@@ -258,11 +233,10 @@ export default function AcessoOrdemPublica() {
 
       if (ordemError) throw ordemError;
 
-      // Encontrar a ordem correta (prioriza finalizada)
       const ordemServico = await encontrarOrdemCorreta(ordensServico || []);
 
       if (!ordemServico) {
-        toast.error("Ordem não encontrada");
+        toast.error(t('acessoOrdem.orderNotFound'));
         navigate("/");
         return;
       }
@@ -270,7 +244,6 @@ export default function AcessoOrdemPublica() {
       const ipAcesso = await obterIP();
       const userAgent = navigator.userAgent;
 
-      // Inserir novo registro
       const { error: insertError } = await supabase
         .from("clientes_marketing")
         .insert({
@@ -285,11 +258,11 @@ export default function AcessoOrdemPublica() {
 
       if (insertError) throw insertError;
 
-      toast.success("Dados registrados com sucesso!");
+      toast.success(t('acessoOrdem.dataSuccess'));
       navigate(`/laudo-publico/${numeroOrdem}`);
     } catch (error) {
       console.error("Erro ao registrar dados:", error);
-      toast.error("Erro ao registrar seus dados. Tente novamente.");
+      toast.error(t('acessoOrdem.dataError'));
     } finally {
       setLoading(false);
     }
@@ -299,20 +272,46 @@ export default function AcessoOrdemPublica() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-            <Shield className="w-8 h-8 text-primary" />
+          <div className="flex justify-center gap-2 items-center">
+            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+              <Shield className="w-8 h-8 text-primary" />
+            </div>
           </div>
-          <CardTitle className="text-2xl">Acesso ao Laudo Técnico</CardTitle>
+          
+          {/* Language Selector */}
+          <div className="flex items-center justify-center gap-2">
+            <Globe className="w-4 h-4 text-muted-foreground" />
+            <ToggleGroup
+              type="single"
+              value={language}
+              onValueChange={(value) => {
+                if (value) setLanguage(value as Language);
+              }}
+              className="border rounded-lg"
+            >
+              <ToggleGroupItem value="pt-BR" className="text-xs px-3 py-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                PT
+              </ToggleGroupItem>
+              <ToggleGroupItem value="en" className="text-xs px-3 py-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                EN
+              </ToggleGroupItem>
+              <ToggleGroupItem value="es" className="text-xs px-3 py-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                ES
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+
+          <CardTitle className="text-2xl">{t('acessoOrdem.title')}</CardTitle>
           <CardDescription className="text-base">
             {etapa === 'telefone' ? (
               <>
-                Para acessar o laudo da ordem <span className="font-semibold text-foreground">#{numeroOrdem}</span>, 
-                digite seu telefone.
+                {t('acessoOrdem.enterPhone')} <span className="font-semibold text-foreground">#{numeroOrdem}</span>
+                {t('acessoOrdem.enterPhoneEnd')}
               </>
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4 inline-block mr-1 text-green-500" />
-                Telefone verificado! Complete seu cadastro.
+                {t('acessoOrdem.phoneVerified')}
               </>
             )}
           </CardDescription>
@@ -323,11 +322,11 @@ export default function AcessoOrdemPublica() {
               <div className="space-y-2">
                 <Label htmlFor="telefone" className="flex items-center gap-2">
                   <Phone className="w-4 h-4 text-muted-foreground" />
-                  Telefone *
+                  {t('acessoOrdem.phone')} *
                 </Label>
                 <Input
                   id="telefone"
-                  placeholder="(19) 99999-9999"
+                  placeholder={t('acessoOrdem.phonePlaceholder')}
                   {...telefoneForm.register("telefone")}
                   className={telefoneForm.formState.errors.telefone ? "border-destructive" : ""}
                   autoFocus
@@ -343,11 +342,11 @@ export default function AcessoOrdemPublica() {
                 size="lg"
                 disabled={loading}
               >
-                {loading ? "Verificando..." : "Verificar Telefone"}
+                {loading ? t('acessoOrdem.verifying') : t('acessoOrdem.verifyPhone')}
               </Button>
 
               <p className="text-xs text-center text-muted-foreground mt-4">
-                Se você já acessou antes, será redirecionado automaticamente.
+                {t('acessoOrdem.alreadyAccessed')}
               </p>
             </form>
           ) : (
@@ -362,11 +361,11 @@ export default function AcessoOrdemPublica() {
               <div className="space-y-2">
                 <Label htmlFor="nome" className="flex items-center gap-2">
                   <User className="w-4 h-4 text-muted-foreground" />
-                  Nome Completo *
+                  {t('acessoOrdem.fullName')} *
                 </Label>
                 <Input
                   id="nome"
-                  placeholder="Digite seu nome completo"
+                  placeholder={t('acessoOrdem.fullNamePlaceholder')}
                   {...dadosForm.register("nome")}
                   className={dadosForm.formState.errors.nome ? "border-destructive" : ""}
                   autoFocus
@@ -379,11 +378,11 @@ export default function AcessoOrdemPublica() {
               <div className="space-y-2">
                 <Label htmlFor="empresa" className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-muted-foreground" />
-                  Empresa *
+                  {t('acessoOrdem.company')} *
                 </Label>
                 <Input
                   id="empresa"
-                  placeholder="Nome da sua empresa"
+                  placeholder={t('acessoOrdem.companyPlaceholder')}
                   {...dadosForm.register("empresa")}
                   className={dadosForm.formState.errors.empresa ? "border-destructive" : ""}
                 />
@@ -402,7 +401,7 @@ export default function AcessoOrdemPublica() {
                   }}
                   disabled={loading}
                 >
-                  Voltar
+                  {t('acessoOrdem.back')}
                 </Button>
                 <Button 
                   type="submit" 
@@ -410,12 +409,12 @@ export default function AcessoOrdemPublica() {
                   size="lg"
                   disabled={loading}
                 >
-                  {loading ? "Processando..." : "Acessar Laudo"}
+                  {loading ? t('acessoOrdem.processing') : t('acessoOrdem.accessReport')}
                 </Button>
               </div>
 
               <p className="text-xs text-center text-muted-foreground mt-4">
-                Seus dados serão utilizados apenas para contato sobre serviços relacionados.
+                {t('acessoOrdem.dataDisclaimer')}
               </p>
             </form>
           )}

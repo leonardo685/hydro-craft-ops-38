@@ -24,7 +24,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { translations } from "@/i18n/translations";
+import { translations, Language } from "@/i18n/translations";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 
@@ -459,7 +459,7 @@ export default function Orcamentos() {
     });
   };
 
-  const gerarPDFOrcamento = async (orcamento: any, language: 'pt-BR' | 'en' = 'pt-BR') => {
+  const gerarPDFOrcamento = async (orcamento: any, language: Language = 'pt-BR') => {
     try {
       const tipoIdentificacao = empresaAtual?.tipo_identificacao || 'cnpj';
       const labelIdentificacao = tipoIdentificacao === 'ein' ? 'EIN' : tipoIdentificacao === 'ssn' ? 'SSN' : 'CNPJ';
