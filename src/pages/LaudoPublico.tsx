@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from 'jspdf';
@@ -147,6 +147,8 @@ const encontrarOrdemCorreta = async (
 
 export default function LaudoPublico() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
+  const [searchParams] = useSearchParams();
+  const ordemIdParam = searchParams.get('ordemId');
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
   const dateLocale = language === 'pt-BR' ? ptBR : enUS;
@@ -169,19 +171,36 @@ export default function LaudoPublico() {
       }
 
       try {
-        // Buscar TODAS as ordens de serviço com este número (pode haver duplicatas)
-        const { data: ordensServico, error: ordemError } = await supabase
-          .from("ordens_servico")
-          .select(`
-            *,
-            recebimentos(numero_ordem)
-          `)
-          .eq("numero_ordem", numeroOrdem);
+        let ordem: OrdemServico | null = null;
 
-        if (ordemError) throw ordemError;
+        if (ordemIdParam) {
+          // Acesso interno (via Aprovados): buscar pelo ID específico da ordem
+          const { data: ordemById, error: ordemByIdError } = await supabase
+            .from("ordens_servico")
+            .select(`
+              *,
+              recebimentos(numero_ordem)
+            `)
+            .eq("id", ordemIdParam)
+            .maybeSingle();
 
-        // Encontrar a ordem correta (prioriza finalizada)
-        const ordem = await encontrarOrdemCorreta(ordensServico || []);
+          if (ordemByIdError) throw ordemByIdError;
+          ordem = ordemById;
+        } else {
+          // Acesso externo (QR code/link público): buscar por numero_ordem
+          const { data: ordensServico, error: ordemError } = await supabase
+            .from("ordens_servico")
+            .select(`
+              *,
+              recebimentos(numero_ordem)
+            `)
+            .eq("numero_ordem", numeroOrdem);
+
+          if (ordemError) throw ordemError;
+
+          // Encontrar a ordem correta (prioriza finalizada)
+          ordem = await encontrarOrdemCorreta(ordensServico || []);
+        }
 
         if (!ordem) {
           toast.error(t('laudoPublico.orderNotFound'));

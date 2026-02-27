@@ -188,7 +188,7 @@ export default function Aprovados() {
 
     if (temLaudo) {
       // Abrir laudo em nova aba - usando numeroOrdem na rota correta
-      window.open(`/laudo-publico/${encodeURIComponent(numeroOrdem)}`, '_blank');
+      window.open(`/laudo-publico/${encodeURIComponent(numeroOrdem)}?ordemId=${ordem.id}`, '_blank');
       setLaudoModalOpen(false);
       setBuscaNumeroOrdem("");
     } else {
@@ -213,7 +213,7 @@ export default function Aprovados() {
 
       if (ordemData) {
         const numOrdem = ordemData.recebimentos?.numero_ordem || ordemData.numero_ordem;
-        window.open(`/laudo-publico/${encodeURIComponent(numOrdem)}`, '_blank');
+        window.open(`/laudo-publico/${encodeURIComponent(numOrdem)}?ordemId=${ordemData.id}`, '_blank');
         setLaudoModalOpen(false);
         setBuscaNumeroOrdem("");
       }
