@@ -16,7 +16,7 @@ interface LanguageProviderProps {
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const [language, setLanguageState] = useState<Language>(() => {
     const saved = localStorage.getItem('app_language');
-    return (saved === 'en' || saved === 'pt-BR') ? saved : 'pt-BR';
+    return (saved === 'en' || saved === 'pt-BR' || saved === 'es') ? saved : 'pt-BR';
   });
 
   const setLanguage = (lang: Language) => {
@@ -33,8 +33,24 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
       if (value && typeof value === 'object' && k in value) {
         value = value[k];
       } else {
-        console.warn(`Translation key not found: ${key}`);
-        return key;
+        // Fallback to English, then Portuguese
+        let fallback: any = translations['en'];
+        for (const fk of keys) {
+          if (fallback && typeof fallback === 'object' && fk in fallback) {
+            fallback = fallback[fk];
+          } else {
+            let fallback2: any = translations['pt-BR'];
+            for (const fk2 of keys) {
+              if (fallback2 && typeof fallback2 === 'object' && fk2 in fallback2) {
+                fallback2 = fallback2[fk2];
+              } else {
+                return key;
+              }
+            }
+            return typeof fallback2 === 'string' ? fallback2 : key;
+          }
+        }
+        return typeof fallback === 'string' ? fallback : key;
       }
     }
     
@@ -42,7 +58,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   };
 
   useEffect(() => {
-    document.documentElement.lang = language === 'pt-BR' ? 'pt-BR' : 'en';
+    document.documentElement.lang = language === 'pt-BR' ? 'pt-BR' : language === 'es' ? 'es' : 'en';
   }, [language]);
 
   return (
