@@ -1,60 +1,33 @@
 
-# Correcao: Percentuais customizados nao aparecem no PDF de Precificacao
+
+# Correcao: Erro 413 no upload resumivel TUS
 
 ## Problema
 
-O modal de precificacao permite adicionar **percentuais customizados** (campo `percentuais_customizados`), mas a funcao `gerarPDFPrecificacao` em `src/lib/precificacao-utils.ts` so renderiza:
-- Impostos
-- Comissao
-- Custos Variaveis
-
-Os percentuais customizados sao passados nos dados (`dadosAtualizados.percentuais_customizados`) mas **nunca sao lidos nem exibidos** no PDF.
+A opcao `uploadDataDuringCreation: true` envia dados do video junto com a requisicao POST de criacao do upload TUS. Isso faz a requisicao inicial ultrapassar o limite do gateway HTTP, resultando em erro 413 "Maximum size exceeded" antes mesmo do upload em chunks comecar.
 
 ## Solucao
 
-Adicionar uma secao no PDF para renderizar os percentuais customizados, entre a comissao e os custos variaveis.
+Desabilitar `uploadDataDuringCreation` para que a requisicao POST de criacao seja leve (apenas metadados), e os dados sejam enviados separadamente via PATCH em chunks de 6MB.
 
 ## Alteracao
 
-### Arquivo: `src/lib/precificacao-utils.ts`
+### Arquivo: `src/components/UploadVideoTesteModal.tsx`
 
-Apos a secao de "Comissao" (linha 111), adicionar renderizacao dos percentuais customizados:
-
-```typescript
-// Percentuais Customizados
-const percentuaisCustomizados: CustoVariavel[] = orcamento.percentuais_customizados || [];
-if (percentuaisCustomizados.length > 0) {
-  doc.setFont("helvetica", "bold");
-  doc.text("Outros Percentuais:", 25, yPosition);
-  yPosition += 8;
-  doc.setFont("helvetica", "normal");
-
-  percentuaisCustomizados.forEach((item) => {
-    if (yPosition > 250) {
-      doc.addPage();
-      yPosition = 20;
-    }
-    const valorCalculado = (precoDesejado * Number(item.valor)) / 100;
-    doc.text(`- ${item.descricao}`, 30, yPosition);
-    doc.text(`${formatarPercentual(Number(item.valor))}`, 100, yPosition);
-    doc.text(`${formatarMoeda(valorCalculado)}`, pageWidth - 50, yPosition, { align: "right" });
-    yPosition += 7;
-  });
-  yPosition += 5;
-}
-```
-
-Tambem atualizar o calculo de `totalCustos` (linha 134) para incluir os valores dos percentuais customizados, mantendo consistencia com o modal:
+Linha 168 - mudar `uploadDataDuringCreation` de `true` para `false`:
 
 ```typescript
 // Antes:
-const totalCustos = impostosValor + comissaoValor + (orcamento.total_custos_variaveis || 0);
+uploadDataDuringCreation: true,
 
 // Depois:
-const totalPercentuaisCustomizados = percentuaisCustomizados.reduce(
-  (acc, item) => acc + (precoDesejado * Number(item.valor)) / 100, 0
-);
-const totalCustos = impostosValor + comissaoValor + totalPercentuaisCustomizados + (orcamento.total_custos_variaveis || 0);
+uploadDataDuringCreation: false,
 ```
 
-Nenhuma outra alteracao necessaria -- o modal ja passa os dados corretamente.
+Isso garante que:
+1. O POST inicial cria apenas a sessao de upload (sem dados, requisicao pequena)
+2. Os dados sao enviados em chunks de 6MB via PATCH (requisicoes subsequentes)
+3. O upload resumivel funciona corretamente para arquivos grandes
+
+Nenhuma outra alteracao necessaria.
+
