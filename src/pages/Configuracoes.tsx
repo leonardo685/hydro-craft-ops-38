@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { LanguageSelectorDropdown } from "@/components/LanguageSelectorDropdown";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Settings, Globe, Building2, Upload, Loader2, Search, Webhook, Trash2 } from "lucide-react";
@@ -603,32 +604,7 @@ export default function Configuracoes() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <RadioGroup
-                value={language}
-                onValueChange={handleLanguageChange}
-                className="space-y-3"
-              >
-                <div className="flex items-center space-x-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer">
-                  <RadioGroupItem value="pt-BR" id="pt-BR" />
-                  <Label htmlFor="pt-BR" className="flex-1 cursor-pointer flex items-center gap-3">
-                    <span className="text-2xl">🇧🇷</span>
-                    <div>
-                      <p className="font-medium">{t('settings.portuguese')}</p>
-                      <p className="text-sm text-muted-foreground">Português do Brasil</p>
-                    </div>
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer">
-                  <RadioGroupItem value="en" id="en" />
-                  <Label htmlFor="en" className="flex-1 cursor-pointer flex items-center gap-3">
-                    <span className="text-2xl">🇺🇸</span>
-                    <div>
-                      <p className="font-medium">{t('settings.english')}</p>
-                      <p className="text-sm text-muted-foreground">English (US)</p>
-                    </div>
-                  </Label>
-                </div>
-              </RadioGroup>
+              <LanguageSelectorDropdown />
             </CardContent>
           </Card>
 
