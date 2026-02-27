@@ -1,52 +1,44 @@
 
 
-# Correcao: Item com quantidade > 1 gera apenas 1 ordem
+# Fix: Laudo de Teste showing data from wrong company
 
-## Problema
+## Problem
 
-Quando a NFe tem um item com `quantidade: 12`, a API retorna um unico elemento no array `itens` com `quantidade: 12`. O sistema cria 1 ordem por elemento do array, resultando em apenas 1 ordem ao inves de 12.
+When clicking "Laudo de Teste" in Aprovados and searching for an order, the system opens `/laudo-publico/{numeroOrdem}`. The `LaudoPublico.tsx` page is a **public route** (no auth context) and queries `ordens_servico` by `numero_ordem` **without filtering by `empresa_id`**. When two companies have orders with the same number (e.g., MH-002-26), it can return data from the wrong company.
 
-## Solucao
+## Root Cause
 
-Expandir os itens da NFe ao recebe-los da API: cada unidade de quantidade vira um item individual na lista. Assim, um item com quantidade 12 gera 12 linhas no modal de selecao, cada uma representando 1 unidade.
+- `LaudoPublico.tsx` line 173-179: fetches all orders matching `numero_ordem` across ALL companies
+- The `encontrarOrdemCorreta` function picks the first "finalized" one, which may belong to another company
 
-## Alteracao
+## Solution
 
-### Arquivo: `src/lib/nfe-utils.ts`
+Pass the **order ID** as a query parameter when navigating from the authenticated Aprovados page. The LaudoPublico page will use this ID to load the correct order when available, falling back to the current numero_ordem-based logic for external/QR code access.
 
-Na funcao `extrairDadosNFe`, apos mapear os itens da API (linha ~179), expandir cada item com `quantidade > 1` em N itens individuais:
+## Changes
 
-```typescript
-// Antes (linha 179-187):
-itens: dados.itens?.map((item: any) => ({
-  codigo: item.codigo,
-  descricao: item.descricao,
-  ncm: item.ncm || '',
-  quantidade: item.quantidade,
-  valorUnitario: item.valor_unitario,
-  valorTotal: item.valor_total,
-  unidade: 'UN'
-})) || []
+### 1. `src/pages/Aprovados.tsx`
+- In `verificarEAbrirLaudo`: change the URL from `/laudo-publico/{numeroOrdem}` to `/laudo-publico/{numeroOrdem}?ordemId={ordem.id}`
+- In `abrirLaudoDoHistorico`: same change, pass `ordemId` as query param
 
-// Depois:
-itens: dados.itens?.flatMap((item: any) => {
-  const qty = Math.max(1, Math.floor(item.quantidade || 1));
-  return Array.from({ length: qty }, (_, i) => ({
-    codigo: item.codigo,
-    descricao: item.descricao,
-    ncm: item.ncm || '',
-    quantidade: 1,
-    valorUnitario: item.valor_unitario,
-    valorTotal: item.valor_unitario, // cada unidade tem valor = unitario
-    unidade: 'UN'
-  }));
-}) || []
+### 2. `src/pages/LaudoPublico.tsx`
+- Read `ordemId` from URL search params (`useSearchParams` or `URLSearchParams`)
+- If `ordemId` is present, fetch the specific order by ID instead of searching by numero_ordem
+- If `ordemId` is NOT present (external/QR access), keep the current behavior (search by numero_ordem across all companies)
+
+## Technical Details
+
+In `LaudoPublico.tsx`, the data loading logic (line ~163) will be updated:
+
+```text
+if (ordemId exists in URL params) {
+  -> fetch single order by ID: .eq('id', ordemId)
+} else {
+  -> existing logic: fetch by numero_ordem, use encontrarOrdemCorreta()
+}
 ```
 
-Isso garante que:
-- Um item com quantidade 12 aparece como 12 linhas no modal `ItensNFeModal`
-- Cada linha representa 1 unidade com `valorTotal = valorUnitario`
-- O matching de ordens existentes continua funcionando (mesmo codigo + valor unitario)
-- O usuario pode selecionar quantas ordens quiser criar (ate 12 neste caso)
-
-Nenhuma outra alteracao necessaria -- o `ItensNFeModal` e o `ChaveAcessoModal` ja tratam cada elemento do array como uma ordem individual.
+This ensures:
+- Internal access from Aprovados always loads the correct company's order
+- External/public access (QR codes, shared links) continues working as before
+- No breaking changes to existing URLs or routes
