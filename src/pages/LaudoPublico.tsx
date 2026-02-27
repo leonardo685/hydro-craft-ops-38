@@ -31,7 +31,7 @@ import { format } from "date-fns";
 import { ptBR, enUS } from "date-fns/locale";
 import { HistoricoManutencaoPublicoModal } from "@/components/HistoricoManutencaoPublicoModal";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { LanguageSelectorDropdown } from "@/components/LanguageSelectorDropdown";
 
 interface OrdemServico {
   id: string;
@@ -698,30 +698,7 @@ export default function LaudoPublico() {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Seletor de Idioma */}
         <div className="flex justify-end">
-          <div className="flex items-center gap-2 bg-card border rounded-lg p-1.5 shadow-sm">
-            <Globe className="w-4 h-4 text-muted-foreground ml-2" />
-            <ToggleGroup 
-              type="single" 
-              value={language} 
-              onValueChange={(value) => value && setLanguage(value as 'pt-BR' | 'en')}
-              className="gap-1"
-            >
-              <ToggleGroupItem 
-                value="pt-BR" 
-                aria-label="Português"
-                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground px-3 py-1 text-sm"
-              >
-                PT
-              </ToggleGroupItem>
-              <ToggleGroupItem 
-                value="en" 
-                aria-label="English"
-                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground px-3 py-1 text-sm"
-              >
-                EN
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
+          <LanguageSelectorDropdown />
         </div>
 
         {/* Cabeçalho */}

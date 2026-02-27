@@ -11,8 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Building2, User, Phone, CheckCircle2, Globe } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Language } from "@/i18n/translations";
+import { LanguageSelectorDropdown } from "@/components/LanguageSelectorDropdown";
 
 // Função para encontrar a ordem correta (prioriza finalizada)
 const encontrarOrdemCorreta = async (
@@ -279,26 +278,8 @@ export default function AcessoOrdemPublica() {
           </div>
           
           {/* Language Selector */}
-          <div className="flex items-center justify-center gap-2">
-            <Globe className="w-4 h-4 text-muted-foreground" />
-            <ToggleGroup
-              type="single"
-              value={language}
-              onValueChange={(value) => {
-                if (value) setLanguage(value as Language);
-              }}
-              className="border rounded-lg"
-            >
-              <ToggleGroupItem value="pt-BR" className="text-xs px-3 py-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                PT
-              </ToggleGroupItem>
-              <ToggleGroupItem value="en" className="text-xs px-3 py-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                EN
-              </ToggleGroupItem>
-              <ToggleGroupItem value="es" className="text-xs px-3 py-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                ES
-              </ToggleGroupItem>
-            </ToggleGroup>
+          <div className="flex justify-center">
+            <LanguageSelectorDropdown />
           </div>
 
           <CardTitle className="text-2xl">{t('acessoOrdem.title')}</CardTitle>
