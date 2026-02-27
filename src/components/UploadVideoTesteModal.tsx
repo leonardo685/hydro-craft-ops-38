@@ -165,7 +165,7 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
             authorization: `Bearer ${session.access_token}`,
             apikey: anonKey,
           },
-          uploadDataDuringCreation: true,
+          uploadDataDuringCreation: false,
           removeFingerprintOnSuccess: true,
           chunkSize: 6 * 1024 * 1024, // 6MB por chunk
           metadata: {
