@@ -176,15 +176,18 @@ export async function extrairDadosNFe(chave: string): Promise<DadosNFe> {
       valorTotal: dados.valor_total,
       clienteNome: dados.cliente_nome,
       clienteCnpj: dados.cliente_cnpj,
-      itens: dados.itens?.map((item: any) => ({
-        codigo: item.codigo,
-        descricao: item.descricao,
-        ncm: item.ncm || '',
-        quantidade: item.quantidade,
-        valorUnitario: item.valor_unitario,
-        valorTotal: item.valor_total,
-        unidade: 'UN'
-      })) || []
+      itens: dados.itens?.flatMap((item: any) => {
+        const qty = Math.max(1, Math.floor(item.quantidade || 1));
+        return Array.from({ length: qty }, () => ({
+          codigo: item.codigo,
+          descricao: item.descricao,
+          ncm: item.ncm || '',
+          quantidade: 1,
+          valorUnitario: item.valor_unitario,
+          valorTotal: item.valor_unitario,
+          unidade: 'UN'
+        }));
+      }) || []
     };
 
   } catch (error) {
