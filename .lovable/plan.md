@@ -1,44 +1,51 @@
 
 
-# Fix: Laudo de Teste showing data from wrong company
+# Plan: "Copiar Ordem de Serviço" on Nova Análise (NovaOrdemDireta)
 
-## Problem
+## What will be built
 
-When clicking "Laudo de Teste" in Aprovados and searching for an order, the system opens `/laudo-publico/{numeroOrdem}`. The `LaudoPublico.tsx` page is a **public route** (no auth context) and queries `ordens_servico` by `numero_ordem` **without filtering by `empresa_id`**. When two companies have orders with the same number (e.g., MH-002-26), it can return data from the wrong company.
-
-## Root Cause
-
-- `LaudoPublico.tsx` line 173-179: fetches all orders matching `numero_ordem` across ALL companies
-- The `encontrarOrdemCorreta` function picks the first "finalized" one, which may belong to another company
-
-## Solution
-
-Pass the **order ID** as a query parameter when navigating from the authenticated Aprovados page. The LaudoPublico page will use this ID to load the correct order when available, falling back to the current numero_ordem-based logic for external/QR code access.
+A searchable/editable dropdown at the top of the "Informações Básicas" card in `NovaOrdemDireta.tsx` that lets the user select an existing order to copy. When selected, it loads all data from that order (client, equipment, technical data, parts, services, machining, observations, photos, and documents) into the form, keeping only the auto-generated new order number.
 
 ## Changes
 
-### 1. `src/pages/Aprovados.tsx`
-- In `verificarEAbrirLaudo`: change the URL from `/laudo-publico/{numeroOrdem}` to `/laudo-publico/{numeroOrdem}?ordemId={ordem.id}`
-- In `abrirLaudoDoHistorico`: same change, pass `ordemId` as query param
+### 1. `src/pages/NovaOrdemDireta.tsx`
 
-### 2. `src/pages/LaudoPublico.tsx`
-- Read `ordemId` from URL search params (`useSearchParams` or `URLSearchParams`)
-- If `ordemId` is present, fetch the specific order by ID instead of searching by numero_ordem
-- If `ordemId` is NOT present (external/QR access), keep the current behavior (search by numero_ordem across all companies)
+**New state and data loading:**
+- Add state for the searchable order list and search term
+- Fetch existing `ordens_servico` (filtered by `empresa_id`) on mount, loading `numero_ordem`, `id`, `cliente_nome`, `equipamento`
+- On order selection, fetch the full order record plus its related `fotos_equipamentos`, `documentos_ordem`, and linked client
 
-## Technical Details
+**Copy logic (`copiarOrdem` function):**
+- Populate `formData` fields: client, equipment, serial number, invoice, urgency, technician, problems, priority, observations, failure reason
+- Populate `dadosTecnicos` from the order's technical columns (camisa, haste, curso, etc.)
+- Populate `pecasUtilizadas` from `pecas_necessarias` JSON
+- Populate services/machining checkboxes and arrays from `servicos_necessarios` / `usinagem_necessaria` JSON
+- Download photos from storage and create File objects to populate `fotosChegada` and `fotosAnalise` with previews
+- Download documents similarly into `documentos` array
+- Keep `formData.numeroOrdem` unchanged (the auto-generated new number)
 
-In `LaudoPublico.tsx`, the data loading logic (line ~163) will be updated:
+**UI addition:**
+- Add a new row in the "Informações Básicas" card, before the existing fields
+- Searchable combobox using the existing `cmdk` / `Command` component pattern, showing orders as `{numero_ordem} - {cliente_nome} - {equipamento}`
+- Label: "Copiar de Ordem Existente" with a Copy icon
+- When an order is selected, a toast confirms "Dados copiados da ordem {numero}"
+
+### 2. Data flow
 
 ```text
-if (ordemId exists in URL params) {
-  -> fetch single order by ID: .eq('id', ordemId)
-} else {
-  -> existing logic: fetch by numero_ordem, use encontrarOrdemCorreta()
-}
+User types in searchable dropdown
+  → filters ordens_servico list
+  → user selects one
+  → fetch full order + fotos + docs from Supabase
+  → populate all form states
+  → keep new numero_ordem intact
+  → user can edit anything before saving
 ```
 
-This ensures:
-- Internal access from Aprovados always loads the correct company's order
-- External/public access (QR codes, shared links) continues working as before
-- No breaking changes to existing URLs or routes
+### Technical notes
+
+- Photos will be fetched as blob URLs for preview, and re-uploaded as new files on save (they are already handled by the existing `uploadFotos` function)
+- Documents similarly fetched and added to the `documentos` state for re-upload
+- The client is matched by name from the `clientes` list to set the correct `formData.cliente` (client ID)
+- Services/machining are parsed from the JSONB arrays stored in the order
+
