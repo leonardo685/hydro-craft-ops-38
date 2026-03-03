@@ -747,7 +747,20 @@ const NovaOrdemDireta = () => {
         pecas_necessarias: pecasUtilizadas,
         servicos_necessarios: montarServicos(),
         usinagem_necessaria: montarUsinagem(),
-        empresa_id: empresaAtual?.id || null
+        empresa_id: empresaAtual?.id || null,
+        // Technical data
+        categoria_equipamento: dadosTecnicos.tipoEquipamento || null,
+        pressao_trabalho: dadosTecnicos.pressaoTrabalho || null,
+        camisa: dadosTecnicos.camisa || null,
+        haste_comprimento: dadosTecnicos.hasteComprimento || null,
+        curso: dadosTecnicos.curso || null,
+        conexao_a: dadosTecnicos.conexaoA || null,
+        conexao_b: dadosTecnicos.conexaoB || null,
+        temperatura_trabalho: dadosTecnicos.temperaturaTrabalho || null,
+        fluido_trabalho: dadosTecnicos.fluidoTrabalho || null,
+        local_instalacao: dadosTecnicos.localInstalacao || null,
+        potencia: dadosTecnicos.potencia || null,
+        numero_serie: dadosTecnicos.numeroSerie || formData.numeroSerie || null,
       };
 
       const { data, error } = await supabase
