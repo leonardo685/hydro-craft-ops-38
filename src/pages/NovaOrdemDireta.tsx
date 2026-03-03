@@ -6,8 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, Upload, Camera, FileText, Trash2, UserPlus } from "lucide-react";
+import { ArrowLeft, Save, Upload, Camera, FileText, Trash2, UserPlus, Copy, ChevronsUpDown, Check, Loader2 } from "lucide-react";
 import { QuantityInput } from "@/components/QuantityInput";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useClientes } from "@/hooks/use-clientes";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/utils";
 
 const NovaOrdemDireta = () => {
   const navigate = useNavigate();
@@ -77,6 +80,12 @@ const NovaOrdemDireta = () => {
   });
 
   const [documentos, setDocumentos] = useState<Array<{ file: File; nome: string; tipo: string }>>([]);
+
+  // Copiar ordem states
+  const [ordensExistentes, setOrdensExistentes] = useState<Array<{ id: string; numero_ordem: string; cliente_nome: string; equipamento: string }>>([]);
+  const [copiarOrdemOpen, setCopiarOrdemOpen] = useState(false);
+  const [copiarOrdemValue, setCopiarOrdemValue] = useState("");
+  const [copiando, setCopiando] = useState(false);
 
   // Serviços pré-determinados
   const [servicosPreDeterminados, setServicosPreDeterminados] = useState({
@@ -210,6 +219,230 @@ const NovaOrdemDireta = () => {
 
     carregarOrcamentos();
   }, []);
+
+  // Carregar ordens existentes para copiar
+  useEffect(() => {
+    const carregarOrdens = async () => {
+      if (!empresaAtual?.id) return;
+      try {
+        const { data, error } = await supabase
+          .from('ordens_servico')
+          .select('id, numero_ordem, cliente_nome, equipamento')
+          .eq('empresa_id', empresaAtual.id)
+          .order('created_at', { ascending: false })
+          .limit(500);
+
+        if (error) throw error;
+        setOrdensExistentes(data || []);
+      } catch (error) {
+        console.error('Erro ao carregar ordens:', error);
+      }
+    };
+    carregarOrdens();
+  }, [empresaAtual?.id]);
+
+  // Copiar ordem existente
+  const copiarOrdem = async (ordemId: string) => {
+    setCopiando(true);
+    try {
+      // Fetch full order
+      const { data: ordem, error } = await supabase
+        .from('ordens_servico')
+        .select('*')
+        .eq('id', ordemId)
+        .single();
+
+      if (error || !ordem) throw error || new Error('Ordem não encontrada');
+
+      // Match client by name
+      const clienteMatch = clientes.find(c => c.nome === ordem.cliente_nome);
+
+      // Populate formData (keep numeroOrdem)
+      setFormData(prev => ({
+        ...prev,
+        cliente: clienteMatch?.id || '',
+        equipamento: ordem.equipamento || '',
+        numeroSerie: ordem.numero_serie || '',
+        numeroNota: ordem.pdf_nota_fiscal || '',
+        tecnico: ordem.tecnico || '',
+        problemas: ordem.descricao_problema || '',
+        prioridade: ordem.prioridade ? ordem.prioridade.charAt(0).toUpperCase() + ordem.prioridade.slice(1) : 'Média',
+        observacoes: ordem.observacoes_tecnicas || '',
+        motivoFalha: ordem.motivo_falha || '',
+        prazoEstimado: ordem.tempo_estimado || '',
+        orcamentoVinculado: ordem.orcamento_id || '',
+      }));
+
+      // Populate technical data
+      setDadosTecnicos({
+        tipoEquipamento: ordem.categoria_equipamento || '',
+        pressaoTrabalho: ordem.pressao_trabalho || '',
+        camisa: ordem.camisa || '',
+        hasteComprimento: ordem.haste_comprimento || '',
+        curso: ordem.curso || '',
+        conexaoA: ordem.conexao_a || '',
+        conexaoB: ordem.conexao_b || '',
+        temperaturaTrabalho: ordem.temperatura_trabalho || '',
+        fluidoTrabalho: ordem.fluido_trabalho || '',
+        localInstalacao: ordem.local_instalacao || '',
+        potencia: ordem.potencia || '',
+        numeroSerie: ordem.numero_serie || '',
+      });
+
+      // Populate pecas
+      if (ordem.pecas_necessarias && Array.isArray(ordem.pecas_necessarias)) {
+        setPecasUtilizadas((ordem.pecas_necessarias as any[]).map((p: any) => ({
+          quantidade: p.quantidade || 1,
+          peca: p.peca || p.nome || '',
+        })));
+      }
+
+      // Populate services
+      if (ordem.servicos_necessarios && Array.isArray(ordem.servicos_necessarios)) {
+        const svcs = ordem.servicos_necessarios as any[];
+        const serviceNames = ['desmontagem', 'limpeza', 'teste', 'pintura', 'recondicionamento'];
+        const defaultNames: Record<string, string> = {
+          desmontagem: t('novaAnalise.disassemblyAssembly'),
+          limpeza: t('novaAnalise.equipmentCleaning'),
+          teste: t('novaAnalise.performanceTest'),
+          pintura: t('novaAnalise.equipmentPainting'),
+          recondicionamento: t('novaAnalise.threadReconditioning'),
+        };
+
+        const newPre: any = { desmontagem: false, limpeza: false, teste: false, pintura: false, recondicionamento: false };
+        const newQtd: any = { ...servicosQuantidades };
+        const newNomes: any = { ...servicosNomes };
+        const extras: Array<{ quantidade: number; nome: string; codigo?: string }> = [];
+
+        svcs.forEach((s: any) => {
+          const matched = serviceNames.find(key => {
+            const defName = defaultNames[key];
+            return defName && s.nome && (s.nome.toLowerCase().includes(defName.toLowerCase().substring(0, 10)));
+          });
+          if (matched) {
+            newPre[matched] = true;
+            newQtd[matched] = s.quantidade || 1;
+            newNomes[matched] = s.nome || defaultNames[matched];
+          } else {
+            extras.push({ quantidade: s.quantidade || 1, nome: s.nome || '', codigo: s.codigo || '' });
+          }
+        });
+
+        setServicosPreDeterminados(newPre);
+        setServicosQuantidades(prev => ({ ...prev, ...newQtd }));
+        setServicosNomes(prev => ({ ...prev, ...newNomes }));
+        setServicosAdicionais(extras);
+      }
+
+      // Populate machining
+      if (ordem.usinagem_necessaria && Array.isArray(ordem.usinagem_necessaria)) {
+        const usns = ordem.usinagem_necessaria as any[];
+        const usinagemKeys = ['usinagemHaste', 'usinagemTampaGuia', 'usinagemEmbolo', 'usinagemCabecoteDianteiro', 'usinagemCabecoteTraseiro'];
+        const defaultUNames: Record<string, string> = {
+          usinagemHaste: t('novaAnalise.rodMachining'),
+          usinagemTampaGuia: t('novaAnalise.guideCapMachining'),
+          usinagemEmbolo: t('novaAnalise.pistonMachining'),
+          usinagemCabecoteDianteiro: t('novaAnalise.frontHeadMachining'),
+          usinagemCabecoteTraseiro: t('novaAnalise.rearHeadMachining'),
+        };
+
+        const newU: any = { usinagemHaste: false, usinagemTampaGuia: false, usinagemEmbolo: false, usinagemCabecoteDianteiro: false, usinagemCabecoteTraseiro: false };
+        const newUQtd: any = { ...usinagemQuantidades };
+        const newUNomes: any = { ...usinagemNomes };
+        const uExtras: Array<{ quantidade: number; nome: string; codigo?: string }> = [];
+
+        usns.forEach((u: any) => {
+          const matched = usinagemKeys.find(key => {
+            const defName = defaultUNames[key];
+            return defName && u.nome && (u.nome.toLowerCase().includes(defName.toLowerCase().substring(0, 10)));
+          });
+          if (matched) {
+            newU[matched] = true;
+            newUQtd[matched] = u.quantidade || 1;
+            newUNomes[matched] = u.nome || defaultUNames[matched];
+          } else {
+            uExtras.push({ quantidade: u.quantidade || 1, nome: u.nome || '', codigo: u.codigo || '' });
+          }
+        });
+
+        setUsinagem(newU);
+        setUsinagemQuantidades(prev => ({ ...prev, ...newUQtd }));
+        setUsinagemNomes(prev => ({ ...prev, ...newUNomes }));
+        setUsinagemAdicional(uExtras);
+      }
+
+      // Fetch and populate photos
+      const { data: fotos } = await supabase
+        .from('fotos_equipamentos')
+        .select('*')
+        .eq('ordem_servico_id', ordemId);
+
+      if (fotos && fotos.length > 0) {
+        const newFotosChegada: (File | null)[] = [null, null, null, null];
+        const newPreviewsChegada: string[] = [];
+        const newFotosAnalise: File[] = [];
+        const newPreviewsAnalise: string[] = [];
+
+        for (let i = 0; i < fotos.length; i++) {
+          try {
+            const response = await fetch(fotos[i].arquivo_url);
+            const blob = await response.blob();
+            const file = new File([blob], fotos[i].nome_arquivo || `foto_${i}.jpg`, { type: blob.type || 'image/jpeg' });
+            
+            if (i < 4) {
+              newFotosChegada[i] = file;
+              newPreviewsChegada[i] = fotos[i].arquivo_url;
+            } else {
+              newFotosAnalise.push(file);
+              newPreviewsAnalise.push(fotos[i].arquivo_url);
+            }
+          } catch (e) {
+            console.warn('Erro ao baixar foto:', e);
+          }
+        }
+
+        setFotosChegada(newFotosChegada);
+        setPreviewsChegada(newPreviewsChegada);
+        setFotosAnalise(newFotosAnalise);
+        setPreviewsAnalise(newPreviewsAnalise);
+      }
+
+      // Fetch and populate documents
+      const { data: docs } = await supabase
+        .from('documentos_ordem')
+        .select('*')
+        .eq('ordem_servico_id', ordemId);
+
+      if (docs && docs.length > 0) {
+        const newDocs: Array<{ file: File; nome: string; tipo: string }> = [];
+        for (const doc of docs) {
+          try {
+            const response = await fetch(doc.arquivo_url);
+            const blob = await response.blob();
+            const file = new File([blob], doc.nome_arquivo, { type: doc.tipo_arquivo || 'application/octet-stream' });
+            newDocs.push({ file, nome: doc.nome_arquivo, tipo: doc.tipo_arquivo });
+          } catch (e) {
+            console.warn('Erro ao baixar documento:', e);
+          }
+        }
+        setDocumentos(newDocs);
+      }
+
+      toast({
+        title: "Dados copiados!",
+        description: `Dados copiados da ordem ${ordem.numero_ordem}`,
+      });
+    } catch (error) {
+      console.error('Erro ao copiar ordem:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao copiar dados da ordem",
+        variant: "destructive",
+      });
+    } finally {
+      setCopiando(false);
+    }
+  };
 
   // Handler para fotos de chegada (igual ao NovaAnalise)
   const handlePhotoUpload = (index: number, file: File | null) => {
@@ -575,6 +808,63 @@ const NovaOrdemDireta = () => {
             <CardDescription>Dados principais da ordem de serviço</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Copiar Ordem Existente */}
+            <div className="p-3 border border-dashed border-primary/30 rounded-lg bg-primary/5">
+              <Label className="text-sm font-medium flex items-center gap-2 mb-2">
+                <Copy className="h-4 w-4" />
+                Copiar de Ordem Existente
+              </Label>
+              <Popover open={copiarOrdemOpen} onOpenChange={setCopiarOrdemOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={copiarOrdemOpen}
+                    className="w-full justify-between"
+                    disabled={copiando}
+                  >
+                    {copiando ? (
+                      <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Copiando...</span>
+                    ) : copiarOrdemValue ? (
+                      ordensExistentes.find(o => o.id === copiarOrdemValue)
+                        ? `${ordensExistentes.find(o => o.id === copiarOrdemValue)!.numero_ordem} - ${ordensExistentes.find(o => o.id === copiarOrdemValue)!.cliente_nome}`
+                        : "Selecione uma ordem..."
+                    ) : (
+                      "Selecione uma ordem para copiar..."
+                    )}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar ordem..." />
+                    <CommandList>
+                      <CommandEmpty>Nenhuma ordem encontrada.</CommandEmpty>
+                      <CommandGroup>
+                        {ordensExistentes.map((ordem) => (
+                          <CommandItem
+                            key={ordem.id}
+                            value={`${ordem.numero_ordem} ${ordem.cliente_nome} ${ordem.equipamento}`}
+                            onSelect={() => {
+                              setCopiarOrdemValue(ordem.id);
+                              setCopiarOrdemOpen(false);
+                              copiarOrdem(ordem.id);
+                            }}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", copiarOrdemValue === ordem.id ? "opacity-100" : "opacity-0")} />
+                            <span className="truncate">
+                              <span className="font-medium">{ordem.numero_ordem}</span>
+                              {" - "}{ordem.cliente_nome} - {ordem.equipamento}
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.orderNumber')}</Label>
