@@ -417,11 +417,12 @@ const NovaOrdemDireta = () => {
 
     if (todasFotos.length === 0) return;
 
-    for (const foto of todasFotos) {
+    for (let i = 0; i < todasFotos.length; i++) {
+      const foto = todasFotos[i];
       if (!foto) continue;
       
       const timestamp = Date.now();
-      const fileName = `${ordemId}_${timestamp}_${foto.name}`;
+      const fileName = `${ordemId}_${timestamp}_${i}_${foto.name}`;
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -452,9 +453,10 @@ const NovaOrdemDireta = () => {
   const uploadDocumentos = async (ordemId: string) => {
     if (documentos.length === 0) return;
 
-    for (const documento of documentos) {
+    for (let i = 0; i < documentos.length; i++) {
+      const documento = documentos[i];
       const timestamp = Date.now();
-      const fileName = `${ordemId}_${timestamp}_${documento.file.name}`;
+      const fileName = `${ordemId}_${timestamp}_${i}_${documento.file.name}`;
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
