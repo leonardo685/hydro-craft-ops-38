@@ -155,6 +155,7 @@ export type Database = {
           cep: string | null
           cidade: string | null
           cnpj_cpf: string | null
+          condicoes_pagamento: string | null
           created_at: string
           email: string | null
           empresa_id: string | null
@@ -173,6 +174,7 @@ export type Database = {
           cep?: string | null
           cidade?: string | null
           cnpj_cpf?: string | null
+          condicoes_pagamento?: string | null
           created_at?: string
           email?: string | null
           empresa_id?: string | null
@@ -191,6 +193,7 @@ export type Database = {
           cep?: string | null
           cidade?: string | null
           cnpj_cpf?: string | null
+          condicoes_pagamento?: string | null
           created_at?: string
           email?: string | null
           empresa_id?: string | null
