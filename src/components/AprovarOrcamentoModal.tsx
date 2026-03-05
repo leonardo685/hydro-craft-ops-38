@@ -196,6 +196,7 @@ export const AprovarOrcamentoModal = ({
           valor: formData.valorComDesconto,
           prazo_pagamento: formData.prazoPagamento,
           data_vencimento: formData.dataVencimento,
+          numero_pedido: formData.numeroPedido,
           descricao: `${orcamento.descricao || ''}\n\nDetalhes da Aprovação:\n- Valor Original: R$ ${formData.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Desconto: ${formData.descontoPercentual}%\n- Valor Final: R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Prazo de Pagamento: ${formData.prazoPagamento} dias\n- Data de Vencimento: ${new Date(formData.dataVencimento).toLocaleDateString('pt-BR')}\n- Número do Pedido: ${formData.numeroPedido}${anexoUrl ? `\n- Anexo do Pedido: ${anexoUrl}` : ''}${formData.observacoes ? `\n- Observações: ${formData.observacoes}` : ''}`.trim()
         })
         .eq('id', orcamento.id);
