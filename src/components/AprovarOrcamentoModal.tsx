@@ -27,7 +27,7 @@ export const AprovarOrcamentoModal = ({
 }: AprovarOrcamentoModalProps) => {
   const { toast } = useToast();
   const { empresaAtual } = useEmpresa();
-  
+  const [condicoesPagamento, setCondicoesPagamento] = useState<string>('');
   
   const [formData, setFormData] = useState({
     valor: orcamento?.valor || 0,
@@ -54,6 +54,20 @@ export const AprovarOrcamentoModal = ({
         numeroPedido: '',
         observacoes: ''
       });
+
+      // Buscar condições de pagamento do cliente
+      if (orcamento.cliente_id) {
+        supabase
+          .from('clientes')
+          .select('condicoes_pagamento')
+          .eq('id', orcamento.cliente_id)
+          .single()
+          .then(({ data }) => {
+            setCondicoesPagamento(data?.condicoes_pagamento || '');
+          });
+      } else {
+        setCondicoesPagamento('');
+      }
     }
   }, [orcamento]);
 
@@ -393,6 +407,19 @@ export const AprovarOrcamentoModal = ({
               value={formData.dataVencimento}
               onChange={(e) => setFormData(prev => ({ ...prev, dataVencimento: e.target.value }))}
             />
+          </div>
+
+          <div>
+            <Label>Condições de Pagamento do Cliente</Label>
+            {condicoesPagamento ? (
+              <div className="mt-1 p-3 bg-muted rounded-md text-sm whitespace-pre-wrap">
+                {condicoesPagamento}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1 italic">
+                Nenhuma condição cadastrada para este cliente. Edite no Cadastro de Clientes.
+              </p>
+            )}
           </div>
 
           <div>

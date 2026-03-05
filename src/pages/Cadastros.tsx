@@ -79,7 +79,8 @@ const Cadastros = () => {
     cnpj_cpf: "",
     inscricao_estadual: "",
     inscricao_municipal: "",
-    observacoes: ""
+    observacoes: "",
+    condicoes_pagamento: ""
   });
 
   // Formulário de fornecedor
@@ -161,7 +162,8 @@ const Cadastros = () => {
       cnpj_cpf: "",
       inscricao_estadual: "",
       inscricao_municipal: "",
-      observacoes: ""
+      observacoes: "",
+      condicoes_pagamento: ""
     });
     setClienteTipoId('cnpj');
     setEditingCliente(null);
@@ -393,7 +395,8 @@ const Cadastros = () => {
       cnpj_cpf: cliente.cnpj_cpf || "",
       inscricao_estadual: cliente.inscricao_estadual || "",
       inscricao_municipal: cliente.inscricao_municipal || "",
-      observacoes: cliente.observacoes || ""
+      observacoes: cliente.observacoes || "",
+      condicoes_pagamento: (cliente as any).condicoes_pagamento || ""
     });
     setClienteTipoId((cliente.tipo_identificacao as TipoIdentificacao) || 'cnpj');
     setEditingCliente(cliente);
@@ -616,6 +619,16 @@ const Cadastros = () => {
                             placeholder={clienteLabels.placeholderCodigoPostal}
                           />
                         </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="condicoes_pagamento">Condições de Pagamento</Label>
+                        <Textarea
+                          id="condicoes_pagamento"
+                          value={clienteForm.condicoes_pagamento}
+                          onChange={(e) => setClienteForm({ ...clienteForm, condicoes_pagamento: e.target.value })}
+                          placeholder="Ex: Pagamento via boleto, enviar NF para financeiro@empresa.com, pagamento todo dia 15 do mês seguinte..."
+                          rows={4}
+                        />
                       </div>
                       <div>
                         <Label htmlFor="observacoes">Observações</Label>
