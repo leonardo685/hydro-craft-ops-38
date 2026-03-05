@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera, Video, ClipboardCheck, ExternalLink, Search, History, AlertCircle } from "lucide-react";
+import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera, Video, ClipboardCheck, ExternalLink, Search, History, AlertCircle, Printer } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { UploadFotosProducaoModal } from "@/components/UploadFotosProducaoModal"
 import { UploadVideoTesteModal } from "@/components/UploadVideoTesteModal";
 import { OrdemServicoModal } from "@/components/OrdemServicoModal";
 import { useNavigate } from "react-router-dom";
+import { EquipmentLabel } from "@/components/EquipmentLabel";
 import { format, parseISO } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
@@ -43,6 +44,7 @@ export default function Aprovados() {
   const [buscandoLaudo, setBuscandoLaudo] = useState(false);
   const [erroLaudo, setErroLaudo] = useState<string | null>(null);
   const [historicoBuscas, setHistoricoBuscas] = useState<HistoricoBuscaLaudo[]>([]);
+  const [etiquetaOrdem, setEtiquetaOrdem] = useState<any>(null);
   const {
     toast
   } = useToast();
@@ -526,7 +528,23 @@ export default function Aprovados() {
                             {t('aprovados.services')}
                           </Button>
                         </ItemSelectionModal>
+
+                        <Button variant="outline" size="sm" onClick={() => setEtiquetaOrdem({
+                          numeroOrdem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem || '',
+                          cliente: ordem.recebimentos?.cliente_nome || ordem.cliente_nome || '',
+                          dataEntrada: ordem.data_entrada || ordem.created_at || '',
+                        })}>
+                          <Printer className="h-4 w-4 mr-2" />
+                          Etiqueta
+                        </Button>
                       </div>
+
+                      {etiquetaOrdem && etiquetaOrdem.numeroOrdem === (ordem.recebimentos?.numero_ordem || ordem.numero_ordem) && (
+                        <EquipmentLabel
+                          equipment={etiquetaOrdem}
+                          onClose={() => setEtiquetaOrdem(null)}
+                        />
+                      )}
                     </CardContent>
                   </Card>) : <Card>
                   <CardContent className="p-12 text-center">
