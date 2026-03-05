@@ -50,6 +50,7 @@ export default function Faturamento() {
   const [dataFim, setDataFim] = useState("");
   const [clienteFiltro, setClienteFiltro] = useState("");
   const [numeroFiltro, setNumeroFiltro] = useState("");
+  const [pedidoFiltro, setPedidoFiltro] = useState("");
 
   // Estados para filtros da aba Faturamento
   const [dataInicioFat, setDataInicioFat] = useState("");
@@ -294,7 +295,7 @@ export default function Faturamento() {
   const totalNotasFiscais = totalNotasServico + totalNotasVenda;
 
   // Verificar se há algum filtro aplicado
-  const temFiltrosAtivos = dataInicio || dataFim || clienteFiltro || numeroFiltro;
+  const temFiltrosAtivos = dataInicio || dataFim || clienteFiltro || numeroFiltro || pedidoFiltro;
   const temFiltrosAtivosFat = dataInicioFat || dataFimFat || clienteFiltroFat || numeroFiltroFat;
 
   // Filtrar notas faturadas
@@ -324,13 +325,20 @@ export default function Faturamento() {
       passa = passa && nota.cliente_nome.toLowerCase().includes(clienteFiltro.toLowerCase());
     }
     
-    // Filtro de número de pedido
+    // Filtro de número de pedido/ordem
     if (numeroFiltro) {
       const nota_any = nota as any;
       const numeroMatch = nota.numero_ordem?.toLowerCase().includes(numeroFiltro.toLowerCase()) ||
                           nota_any.ordem_referencia?.toLowerCase().includes(numeroFiltro.toLowerCase()) ||
                           nota_any.descricao?.toLowerCase().includes(numeroFiltro.toLowerCase());
       if (!numeroMatch) passa = false;
+    }
+    
+    // Filtro de número do pedido dedicado
+    if (pedidoFiltro) {
+      const nota_any = nota as any;
+      const pedidoMatch = nota_any.numero_pedido?.toLowerCase().includes(pedidoFiltro.toLowerCase());
+      if (!pedidoMatch) passa = false;
     }
     
     return passa;
@@ -723,7 +731,7 @@ export default function Faturamento() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                     <div>
                       <label className="text-sm text-muted-foreground mb-2 block">Número</label>
                       <div className="relative">
@@ -733,6 +741,19 @@ export default function Faturamento() {
                           placeholder="Buscar por número..."
                           value={numeroFiltro}
                           onChange={(e) => setNumeroFiltro(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">Nº Pedido</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="text"
+                          placeholder="Buscar por pedido..."
+                          value={pedidoFiltro}
+                          onChange={(e) => setPedidoFiltro(e.target.value)}
                           className="pl-9"
                         />
                       </div>
@@ -767,6 +788,7 @@ export default function Faturamento() {
                         variant="outline"
                         onClick={() => {
                           setNumeroFiltro("");
+                          setPedidoFiltro("");
                           setDataInicio("");
                           setDataFim("");
                           setClienteFiltro("");
@@ -896,9 +918,16 @@ export default function Faturamento() {
                               {nota.equipamento} - {nota.cliente_nome}
                             </CardDescription>
                           </div>
-                          <Badge className="bg-green-100 text-green-700 border-green-200">
-                            Faturado
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-green-100 text-green-700 border-green-200">
+                              Faturado
+                            </Badge>
+                            {(nota as any).numero_pedido && (
+                              <Badge variant="outline" className="text-primary border-primary/30">
+                                Pedido: {(nota as any).numero_pedido}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">

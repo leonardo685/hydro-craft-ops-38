@@ -1527,6 +1527,7 @@ export type Database = {
           numero: string
           numero_nf: string | null
           numero_nota_entrada: string | null
+          numero_pedido: string | null
           observacoes: string | null
           observacoes_nota: string | null
           ordem_referencia: string | null
@@ -1573,6 +1574,7 @@ export type Database = {
           numero: string
           numero_nf?: string | null
           numero_nota_entrada?: string | null
+          numero_pedido?: string | null
           observacoes?: string | null
           observacoes_nota?: string | null
           ordem_referencia?: string | null
@@ -1619,6 +1621,7 @@ export type Database = {
           numero?: string
           numero_nf?: string | null
           numero_nota_entrada?: string | null
+          numero_pedido?: string | null
           observacoes?: string | null
           observacoes_nota?: string | null
           ordem_referencia?: string | null
