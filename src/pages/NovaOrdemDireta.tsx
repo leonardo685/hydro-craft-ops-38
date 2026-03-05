@@ -730,8 +730,20 @@ const NovaOrdemDireta = () => {
 
       const clienteSelecionado = clientes.find(c => c.id === formData.cliente);
 
+      // Regenerar número no momento do save para evitar duplicatas
+      let numeroOrdemFinal = formData.numeroOrdem;
+      if (empresaAtual?.id) {
+        const { data: novoNumero } = await supabase.rpc('gerar_proximo_numero_ordem', {
+          p_empresa_id: empresaAtual.id
+        });
+        if (novoNumero) {
+          numeroOrdemFinal = novoNumero;
+          setFormData(prev => ({ ...prev, numeroOrdem: novoNumero }));
+        }
+      }
+
       const ordemData = {
-        numero_ordem: formData.numeroOrdem,
+        numero_ordem: numeroOrdemFinal,
         cliente_nome: clienteSelecionado?.nome || '',
         equipamento: formData.equipamento,
         tecnico: formData.tecnico,
