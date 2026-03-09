@@ -1,0 +1,1 @@
+INSERT INTO menu_permissions (menu_item, role, can_access) VALUES ('compras', 'gestor', false), ('compras', 'operador', false), ('compras', 'admin', true) ON CONFLICT DO NOTHING;
