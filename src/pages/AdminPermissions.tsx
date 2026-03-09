@@ -79,6 +79,7 @@ const menuItems = [
   { id: 'financeiro_dre', label: 'Financeiro - DRE' },
   { id: 'financeiro_dfc', label: 'Financeiro - DFC' },
   { id: 'financeiro_metas', label: 'Financeiro - Metas' },
+  { id: 'compras', label: 'Compras' },
   { id: 'cadastros', label: 'Cadastros' },
 ];
 
