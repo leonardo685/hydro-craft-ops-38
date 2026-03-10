@@ -76,6 +76,7 @@ export default function Orcamentos() {
   const [dataFim, setDataFim] = useState<Date | undefined>();
   const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroNumero, setFiltroNumero] = useState("");
+  const [filtroOrdemReferencia, setFiltroOrdemReferencia] = useState("");
 
   const recarregarDadosCallback = useCallback(() => {
     carregarOrdensServico();
