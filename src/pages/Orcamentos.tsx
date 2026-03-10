@@ -438,6 +438,18 @@ export default function Orcamentos() {
       if (filtroNumero && !orc.numero?.toLowerCase().includes(filtroNumero.toLowerCase())) {
         return false;
       }
+
+      // Filtro por ordem referenciada
+      if (filtroOrdemReferencia) {
+        const termo = filtroOrdemReferencia.toLowerCase();
+        const temOrdemVinculada = orc.ordens_vinculadas?.some(
+          (o: any) => o.numero_ordem?.toLowerCase().includes(termo)
+        );
+        const temOrdemReferencia = orc.ordem_referencia?.toLowerCase().includes(termo);
+        if (!temOrdemVinculada && !temOrdemReferencia) {
+          return false;
+        }
+      }
       
       // Filtro por data
       if (dataInicio || dataFim) {
