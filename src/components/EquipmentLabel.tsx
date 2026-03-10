@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, Download, FileCode } from "lucide-react";
+import { Printer, Download, FileCode, Send } from "lucide-react";
+import { toast } from "sonner";
 import QRCode from "qrcode";
 import { DxfWriter, point3d } from "@tarikjabiri/dxf";
 import engrenagemLogo from "@/assets/engrenagem-logo.jpg";
@@ -15,9 +16,13 @@ interface EquipmentLabelProps {
   onClose: () => void;
 }
 
+/** URL do webhook n8n para envio de gravação laser (configurável via .env) */
+const GRAVACAO_WEBHOOK_URL = import.meta.env.VITE_N8N_GRAVACAO_WEBHOOK_URL || '';
+
 export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [logoDataUrl, setLogoDataUrl] = useState<string>("");
+  const [sendingToLaser, setSendingToLaser] = useState(false);
 
   useEffect(() => {
     const generateQRCode = async () => {
@@ -56,6 +61,124 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
       }
     };
   }, []);
+
+  // ─── Gerar PNG como Blob (reutiliza lógica do handleDownload) ───
+  const generatePNGBlob = (): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return resolve(null);
+
+      canvas.width = 302;
+      canvas.height = 113;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+
+      const logoImg = new Image();
+      logoImg.src = engrenagemLogo;
+      logoImg.onload = () => {
+        ctx.drawImage(logoImg, 10, 25, 30, 30);
+
+        ctx.fillStyle = '#dc2626';
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText('MEC HYDRO', 50, 40);
+
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 24px Arial';
+        ctx.fillText(equipment.numeroOrdem, 50, 70);
+
+        if (qrDataUrl) {
+          const qrImg = new Image();
+          qrImg.onload = () => {
+            ctx.drawImage(qrImg, 200, 20, 80, 80);
+            canvas.toBlob((blob) => resolve(blob), 'image/png');
+          };
+          qrImg.src = qrDataUrl;
+        } else {
+          canvas.toBlob((blob) => resolve(blob), 'image/png');
+        }
+      };
+    });
+  };
+
+  // ─── Gerar DXF como Blob (reutiliza lógica do handleDownloadDXF) ───
+  const generateDXFBlob = async (): Promise<Blob | null> => {
+    try {
+      const dxf = new DxfWriter();
+      const width = 80;
+      const height = 30;
+
+      dxf.addLine(point3d(0, 0), point3d(width, 0));
+      dxf.addLine(point3d(width, 0), point3d(width, height));
+      dxf.addLine(point3d(width, height), point3d(0, height));
+      dxf.addLine(point3d(0, height), point3d(0, 0));
+
+      dxf.addText(point3d(5, 20), 4, "MEC HYDRO");
+      dxf.addText(point3d(5, 10), 6, equipment.numeroOrdem);
+
+      await addQRCodeToDXF(dxf, width - 22, 3, 20);
+
+      const dxfContent = dxf.stringify();
+      return new Blob([dxfContent], { type: 'application/dxf' });
+    } catch (error) {
+      console.error('Erro ao gerar DXF:', error);
+      return null;
+    }
+  };
+
+  // ─── Enviar arquivos para gravação laser via webhook ───
+  const handleSendToLaser = async () => {
+    if (!GRAVACAO_WEBHOOK_URL) {
+      toast.error('URL do webhook de gravação não configurada (VITE_N8N_GRAVACAO_WEBHOOK_URL)');
+      return;
+    }
+
+    setSendingToLaser(true);
+    try {
+      // Gerar ambos os arquivos em paralelo
+      const [pngBlob, dxfBlob] = await Promise.all([
+        generatePNGBlob(),
+        generateDXFBlob(),
+      ]);
+
+      if (!pngBlob) {
+        toast.error('Erro ao gerar arquivo PNG da etiqueta');
+        return;
+      }
+      if (!dxfBlob) {
+        toast.error('Erro ao gerar arquivo DXF da etiqueta');
+        return;
+      }
+
+      // Montar FormData com os arquivos e número da ordem
+      const formData = new FormData();
+      formData.append('orderNumber', equipment.numeroOrdem);
+      formData.append('pngFile', pngBlob, `etiqueta-${equipment.numeroOrdem}.png`);
+      formData.append('dxfFile', dxfBlob, `etiqueta-${equipment.numeroOrdem}.dxf`);
+
+      // POST para o webhook n8n
+      const response = await fetch(GRAVACAO_WEBHOOK_URL, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        toast.success('Etiqueta enviada para gravação com sucesso!');
+      } else {
+        throw new Error(`Erro ${response.status}: ${response.statusText}`);
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao enviar para gravação:', error);
+      toast.error('Erro ao enviar para gravação: ' + (error.message || 'Falha na requisição'));
+    } finally {
+      setSendingToLaser(false);
+    }
+  };
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
@@ -155,39 +278,31 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     canvas.width = 302;
     canvas.height = 113;
 
-    // Fundo branco
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Borda
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
 
-    // Logo da engrenagem
     const logoImg = new Image();
     logoImg.src = engrenagemLogo;
     logoImg.onload = () => {
-      // Desenhar logo
       ctx.drawImage(logoImg, 10, 25, 30, 30);
       
-      // Texto MEC HYDRO (ajustado para direita do logo)
       ctx.fillStyle = '#dc2626';
       ctx.font = 'bold 16px Arial';
       ctx.fillText('MEC HYDRO', 50, 40);
       
-      // Número da ordem (ajustado para direita do logo)
       ctx.fillStyle = '#000000';
       ctx.font = 'bold 24px Arial';
       ctx.fillText(equipment.numeroOrdem, 50, 70);
       
-      // QR Code
       if (qrDataUrl) {
         const qrImg = new Image();
         qrImg.onload = () => {
           ctx.drawImage(qrImg, 200, 20, 80, 80);
           
-          // Download
           const link = document.createElement('a');
           link.download = `etiqueta-${equipment.numeroOrdem}.png`;
           link.href = canvas.toDataURL();
@@ -201,26 +316,19 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
   const handleDownloadDXF = async () => {
     const dxf = new DxfWriter();
     
-    // Dimensões em mm (padrão para laser)
-    const width = 80;  // 80mm
-    const height = 30; // 30mm
+    const width = 80;
+    const height = 30;
     
-    // 1. Borda externa (retângulo)
     dxf.addLine(point3d(0, 0), point3d(width, 0));
     dxf.addLine(point3d(width, 0), point3d(width, height));
     dxf.addLine(point3d(width, height), point3d(0, height));
     dxf.addLine(point3d(0, height), point3d(0, 0));
     
-    // 2. Texto "MEC HYDRO"
     dxf.addText(point3d(5, 20), 4, "MEC HYDRO");
-    
-    // 3. Número da ordem
     dxf.addText(point3d(5, 10), 6, equipment.numeroOrdem);
     
-    // 5. QR Code vetorial (converter matriz de pixels para retângulos)
     await addQRCodeToDXF(dxf, width - 22, 3, 20);
     
-    // Gerar e baixar
     const dxfContent = dxf.stringify();
     const blob = new Blob([dxfContent], { type: 'application/dxf' });
     const link = document.createElement('a');
@@ -239,21 +347,18 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     const baseUrl = window.location.origin;
     const qrData = `${baseUrl}/ordem/${equipment.numeroOrdem}`;
     
-    // Gerar QR como matriz usando a API create do qrcode
     const qr = QRCode.create(qrData, { errorCorrectionLevel: 'M' });
     const modules = qr.modules.data;
     const moduleCount = qr.modules.size;
     const moduleSize = size / moduleCount;
     
-    // Desenhar cada módulo preto como um retângulo
     for (let row = 0; row < moduleCount; row++) {
       for (let col = 0; col < moduleCount; col++) {
         const index = row * moduleCount + col;
-        if (modules[index]) { // Se o módulo é preto
+        if (modules[index]) {
           const x = startX + col * moduleSize;
           const y = startY + (moduleCount - row - 1) * moduleSize;
           
-          // Adicionar retângulo para cada módulo (4 linhas)
           dxf.addLine(point3d(x, y), point3d(x + moduleSize, y));
           dxf.addLine(point3d(x + moduleSize, y), point3d(x + moduleSize, y + moduleSize));
           dxf.addLine(point3d(x + moduleSize, y + moduleSize), point3d(x, y + moduleSize));
@@ -301,7 +406,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
           </div>
 
           {/* Botões de ação */}
-          <div className="flex gap-2 pt-4">
+          <div className="flex flex-wrap gap-2 pt-4">
             <Button onClick={handlePrint} className="flex-1">
               <Printer className="h-4 w-4 mr-2" />
               Imprimir
@@ -313,6 +418,15 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
             <Button onClick={handleDownloadDXF} variant="outline" className="flex-1">
               <FileCode className="h-4 w-4 mr-2" />
               DXF
+            </Button>
+            <Button
+              onClick={handleSendToLaser}
+              variant="outline"
+              className="flex-1"
+              disabled={sendingToLaser || !GRAVACAO_WEBHOOK_URL}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {sendingToLaser ? 'Enviando...' : 'Enviar para Gravação'}
             </Button>
           </div>
         </div>
