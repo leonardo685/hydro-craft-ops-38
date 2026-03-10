@@ -76,6 +76,7 @@ export default function Orcamentos() {
   const [dataFim, setDataFim] = useState<Date | undefined>();
   const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroNumero, setFiltroNumero] = useState("");
+  const [filtroOrdemReferencia, setFiltroOrdemReferencia] = useState("");
 
   const recarregarDadosCallback = useCallback(() => {
     carregarOrdensServico();
@@ -436,6 +437,18 @@ export default function Orcamentos() {
       // Filtro por número
       if (filtroNumero && !orc.numero?.toLowerCase().includes(filtroNumero.toLowerCase())) {
         return false;
+      }
+
+      // Filtro por ordem referenciada
+      if (filtroOrdemReferencia) {
+        const termo = filtroOrdemReferencia.toLowerCase();
+        const temOrdemVinculada = orc.ordens_vinculadas?.some(
+          (o: any) => o.numero_ordem?.toLowerCase().includes(termo)
+        );
+        const temOrdemReferencia = orc.ordem_referencia?.toLowerCase().includes(termo);
+        if (!temOrdemVinculada && !temOrdemReferencia) {
+          return false;
+        }
       }
       
       // Filtro por data
@@ -2002,10 +2015,21 @@ export default function Orcamentos() {
                   onChange={(e) => setFiltroNumero(e.target.value)}
                 />
               </div>
+
+              {/* Filtro por Ordem Referenciada */}
+              <div className="space-y-2">
+                <Label htmlFor="filtro-ordem-ref">OS Vinculada</Label>
+                <Input
+                  id="filtro-ordem-ref"
+                  placeholder="Ex: MH-029-26"
+                  value={filtroOrdemReferencia}
+                  onChange={(e) => setFiltroOrdemReferencia(e.target.value)}
+                />
+              </div>
             </div>
 
             {/* Botão para Limpar Filtros */}
-            {(dataInicio || dataFim || filtroCliente || filtroNumero) && (
+            {(dataInicio || dataFim || filtroCliente || filtroNumero || filtroOrdemReferencia) && (
               <div className="mt-4 flex justify-end">
                 <Button
                   variant="outline"
@@ -2015,6 +2039,7 @@ export default function Orcamentos() {
                     setDataFim(undefined);
                     setFiltroCliente("");
                     setFiltroNumero("");
+                    setFiltroOrdemReferencia("");
                   }}
                 >
                   <X className="h-4 w-4 mr-2" />
