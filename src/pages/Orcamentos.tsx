@@ -2029,7 +2029,7 @@ export default function Orcamentos() {
             </div>
 
             {/* Botão para Limpar Filtros */}
-            {(dataInicio || dataFim || filtroCliente || filtroNumero) && (
+            {(dataInicio || dataFim || filtroCliente || filtroNumero || filtroOrdemReferencia) && (
               <div className="mt-4 flex justify-end">
                 <Button
                   variant="outline"
@@ -2039,6 +2039,7 @@ export default function Orcamentos() {
                     setDataFim(undefined);
                     setFiltroCliente("");
                     setFiltroNumero("");
+                    setFiltroOrdemReferencia("");
                   }}
                 >
                   <X className="h-4 w-4 mr-2" />
