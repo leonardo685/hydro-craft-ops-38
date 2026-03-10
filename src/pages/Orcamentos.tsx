@@ -2015,6 +2015,17 @@ export default function Orcamentos() {
                   onChange={(e) => setFiltroNumero(e.target.value)}
                 />
               </div>
+
+              {/* Filtro por Ordem Referenciada */}
+              <div className="space-y-2">
+                <Label htmlFor="filtro-ordem-ref">OS Vinculada</Label>
+                <Input
+                  id="filtro-ordem-ref"
+                  placeholder="Ex: MH-029-26"
+                  value={filtroOrdemReferencia}
+                  onChange={(e) => setFiltroOrdemReferencia(e.target.value)}
+                />
+              </div>
             </div>
 
             {/* Botão para Limpar Filtros */}
