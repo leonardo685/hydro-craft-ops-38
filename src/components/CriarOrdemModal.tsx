@@ -263,11 +263,21 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
                               R$ {(item.valor_total || 0).toFixed(2)}
                             </TableCell>
                             <TableCell>
-                              {item.ordemExistente ? (
+                              {todasCriadas ? (
                                 <Badge className="bg-green-600 hover:bg-green-700 gap-1">
                                   <CheckCircle className="h-3 w-3" />
-                                  {item.ordemExistente}
+                                  {ordensCriadas}/{quantidadeTotal}
                                 </Badge>
+                              ) : ordensCriadas > 0 ? (
+                                <div className="flex flex-col gap-1">
+                                  <Badge variant="secondary" className="gap-1 text-xs">
+                                    {ordensCriadas}/{quantidadeTotal} criadas
+                                  </Badge>
+                                  <Badge variant="outline" className="gap-1 text-muted-foreground text-xs">
+                                    <FileText className="h-3 w-3" />
+                                    Disponível
+                                  </Badge>
+                                </div>
                               ) : (
                                 <Badge variant="outline" className="gap-1 text-muted-foreground">
                                   <FileText className="h-3 w-3" />
