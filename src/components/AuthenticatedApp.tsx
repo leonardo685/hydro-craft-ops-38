@@ -17,6 +17,7 @@ import Aprovados from "@/pages/Aprovados";
 import Compras from "@/pages/Compras";
 import VisualizarOrdemServico from "@/pages/VisualizarOrdemServico";
 import Faturamento from "@/pages/Faturamento";
+import DashboardFaturamento from "@/pages/DashboardFaturamento";
 import Cadastros from "@/pages/Cadastros";
 import Financeiro from "@/pages/Financeiro";
 import Dashboard from "@/pages/Dashboard";
@@ -47,6 +48,8 @@ export function AuthenticatedApp() {
           <Route path="/compras" element={<ProtectedRoute requiredPermission="compras"><Compras /></ProtectedRoute>} />
           <Route path="/visualizar-ordem-servico/:id" element={<ProtectedRoute><VisualizarOrdemServico /></ProtectedRoute>} />
           <Route path="/faturamento" element={<ProtectedRoute requiredPermission="faturamento"><Faturamento /></ProtectedRoute>} />
+          <Route path="/faturamento/dashboard" element={<ProtectedRoute requiredPermission="faturamento"><DashboardFaturamento /></ProtectedRoute>} />
+          <Route path="/faturamento/faturadas" element={<ProtectedRoute requiredPermission="faturamento"><Faturamento defaultTab="faturadas" /></ProtectedRoute>} />
           <Route path="/cadastros" element={<ProtectedRoute requiredPermission="cadastros"><Cadastros /></ProtectedRoute>} />
           <Route path="/financeiro" element={<ProtectedRoute requiredPermission="financeiro"><Financeiro /></ProtectedRoute>} />
           <Route path="/financeiro/dashboard" element={<ProtectedRoute requiredPermission="financeiro_dashboard"><Dashboard /></ProtectedRoute>} />
