@@ -97,6 +97,11 @@ export function AppSidebar() {
       url: "/faturamento",
       icon: Receipt,
       permission: "faturamento",
+      submenu: [
+        { title: "Dashboard", url: "/faturamento/dashboard", permission: "faturamento" },
+        { title: "Faturamento", url: "/faturamento", permission: "faturamento" },
+        { title: "Faturadas", url: "/faturamento/faturadas", permission: "faturamento" },
+      ]
     },
     {
       title: t('menu.financeiro'),
