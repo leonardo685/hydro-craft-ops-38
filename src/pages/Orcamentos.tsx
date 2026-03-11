@@ -1650,6 +1650,88 @@ export default function Orcamentos() {
                     </Button>
                   </CardContent>
                 </Card>
+
+                <Card className="border-2">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-secondary/50 rounded-lg">
+                        <Copy className="h-5 w-5 text-secondary-foreground" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Copiar de Orçamento Existente</CardTitle>
+                        <CardDescription>
+                          Copiar peças, serviços, usinagem e fotos de um orçamento existente
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="search-orcamento-copia">Buscar orçamento</Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="search-orcamento-copia"
+                          placeholder="Buscar por número, cliente ou equipamento..."
+                          value={searchTermOrcamento}
+                          onChange={(e) => setSearchTermOrcamento(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Selecionar orçamento</Label>
+                      <Select onValueChange={(value) => setSelectedOrcamentoCopia(orcamentos.find(o => o.id === value))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um orçamento..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {orcamentosParaCopia.length > 0 ? (
+                            orcamentosParaCopia.map((orc) => (
+                              <SelectItem key={orc.id} value={orc.id}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{orc.numero}</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {orc.cliente_nome} - {orc.equipamento}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="no-orc" disabled>
+                              <div className="text-center text-muted-foreground">
+                                <FileText className="h-4 w-4 mx-auto mb-1 opacity-50" />
+                                <p>Nenhum orçamento encontrado</p>
+                              </div>
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {selectedOrcamentoCopia && (
+                      <div className="p-3 bg-secondary/10 rounded-lg border">
+                        <div className="space-y-1">
+                          <div className="font-medium text-sm">{selectedOrcamentoCopia.numero}</div>
+                          <div className="text-sm text-muted-foreground">{selectedOrcamentoCopia.cliente_nome}</div>
+                          <div className="text-xs text-muted-foreground">{selectedOrcamentoCopia.equipamento}</div>
+                          <Badge variant="outline" className="text-xs mt-2">
+                            {selectedOrcamentoCopia.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+
+                    <Button 
+                      onClick={handleCopiarDeOrcamento}
+                      disabled={!selectedOrcamentoCopia || carregandoCopia}
+                      className="w-full"
+                    >
+                      {carregandoCopia ? 'Carregando...' : 'Criar orçamento com dados copiados'}
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
             </SheetContent>
           </Sheet>
