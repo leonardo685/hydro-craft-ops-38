@@ -522,7 +522,7 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
           </Card>
         </div>
 
-        <Tabs defaultValue="faturamento" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="faturamento">
               Faturamento ({ordensRetorno.length + orcamentosEmFaturamento.length})
