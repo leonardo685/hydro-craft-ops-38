@@ -28,7 +28,7 @@ interface NotaFaturada {
   tipo: 'nota_fiscal' | 'nota_retorno' | 'orcamento_com_entrada' | 'orcamento_simples';
 }
 
-export default function Faturamento() {
+export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab?: string }) {
   const { t } = useLanguage();
   const { empresaAtual } = useEmpresa();
   const [orcamentosEmFaturamento, setOrcamentosEmFaturamento] = useState<any[]>([]);
