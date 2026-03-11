@@ -71,6 +71,11 @@ export default function Orcamentos() {
   const { t, language } = useLanguage();
   const { empresaAtual } = useEmpresa();
 
+  // Estados para copiar orçamento existente
+  const [searchTermOrcamento, setSearchTermOrcamento] = useState("");
+  const [selectedOrcamentoCopia, setSelectedOrcamentoCopia] = useState<any>(null);
+  const [carregandoCopia, setCarregandoCopia] = useState(false);
+
   // Estados para filtros
   const [dataInicio, setDataInicio] = useState<Date | undefined>();
   const [dataFim, setDataFim] = useState<Date | undefined>();
