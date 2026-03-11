@@ -17,6 +17,9 @@ interface CriarOrdemModalProps {
 
 interface ItemEnriquecido extends ItemNFe {
   ordemExistente?: string;
+  ordensExistentes?: string[];
+  ordensCriadas?: number;
+  quantidadeTotal?: number;
   indiceOriginal: number;
 }
 
@@ -44,8 +47,8 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
       return chaveRecebimento === chaveAcessoNormalizada;
     });
     
-    // Criar mapa de ordens usando código + valor como chave
-    const ordensMap = new Map<string, string>();
+    // Criar mapa de ordens usando código + valor como chave (array para múltiplas ordens)
+    const ordensMap = new Map<string, string[]>();
     ordensExistentes.forEach(ordem => {
       const matchCodigo = ordem.observacoes?.match(/Item da NFe: ([^\s|-]+)/);
       const matchValor = ordem.observacoes?.match(/Valor: ([\d.,]+)/);
@@ -53,37 +56,35 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
         const codigo = matchCodigo[1];
         const valor = matchValor ? matchValor[1].replace(',', '.') : '';
         const chave = valor ? `${codigo}|${valor}` : codigo;
-        ordensMap.set(chave, ordem.numero_ordem);
+        const existing = ordensMap.get(chave) || [];
+        existing.push(ordem.numero_ordem);
+        ordensMap.set(chave, existing);
       }
     });
     
-    // Enriquecer TODOS os itens com informação de ordem existente
+    // Enriquecer TODOS os itens com informação de ordens existentes
     const enriquecidos: ItemEnriquecido[] = (notaFiscal.itens || []).map((item: any, index: number) => {
       const valorFormatado = (item.valor_unitario || item.valorUnitario)?.toFixed(2);
       const chave = `${item.codigo}|${valorFormatado}`;
       
       // Tentar match exato (código + valor) primeiro, depois fallback para só código
-      let ordemExistente = ordensMap.get(chave);
+      let ordensDoItem = ordensMap.get(chave) || ordensMap.get(item.codigo) || [];
       
-      if (ordemExistente) {
-        // Remover do mapa para não reutilizar
-        ordensMap.delete(chave);
-      } else {
-        // Fallback: tentar match só por código (para dados antigos)
-        ordemExistente = ordensMap.get(item.codigo);
-        if (ordemExistente) {
-          ordensMap.delete(item.codigo);
-        }
-      }
+      const quantidade = item.quantidade || 1;
+      const ordensCriadas = ordensDoItem.length;
+      const todasCriadas = ordensCriadas >= quantidade;
       
       return { 
         ...item, 
-        ordemExistente,
+        ordemExistente: todasCriadas ? ordensDoItem.join(', ') : undefined,
+        ordensExistentes: ordensDoItem,
+        ordensCriadas,
+        quantidadeTotal: quantidade,
         indiceOriginal: index
       };
     });
     
-    const disponiveis = enriquecidos.filter(item => !item.ordemExistente);
+    const disponiveis = enriquecidos.filter(item => item.ordensCriadas < (item.quantidadeTotal || 1));
     
     return { itensEnriquecidos: enriquecidos, itensDisponiveis: disponiveis };
   }, [isNotaAgrupada, notaFiscal, recebimentos, chaveAcessoNormalizada]);
@@ -227,7 +228,10 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
                 <TableBody>
                   {itensParaExibir.map((item: any, index: number) => {
                     const indice = isNotaAgrupada ? index : item.indiceOriginal;
-                    const isDisabled = !isNotaAgrupada && !!item.ordemExistente;
+                    const ordensCriadas = item.ordensCriadas || 0;
+                    const quantidadeTotal = item.quantidadeTotal || item.quantidade || 1;
+                    const todasCriadas = ordensCriadas >= quantidadeTotal;
+                    const isDisabled = !isNotaAgrupada && todasCriadas;
                     
                     return (
                       <TableRow key={isNotaAgrupada ? item.id : `${item.codigo}-${index}`} className={isDisabled ? "opacity-60" : ""}>
@@ -259,11 +263,21 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
                               R$ {(item.valor_total || 0).toFixed(2)}
                             </TableCell>
                             <TableCell>
-                              {item.ordemExistente ? (
+                              {todasCriadas ? (
                                 <Badge className="bg-green-600 hover:bg-green-700 gap-1">
                                   <CheckCircle className="h-3 w-3" />
-                                  {item.ordemExistente}
+                                  {ordensCriadas}/{quantidadeTotal}
                                 </Badge>
+                              ) : ordensCriadas > 0 ? (
+                                <div className="flex flex-col gap-1">
+                                  <Badge variant="secondary" className="gap-1 text-xs">
+                                    {ordensCriadas}/{quantidadeTotal} criadas
+                                  </Badge>
+                                  <Badge variant="outline" className="gap-1 text-muted-foreground text-xs">
+                                    <FileText className="h-3 w-3" />
+                                    Disponível
+                                  </Badge>
+                                </div>
                               ) : (
                                 <Badge variant="outline" className="gap-1 text-muted-foreground">
                                   <FileText className="h-3 w-3" />
