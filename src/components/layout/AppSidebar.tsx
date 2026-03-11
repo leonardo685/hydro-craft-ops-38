@@ -140,41 +140,48 @@ export function AppSidebar() {
           <SidebarGroupLabel>{t('menu.managementSystem')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filteredMenuItems.map((item) => (
-                item.submenu ? (
-                  <Collapsible key={item.title} defaultOpen={location.pathname.startsWith("/financeiro")}>
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton isActive={location.pathname.startsWith("/financeiro")}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                          <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {item.submenu
-                            .filter((subItem: any) => hasPermission(subItem.permission))
-                            .map((subItem: any) => (
-                              <SidebarMenuSubItem key={subItem.title}>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={location.pathname === subItem.url}
-                                >
-                                  <button
-                                    onClick={() => navigate(subItem.url)}
-                                    className="w-full text-left"
+              {filteredMenuItems.map((item) => {
+                if (item.submenu) {
+                  const basePath = item.submenu[0]?.url?.split('/')[1] || '';
+                  const isGroupActive = location.pathname.startsWith(`/${basePath}`);
+                  
+                  return (
+                    <Collapsible key={item.title} defaultOpen={isGroupActive}>
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton isActive={isGroupActive}>
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                            <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {item.submenu
+                              .filter((subItem: any) => hasPermission(subItem.permission))
+                              .map((subItem: any) => (
+                                <SidebarMenuSubItem key={subItem.url}>
+                                  <SidebarMenuSubButton
+                                    asChild
+                                    isActive={location.pathname === subItem.url}
                                   >
-                                    {subItem.title}
-                                  </button>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                ) : (
+                                    <button
+                                      onClick={() => navigate(subItem.url)}
+                                      className="w-full text-left"
+                                    >
+                                      {subItem.title}
+                                    </button>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  );
+                }
+
+                return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
@@ -190,8 +197,8 @@ export function AppSidebar() {
                       </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )
-              ))}
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
