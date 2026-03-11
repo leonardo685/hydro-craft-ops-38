@@ -228,7 +228,10 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
                 <TableBody>
                   {itensParaExibir.map((item: any, index: number) => {
                     const indice = isNotaAgrupada ? index : item.indiceOriginal;
-                    const isDisabled = !isNotaAgrupada && !!item.ordemExistente;
+                    const ordensCriadas = item.ordensCriadas || 0;
+                    const quantidadeTotal = item.quantidadeTotal || item.quantidade || 1;
+                    const todasCriadas = ordensCriadas >= quantidadeTotal;
+                    const isDisabled = !isNotaAgrupada && todasCriadas;
                     
                     return (
                       <TableRow key={isNotaAgrupada ? item.id : `${item.codigo}-${index}`} className={isDisabled ? "opacity-60" : ""}>
