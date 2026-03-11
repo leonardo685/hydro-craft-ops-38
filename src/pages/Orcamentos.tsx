@@ -221,6 +221,57 @@ export default function Orcamentos() {
     setIsSheetOpen(false);
   };
 
+  // Filtrar orçamentos para cópia
+  const orcamentosParaCopia = useMemo(() => {
+    if (!searchTermOrcamento) return orcamentos.slice(0, 20);
+    const termo = searchTermOrcamento.toLowerCase();
+    return orcamentos.filter(o =>
+      o.numero?.toLowerCase().includes(termo) ||
+      o.cliente_nome?.toLowerCase().includes(termo) ||
+      o.equipamento?.toLowerCase().includes(termo)
+    ).slice(0, 20);
+  }, [searchTermOrcamento, orcamentos]);
+
+  const handleCopiarDeOrcamento = async () => {
+    if (!selectedOrcamentoCopia || !empresaAtual?.id) {
+      toast.error('Selecione um orçamento para copiar');
+      return;
+    }
+
+    setCarregandoCopia(true);
+    try {
+      // Fetch items
+      const { data: itensData } = await supabase
+        .from('itens_orcamento')
+        .select('*')
+        .eq('orcamento_id', selectedOrcamentoCopia.id);
+
+      // Fetch photos
+      const { data: fotosData } = await supabase
+        .from('fotos_orcamento')
+        .select('*')
+        .eq('orcamento_id', selectedOrcamentoCopia.id);
+
+      navigate('/orcamentos/novo', {
+        state: {
+          copiaOrcamento: {
+            itens: itensData || [],
+            fotos: fotosData || [],
+            equipamento: selectedOrcamentoCopia.equipamento || '',
+          }
+        }
+      });
+      setIsSheetOpen(false);
+      setSelectedOrcamentoCopia(null);
+      setSearchTermOrcamento('');
+    } catch (error) {
+      console.error('Erro ao copiar orçamento:', error);
+      toast.error('Erro ao copiar dados do orçamento');
+    } finally {
+      setCarregandoCopia(false);
+    }
+  };
+
   const [showAprovarModal, setShowAprovarModal] = useState(false);
   const [orcamentoParaAprovar, setOrcamentoParaAprovar] = useState<any>(null);
   const [showPrecificacaoModal, setShowPrecificacaoModal] = useState(false);
