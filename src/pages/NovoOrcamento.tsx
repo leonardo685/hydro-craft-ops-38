@@ -42,6 +42,7 @@ export default function NovoOrcamento() {
   const analiseId = searchParams.get('analiseId');
   const ordemServicoId = searchParams.get('ordemServicoId');
   const orcamentoParaEdicao = location.state?.orcamento;
+  const copiaOrcamento = location.state?.copiaOrcamento;
   const { empresaAtual } = useEmpresa();
   const { t, language } = useLanguage();
   
@@ -602,6 +603,65 @@ export default function NovoOrcamento() {
           numeroOrdem: proximoNumero,
           numeroSerie: '' // Deixar vazio - será gerado apenas se baseado em ordem de serviço
         }));
+      }
+
+      // Handle copiaOrcamento - copiar itens e fotos de orçamento existente
+      if (copiaOrcamento) {
+        const { itens, fotos: fotosCopia, equipamento } = copiaOrcamento;
+
+        // Populate equipamento if available
+        if (equipamento) {
+          setDadosOrcamento(prev => ({ ...prev, tag: equipamento }));
+        }
+
+        // Parse items into pecas, servicos, usinagem
+        if (itens && Array.isArray(itens) && itens.length > 0) {
+          const pecas = itens.filter((i: any) => i.tipo === 'peca').map((i: any, idx: number) => ({
+            id: `peca-copia-${idx}`,
+            tipo: 'peca' as const,
+            descricao: i.descricao || '',
+            codigo: i.codigo || '',
+            quantidade: Number(i.quantidade) || 1,
+            valorUnitario: Number(i.valor_unitario) || 0,
+            valorTotal: Number(i.valor_total) || 0,
+            detalhes: i.detalhes as { material?: string; medidas?: string } | undefined,
+          }));
+          const servicos = itens.filter((i: any) => i.tipo === 'servico').map((i: any, idx: number) => ({
+            id: `servico-copia-${idx}`,
+            tipo: 'servico' as const,
+            descricao: i.descricao || '',
+            codigo: i.codigo || '',
+            quantidade: Number(i.quantidade) || 1,
+            valorUnitario: Number(i.valor_unitario) || 0,
+            valorTotal: Number(i.valor_total) || 0,
+            detalhes: i.detalhes as { material?: string; medidas?: string } | undefined,
+          }));
+          const usinagem = itens.filter((i: any) => i.tipo === 'usinagem').map((i: any, idx: number) => ({
+            id: `usinagem-copia-${idx}`,
+            tipo: 'usinagem' as const,
+            descricao: i.descricao || '',
+            codigo: i.codigo || '',
+            quantidade: Number(i.quantidade) || 1,
+            valorUnitario: Number(i.valor_unitario) || 0,
+            valorTotal: Number(i.valor_total) || 0,
+            detalhes: i.detalhes as { material?: string; medidas?: string } | undefined,
+          }));
+          setItensAnalise({ pecas, servicos, usinagem });
+        }
+
+        // Load photos (reuse URLs)
+        if (fotosCopia && Array.isArray(fotosCopia) && fotosCopia.length > 0) {
+          setFotos(fotosCopia.map((f: any) => ({
+            id: f.id,
+            arquivo_url: f.arquivo_url,
+            nome_arquivo: f.nome_arquivo,
+            apresentar_orcamento: f.apresentar_orcamento || false,
+            recebimento_id: null,
+            legenda: f.legenda || null,
+          })));
+        }
+
+        return; // Don't proceed to ordemServicoId logic
       }
 
       if (ordemServicoId) {

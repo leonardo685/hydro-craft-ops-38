@@ -1,38 +1,51 @@
 
 
-## Plan: Add "Copy from Existing Budget" Option in Blank Budget Creation
+# Plan: "Copiar Ordem de Serviço" on Nova Análise (NovaOrdemDireta)
 
-### Overview
-Add a third option in the new budget creation sheet: "Copiar de Orçamento Existente". This allows the user to search and select an existing budget, then navigate to the new budget form pre-filled with only technical data (items: peças, serviços, usinagem) and photos — keeping all header and commercial fields blank/editable.
+## What will be built
 
-### Changes
+A searchable/editable dropdown at the top of the "Informações Básicas" card in `NovaOrdemDireta.tsx` that lets the user select an existing order to copy. When selected, it loads all data from that order (client, equipment, technical data, parts, services, machining, observations, photos, and documents) into the form, keeping only the auto-generated new order number.
 
-**1. `src/pages/Orcamentos.tsx` — Add third card in the Sheet**
+## Changes
 
-- Add state: `searchTermOrcamento`, `orcamentosFiltered`, `selectedOrcamentoCopia`
-- Add a search input + select dropdown to pick an existing budget (similar to "Baseado em Ordem de Serviço" pattern)
-- On confirm, fetch the selected budget's items (`itens_orcamento`) and photos (`fotos_orcamento`) from Supabase
-- Navigate to `/orcamentos/novo` passing a `copiaOrcamento` object in `location.state` containing only `itens` and `fotos` arrays (no header/commercial data, no `ordem_referencia`, no `ordem_servico_id`, no `numero_nota`)
+### 1. `src/pages/NovaOrdemDireta.tsx`
 
-**2. `src/pages/NovoOrcamento.tsx` — Handle `copiaOrcamento` state**
+**New state and data loading:**
+- Add state for the searchable order list and search term
+- Fetch existing `ordens_servico` (filtered by `empresa_id`) on mount, loading `numero_ordem`, `id`, `cliente_nome`, `equipamento`
+- On order selection, fetch the full order record plus its related `fotos_equipamentos`, `documentos_ordem`, and linked client
 
-- Detect `location.state?.copiaOrcamento` 
-- If present, populate `itensAnalise` (pecas, servicos, usinagem) from the copied items
-- Load copied photos into the `fotos` state (reuse existing photo URLs)
-- Keep all `dadosOrcamento` fields at their defaults (blank client, blank nota, new auto-generated number)
-- Keep all `informacoesComerciais` at defaults
-- Generate a new budget number as usual
+**Copy logic (`copiarOrdem` function):**
+- Populate `formData` fields: client, equipment, serial number, invoice, urgency, technician, problems, priority, observations, failure reason
+- Populate `dadosTecnicos` from the order's technical columns (camisa, haste, curso, etc.)
+- Populate `pecasUtilizadas` from `pecas_necessarias` JSON
+- Populate services/machining checkboxes and arrays from `servicos_necessarios` / `usinagem_necessaria` JSON
+- Download photos from storage and create File objects to populate `fotosChegada` and `fotosAnalise` with previews
+- Download documents similarly into `documentos` array
+- Keep `formData.numeroOrdem` unchanged (the auto-generated new number)
 
-### UI in Sheet
-The third card will appear between "Orçamento em Branco" and "Baseado em Ordem de Serviço":
-- Icon: `Copy` 
-- Title: "Copiar de Orçamento Existente"
-- Description: "Copiar peças, serviços e fotos de um orçamento existente"
-- Search input to filter budgets by number, client, or equipment
-- Select dropdown with filtered results
-- Confirm button
+**UI addition:**
+- Add a new row in the "Informações Básicas" card, before the existing fields
+- Searchable combobox using the existing `cmdk` / `Command` component pattern, showing orders as `{numero_ordem} - {cliente_nome} - {equipamento}`
+- Label: "Copiar de Ordem Existente" with a Copy icon
+- When an order is selected, a toast confirms "Dados copiados da ordem {numero}"
 
-### Data Copied vs Not Copied
-- **Copied**: items (peças, serviços, usinagem with quantities/values), photos (URLs + legends + apresentar flag)
-- **Not copied**: client, nota fiscal, ordem referência, commercial terms, pricing fields, dates — all start blank/default
+### 2. Data flow
+
+```text
+User types in searchable dropdown
+  → filters ordens_servico list
+  → user selects one
+  → fetch full order + fotos + docs from Supabase
+  → populate all form states
+  → keep new numero_ordem intact
+  → user can edit anything before saving
+```
+
+### Technical notes
+
+- Photos will be fetched as blob URLs for preview, and re-uploaded as new files on save (they are already handled by the existing `uploadFotos` function)
+- Documents similarly fetched and added to the `documentos` state for re-upload
+- The client is matched by name from the `clientes` list to set the correct `formData.cliente` (client ID)
+- Services/machining are parsed from the JSONB arrays stored in the order
 
