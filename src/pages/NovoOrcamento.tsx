@@ -42,6 +42,7 @@ export default function NovoOrcamento() {
   const analiseId = searchParams.get('analiseId');
   const ordemServicoId = searchParams.get('ordemServicoId');
   const orcamentoParaEdicao = location.state?.orcamento;
+  const copiaOrcamento = location.state?.copiaOrcamento;
   const { empresaAtual } = useEmpresa();
   const { t, language } = useLanguage();
   
