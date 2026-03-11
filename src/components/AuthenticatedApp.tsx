@@ -17,6 +17,7 @@ import Aprovados from "@/pages/Aprovados";
 import Compras from "@/pages/Compras";
 import VisualizarOrdemServico from "@/pages/VisualizarOrdemServico";
 import Faturamento from "@/pages/Faturamento";
+import DashboardFaturamento from "@/pages/DashboardFaturamento";
 import Cadastros from "@/pages/Cadastros";
 import Financeiro from "@/pages/Financeiro";
 import Dashboard from "@/pages/Dashboard";
