@@ -44,8 +44,8 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
       return chaveRecebimento === chaveAcessoNormalizada;
     });
     
-    // Criar mapa de ordens usando código + valor como chave
-    const ordensMap = new Map<string, string>();
+    // Criar mapa de ordens usando código + valor como chave (array para múltiplas ordens)
+    const ordensMap = new Map<string, string[]>();
     ordensExistentes.forEach(ordem => {
       const matchCodigo = ordem.observacoes?.match(/Item da NFe: ([^\s|-]+)/);
       const matchValor = ordem.observacoes?.match(/Valor: ([\d.,]+)/);
@@ -53,37 +53,35 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
         const codigo = matchCodigo[1];
         const valor = matchValor ? matchValor[1].replace(',', '.') : '';
         const chave = valor ? `${codigo}|${valor}` : codigo;
-        ordensMap.set(chave, ordem.numero_ordem);
+        const existing = ordensMap.get(chave) || [];
+        existing.push(ordem.numero_ordem);
+        ordensMap.set(chave, existing);
       }
     });
     
-    // Enriquecer TODOS os itens com informação de ordem existente
+    // Enriquecer TODOS os itens com informação de ordens existentes
     const enriquecidos: ItemEnriquecido[] = (notaFiscal.itens || []).map((item: any, index: number) => {
       const valorFormatado = (item.valor_unitario || item.valorUnitario)?.toFixed(2);
       const chave = `${item.codigo}|${valorFormatado}`;
       
       // Tentar match exato (código + valor) primeiro, depois fallback para só código
-      let ordemExistente = ordensMap.get(chave);
+      let ordensDoItem = ordensMap.get(chave) || ordensMap.get(item.codigo) || [];
       
-      if (ordemExistente) {
-        // Remover do mapa para não reutilizar
-        ordensMap.delete(chave);
-      } else {
-        // Fallback: tentar match só por código (para dados antigos)
-        ordemExistente = ordensMap.get(item.codigo);
-        if (ordemExistente) {
-          ordensMap.delete(item.codigo);
-        }
-      }
+      const quantidade = item.quantidade || 1;
+      const ordensCriadas = ordensDoItem.length;
+      const todasCriadas = ordensCriadas >= quantidade;
       
       return { 
         ...item, 
-        ordemExistente,
+        ordemExistente: todasCriadas ? ordensDoItem.join(', ') : undefined,
+        ordensExistentes: ordensDoItem,
+        ordensCriadas,
+        quantidadeTotal: quantidade,
         indiceOriginal: index
       };
     });
     
-    const disponiveis = enriquecidos.filter(item => !item.ordemExistente);
+    const disponiveis = enriquecidos.filter(item => item.ordensCriadas < (item.quantidadeTotal || 1));
     
     return { itensEnriquecidos: enriquecidos, itensDisponiveis: disponiveis };
   }, [isNotaAgrupada, notaFiscal, recebimentos, chaveAcessoNormalizada]);
