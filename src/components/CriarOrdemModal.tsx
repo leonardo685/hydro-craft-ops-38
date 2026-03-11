@@ -17,6 +17,9 @@ interface CriarOrdemModalProps {
 
 interface ItemEnriquecido extends ItemNFe {
   ordemExistente?: string;
+  ordensExistentes?: string[];
+  ordensCriadas?: number;
+  quantidadeTotal?: number;
   indiceOriginal: number;
 }
 
