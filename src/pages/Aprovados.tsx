@@ -750,6 +750,17 @@ export default function Aprovados() {
         </DialogContent>
       </Dialog>
       
+      {/* Modal Vincular NFe */}
+      {vincularNFeModal && (
+        <VincularNFeModal
+          open={true}
+          onClose={() => setVincularNFeModal(null)}
+          recebimentoId={vincularNFeModal.recebimentoId}
+          numeroOrdem={vincularNFeModal.numeroOrdem}
+          onSuccess={() => loadOrdensAprovadas()}
+        />
+      )}
+      
       </div>
     </AppLayout>;
 }
