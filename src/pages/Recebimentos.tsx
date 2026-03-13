@@ -46,7 +46,7 @@ export default function Recebimentos() {
   const [avisoNovaNotaFiscal, setAvisoNovaNotaFiscal] = useState(false);
   const [ordensFinalizadas, setOrdensFinalizadas] = useState<any[]>([]);
   const [previewDanfe, setPreviewDanfe] = useState<DadosNFe | null>(null);
-  
+  const [vincularNFeModal, setVincularNFeModal] = useState<{ recebimentoId: number; numeroOrdem: string } | null>(null);
   // Estados para filtros
   const [dataInicio, setDataInicio] = useState<Date>();
   const [dataFim, setDataFim] = useState<Date>();
