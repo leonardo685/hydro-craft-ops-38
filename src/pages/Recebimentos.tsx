@@ -342,7 +342,7 @@ export default function Recebimentos() {
       });
     
     return Array.from(grupos.values());
-  }, [recebimentos, notasFiscais, filtroNotaFiscal, filtroCliente, dataInicio, dataFim]);
+  }, [recebimentos, notasFiscais, filtroNotaFiscal, filtroNotaEntrada, filtroCliente, dataInicio, dataFim]);
 
   return (
     <AppLayout>
