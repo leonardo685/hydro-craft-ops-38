@@ -308,7 +308,13 @@ export default function Recebimentos() {
           if (dataItem > dataFim) return false;
         }
         
-        return true;
+        // Filtro por N° da Ordem
+        if (filtroNotaEntrada && filtroNotaEntrada.trim().length > 0) {
+          if (!r.numero_ordem.toLowerCase().includes(filtroNotaEntrada.toLowerCase())) {
+            return false;
+          }
+        }
+        
       })
       .forEach(recebimento => {
         const numeroNotaNormalizado = normalizarNumeroNota(recebimento.nota_fiscal);
