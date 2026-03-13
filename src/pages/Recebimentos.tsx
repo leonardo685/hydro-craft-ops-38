@@ -1138,6 +1138,17 @@ export default function Recebimentos() {
           onClose={() => setPreviewDanfe(null)}
           dados={previewDanfe}
         />
+
+        {/* Modal Vincular NFe */}
+        {vincularNFeModal && (
+          <VincularNFeModal
+            open={true}
+            onClose={() => setVincularNFeModal(null)}
+            recebimentoId={vincularNFeModal.recebimentoId}
+            numeroOrdem={vincularNFeModal.numeroOrdem}
+            onSuccess={() => recarregar()}
+          />
+        )}
       </div>
     </AppLayout>
   );

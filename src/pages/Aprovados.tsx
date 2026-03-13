@@ -23,6 +23,7 @@ import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { VincularNFeModal } from "@/components/VincularNFeModal";
 
 interface HistoricoBuscaLaudo {
   numeroOrdem: string;
