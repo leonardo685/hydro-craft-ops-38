@@ -46,6 +46,7 @@ export default function Aprovados() {
   const [erroLaudo, setErroLaudo] = useState<string | null>(null);
   const [historicoBuscas, setHistoricoBuscas] = useState<HistoricoBuscaLaudo[]>([]);
   const [etiquetaOrdem, setEtiquetaOrdem] = useState<any>(null);
+  const [vincularNFeModal, setVincularNFeModal] = useState<{ recebimentoId: number; numeroOrdem: string } | null>(null);
   const {
     toast
   } = useToast();
