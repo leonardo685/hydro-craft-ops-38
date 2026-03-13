@@ -29,6 +29,7 @@ import type { DadosNFe, ItemNFe } from "@/lib/nfe-utils";
 import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useEmpresaId } from "@/hooks/use-empresa-id";
+import { VincularNFeModal } from "@/components/VincularNFeModal";
 
 // Removed localStorage function since we're now using Supabase data
 
