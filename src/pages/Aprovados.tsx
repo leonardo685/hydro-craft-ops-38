@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera, Video, ClipboardCheck, ExternalLink, Search, History, AlertCircle, Printer } from "lucide-react";
+import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera, Video, ClipboardCheck, ExternalLink, Search, History, AlertCircle, Printer, Link2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,7 @@ import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { VincularNFeModal } from "@/components/VincularNFeModal";
 
 interface HistoricoBuscaLaudo {
   numeroOrdem: string;
@@ -45,6 +46,7 @@ export default function Aprovados() {
   const [erroLaudo, setErroLaudo] = useState<string | null>(null);
   const [historicoBuscas, setHistoricoBuscas] = useState<HistoricoBuscaLaudo[]>([]);
   const [etiquetaOrdem, setEtiquetaOrdem] = useState<any>(null);
+  const [vincularNFeModal, setVincularNFeModal] = useState<{ recebimentoId: number; numeroOrdem: string } | null>(null);
   const {
     toast
   } = useToast();
@@ -537,6 +539,16 @@ export default function Aprovados() {
                           <Printer className="h-4 w-4 mr-2" />
                           Etiqueta
                         </Button>
+
+                        {ordem.recebimento_id && !ordem.recebimentos?.chave_acesso_nfe && (
+                          <Button variant="outline" size="sm" onClick={() => setVincularNFeModal({
+                            recebimentoId: ordem.recebimento_id,
+                            numeroOrdem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem || '',
+                          })}>
+                            <Link2 className="h-4 w-4 mr-2" />
+                            Vincular NFe
+                          </Button>
+                        )}
                       </div>
 
                       {etiquetaOrdem && etiquetaOrdem.numeroOrdem === (ordem.recebimentos?.numero_ordem || ordem.numero_ordem) && (
@@ -737,6 +749,17 @@ export default function Aprovados() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Modal Vincular NFe */}
+      {vincularNFeModal && (
+        <VincularNFeModal
+          open={true}
+          onClose={() => setVincularNFeModal(null)}
+          recebimentoId={vincularNFeModal.recebimentoId}
+          numeroOrdem={vincularNFeModal.numeroOrdem}
+          onSuccess={() => loadOrdensAprovadas()}
+        />
+      )}
       
       </div>
     </AppLayout>;

@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText, ChevronDown, Settings, FileCheck, Printer } from "lucide-react";
+import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText, ChevronDown, Settings, FileCheck, Printer, Link2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
@@ -29,6 +29,7 @@ import type { DadosNFe, ItemNFe } from "@/lib/nfe-utils";
 import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useEmpresaId } from "@/hooks/use-empresa-id";
+import { VincularNFeModal } from "@/components/VincularNFeModal";
 
 // Removed localStorage function since we're now using Supabase data
 
@@ -45,7 +46,7 @@ export default function Recebimentos() {
   const [avisoNovaNotaFiscal, setAvisoNovaNotaFiscal] = useState(false);
   const [ordensFinalizadas, setOrdensFinalizadas] = useState<any[]>([]);
   const [previewDanfe, setPreviewDanfe] = useState<DadosNFe | null>(null);
-  
+  const [vincularNFeModal, setVincularNFeModal] = useState<{ recebimentoId: number; numeroOrdem: string } | null>(null);
   // Estados para filtros
   const [dataInicio, setDataInicio] = useState<Date>();
   const [dataFim, setDataFim] = useState<Date>();
@@ -557,6 +558,17 @@ export default function Recebimentos() {
                                 className="h-8"
                               >
                                 <Play className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {!item.chave_acesso_nfe && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setVincularNFeModal({ recebimentoId: item.id, numeroOrdem: item.numero_ordem })}
+                                className="h-8"
+                                title="Vincular Nota Fiscal"
+                              >
+                                <Link2 className="h-4 w-4" />
                               </Button>
                             )}
                             <Button
@@ -1126,6 +1138,17 @@ export default function Recebimentos() {
           onClose={() => setPreviewDanfe(null)}
           dados={previewDanfe}
         />
+
+        {/* Modal Vincular NFe */}
+        {vincularNFeModal && (
+          <VincularNFeModal
+            open={true}
+            onClose={() => setVincularNFeModal(null)}
+            recebimentoId={vincularNFeModal.recebimentoId}
+            numeroOrdem={vincularNFeModal.numeroOrdem}
+            onSuccess={() => recarregar()}
+          />
+        )}
       </div>
     </AppLayout>
   );
