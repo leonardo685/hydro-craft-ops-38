@@ -1,51 +1,44 @@
 
 
-# Plan: "Copiar Ordem de Serviço" on Nova Análise (NovaOrdemDireta)
+## Plan: Vincular Nota Fiscal a Ordem Existente
 
-## What will be built
+### Problem
+Orders created without an NFe (like MH-037-25) lack `nota_fiscal`, `nota_fiscal_id`, and `chave_acesso_nfe` on their `recebimentos` record, so they don't appear in the "Notas Fiscais" tab.
 
-A searchable/editable dropdown at the top of the "Informações Básicas" card in `NovaOrdemDireta.tsx` that lets the user select an existing order to copy. When selected, it loads all data from that order (client, equipment, technical data, parts, services, machining, observations, photos, and documents) into the form, keeping only the auto-generated new order number.
+### Solution
+Create a new modal `VincularNFeModal` that allows linking an NFe access key to an existing order. Add a button on each order card in the Aprovados page (and potentially Recebimentos).
 
-## Changes
+### Flow
+1. User clicks "Vincular NFe" button on an order card
+2. Modal opens with an input for the 44-digit access key
+3. System validates the key, extracts NFe data (reusing existing `nfe-utils`)
+4. System saves/finds the `notas_fiscais` record and its `itens_nfe`
+5. System updates the `recebimentos` record with `nota_fiscal`, `nota_fiscal_id`, `chave_acesso_nfe`, and `descricao_nfe`
+6. Toast confirms success, data reloads
 
-### 1. `src/pages/NovaOrdemDireta.tsx`
+### Changes
 
-**New state and data loading:**
-- Add state for the searchable order list and search term
-- Fetch existing `ordens_servico` (filtered by `empresa_id`) on mount, loading `numero_ordem`, `id`, `cliente_nome`, `equipamento`
-- On order selection, fetch the full order record plus its related `fotos_equipamentos`, `documentos_ordem`, and linked client
+**1. New component: `src/components/VincularNFeModal.tsx`**
+- Props: `open`, `onClose`, `ordem` (the order to link), `onSuccess` callback
+- Input for access key, validate button (reuses `validarChaveAcesso`, `extrairDadosNFe`)
+- Shows extracted NFe info (number, CNPJ, items)
+- If multiple items on the NFe, let user pick which item corresponds to this order
+- On confirm: upsert `notas_fiscais` + `itens_nfe`, then update `recebimentos` setting `nota_fiscal`, `nota_fiscal_id`, `chave_acesso_nfe`
+- Uses existing `useRecebimentos().criarNotaFiscal()` for the NFe record, then a direct Supabase update on the recebimento
 
-**Copy logic (`copiarOrdem` function):**
-- Populate `formData` fields: client, equipment, serial number, invoice, urgency, technician, problems, priority, observations, failure reason
-- Populate `dadosTecnicos` from the order's technical columns (camisa, haste, curso, etc.)
-- Populate `pecasUtilizadas` from `pecas_necessarias` JSON
-- Populate services/machining checkboxes and arrays from `servicos_necessarios` / `usinagem_necessaria` JSON
-- Download photos from storage and create File objects to populate `fotosChegada` and `fotosAnalise` with previews
-- Download documents similarly into `documentos` array
-- Keep `formData.numeroOrdem` unchanged (the auto-generated new number)
+**2. `src/pages/Aprovados.tsx` — Add "Vincular NFe" button**
+- Import `VincularNFeModal`
+- Add state for modal open + selected order
+- Show the button only when the order's `recebimentos?.chave_acesso_nfe` is null
+- On success, reload orders
 
-**UI addition:**
-- Add a new row in the "Informações Básicas" card, before the existing fields
-- Searchable combobox using the existing `cmdk` / `Command` component pattern, showing orders as `{numero_ordem} - {cliente_nome} - {equipamento}`
-- Label: "Copiar de Ordem Existente" with a Copy icon
-- When an order is selected, a toast confirms "Dados copiados da ordem {numero}"
+**3. `src/pages/Recebimentos.tsx` — Add "Vincular NFe" option (optional, same pattern)**
+- Add the same button in the orders tab for orders without an NFe linked
 
-### 2. Data flow
-
-```text
-User types in searchable dropdown
-  → filters ordens_servico list
-  → user selects one
-  → fetch full order + fotos + docs from Supabase
-  → populate all form states
-  → keep new numero_ordem intact
-  → user can edit anything before saving
-```
-
-### Technical notes
-
-- Photos will be fetched as blob URLs for preview, and re-uploaded as new files on save (they are already handled by the existing `uploadFotos` function)
-- Documents similarly fetched and added to the `documentos` state for re-upload
-- The client is matched by name from the `clientes` list to set the correct `formData.cliente` (client ID)
-- Services/machining are parsed from the JSONB arrays stored in the order
+### Data Updated on `recebimentos`
+- `nota_fiscal` → NFe number (e.g., "956828")
+- `nota_fiscal_id` → UUID of the `notas_fiscais` record
+- `chave_acesso_nfe` → normalized 44-digit key
+- `descricao_nfe` → item description from NFe (if user selects one)
+- `observacoes` → updated with "Item da NFe: CODE | Valor: VALUE" for matching
 
