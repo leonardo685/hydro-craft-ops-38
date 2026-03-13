@@ -315,6 +315,7 @@ export default function Recebimentos() {
           }
         }
         
+        return true;
       })
       .forEach(recebimento => {
         const numeroNotaNormalizado = normalizarNumeroNota(recebimento.nota_fiscal);
