@@ -236,6 +236,18 @@ export default function Recebimentos() {
         if (dataItem > dataFim) return;
       }
       
+      // Filtro por N° da Ordem: verificar se algum recebimento vinculado a esta nota tem o numero_ordem
+      if (filtroNotaEntrada && filtroNotaEntrada.trim().length > 0) {
+        const recebimentosDaNota = recebimentos.filter(r => {
+          const notaRecNorm = normalizarNumeroNota(r.nota_fiscal);
+          return notaRecNorm === numeroNotaNormalizado;
+        });
+        const matchOrdem = recebimentosDaNota.some(r => 
+          r.numero_ordem.toLowerCase().includes(filtroNotaEntrada.toLowerCase())
+        );
+        if (!matchOrdem) return;
+      }
+      
       // Usar número normalizado como chave para evitar duplicatas
       if (!grupos.has(numeroNotaNormalizado)) {
         grupos.set(numeroNotaNormalizado, {
