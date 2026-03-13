@@ -539,6 +539,16 @@ export default function Aprovados() {
                           <Printer className="h-4 w-4 mr-2" />
                           Etiqueta
                         </Button>
+
+                        {ordem.recebimento_id && !ordem.recebimentos?.chave_acesso_nfe && (
+                          <Button variant="outline" size="sm" onClick={() => setVincularNFeModal({
+                            recebimentoId: ordem.recebimento_id,
+                            numeroOrdem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem || '',
+                          })}>
+                            <Link2 className="h-4 w-4 mr-2" />
+                            Vincular NFe
+                          </Button>
+                        )}
                       </div>
 
                       {etiquetaOrdem && etiquetaOrdem.numeroOrdem === (ordem.recebimentos?.numero_ordem || ordem.numero_ordem) && (
