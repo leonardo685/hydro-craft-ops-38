@@ -560,6 +560,17 @@ export default function Recebimentos() {
                                 <Play className="h-4 w-4" />
                               </Button>
                             )}
+                            {!item.chave_acesso_nfe && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setVincularNFeModal({ recebimentoId: item.id, numeroOrdem: item.numero_ordem })}
+                                className="h-8"
+                                title="Vincular Nota Fiscal"
+                              >
+                                <Link2 className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
