@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText, ChevronDown, Settings, FileCheck, Printer } from "lucide-react";
+import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText, ChevronDown, Settings, FileCheck, Printer, Link2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
