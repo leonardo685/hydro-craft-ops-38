@@ -8,6 +8,7 @@ export interface Cliente {
   nome: string;
   cnpj_cpf?: string;
   email?: string;
+  emails_adicionais?: string[];
   telefone?: string;
   endereco?: string;
   cidade?: string;
