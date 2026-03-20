@@ -1179,6 +1179,45 @@ const NovaOrdemServico = () => {
     });
   }, [id, recebimentos, loading]);
 
+  // Handler para upload de documentos técnicos
+  const handleDocumentoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newDocs: Array<{ file: File; nome: string; tipo: string }> = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const tipo = file.type;
+      if (
+        tipo.includes('pdf') || tipo.includes('spreadsheet') || tipo.includes('excel') ||
+        tipo.includes('word') || tipo.includes('document') ||
+        file.name.endsWith('.xlsx') || file.name.endsWith('.xls') ||
+        file.name.endsWith('.pdf') || file.name.endsWith('.doc') || file.name.endsWith('.docx')
+      ) {
+        newDocs.push({ file, nome: file.name, tipo: tipo || 'application/octet-stream' });
+      } else {
+        toast({
+          title: "Formato não suportado",
+          description: `O arquivo ${file.name} não é um documento válido (PDF, Excel, Word)`,
+          variant: "destructive",
+        });
+      }
+    }
+    setNovosDocumentos(prev => [...prev, ...newDocs]);
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleRemoverDocumentoExistente = async (docId: string) => {
+    try {
+      await supabase.from('documentos_ordem').delete().eq('id', docId);
+      setDocumentosPdf(prev => prev.filter(d => d.id !== docId));
+      toast({ title: "Documento removido" });
+    } catch (error) {
+      console.error('Erro ao remover documento:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
