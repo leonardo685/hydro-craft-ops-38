@@ -3,10 +3,13 @@ import { ThemeProvider } from "next-themes"
 import App from './App.tsx'
 import './index.css'
 
-const root = document.getElementById("root")!;
+const container = document.getElementById("root")!;
+const root = createRoot(container);
 
-createRoot(root).render(
+const AppWithTheme = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
     <App />
   </ThemeProvider>
 );
+
+root.render(<AppWithTheme />);
