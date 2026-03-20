@@ -129,6 +129,16 @@ export default function EmitirNotaModal({
     try {
       const WEBHOOK_URL_EMAIL_NF = 'https://primary-production-dc42.up.railway.app/webhook-test/63fc063c-8cd3-4cef-8a5a-efec4c7821a0';
       
+      // Upload do PDF se ainda não foi feito
+      let pdfUrl = urlAnexoUpload || orcamento?.pdf_nota_fiscal || '';
+      if (!pdfUrl && anexoNota) {
+        const uploadedUrl = await uploadAnexo();
+        if (uploadedUrl) {
+          pdfUrl = uploadedUrl;
+          setUrlAnexoUpload(uploadedUrl);
+        }
+      }
+
       // Dias de faturamento vem do prazo_pagamento definido na aprovação do orçamento
       const diasFaturamento = orcamento?.prazo_pagamento || 0;
 
@@ -143,7 +153,7 @@ export default function EmitirNotaModal({
         nota_entrada: orcamento?.numero_nota_entrada || '',
         cliente_nome: orcamento?.cliente_nome || '',
         valor: orcamento?.valor || 0,
-        pdf_nota_fiscal_url: orcamento?.pdf_nota_fiscal || '',
+        pdf_nota_fiscal_url: pdfUrl,
         equipamento: orcamento?.equipamento || '',
         tipo_ordem: tipoOrdemNome,
         empresa_id: empresaAtual?.id || ''
