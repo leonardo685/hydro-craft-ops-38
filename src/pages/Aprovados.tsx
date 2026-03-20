@@ -394,11 +394,12 @@ export default function Aprovados() {
                           </div>
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
-                              <OrdemServicoModal ordem={ordem}>
-                                <button className="text-primary hover:underline cursor-pointer">
-                                  {ordem.recebimentos?.numero_ordem || ordem.numero_ordem || 'Sem número'}
-                                </button>
-                              </OrdemServicoModal>
+                              <button 
+                                className="text-primary hover:underline cursor-pointer"
+                                onClick={() => navigate(`/visualizar-ordem-servico/${ordem.id}`)}
+                              >
+                                {ordem.recebimentos?.numero_ordem || ordem.numero_ordem || 'Sem número'}
+                              </button>
                               {ordem.orcamentos && ordem.orcamentos.length > 0 && ordem.orcamentos[0]?.numero && (
                                 <Badge className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border-emerald-300 text-sm font-medium">
                                   #{ordem.orcamentos[0].numero}
