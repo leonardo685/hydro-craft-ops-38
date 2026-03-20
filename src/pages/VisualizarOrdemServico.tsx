@@ -30,6 +30,7 @@ const VisualizarOrdemServico = () => {
   const [ordem, setOrdem] = useState<any>(null);
   const [recebimento, setRecebimento] = useState<any>(null);
   const [fotos, setFotos] = useState<any[]>([]);
+  const [documentos, setDocumentos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [prazoEntrega, setPrazoEntrega] = useState<string>("");
   useEffect(() => {
@@ -56,13 +57,33 @@ const VisualizarOrdemServico = () => {
             setRecebimento(recebimentoData);
           }
 
-          // Buscar fotos do equipamento
+          // Buscar fotos do equipamento pelo recebimento
           const {
-            data: fotosData
+            data: fotosReceb
           } = await supabase.from('fotos_equipamentos').select('*').eq('recebimento_id', ordemPorId.recebimento_id);
-          if (fotosData) {
-            setFotos(fotosData);
+          if (fotosReceb && fotosReceb.length > 0) {
+            setFotos(fotosReceb);
           }
+        }
+
+        // Buscar fotos vinculadas à ordem de serviço (ordens diretas sem recebimento)
+        const {
+          data: fotosOrdem
+        } = await supabase.from('fotos_equipamentos').select('*').eq('ordem_servico_id', ordemPorId.id);
+        if (fotosOrdem && fotosOrdem.length > 0) {
+          setFotos(prev => {
+            const existingIds = new Set(prev.map(f => f.id));
+            const novas = fotosOrdem.filter(f => !existingIds.has(f.id));
+            return [...prev, ...novas];
+          });
+        }
+
+        // Buscar documentos anexados à ordem
+        const {
+          data: docsData
+        } = await supabase.from('documentos_ordem').select('*').eq('ordem_servico_id', ordemPorId.id);
+        if (docsData) {
+          setDocumentos(docsData);
         }
       }
     } catch (error) {
@@ -397,10 +418,13 @@ const VisualizarOrdemServico = () => {
         <CardContent className="space-y-3">
           {items.map((item, index) => <div key={index} className="p-3 bg-muted/50 rounded-lg">
               <div className="font-medium">
-                {item.descricao || item.nome || 'Item não especificado'}
+                {item.descricao || item.nome || item.peca || item.servico || item.trabalho || 'Item não especificado'}
               </div>
               {item.quantidade && <div className="text-sm text-muted-foreground">
                   {t('visualizarOrdem.quantity')}: {item.quantidade}
+                </div>}
+              {item.codigo && <div className="text-sm text-muted-foreground">
+                  Código: {item.codigo}
                 </div>}
               {item.observacoes && <div className="text-sm text-muted-foreground">
                   {t('visualizarOrdem.obs')}: {item.observacoes}
@@ -435,7 +459,7 @@ const VisualizarOrdemServico = () => {
             <div>
               <h1 className="text-2xl font-bold">{t('visualizarOrdem.pageTitle')}</h1>
               <p className="text-muted-foreground">
-                {t('visualizarOrdem.viewingOrder')}: {recebimento?.numero_ordem} - {ordem.cliente_nome}
+                {t('visualizarOrdem.viewingOrder')}: {recebimento?.numero_ordem || ordem.numero_ordem} - {ordem.cliente_nome}
               </p>
             </div>
           </div>
@@ -513,29 +537,29 @@ const VisualizarOrdemServico = () => {
                 <Label>{t('visualizarOrdem.equipmentType')}</Label>
                 <div>{ordem.equipamento}</div>
               </div>
-              <div>
+               <div>
                 <Label>{t('visualizarOrdem.workPressure')}</Label>
-                <div>{recebimento?.pressao_trabalho || 'Ex: 350 bar'}</div>
+                <div>{recebimento?.pressao_trabalho || ordem.pressao_trabalho || '-'}</div>
               </div>
               <div>
                 <Label>{t('visualizarOrdem.shirt')}</Label>
-                <div>Ex: 100mm</div>
+                <div>{recebimento?.camisa || ordem.camisa || '-'}</div>
               </div>
               <div>
                 <Label>{t('visualizarOrdem.rodLength')}</Label>
-                <div>Ex: 800mm</div>
+                <div>{recebimento?.haste_comprimento || ordem.haste_comprimento || '-'}</div>
               </div>
               <div>
                 <Label>{t('visualizarOrdem.stroke')}</Label>
-                <div>Ex: 600mm</div>
+                <div>{recebimento?.curso || ordem.curso || '-'}</div>
               </div>
               <div>
                 <Label>{t('visualizarOrdem.connectionA')}</Label>
-                <div>Ex: 3/4 NPT</div>
+                <div>{recebimento?.conexao_a || ordem.conexao_a || '-'}</div>
               </div>
               <div>
                 <Label>{t('visualizarOrdem.connectionB')}</Label>
-                <div>Ex: 1/2 NPT</div>
+                <div>{recebimento?.conexao_b || ordem.conexao_b || '-'}</div>
               </div>
               <div>
                 <Label>{t('visualizarOrdem.deliveryTime')}</Label>
@@ -601,6 +625,25 @@ const VisualizarOrdemServico = () => {
 
         {/* Usinagem */}
         {renderItems(ordem.usinagem_necessaria, t('visualizarOrdem.machining'), <Settings className="h-5 w-5" />)}
+
+        {/* Documentos Anexados */}
+        {documentos.length > 0 && <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Documentos Anexados
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {documentos.map(doc => <a key={doc.id} href={doc.arquivo_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{doc.nome_arquivo}</span>
+                    <span className="text-sm text-muted-foreground ml-auto">{doc.tipo_arquivo}</span>
+                  </a>)}
+              </div>
+            </CardContent>
+          </Card>}
       </div>
     </AppLayout>;
 };
