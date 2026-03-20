@@ -459,7 +459,7 @@ const VisualizarOrdemServico = () => {
             <div>
               <h1 className="text-2xl font-bold">{t('visualizarOrdem.pageTitle')}</h1>
               <p className="text-muted-foreground">
-                {t('visualizarOrdem.viewingOrder')}: {recebimento?.numero_ordem} - {ordem.cliente_nome}
+                {t('visualizarOrdem.viewingOrder')}: {recebimento?.numero_ordem || ordem.numero_ordem} - {ordem.cliente_nome}
               </p>
             </div>
           </div>
