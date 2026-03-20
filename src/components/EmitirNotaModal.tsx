@@ -87,10 +87,22 @@ export default function EmitirNotaModal({
 
   const dadosAprovacao = orcamento ? extrairDadosAprovacao(orcamento.descricao || '') : { numeroPedido: 'N/A', prazoPagamento: 'A definir', anexoUrl: null };
   
-  // Extrair tipo de ordem das observações
-  const tipoOrdemId = orcamento?.observacoes?.match(/Tipo:\s*([a-f0-9-]+)/i)?.[1] || '';
-  const tipoOrdem = categorias.find(cat => cat.id === tipoOrdemId);
-  const tipoOrdemNome = tipoOrdem ? `${tipoOrdem.codigo} - ${tipoOrdem.nome}` : 'Não especificado';
+  // Extrair tipo de ordem das observações - suporta UUID ou texto legado
+  const tipoOrdemRaw = orcamento?.observacoes?.match(/Tipo:\s*([^|]+)/i)?.[1]?.trim() || '';
+  const tipoOrdemNome = useMemo(() => {
+    if (!tipoOrdemRaw) return 'Não especificado';
+    // Tentar encontrar por ID (UUID)
+    const porId = categorias.find(cat => cat.id === tipoOrdemRaw);
+    if (porId) return `${porId.codigo} - ${porId.nome}`;
+    // Tentar encontrar por código ou nome (texto legado como "reforma", "manutencao")
+    const porNome = categorias.find(cat => 
+      cat.nome.toLowerCase().includes(tipoOrdemRaw.toLowerCase()) ||
+      cat.codigo.toLowerCase().includes(tipoOrdemRaw.toLowerCase())
+    );
+    if (porNome) return `${porNome.codigo} - ${porNome.nome}`;
+    // Retornar o texto raw capitalizado
+    return tipoOrdemRaw.charAt(0).toUpperCase() + tipoOrdemRaw.slice(1);
+  }, [tipoOrdemRaw, categorias]);
   
   console.log('URL do anexo final:', dadosAprovacao.anexoUrl);
 
@@ -217,8 +229,11 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
     }
 
     // Extrair categoria do tipo de ordem nas observações
-    const tipoOrdemMatch = orcamento.observacoes?.match(/Tipo:\s*([a-f0-9-]+)/i);
-    const categoriaId = tipoOrdemMatch?.[1] || '';
+    const tipoOrdemValue = orcamento.observacoes?.match(/Tipo:\s*([^|]+)/i)?.[1]?.trim() || '';
+    // Tentar encontrar por ID direto, senão por nome
+    const categoriaEncontrada = categorias.find(cat => cat.id === tipoOrdemValue) || 
+      categorias.find(cat => cat.nome.toLowerCase().includes(tipoOrdemValue.toLowerCase()));
+    const categoriaId = categoriaEncontrada?.id || '';
 
     // Pré-preencher formulário com dados do orçamento
     const novaDataEsperada = new Date(Date.now() + prazoDias * 24 * 60 * 60 * 1000);
