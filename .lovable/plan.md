@@ -1,51 +1,52 @@
 
 
-# Plan: "Copiar Ordem de Serviço" on Nova Análise (NovaOrdemDireta)
+## Plan: "Enviar por Email" Button on Invoice Form
 
-## What will be built
+### Overview
+Add a "Send by Email" button on the nota fiscal step of `EmitirNotaModal` that sends a webhook to n8n with selected client emails. Includes a multi-select of registered emails and an option to add new emails (which get saved to the client record).
 
-A searchable/editable dropdown at the top of the "Informações Básicas" card in `NovaOrdemDireta.tsx` that lets the user select an existing order to copy. When selected, it loads all data from that order (client, equipment, technical data, parts, services, machining, observations, photos, and documents) into the form, keeping only the auto-generated new order number.
+### Database Change
 
-## Changes
+**Migration: Add `emails_adicionais` column to `clientes`**
+- `ALTER TABLE clientes ADD COLUMN emails_adicionais text[] DEFAULT '{}'`
+- This stores additional emails beyond the main `email` field
+- Existing single `email` field remains as the primary contact email
 
-### 1. `src/pages/NovaOrdemDireta.tsx`
+### Changes to `src/components/EmitirNotaModal.tsx`
 
-**New state and data loading:**
-- Add state for the searchable order list and search term
-- Fetch existing `ordens_servico` (filtered by `empresa_id`) on mount, loading `numero_ordem`, `id`, `cliente_nome`, `equipamento`
-- On order selection, fetch the full order record plus its related `fotos_equipamentos`, `documentos_ordem`, and linked client
+1. **Fetch client emails** — When modal opens, query `clientes` by `nome` matching `orcamento.cliente_nome` to get `email` + `emails_adicionais`. Build a unified list of all available emails.
 
-**Copy logic (`copiarOrdem` function):**
-- Populate `formData` fields: client, equipment, serial number, invoice, urgency, technician, problems, priority, observations, failure reason
-- Populate `dadosTecnicos` from the order's technical columns (camisa, haste, curso, etc.)
-- Populate `pecasUtilizadas` from `pecas_necessarias` JSON
-- Populate services/machining checkboxes and arrays from `servicos_necessarios` / `usinagem_necessaria` JSON
-- Download photos from storage and create File objects to populate `fotosChegada` and `fotosAnalise` with previews
-- Download documents similarly into `documentos` array
-- Keep `formData.numeroOrdem` unchanged (the auto-generated new number)
+2. **Add "Enviar por Email" button** on the `nota_fiscal` step (next to "Criar Lançamento Financeiro"), styled as secondary/outline.
 
-**UI addition:**
-- Add a new row in the "Informações Básicas" card, before the existing fields
-- Searchable combobox using the existing `cmdk` / `Command` component pattern, showing orders as `{numero_ordem} - {cliente_nome} - {equipamento}`
-- Label: "Copiar de Ordem Existente" with a Copy icon
-- When an order is selected, a toast confirms "Dados copiados da ordem {numero}"
+3. **Email selection UI** (shown when button is clicked, before actual send):
+   - Multi-select checkboxes with all client emails (primary + additional)
+   - Input field to add a new email + "Adicionar" button
+   - When a new email is added: immediately append to the select list AND save it to `clientes.emails_adicionais` via Supabase update
+   - "Enviar" button to confirm and send webhook
 
-### 2. Data flow
+4. **Webhook call** — Use existing `enviarWebhook` utility to send to n8n with payload:
+   - `tipo: "envio_nota_fiscal"`
+   - `emails_destinatarios: [selected emails]`
+   - `numero_nf`, `cliente_nome`, `valor`, `numero_orcamento`, `numero_pedido`
+   - `pdf_nota_fiscal_url` (the uploaded PDF URL)
+   - `empresa_id` (automatic via `enviarWebhook`)
 
-```text
-User types in searchable dropdown
-  → filters ordens_servico list
-  → user selects one
-  → fetch full order + fotos + docs from Supabase
-  → populate all form states
-  → keep new numero_ordem intact
-  → user can edit anything before saving
-```
+### Changes to `src/hooks/use-clientes.ts`
 
-### Technical notes
+- Add `adicionarEmail` function that appends a new email to `emails_adicionais` array using `array_append`
+- Export the function for use in the modal
 
-- Photos will be fetched as blob URLs for preview, and re-uploaded as new files on save (they are already handled by the existing `uploadFotos` function)
-- Documents similarly fetched and added to the `documentos` state for re-upload
-- The client is matched by name from the `clientes` list to set the correct `formData.cliente` (client ID)
-- Services/machining are parsed from the JSONB arrays stored in the order
+### Flow
+1. User fills nota fiscal number + attaches PDF
+2. User clicks "Enviar por Email"
+3. A section expands showing checkboxes with all client emails
+4. User can add a new email (gets saved to client + added to list)
+5. User selects desired emails and clicks "Enviar"
+6. Webhook is sent to n8n, toast confirms
+7. User can then proceed to "Criar Lançamento Financeiro" as before
+
+### Files Modified
+- **New migration**: Add `emails_adicionais` column
+- **`src/components/EmitirNotaModal.tsx`**: Email selection UI + webhook send
+- **`src/hooks/use-clientes.ts`**: Add `adicionarEmail` function + update `Cliente` interface
 
