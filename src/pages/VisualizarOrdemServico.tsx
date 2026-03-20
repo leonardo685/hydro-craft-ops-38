@@ -537,29 +537,29 @@ const VisualizarOrdemServico = () => {
                 <Label>{t('visualizarOrdem.equipmentType')}</Label>
                 <div>{ordem.equipamento}</div>
               </div>
-              <div>
+               <div>
                 <Label>{t('visualizarOrdem.workPressure')}</Label>
-                <div>{recebimento?.pressao_trabalho || 'Ex: 350 bar'}</div>
+                <div>{recebimento?.pressao_trabalho || ordem.pressao_trabalho || '-'}</div>
               </div>
               <div>
                 <Label>{t('visualizarOrdem.shirt')}</Label>
-                <div>Ex: 100mm</div>
+                <div>{recebimento?.camisa || ordem.camisa || '-'}</div>
               </div>
               <div>
                 <Label>{t('visualizarOrdem.rodLength')}</Label>
-                <div>Ex: 800mm</div>
+                <div>{recebimento?.haste_comprimento || ordem.haste_comprimento || '-'}</div>
               </div>
               <div>
                 <Label>{t('visualizarOrdem.stroke')}</Label>
-                <div>Ex: 600mm</div>
+                <div>{recebimento?.curso || ordem.curso || '-'}</div>
               </div>
               <div>
                 <Label>{t('visualizarOrdem.connectionA')}</Label>
-                <div>Ex: 3/4 NPT</div>
+                <div>{recebimento?.conexao_a || ordem.conexao_a || '-'}</div>
               </div>
               <div>
                 <Label>{t('visualizarOrdem.connectionB')}</Label>
-                <div>Ex: 1/2 NPT</div>
+                <div>{recebimento?.conexao_b || ordem.conexao_b || '-'}</div>
               </div>
               <div>
                 <Label>{t('visualizarOrdem.deliveryTime')}</Label>
