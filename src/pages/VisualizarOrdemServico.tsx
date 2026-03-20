@@ -625,6 +625,25 @@ const VisualizarOrdemServico = () => {
 
         {/* Usinagem */}
         {renderItems(ordem.usinagem_necessaria, t('visualizarOrdem.machining'), <Settings className="h-5 w-5" />)}
+
+        {/* Documentos Anexados */}
+        {documentos.length > 0 && <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Documentos Anexados
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {documentos.map(doc => <a key={doc.id} href={doc.arquivo_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{doc.nome_arquivo}</span>
+                    <span className="text-sm text-muted-foreground ml-auto">{doc.tipo_arquivo}</span>
+                  </a>)}
+              </div>
+            </CardContent>
+          </Card>}
       </div>
     </AppLayout>;
 };
