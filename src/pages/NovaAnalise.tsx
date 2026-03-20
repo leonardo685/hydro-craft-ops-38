@@ -1812,6 +1812,54 @@ const NovaOrdemServico = () => {
         }
       }
 
+      // Upload de novos documentos técnicos
+      if (novosDocumentos.length > 0) {
+        const ordemIdParaDoc = ordemExistente?.id || null;
+        if (ordemIdParaDoc) {
+          console.log(`=== UPLOAD DE ${novosDocumentos.length} DOCUMENTOS TÉCNICOS ===`);
+          for (let i = 0; i < novosDocumentos.length; i++) {
+            const documento = novosDocumentos[i];
+            try {
+              const timestamp = Date.now();
+              const fileName = `${ordemIdParaDoc}_${timestamp}_${i}_${documento.file.name}`;
+
+              const { error: uploadError } = await supabase.storage
+                .from('documentos-tecnicos')
+                .upload(fileName, documento.file);
+
+              if (uploadError) {
+                console.error(`Erro no upload do documento ${documento.file.name}:`, uploadError);
+                continue;
+              }
+
+              const { data: urlData } = supabase.storage
+                .from('documentos-tecnicos')
+                .getPublicUrl(fileName);
+
+              const { error: dbError } = await supabase
+                .from('documentos_ordem')
+                .insert({
+                  ordem_servico_id: ordemIdParaDoc,
+                  arquivo_url: urlData.publicUrl,
+                  nome_arquivo: documento.file.name,
+                  tipo_arquivo: documento.tipo,
+                  tamanho_bytes: documento.file.size,
+                  empresa_id: empresaAtual?.id || null
+                });
+
+              if (dbError) {
+                console.error(`Erro ao salvar documento no banco:`, dbError);
+                continue;
+              }
+
+              console.log(`✅ Documento ${i + 1}/${novosDocumentos.length} salvo: ${documento.file.name}`);
+            } catch (error) {
+              console.error(`Erro ao processar documento ${documento.file.name}:`, error);
+            }
+          }
+        }
+      }
+
       console.log('Salvamento completo!');
       toast({
         title: isEdicao ? t('novaAnalise.orderUpdated') : t('novaAnalise.orderCreated'),
