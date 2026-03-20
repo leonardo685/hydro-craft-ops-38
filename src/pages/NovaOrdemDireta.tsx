@@ -11,7 +11,7 @@ import { QuantityInput } from "@/components/QuantityInput";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClientes } from "@/hooks/use-clientes";
@@ -86,6 +86,8 @@ const NovaOrdemDireta = () => {
   const [copiarOrdemOpen, setCopiarOrdemOpen] = useState(false);
   const [copiarOrdemValue, setCopiarOrdemValue] = useState("");
   const [copiando, setCopiando] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const submittingRef = useRef(false);
 
   // Serviços pré-determinados
   const [servicosPreDeterminados, setServicosPreDeterminados] = useState({
@@ -718,6 +720,11 @@ const NovaOrdemDireta = () => {
   };
 
   const handleSave = async () => {
+    // Proteção contra múltiplos cliques
+    if (submittingRef.current || isSaving) return;
+    submittingRef.current = true;
+    setIsSaving(true);
+
     try {
       if (!formData.cliente || !formData.equipamento) {
         toast({
@@ -725,6 +732,8 @@ const NovaOrdemDireta = () => {
           description: "Preencha Cliente e Equipamento",
           variant: "destructive"
         });
+        submittingRef.current = false;
+        setIsSaving(false);
         return;
       }
 
@@ -799,6 +808,8 @@ const NovaOrdemDireta = () => {
         description: "Erro ao criar ordem de serviço",
         variant: "destructive"
       });
+      submittingRef.current = false;
+      setIsSaving(false);
     }
   };
 
@@ -820,9 +831,9 @@ const NovaOrdemDireta = () => {
               <p className="text-muted-foreground">Ordem sem vinculação a recebimento</p>
             </div>
           </div>
-          <Button onClick={handleSave} className="gap-2">
-            <Save className="h-4 w-4" />
-            {t('novaAnalise.save')}
+          <Button onClick={handleSave} className="gap-2" disabled={isSaving}>
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {isSaving ? 'Salvando...' : t('novaAnalise.save')}
           </Button>
         </div>
 
