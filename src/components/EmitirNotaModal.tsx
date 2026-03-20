@@ -66,6 +66,7 @@ export default function EmitirNotaModal({
   const [emailsSelecionados, setEmailsSelecionados] = useState<string[]>([]);
   const [novoEmail, setNovoEmail] = useState('');
   const [enviandoEmail, setEnviandoEmail] = useState(false);
+  const [urlAnexoUpload, setUrlAnexoUpload] = useState<string | null>(null);
 
   // Buscar cliente e seus emails
   const clienteEncontrado = useMemo(() => {
