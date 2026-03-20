@@ -61,6 +61,94 @@ export default function EmitirNotaModal({
     dataEsperada: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   });
 
+  // Estados para envio por email
+  const [mostrarEmailSection, setMostrarEmailSection] = useState(false);
+  const [emailsSelecionados, setEmailsSelecionados] = useState<string[]>([]);
+  const [novoEmail, setNovoEmail] = useState('');
+  const [enviandoEmail, setEnviandoEmail] = useState(false);
+
+  // Buscar cliente e seus emails
+  const clienteEncontrado = useMemo(() => {
+    if (!orcamento?.cliente_nome) return null;
+    return clientes.find(c => c.nome === orcamento.cliente_nome) || null;
+  }, [clientes, orcamento?.cliente_nome]);
+
+  const emailsDisponiveis = useMemo(() => {
+    if (!clienteEncontrado) return [];
+    const emails: string[] = [];
+    if (clienteEncontrado.email) emails.push(clienteEncontrado.email);
+    if (clienteEncontrado.emails_adicionais) {
+      emails.push(...(clienteEncontrado.emails_adicionais as string[]));
+    }
+    return [...new Set(emails)];
+  }, [clienteEncontrado]);
+
+  useEffect(() => {
+    if (!open) {
+      setMostrarEmailSection(false);
+      setEmailsSelecionados([]);
+      setNovoEmail('');
+    }
+  }, [open]);
+
+  const handleToggleEmail = (email: string) => {
+    setEmailsSelecionados(prev =>
+      prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]
+    );
+  };
+
+  const handleAdicionarEmail = async () => {
+    const emailTrimmed = novoEmail.trim().toLowerCase();
+    if (!emailTrimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+      toast({ title: "Email inválido", description: "Informe um email válido", variant: "destructive" });
+      return;
+    }
+    if (emailsDisponiveis.includes(emailTrimmed)) {
+      toast({ title: "Email já cadastrado", description: "Este email já está na lista", variant: "destructive" });
+      return;
+    }
+    if (clienteEncontrado) {
+      try {
+        await adicionarEmail(clienteEncontrado.id, emailTrimmed);
+        setEmailsSelecionados(prev => [...prev, emailTrimmed]);
+        setNovoEmail('');
+      } catch {
+        // toast already shown by hook
+      }
+    }
+  };
+
+  const handleEnviarPorEmail = async () => {
+    if (emailsSelecionados.length === 0) {
+      toast({ title: "Selecione emails", description: "Selecione pelo menos um email destinatário", variant: "destructive" });
+      return;
+    }
+    setEnviandoEmail(true);
+    try {
+      const sucesso = await enviarWebhook(empresaAtual?.id || null, {
+        tipo: 'envio_nota_fiscal',
+        emails_destinatarios: emailsSelecionados,
+        numero_nf: numeroNF,
+        cliente_nome: orcamento?.cliente_nome || '',
+        valor: orcamento?.valor || 0,
+        numero_orcamento: orcamento?.numero || '',
+        numero_pedido: dadosAprovacao.numeroPedido,
+        pdf_nota_fiscal_url: orcamento?.pdf_nota_fiscal || '',
+        equipamento: orcamento?.equipamento || ''
+      });
+      if (sucesso) {
+        toast({ title: "Email enviado!", description: `Nota fiscal enviada para ${emailsSelecionados.length} destinatário(s)` });
+        setMostrarEmailSection(false);
+      } else {
+        toast({ title: "Erro", description: "Falha ao enviar webhook de email", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erro", description: "Erro ao enviar email", variant: "destructive" });
+    } finally {
+      setEnviandoEmail(false);
+    }
+  };
+
   const handlePrazoDiasChange = (dias: string) => {
     const diasNum = parseInt(dias) || 0;
     setPrazoDias(diasNum);
