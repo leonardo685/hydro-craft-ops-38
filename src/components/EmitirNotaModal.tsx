@@ -36,6 +36,7 @@ export default function EmitirNotaModal({
   const { getCategoriasForSelect, categorias } = useCategoriasFinanceiras();
   const { getContasForSelect } = useContasBancarias();
   const { empresaAtual } = useEmpresa();
+  const { clientes, adicionarEmail } = useClientes();
   const [etapa, setEtapa] = useState<'dados' | 'nota_fiscal' | 'contas_receber'>('dados');
   const [numeroNF, setNumeroNF] = useState('');
   const [anexoNota, setAnexoNota] = useState<File | null>(null);
