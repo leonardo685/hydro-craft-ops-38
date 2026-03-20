@@ -30,6 +30,7 @@ const VisualizarOrdemServico = () => {
   const [ordem, setOrdem] = useState<any>(null);
   const [recebimento, setRecebimento] = useState<any>(null);
   const [fotos, setFotos] = useState<any[]>([]);
+  const [documentos, setDocumentos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [prazoEntrega, setPrazoEntrega] = useState<string>("");
   useEffect(() => {
