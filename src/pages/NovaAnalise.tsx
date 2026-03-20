@@ -2073,52 +2073,76 @@ const NovaOrdemServico = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }, (_, index) => (
-              <Card key={index}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm">{t('novaAnalise.photo')} {index + 1}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {previewsAnalise[index] ? (
-                    // Mostrar preview da foto
-                    <div className="relative">
-                      <img 
-                        src={previewsAnalise[index]} 
-                        alt={`Foto análise ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg border"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          // Usar filter para remover efetivamente ao invés de definir como string vazia
-                          setPreviewsAnalise(prev => prev.filter((_, i) => i !== index));
-                          setFotosAnalise(prev => prev.filter((_, i) => i !== index));
-                        }}
-                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-destructive/80"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ) : (
-                    // Mostrar área de upload
-                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:border-primary transition-colors cursor-pointer">
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        className="hidden" 
-                        id={`foto-analise-${index}`}
-                        onChange={handleFotoAnaliseChange(index)}
-                      />
-                      <label htmlFor={`foto-analise-${index}`} className="cursor-pointer flex flex-col items-center gap-2">
-                        <Upload className="h-6 w-6 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">{t('novaAnalise.upload')}</p>
-                      </label>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                {/* Fotos existentes */}
+                {previewsAnalise.map((preview, index) => (
+                  <Card key={`foto-${index}`}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">{t('novaAnalise.photo')} {index + 1}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="relative">
+                        <img 
+                          src={preview} 
+                          alt={`Foto análise ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewsAnalise(prev => prev.filter((_, i) => i !== index));
+                            setFotosAnalise(prev => prev.filter((_, i) => i !== index));
+                          }}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-destructive/80"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {/* Slots vazios para adicionar mais fotos (sempre mostrar pelo menos 4 slots vazios, ou até completar múltiplo de 4) */}
+                {Array.from({ length: Math.max(4, 4 - (previewsAnalise.length % 4 === 0 ? 0 : previewsAnalise.length % 4)) }, (_, i) => {
+                  const slotIndex = previewsAnalise.length + i;
+                  return (
+                    <Card key={`empty-${slotIndex}`}>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm">{t('novaAnalise.photo')} {slotIndex + 1}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:border-primary transition-colors cursor-pointer">
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            id={`foto-analise-${slotIndex}`}
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                const file = e.target.files[0];
+                                setFotosAnalise(prev => [...prev, file]);
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  const result = ev.target?.result as string;
+                                  setPreviewsAnalise(prev => [...prev, result]);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                          <label htmlFor={`foto-analise-${slotIndex}`} className="cursor-pointer flex flex-col items-center gap-2">
+                            <Upload className="h-6 w-6 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">{t('novaAnalise.upload')}</p>
+                          </label>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
+              {previewsAnalise.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  {previewsAnalise.length} foto(s) adicionada(s)
+                </p>
+              )}
             </CardContent>
           </Card>
 
