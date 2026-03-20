@@ -57,13 +57,33 @@ const VisualizarOrdemServico = () => {
             setRecebimento(recebimentoData);
           }
 
-          // Buscar fotos do equipamento
+          // Buscar fotos do equipamento pelo recebimento
           const {
-            data: fotosData
+            data: fotosReceb
           } = await supabase.from('fotos_equipamentos').select('*').eq('recebimento_id', ordemPorId.recebimento_id);
-          if (fotosData) {
-            setFotos(fotosData);
+          if (fotosReceb && fotosReceb.length > 0) {
+            setFotos(fotosReceb);
           }
+        }
+
+        // Buscar fotos vinculadas à ordem de serviço (ordens diretas sem recebimento)
+        const {
+          data: fotosOrdem
+        } = await supabase.from('fotos_equipamentos').select('*').eq('ordem_servico_id', ordemPorId.id);
+        if (fotosOrdem && fotosOrdem.length > 0) {
+          setFotos(prev => {
+            const existingIds = new Set(prev.map(f => f.id));
+            const novas = fotosOrdem.filter(f => !existingIds.has(f.id));
+            return [...prev, ...novas];
+          });
+        }
+
+        // Buscar documentos anexados à ordem
+        const {
+          data: docsData
+        } = await supabase.from('documentos_ordem').select('*').eq('ordem_servico_id', ordemPorId.id);
+        if (docsData) {
+          setDocumentos(docsData);
         }
       }
     } catch (error) {
