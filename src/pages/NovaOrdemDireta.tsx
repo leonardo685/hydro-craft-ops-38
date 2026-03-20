@@ -808,6 +808,8 @@ const NovaOrdemDireta = () => {
         description: "Erro ao criar ordem de serviço",
         variant: "destructive"
       });
+      submittingRef.current = false;
+      setIsSaving(false);
     }
   };
 
