@@ -785,6 +785,77 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
               </div>
             </div>
 
+              {/* Seção de envio por email */}
+              {mostrarEmailSection && (
+                <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Selecionar destinatários
+                  </Label>
+                  
+                  {emailsDisponiveis.length === 0 && !clienteEncontrado && (
+                    <p className="text-sm text-muted-foreground">
+                      Cliente não encontrado no cadastro. Adicione um email abaixo.
+                    </p>
+                  )}
+
+                  {emailsDisponiveis.length === 0 && clienteEncontrado && (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum email cadastrado para este cliente. Adicione abaixo.
+                    </p>
+                  )}
+
+                  <div className="space-y-2">
+                    {emailsDisponiveis.map(email => (
+                      <div key={email} className="flex items-center gap-2">
+                        <Checkbox
+                          checked={emailsSelecionados.includes(email)}
+                          onCheckedChange={() => handleToggleEmail(email)}
+                        />
+                        <span className="text-sm">{email}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Adicionar novo email */}
+                  <div className="flex gap-2">
+                    <Input
+                      type="email"
+                      placeholder="novo@email.com"
+                      value={novoEmail}
+                      onChange={(e) => setNovoEmail(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAdicionarEmail()}
+                      className="flex-1"
+                    />
+                    <Button variant="outline" size="sm" onClick={handleAdicionarEmail} disabled={!clienteEncontrado}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Adicionar
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Emails adicionados serão salvos no cadastro do cliente
+                  </p>
+
+                  <Button
+                    onClick={handleEnviarPorEmail}
+                    disabled={enviandoEmail || emailsSelecionados.length === 0}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {enviandoEmail ? (
+                      <>
+                        <Send className="h-4 w-4 mr-2 animate-pulse" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Enviar para {emailsSelecionados.length} destinatário(s)
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
             <div className="flex gap-3 pt-6">
               <Button 
                 variant="outline" 
@@ -792,6 +863,14 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                 className="flex-1"
               >
                 Voltar
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setMostrarEmailSection(!mostrarEmailSection)}
+                className="flex items-center gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                Enviar por Email
               </Button>
               <Button 
                 onClick={handleConfirmarNotaFiscal} 
