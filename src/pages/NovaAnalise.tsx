@@ -3305,23 +3305,46 @@ const NovaOrdemServico = () => {
             </CardContent>
           </Card>
 
-          {/* Seção de Documentos PDF */}
-          {documentosPdf.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  📄 Documentos Técnicos
-                </CardTitle>
-                <CardDescription>
-                  PDFs e documentos anexados à ordem
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+          {/* Seção de Documentos Técnicos */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                📄 Documentos Técnicos
+              </CardTitle>
+              <CardDescription>
+                PDFs e documentos anexados à ordem
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Upload de novos documentos */}
+              <div className="flex items-center gap-4">
+                <Input
+                  type="file"
+                  accept=".pdf,.xls,.xlsx,.doc,.docx"
+                  multiple
+                  onChange={handleDocumentoUpload}
+                  className="hidden"
+                  id="documento-upload-analise"
+                />
+                <Label
+                  htmlFor="documento-upload-analise"
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md cursor-pointer hover:bg-primary/90 transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  Adicionar Documentos
+                </Label>
+                <span className="text-sm text-muted-foreground">
+                  {documentosPdf.length + novosDocumentos.length} {(documentosPdf.length + novosDocumentos.length) === 1 ? 'documento' : 'documentos'}
+                </span>
+              </div>
+
+              {/* Documentos existentes (já salvos) */}
+              {documentosPdf.length > 0 && (
+                <div className="space-y-2">
                   {documentosPdf.map((doc) => (
                     <div 
                       key={doc.id} 
-                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border hover:bg-muted/50 transition-colors"
+                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border hover:bg-muted/50 transition-colors group"
                     >
                       <div className="flex items-center gap-3">
                         <FileText className="h-5 w-5 text-primary" />
@@ -3332,64 +3355,91 @@ const NovaOrdemServico = () => {
                           </p>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(
+                                `https://fmbfkufkxvyncadunlhh.supabase.co/functions/v1/download-file`,
+                                {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ fileUrl: doc.arquivo_url, fileName: doc.nome_arquivo })
+                                }
+                              );
+                              if (!response.ok) throw new Error('Erro ao baixar');
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = doc.nome_arquivo;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              window.URL.revokeObjectURL(url);
+                              toast({ title: "Download iniciado", description: `${doc.nome_arquivo} está sendo baixado.` });
+                            } catch (error) {
+                              console.error('Erro ao baixar:', error);
+                              toast({ title: "Erro ao baixar", description: "Não foi possível baixar o arquivo.", variant: "destructive" });
+                            }
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Baixar
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleRemoverDocumentoExistente(doc.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Novos documentos (ainda não salvos) */}
+              {novosDocumentos.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground font-medium">Novos documentos (serão salvos ao confirmar):</p>
+                  {novosDocumentos.map((doc, index) => (
+                    <div key={`novo-${index}`} className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20 group hover:bg-primary/10 transition-colors">
+                      <FileText className="h-5 w-5 text-primary shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{doc.nome}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(doc.file.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        onClick={async () => {
-                          try {
-                            // Fazer chamada para a edge function com responseType blob
-                            const response = await fetch(
-                              `https://fmbfkufkxvyncadunlhh.supabase.co/functions/v1/download-file`,
-                              {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                  fileUrl: doc.arquivo_url,
-                                  fileName: doc.nome_arquivo
-                                })
-                              }
-                            );
-
-                            if (!response.ok) throw new Error('Erro ao baixar arquivo');
-
-                            // Obter o blob da resposta
-                            const blob = await response.blob();
-                            const url = window.URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = doc.nome_arquivo;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            window.URL.revokeObjectURL(url);
-                            
-                            toast({
-                              title: "Download iniciado",
-                              description: `O arquivo ${doc.nome_arquivo} está sendo baixado.`,
-                            });
-                          } catch (error) {
-                            console.error('Erro ao baixar:', error);
-                            toast({
-                              title: "Erro ao baixar",
-                              description: "Não foi possível baixar o arquivo.",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                        className="flex items-center gap-2"
+                        onClick={() => setNovosDocumentos(prev => prev.filter((_, i) => i !== index))}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
-                        <Download className="h-4 w-4" />
-                        Baixar
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+
+              {documentosPdf.length === 0 && novosDocumentos.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum documento anexado. Clique em "Adicionar Documentos" para anexar PDFs, planilhas ou outros arquivos.
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           <div className="flex justify-end gap-4">
             <Button
