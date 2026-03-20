@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Copy, FileText, Calendar as CalendarIcon, User, FileImage, X, AlertCircle, DollarSign, Check, Download } from "lucide-react";
+import { Upload, Copy, FileText, Calendar as CalendarIcon, User, FileImage, X, AlertCircle, DollarSign, Check, Download, Mail, Plus, Send } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -17,6 +17,8 @@ import { useContasBancarias } from "@/hooks/use-contas-bancarias";
 import { Checkbox } from "@/components/ui/checkbox";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { useClientes } from "@/hooks/use-clientes";
+import { enviarWebhook } from "@/lib/webhook-utils";
 
 interface EmitirNotaModalProps {
   open: boolean;
