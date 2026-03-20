@@ -688,34 +688,59 @@ const NovaOrdemDireta = () => {
   const uploadDocumentos = async (ordemId: string) => {
     if (documentos.length === 0) return;
 
+    let errosUpload = 0;
+
     for (let i = 0; i < documentos.length; i++) {
       const documento = documentos[i];
-      const timestamp = Date.now();
-      const fileName = `${ordemId}_${timestamp}_${i}_${documento.file.name}`;
-      const filePath = `${fileName}`;
+      try {
+        const timestamp = Date.now();
+        const fileName = `${ordemId}_${timestamp}_${i}_${documento.file.name}`;
+        const filePath = `${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('documentos-tecnicos')
-        .upload(filePath, documento.file);
+        const { error: uploadError } = await supabase.storage
+          .from('documentos-tecnicos')
+          .upload(filePath, documento.file);
 
-      if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error(`Erro no upload do documento ${documento.file.name}:`, uploadError);
+          errosUpload++;
+          continue;
+        }
 
-      const { data: urlData } = supabase.storage
-        .from('documentos-tecnicos')
-        .getPublicUrl(filePath);
+        const { data: urlData } = supabase.storage
+          .from('documentos-tecnicos')
+          .getPublicUrl(filePath);
 
-      const { error: dbError } = await supabase
-        .from('documentos_ordem')
-        .insert({
-          ordem_servico_id: ordemId,
-          arquivo_url: urlData.publicUrl,
-          nome_arquivo: documento.file.name,
-          tipo_arquivo: documento.tipo,
-          tamanho_bytes: documento.file.size,
-          empresa_id: empresaAtual?.id || null
-        });
+        const { error: dbError } = await supabase
+          .from('documentos_ordem')
+          .insert({
+            ordem_servico_id: ordemId,
+            arquivo_url: urlData.publicUrl,
+            nome_arquivo: documento.file.name,
+            tipo_arquivo: documento.tipo,
+            tamanho_bytes: documento.file.size,
+            empresa_id: empresaAtual?.id || null
+          });
 
-      if (dbError) throw dbError;
+        if (dbError) {
+          console.error(`Erro ao salvar documento ${documento.file.name} no banco:`, dbError);
+          errosUpload++;
+          continue;
+        }
+
+        console.log(`✅ Documento ${i + 1}/${documentos.length} salvo: ${documento.file.name}`);
+      } catch (error) {
+        console.error(`Erro ao processar documento ${documento.file.name}:`, error);
+        errosUpload++;
+      }
+    }
+
+    if (errosUpload > 0) {
+      toast({
+        title: "Aviso",
+        description: `${errosUpload} de ${documentos.length} documentos não puderam ser salvos.`,
+        variant: "destructive",
+      });
     }
   };
 
