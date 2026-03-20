@@ -720,6 +720,11 @@ const NovaOrdemDireta = () => {
   };
 
   const handleSave = async () => {
+    // Proteção contra múltiplos cliques
+    if (submittingRef.current || isSaving) return;
+    submittingRef.current = true;
+    setIsSaving(true);
+
     try {
       if (!formData.cliente || !formData.equipamento) {
         toast({
@@ -727,6 +732,8 @@ const NovaOrdemDireta = () => {
           description: "Preencha Cliente e Equipamento",
           variant: "destructive"
         });
+        submittingRef.current = false;
+        setIsSaving(false);
         return;
       }
 
