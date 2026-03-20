@@ -229,8 +229,11 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
     }
 
     // Extrair categoria do tipo de ordem nas observações
-    const tipoOrdemMatch = orcamento.observacoes?.match(/Tipo:\s*([a-f0-9-]+)/i);
-    const categoriaId = tipoOrdemMatch?.[1] || '';
+    const tipoOrdemValue = orcamento.observacoes?.match(/Tipo:\s*([^|]+)/i)?.[1]?.trim() || '';
+    // Tentar encontrar por ID direto, senão por nome
+    const categoriaEncontrada = categorias.find(cat => cat.id === tipoOrdemValue) || 
+      categorias.find(cat => cat.nome.toLowerCase().includes(tipoOrdemValue.toLowerCase()));
+    const categoriaId = categoriaEncontrada?.id || '';
 
     // Pré-preencher formulário com dados do orçamento
     const novaDataEsperada = new Date(Date.now() + prazoDias * 24 * 60 * 60 * 1000);
