@@ -127,13 +127,8 @@ export default function EmitirNotaModal({
     try {
       const WEBHOOK_URL_EMAIL_NF = 'https://primary-production-dc42.up.railway.app/webhook-test/63fc063c-8cd3-4cef-8a5a-efec4c7821a0';
       
-      // Calcular dias de faturamento (da data de aprovação até hoje)
-      let diasFaturamento = 0;
-      if (orcamento?.data_aprovacao) {
-        const dataAprovacao = new Date(orcamento.data_aprovacao);
-        const hoje = new Date();
-        diasFaturamento = Math.floor((hoje.getTime() - dataAprovacao.getTime()) / (1000 * 60 * 60 * 24));
-      }
+      // Dias de faturamento vem do prazo_pagamento definido na aprovação do orçamento
+      const diasFaturamento = orcamento?.prazo_pagamento || 0;
 
       const payload = {
         tipo: 'envio_nota_fiscal',
