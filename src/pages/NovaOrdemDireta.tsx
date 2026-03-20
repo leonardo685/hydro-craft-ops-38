@@ -86,6 +86,8 @@ const NovaOrdemDireta = () => {
   const [copiarOrdemOpen, setCopiarOrdemOpen] = useState(false);
   const [copiarOrdemValue, setCopiarOrdemValue] = useState("");
   const [copiando, setCopiando] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const submittingRef = useRef(false);
 
   // Serviços pré-determinados
   const [servicosPreDeterminados, setServicosPreDeterminados] = useState({
