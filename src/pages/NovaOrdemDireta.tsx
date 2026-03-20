@@ -831,9 +831,9 @@ const NovaOrdemDireta = () => {
               <p className="text-muted-foreground">Ordem sem vinculação a recebimento</p>
             </div>
           </div>
-          <Button onClick={handleSave} className="gap-2">
-            <Save className="h-4 w-4" />
-            {t('novaAnalise.save')}
+          <Button onClick={handleSave} className="gap-2" disabled={isSaving}>
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {isSaving ? 'Salvando...' : t('novaAnalise.save')}
           </Button>
         </div>
 
