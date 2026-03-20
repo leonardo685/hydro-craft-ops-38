@@ -125,17 +125,39 @@ export default function EmitirNotaModal({
     }
     setEnviandoEmail(true);
     try {
-      const sucesso = await enviarWebhook(empresaAtual?.id || null, {
+      const WEBHOOK_URL_EMAIL_NF = 'https://primary-production-dc42.up.railway.app/webhook-test/63fc063c-8cd3-4cef-8a5a-efec4c7821a0';
+      
+      // Calcular dias de faturamento (da data de aprovação até hoje)
+      let diasFaturamento = 0;
+      if (orcamento?.data_aprovacao) {
+        const dataAprovacao = new Date(orcamento.data_aprovacao);
+        const hoje = new Date();
+        diasFaturamento = Math.floor((hoje.getTime() - dataAprovacao.getTime()) / (1000 * 60 * 60 * 24));
+      }
+
+      const payload = {
         tipo: 'envio_nota_fiscal',
         emails_destinatarios: emailsSelecionados,
         numero_nf: numeroNF,
-        cliente_nome: orcamento?.cliente_nome || '',
-        valor: orcamento?.valor || 0,
+        tipo_nota: 'faturamento',
         numero_orcamento: orcamento?.numero || '',
         numero_pedido: dadosAprovacao.numeroPedido,
+        dias_faturamento: diasFaturamento,
+        nota_entrada: orcamento?.numero_nota_entrada || '',
+        cliente_nome: orcamento?.cliente_nome || '',
+        valor: orcamento?.valor || 0,
         pdf_nota_fiscal_url: orcamento?.pdf_nota_fiscal || '',
-        equipamento: orcamento?.equipamento || ''
+        equipamento: orcamento?.equipamento || '',
+        tipo_ordem: tipoOrdemNome,
+        empresa_id: empresaAtual?.id || ''
+      };
+
+      const response = await fetch(WEBHOOK_URL_EMAIL_NF, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
+      const sucesso = response.ok;
       if (sucesso) {
         toast({ title: "Email enviado!", description: `Nota fiscal enviada para ${emailsSelecionados.length} destinatário(s)` });
         setMostrarEmailSection(false);
