@@ -89,6 +89,7 @@ export default function EmitirNotaModal({
       setMostrarEmailSection(false);
       setEmailsSelecionados([]);
       setNovoEmail('');
+      setUrlAnexoUpload(null);
     }
   }, [open]);
 
