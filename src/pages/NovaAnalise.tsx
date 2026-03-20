@@ -71,6 +71,11 @@ const NovaOrdemServico = () => {
     tipo_arquivo: string;
     tamanho_bytes: number;
   }>>([]);
+  const [novosDocumentos, setNovosDocumentos] = useState<Array<{
+    file: File;
+    nome: string;
+    tipo: string;
+  }>>([]);
   
   
   // Estado separado para peças adicionais (sem medidas)
