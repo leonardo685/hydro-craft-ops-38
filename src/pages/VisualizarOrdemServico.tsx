@@ -418,10 +418,13 @@ const VisualizarOrdemServico = () => {
         <CardContent className="space-y-3">
           {items.map((item, index) => <div key={index} className="p-3 bg-muted/50 rounded-lg">
               <div className="font-medium">
-                {item.descricao || item.nome || 'Item não especificado'}
+                {item.descricao || item.nome || item.peca || item.servico || item.trabalho || 'Item não especificado'}
               </div>
               {item.quantidade && <div className="text-sm text-muted-foreground">
                   {t('visualizarOrdem.quantity')}: {item.quantidade}
+                </div>}
+              {item.codigo && <div className="text-sm text-muted-foreground">
+                  Código: {item.codigo}
                 </div>}
               {item.observacoes && <div className="text-sm text-muted-foreground">
                   {t('visualizarOrdem.obs')}: {item.observacoes}
