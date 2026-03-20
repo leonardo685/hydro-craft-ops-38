@@ -8,6 +8,7 @@ export interface Cliente {
   nome: string;
   cnpj_cpf?: string;
   email?: string;
+  emails_adicionais?: string[];
   telefone?: string;
   endereco?: string;
   cidade?: string;
@@ -104,6 +105,44 @@ export const useClientes = () => {
     }
   };
 
+  const adicionarEmail = async (clienteId: string, novoEmail: string) => {
+    try {
+      // First get current emails_adicionais
+      const { data: clienteData, error: fetchError } = await supabase
+        .from('clientes')
+        .select('emails_adicionais')
+        .eq('id', clienteId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const emailsAtuais = (clienteData?.emails_adicionais as string[]) || [];
+      if (emailsAtuais.includes(novoEmail)) return; // Already exists
+
+      const { error } = await supabase
+        .from('clientes')
+        .update({ emails_adicionais: [...emailsAtuais, novoEmail] })
+        .eq('id', clienteId);
+
+      if (error) throw error;
+
+      await carregarClientes();
+      
+      toast({
+        title: "Sucesso",
+        description: "Email adicionado ao cadastro do cliente",
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar email:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao adicionar email ao cliente",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   useEffect(() => {
     const carregarDados = async () => {
       if (!empresaId) return;
@@ -120,6 +159,7 @@ export const useClientes = () => {
     loading,
     criarCliente,
     atualizarCliente,
+    adicionarEmail,
     recarregar: carregarClientes
   };
 };

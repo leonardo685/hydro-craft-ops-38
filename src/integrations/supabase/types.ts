@@ -158,6 +158,7 @@ export type Database = {
           condicoes_pagamento: string | null
           created_at: string
           email: string | null
+          emails_adicionais: string[] | null
           empresa_id: string | null
           endereco: string | null
           estado: string | null
@@ -177,6 +178,7 @@ export type Database = {
           condicoes_pagamento?: string | null
           created_at?: string
           email?: string | null
+          emails_adicionais?: string[] | null
           empresa_id?: string | null
           endereco?: string | null
           estado?: string | null
@@ -196,6 +198,7 @@ export type Database = {
           condicoes_pagamento?: string | null
           created_at?: string
           email?: string | null
+          emails_adicionais?: string[] | null
           empresa_id?: string | null
           endereco?: string | null
           estado?: string | null

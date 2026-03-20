@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Copy, FileText, Calendar as CalendarIcon, User, FileImage, X, AlertCircle, DollarSign, Check, Download } from "lucide-react";
+import { Upload, Copy, FileText, Calendar as CalendarIcon, User, FileImage, X, AlertCircle, DollarSign, Check, Download, Mail, Plus, Send } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -17,6 +17,8 @@ import { useContasBancarias } from "@/hooks/use-contas-bancarias";
 import { Checkbox } from "@/components/ui/checkbox";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { useClientes } from "@/hooks/use-clientes";
+import { enviarWebhook } from "@/lib/webhook-utils";
 
 interface EmitirNotaModalProps {
   open: boolean;
@@ -34,6 +36,7 @@ export default function EmitirNotaModal({
   const { getCategoriasForSelect, categorias } = useCategoriasFinanceiras();
   const { getContasForSelect } = useContasBancarias();
   const { empresaAtual } = useEmpresa();
+  const { clientes, adicionarEmail } = useClientes();
   const [etapa, setEtapa] = useState<'dados' | 'nota_fiscal' | 'contas_receber'>('dados');
   const [numeroNF, setNumeroNF] = useState('');
   const [anexoNota, setAnexoNota] = useState<File | null>(null);
@@ -57,6 +60,94 @@ export default function EmitirNotaModal({
     dataEmissao: new Date(),
     dataEsperada: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   });
+
+  // Estados para envio por email
+  const [mostrarEmailSection, setMostrarEmailSection] = useState(false);
+  const [emailsSelecionados, setEmailsSelecionados] = useState<string[]>([]);
+  const [novoEmail, setNovoEmail] = useState('');
+  const [enviandoEmail, setEnviandoEmail] = useState(false);
+
+  // Buscar cliente e seus emails
+  const clienteEncontrado = useMemo(() => {
+    if (!orcamento?.cliente_nome) return null;
+    return clientes.find(c => c.nome === orcamento.cliente_nome) || null;
+  }, [clientes, orcamento?.cliente_nome]);
+
+  const emailsDisponiveis = useMemo(() => {
+    if (!clienteEncontrado) return [];
+    const emails: string[] = [];
+    if (clienteEncontrado.email) emails.push(clienteEncontrado.email);
+    if (clienteEncontrado.emails_adicionais) {
+      emails.push(...(clienteEncontrado.emails_adicionais as string[]));
+    }
+    return [...new Set(emails)];
+  }, [clienteEncontrado]);
+
+  useEffect(() => {
+    if (!open) {
+      setMostrarEmailSection(false);
+      setEmailsSelecionados([]);
+      setNovoEmail('');
+    }
+  }, [open]);
+
+  const handleToggleEmail = (email: string) => {
+    setEmailsSelecionados(prev =>
+      prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]
+    );
+  };
+
+  const handleAdicionarEmail = async () => {
+    const emailTrimmed = novoEmail.trim().toLowerCase();
+    if (!emailTrimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+      toast({ title: "Email inválido", description: "Informe um email válido", variant: "destructive" });
+      return;
+    }
+    if (emailsDisponiveis.includes(emailTrimmed)) {
+      toast({ title: "Email já cadastrado", description: "Este email já está na lista", variant: "destructive" });
+      return;
+    }
+    if (clienteEncontrado) {
+      try {
+        await adicionarEmail(clienteEncontrado.id, emailTrimmed);
+        setEmailsSelecionados(prev => [...prev, emailTrimmed]);
+        setNovoEmail('');
+      } catch {
+        // toast already shown by hook
+      }
+    }
+  };
+
+  const handleEnviarPorEmail = async () => {
+    if (emailsSelecionados.length === 0) {
+      toast({ title: "Selecione emails", description: "Selecione pelo menos um email destinatário", variant: "destructive" });
+      return;
+    }
+    setEnviandoEmail(true);
+    try {
+      const sucesso = await enviarWebhook(empresaAtual?.id || null, {
+        tipo: 'envio_nota_fiscal',
+        emails_destinatarios: emailsSelecionados,
+        numero_nf: numeroNF,
+        cliente_nome: orcamento?.cliente_nome || '',
+        valor: orcamento?.valor || 0,
+        numero_orcamento: orcamento?.numero || '',
+        numero_pedido: dadosAprovacao.numeroPedido,
+        pdf_nota_fiscal_url: orcamento?.pdf_nota_fiscal || '',
+        equipamento: orcamento?.equipamento || ''
+      });
+      if (sucesso) {
+        toast({ title: "Email enviado!", description: `Nota fiscal enviada para ${emailsSelecionados.length} destinatário(s)` });
+        setMostrarEmailSection(false);
+      } else {
+        toast({ title: "Erro", description: "Falha ao enviar webhook de email", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erro", description: "Erro ao enviar email", variant: "destructive" });
+    } finally {
+      setEnviandoEmail(false);
+    }
+  };
 
   const handlePrazoDiasChange = (dias: string) => {
     const diasNum = parseInt(dias) || 0;
@@ -694,6 +785,77 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
               </div>
             </div>
 
+              {/* Seção de envio por email */}
+              {mostrarEmailSection && (
+                <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Selecionar destinatários
+                  </Label>
+                  
+                  {emailsDisponiveis.length === 0 && !clienteEncontrado && (
+                    <p className="text-sm text-muted-foreground">
+                      Cliente não encontrado no cadastro. Adicione um email abaixo.
+                    </p>
+                  )}
+
+                  {emailsDisponiveis.length === 0 && clienteEncontrado && (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum email cadastrado para este cliente. Adicione abaixo.
+                    </p>
+                  )}
+
+                  <div className="space-y-2">
+                    {emailsDisponiveis.map(email => (
+                      <div key={email} className="flex items-center gap-2">
+                        <Checkbox
+                          checked={emailsSelecionados.includes(email)}
+                          onCheckedChange={() => handleToggleEmail(email)}
+                        />
+                        <span className="text-sm">{email}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Adicionar novo email */}
+                  <div className="flex gap-2">
+                    <Input
+                      type="email"
+                      placeholder="novo@email.com"
+                      value={novoEmail}
+                      onChange={(e) => setNovoEmail(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAdicionarEmail()}
+                      className="flex-1"
+                    />
+                    <Button variant="outline" size="sm" onClick={handleAdicionarEmail} disabled={!clienteEncontrado}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Adicionar
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Emails adicionados serão salvos no cadastro do cliente
+                  </p>
+
+                  <Button
+                    onClick={handleEnviarPorEmail}
+                    disabled={enviandoEmail || emailsSelecionados.length === 0}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {enviandoEmail ? (
+                      <>
+                        <Send className="h-4 w-4 mr-2 animate-pulse" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Enviar para {emailsSelecionados.length} destinatário(s)
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
             <div className="flex gap-3 pt-6">
               <Button 
                 variant="outline" 
@@ -701,6 +863,14 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                 className="flex-1"
               >
                 Voltar
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setMostrarEmailSection(!mostrarEmailSection)}
+                className="flex items-center gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                Enviar por Email
               </Button>
               <Button 
                 onClick={handleConfirmarNotaFiscal} 

@@ -1,0 +1,1 @@
+ALTER TABLE public.clientes ADD COLUMN emails_adicionais text[] DEFAULT '{}';
