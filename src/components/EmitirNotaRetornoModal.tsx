@@ -1,12 +1,19 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, Check, Calendar, FileText, User, DollarSign, Link } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Copy, Check, Calendar, FileText, User, DollarSign, Link, Mail, Plus, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { UploadPdfModal } from "./UploadPdfModal";
 import { supabase } from "@/integrations/supabase/client";
 import EmitirNotaModal from "./EmitirNotaModal";
+import { useClientes } from "@/hooks/use-clientes";
+import { useEmpresa } from "@/contexts/EmpresaContext";
+
+const WEBHOOK_URL_EMAIL_NF = 'https://primary-production-dc42.up.railway.app/webhook-test/63fc063c-8cd3-4cef-8a5a-efec4c7821a0';
 
 interface EmitirNotaRetornoModalProps {
   open: boolean;
@@ -35,6 +42,140 @@ export function EmitirNotaRetornoModal({
   const [orcamentoData, setOrcamentoData] = useState<any>(null);
   const [showEmitirNotaModal, setShowEmitirNotaModal] = useState(false);
   const { toast } = useToast();
+  const { clientes, adicionarEmail } = useClientes();
+  const { empresaAtual } = useEmpresa();
+
+  // Estados para envio por email
+  const [mostrarEmailSection, setMostrarEmailSection] = useState(false);
+  const [emailsSelecionados, setEmailsSelecionados] = useState<string[]>([]);
+  const [novoEmail, setNovoEmail] = useState('');
+  const [enviandoEmail, setEnviandoEmail] = useState(false);
+
+  // Buscar cliente e seus emails
+  const clienteEncontrado = useMemo(() => {
+    if (!ordem?.cliente_nome) return null;
+    return clientes.find(c => c.nome === ordem.cliente_nome) || null;
+  }, [clientes, ordem?.cliente_nome]);
+
+  const emailsDisponiveis = useMemo(() => {
+    if (!clienteEncontrado) return [];
+    const emails: string[] = [];
+    if (clienteEncontrado.email) emails.push(clienteEncontrado.email);
+    if (clienteEncontrado.emails_adicionais) {
+      emails.push(...(clienteEncontrado.emails_adicionais as string[]));
+    }
+    return [...new Set(emails)];
+  }, [clienteEncontrado]);
+
+  useEffect(() => {
+    if (!open) {
+      setMostrarEmailSection(false);
+      setEmailsSelecionados([]);
+      setNovoEmail('');
+    }
+  }, [open]);
+
+  const handleToggleEmail = (email: string) => {
+    setEmailsSelecionados(prev =>
+      prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]
+    );
+  };
+
+  const handleAdicionarEmail = async () => {
+    const emailTrimmed = novoEmail.trim().toLowerCase();
+    if (!emailTrimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+      toast({ title: "Email inválido", description: "Informe um email válido", variant: "destructive" });
+      return;
+    }
+    if (emailsDisponiveis.includes(emailTrimmed)) {
+      toast({ title: "Email já cadastrado", description: "Este email já está na lista", variant: "destructive" });
+      return;
+    }
+    if (clienteEncontrado) {
+      try {
+        await adicionarEmail(clienteEncontrado.id, emailTrimmed);
+        setEmailsSelecionados(prev => [...prev, emailTrimmed]);
+        setNovoEmail('');
+      } catch {
+        // toast already shown by hook
+      }
+    }
+  };
+
+  const handleEnviarPorEmail = async () => {
+    if (emailsSelecionados.length === 0) {
+      toast({ title: "Selecione emails", description: "Selecione pelo menos um email destinatário", variant: "destructive" });
+      return;
+    }
+    setEnviandoEmail(true);
+    try {
+      // Buscar URL do PDF da nota de retorno do recebimento
+      let pdfUrl = '';
+      const { data: ordemData } = await supabase
+        .from('ordens_servico')
+        .select('recebimento_id')
+        .eq('id', ordem.id)
+        .single();
+
+      if (ordemData?.recebimento_id) {
+        const { data: recebimento } = await supabase
+          .from('recebimentos')
+          .select('pdf_nota_retorno, numero_nota_retorno')
+          .eq('id', ordemData.recebimento_id)
+          .single();
+        pdfUrl = recebimento?.pdf_nota_retorno || '';
+      }
+
+      // Buscar dados do orçamento vinculado se existir
+      let diasFaturamento = 0;
+      let numeroOrcamento = ordem.orcamento_vinculado || '';
+      let numeroPedido = '';
+      if (ordem.orcamento_vinculado) {
+        const { data: orc } = await supabase
+          .from('orcamentos')
+          .select('prazo_pagamento, numero_pedido, numero_nota_entrada')
+          .eq('numero', ordem.orcamento_vinculado)
+          .single();
+        if (orc) {
+          diasFaturamento = orc.prazo_pagamento || 0;
+          numeroPedido = orc.numero_pedido || '';
+        }
+      }
+
+      const payload = {
+        tipo: 'envio_nota_fiscal',
+        emails_destinatarios: emailsSelecionados,
+        numero_nf: ordem.nota_fiscal || '',
+        tipo_nota: 'retorno',
+        numero_orcamento: numeroOrcamento,
+        numero_pedido: numeroPedido,
+        dias_faturamento: diasFaturamento,
+        nota_entrada: ordem.nota_fiscal || '',
+        cliente_nome: ordem.cliente_nome,
+        valor: 0,
+        pdf_nota_fiscal_url: pdfUrl,
+        equipamento: ordem.equipamento,
+        empresa_id: empresaAtual?.id || ''
+      };
+
+      const response = await fetch(WEBHOOK_URL_EMAIL_NF, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        toast({ title: "Email enviado!", description: `Nota de retorno enviada para ${emailsSelecionados.length} destinatário(s)` });
+        setMostrarEmailSection(false);
+      } else {
+        toast({ title: "Erro", description: "Falha ao enviar webhook de email", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erro", description: "Erro ao enviar email", variant: "destructive" });
+    } finally {
+      setEnviandoEmail(false);
+    }
+  };
 
   const textoNota = `I - Retorno da NF ${ordem.nota_fiscal || 'N/A'}.
 II - Pedido N (a configurar)`;
@@ -62,14 +203,11 @@ II - Pedido N (a configurar)`;
   };
 
   const handleUploadComplete = async () => {
-    // Primeiro confirma a nota de retorno
     onConfirm(ordem.id);
     setShowUploadModal(false);
     
-    // Verificar se tem orçamento vinculado
     if (ordem.orcamento_vinculado) {
       try {
-        // Buscar dados completos do orçamento
         const { data: orcamento, error } = await supabase
           .from('orcamentos')
           .select('*')
@@ -82,7 +220,6 @@ II - Pedido N (a configurar)`;
           return;
         }
         
-        // Verificar se o orçamento está aprovado (pode ser faturado)
         if (orcamento && (orcamento.status === 'aprovado' || orcamento.status === 'faturamento')) {
           setOrcamentoData(orcamento);
           setShowConfirmFaturamento(true);
@@ -118,7 +255,7 @@ II - Pedido N (a configurar)`;
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
@@ -155,7 +292,6 @@ II - Pedido N (a configurar)`;
                 </div>
               </div>
 
-              {/* Indicador de orçamento vinculado */}
               {ordem.orcamento_vinculado && (
                 <div className="flex items-center gap-2 pt-2 border-t border-border">
                   <Link className="h-4 w-4 text-green-500" />
@@ -195,10 +331,89 @@ II - Pedido N (a configurar)`;
               </Button>
             </div>
 
+            {/* Seção de envio por email */}
+            {mostrarEmailSection && (
+              <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Selecionar destinatários
+                </Label>
+                
+                {emailsDisponiveis.length === 0 && !clienteEncontrado && (
+                  <p className="text-sm text-muted-foreground">
+                    Cliente não encontrado no cadastro. Adicione um email abaixo.
+                  </p>
+                )}
+
+                {emailsDisponiveis.length === 0 && clienteEncontrado && (
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum email cadastrado para este cliente. Adicione abaixo.
+                  </p>
+                )}
+
+                <div className="space-y-2">
+                  {emailsDisponiveis.map(email => (
+                    <div key={email} className="flex items-center gap-2">
+                      <Checkbox
+                        checked={emailsSelecionados.includes(email)}
+                        onCheckedChange={() => handleToggleEmail(email)}
+                      />
+                      <span className="text-sm">{email}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Adicionar novo email */}
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="novo@email.com"
+                    value={novoEmail}
+                    onChange={(e) => setNovoEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAdicionarEmail()}
+                    className="flex-1"
+                  />
+                  <Button variant="outline" size="sm" onClick={handleAdicionarEmail} disabled={!clienteEncontrado}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Adicionar
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Emails adicionados serão salvos no cadastro do cliente
+                </p>
+
+                <Button
+                  onClick={handleEnviarPorEmail}
+                  disabled={enviandoEmail || emailsSelecionados.length === 0}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {enviandoEmail ? (
+                    <>
+                      <Send className="h-4 w-4 mr-2 animate-pulse" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Enviar para {emailsSelecionados.length} destinatário(s)
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
             {/* Botões de Ação */}
             <div className="flex gap-2 pt-4">
               <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
                 Cancelar
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setMostrarEmailSection(!mostrarEmailSection)}
+                className="flex items-center gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                Email
               </Button>
               <Button onClick={handleConfirm} className="flex-1 bg-gradient-primary">
                 Confirmar Emissão
