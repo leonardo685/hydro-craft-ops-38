@@ -262,8 +262,6 @@ II - Pedido ${numeroPedido || 'N (a configurar)'}`;
       onOpenChange(false);
     }
   };
-    }
-  };
 
   const handleConfirmarFaturamento = () => {
     setShowConfirmFaturamento(false);
