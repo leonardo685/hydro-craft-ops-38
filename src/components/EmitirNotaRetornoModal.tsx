@@ -42,7 +42,6 @@ export function EmitirNotaRetornoModal({
   const [orcamentoData, setOrcamentoData] = useState<any>(null);
   const [showEmitirNotaModal, setShowEmitirNotaModal] = useState(false);
   const [notaEmitida, setNotaEmitida] = useState(false);
-  const [showEmitirNotaModal, setShowEmitirNotaModal] = useState(false);
   const { toast } = useToast();
   const { clientes, adicionarEmail } = useClientes();
   const { empresaAtual } = useEmpresa();
