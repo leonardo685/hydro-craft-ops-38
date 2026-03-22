@@ -200,7 +200,7 @@ export function EmitirNotaRetornoModal({
   };
 
   const textoNota = `I - Retorno da NF ${ordem.nota_fiscal || 'N/A'}.
-II - Pedido N (a configurar)`;
+II - Pedido ${numeroPedido || 'N (a configurar)'}`;
 
   const handleCopyText = async () => {
     try {
