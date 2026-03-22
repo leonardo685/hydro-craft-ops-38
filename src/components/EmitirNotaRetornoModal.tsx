@@ -13,7 +13,7 @@ import EmitirNotaModal from "./EmitirNotaModal";
 import { useClientes } from "@/hooks/use-clientes";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 
-const WEBHOOK_URL_EMAIL_NF = 'https://primary-production-dc42.up.railway.app/webhook-test/63fc063c-8cd3-4cef-8a5a-efec4c7821a0';
+const WEBHOOK_URL_EMAIL_NF = 'https://primary-production-dc42.up.railway.app/webhook/63fc063c-8cd3-4cef-8a5a-efec4c7821a0';
 
 interface EmitirNotaRetornoModalProps {
   open: boolean;
