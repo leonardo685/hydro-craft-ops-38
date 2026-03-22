@@ -41,6 +41,7 @@ export function EmitirNotaRetornoModal({
   const [showConfirmFaturamento, setShowConfirmFaturamento] = useState(false);
   const [orcamentoData, setOrcamentoData] = useState<any>(null);
   const [showEmitirNotaModal, setShowEmitirNotaModal] = useState(false);
+  const [notaEmitida, setNotaEmitida] = useState(false);
   const { toast } = useToast();
   const { clientes, adicionarEmail } = useClientes();
   const { empresaAtual } = useEmpresa();
@@ -74,6 +75,7 @@ export function EmitirNotaRetornoModal({
       setEmailsSelecionados([]);
       setNovoEmail('');
       setNumeroPedido('');
+      setNotaEmitida(false);
     }
   }, [open]);
 
@@ -227,7 +229,11 @@ II - Pedido ${numeroPedido || 'N (a configurar)'}`;
   const handleUploadComplete = async () => {
     onConfirm(ordem.id);
     setShowUploadModal(false);
-    
+    setNotaEmitida(true);
+    toast({ title: "Nota de retorno emitida!", description: "Agora você pode enviar por email ou concluir." });
+  };
+
+  const handleConcluir = async () => {
     if (ordem.orcamento_vinculado) {
       try {
         const { data: orcamento, error } = await supabase
@@ -353,8 +359,8 @@ II - Pedido ${numeroPedido || 'N (a configurar)'}`;
               </Button>
             </div>
 
-            {/* Seção de envio por email */}
-            {mostrarEmailSection && (
+            {/* Seção de envio por email - só aparece após emitir nota */}
+            {notaEmitida && mostrarEmailSection && (
               <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
                 <Label className="text-sm font-semibold flex items-center gap-2">
                   <Mail className="h-4 w-4" />
@@ -407,7 +413,7 @@ II - Pedido ${numeroPedido || 'N (a configurar)'}`;
                 <Button
                   onClick={handleEnviarPorEmail}
                   disabled={enviandoEmail || emailsSelecionados.length === 0}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {enviandoEmail ? (
                     <>
@@ -427,19 +433,27 @@ II - Pedido ${numeroPedido || 'N (a configurar)'}`;
             {/* Botões de Ação */}
             <div className="flex gap-2 pt-4">
               <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
-                Cancelar
+                {notaEmitida ? 'Fechar' : 'Cancelar'}
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setMostrarEmailSection(!mostrarEmailSection)}
-                className="flex items-center gap-2"
-              >
-                <Mail className="h-4 w-4" />
-                Email
-              </Button>
-              <Button onClick={handleConfirm} className="flex-1 bg-gradient-primary">
-                Confirmar Emissão
-              </Button>
+              {notaEmitida && (
+                <Button
+                  variant="outline"
+                  onClick={() => setMostrarEmailSection(!mostrarEmailSection)}
+                  className="flex items-center gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  Email
+                </Button>
+              )}
+              {!notaEmitida ? (
+                <Button onClick={handleConfirm} className="flex-1 bg-gradient-primary">
+                  Confirmar Emissão
+                </Button>
+              ) : (
+                <Button onClick={handleConcluir} className="flex-1 bg-gradient-primary">
+                  Concluir
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>
