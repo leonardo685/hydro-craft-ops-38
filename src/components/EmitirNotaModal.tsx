@@ -127,7 +127,7 @@ export default function EmitirNotaModal({
     }
     setEnviandoEmail(true);
     try {
-      const WEBHOOK_URL_EMAIL_NF = 'https://primary-production-dc42.up.railway.app/webhook-test/63fc063c-8cd3-4cef-8a5a-efec4c7821a0';
+      const WEBHOOK_URL_EMAIL_NF = 'https://primary-production-dc42.up.railway.app/webhook/63fc063c-8cd3-4cef-8a5a-efec4c7821a0';
       
       // Upload do PDF se ainda não foi feito
       let pdfUrl = urlAnexoUpload || orcamento?.pdf_nota_fiscal || '';
