@@ -229,7 +229,11 @@ II - Pedido ${numeroPedido || 'N (a configurar)'}`;
   const handleUploadComplete = async () => {
     onConfirm(ordem.id);
     setShowUploadModal(false);
-    
+    setNotaEmitida(true);
+    toast({ title: "Nota de retorno emitida!", description: "Agora você pode enviar por email ou concluir." });
+  };
+
+  const handleConcluir = async () => {
     if (ordem.orcamento_vinculado) {
       try {
         const { data: orcamento, error } = await supabase
@@ -256,6 +260,8 @@ II - Pedido ${numeroPedido || 'N (a configurar)'}`;
       }
     } else {
       onOpenChange(false);
+    }
+  };
     }
   };
 
