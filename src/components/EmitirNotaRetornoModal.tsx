@@ -50,6 +50,7 @@ export function EmitirNotaRetornoModal({
   const [emailsSelecionados, setEmailsSelecionados] = useState<string[]>([]);
   const [novoEmail, setNovoEmail] = useState('');
   const [enviandoEmail, setEnviandoEmail] = useState(false);
+  const [numeroPedido, setNumeroPedido] = useState('');
 
   // Buscar cliente e seus emails
   const clienteEncontrado = useMemo(() => {
@@ -72,8 +73,29 @@ export function EmitirNotaRetornoModal({
       setMostrarEmailSection(false);
       setEmailsSelecionados([]);
       setNovoEmail('');
+      setNumeroPedido('');
     }
   }, [open]);
+
+  // Buscar numero_pedido do orçamento vinculado
+  useEffect(() => {
+    const fetchNumeroPedido = async () => {
+      if (!open || !ordem?.orcamento_vinculado) return;
+      try {
+        const { data } = await supabase
+          .from('orcamentos')
+          .select('numero_pedido')
+          .eq('numero', ordem.orcamento_vinculado)
+          .maybeSingle();
+        if (data?.numero_pedido) {
+          setNumeroPedido(data.numero_pedido);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar numero_pedido:', err);
+      }
+    };
+    fetchNumeroPedido();
+  }, [open, ordem?.orcamento_vinculado]);
 
   const handleToggleEmail = (email: string) => {
     setEmailsSelecionados(prev =>
@@ -178,7 +200,7 @@ export function EmitirNotaRetornoModal({
   };
 
   const textoNota = `I - Retorno da NF ${ordem.nota_fiscal || 'N/A'}.
-II - Pedido N (a configurar)`;
+II - Pedido ${numeroPedido || 'N (a configurar)'}`;
 
   const handleCopyText = async () => {
     try {
