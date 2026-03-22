@@ -1,0 +1,1 @@
+UPDATE ordens_servico SET status = 'aguardando_retorno', updated_at = now() WHERE id = '6da9ba98-89ea-4934-964c-96a81f498d44';
