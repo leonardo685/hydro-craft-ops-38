@@ -75,6 +75,7 @@ export function EmitirNotaRetornoModal({
       setEmailsSelecionados([]);
       setNovoEmail('');
       setNumeroPedido('');
+      setNotaEmitida(false);
     }
   }, [open]);
 
