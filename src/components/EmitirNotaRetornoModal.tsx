@@ -50,6 +50,7 @@ export function EmitirNotaRetornoModal({
   const [emailsSelecionados, setEmailsSelecionados] = useState<string[]>([]);
   const [novoEmail, setNovoEmail] = useState('');
   const [enviandoEmail, setEnviandoEmail] = useState(false);
+  const [numeroPedido, setNumeroPedido] = useState('');
 
   // Buscar cliente e seus emails
   const clienteEncontrado = useMemo(() => {
