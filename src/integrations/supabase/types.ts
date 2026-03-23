@@ -1707,6 +1707,7 @@ export type Database = {
           updated_at: string
           usinagem_necessaria: Json | null
           valor_estimado: number | null
+          xml_nota_fiscal: string | null
         }
         Insert: {
           ambiente_trabalho?: string | null
@@ -1748,6 +1749,7 @@ export type Database = {
           updated_at?: string
           usinagem_necessaria?: Json | null
           valor_estimado?: number | null
+          xml_nota_fiscal?: string | null
         }
         Update: {
           ambiente_trabalho?: string | null
@@ -1789,6 +1791,7 @@ export type Database = {
           updated_at?: string
           usinagem_necessaria?: Json | null
           valor_estimado?: number | null
+          xml_nota_fiscal?: string | null
         }
         Relationships: [
           {
@@ -1915,6 +1918,7 @@ export type Database = {
           tipo_equipamento: string
           updated_at: string
           urgente: boolean | null
+          xml_nota_retorno: string | null
         }
         Insert: {
           ambiente_trabalho?: string | null
@@ -1954,6 +1958,7 @@ export type Database = {
           tipo_equipamento: string
           updated_at?: string
           urgente?: boolean | null
+          xml_nota_retorno?: string | null
         }
         Update: {
           ambiente_trabalho?: string | null
@@ -1993,6 +1998,7 @@ export type Database = {
           tipo_equipamento?: string
           updated_at?: string
           urgente?: boolean | null
+          xml_nota_retorno?: string | null
         }
         Relationships: [
           {
