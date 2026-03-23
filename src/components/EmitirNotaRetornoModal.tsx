@@ -180,6 +180,7 @@ export function EmitirNotaRetornoModal({
         cliente_nome: ordem.cliente_nome,
         valor: 0,
         pdf_nota_fiscal_url: pdfUrl,
+        xml_nota_fiscal_url: xmlUrl,
         equipamento: ordem.equipamento,
         empresa_id: empresaAtual?.id || ''
       };
