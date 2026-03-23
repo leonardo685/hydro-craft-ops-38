@@ -522,17 +522,8 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
           </Card>
         </div>
 
-        <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="faturamento">
-              Faturamento ({ordensRetorno.length + orcamentosEmFaturamento.length})
-            </TabsTrigger>
-            <TabsTrigger value="faturadas">
-              Faturadas ({notasFaturadas.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="faturamento" className="space-y-6 mt-6">
+        {defaultTab === "faturamento" && (
+          <div className="space-y-6">
             {/* Sub-abas para separar Ordens e Orçamentos */}
             <Tabs defaultValue="ordens-retorno" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
@@ -708,9 +699,11 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                 )}
               </TabsContent>
             </Tabs>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="faturadas" className="space-y-6 mt-6">
+        {defaultTab === "faturadas" && (
+          <div className="space-y-6 mt-6">
             {/* Sub-abas para separar Notas de Retorno e Faturamento */}
             <Tabs defaultValue="notas-retorno" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
@@ -1011,8 +1004,8 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                 )}
               </TabsContent>
             </Tabs>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
 
       {/* Modal para Emitir Nota Fiscal */}
