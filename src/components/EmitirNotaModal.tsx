@@ -139,17 +139,6 @@ export default function EmitirNotaModal({
         }
       }
 
-      // Buscar XML da nota fiscal se existir
-      let xmlUrl = '';
-      if (orcamento?.ordem_servico_id) {
-        const { data: osData } = await supabase
-          .from('ordens_servico')
-          .select('xml_nota_fiscal')
-          .eq('id', orcamento.ordem_servico_id)
-          .single();
-        xmlUrl = osData?.xml_nota_fiscal || '';
-      }
-
       // Dias de faturamento vem do prazo_pagamento definido na aprovação do orçamento
       const diasFaturamento = orcamento?.prazo_pagamento || 0;
 
@@ -165,7 +154,6 @@ export default function EmitirNotaModal({
         cliente_nome: orcamento?.cliente_nome || '',
         valor: orcamento?.valor || 0,
         pdf_nota_fiscal_url: pdfUrl,
-        xml_nota_fiscal_url: xmlUrl,
         equipamento: orcamento?.equipamento || '',
         tipo_ordem: tipoOrdemNome,
         empresa_id: empresaAtual?.id || ''
