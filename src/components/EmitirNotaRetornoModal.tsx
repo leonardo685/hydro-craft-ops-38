@@ -141,13 +141,15 @@ export function EmitirNotaRetornoModal({
         .eq('id', ordem.id)
         .single();
 
+      let xmlUrl = '';
       if (ordemData?.recebimento_id) {
         const { data: recebimento } = await supabase
           .from('recebimentos')
-          .select('pdf_nota_retorno, numero_nota_retorno')
+          .select('pdf_nota_retorno, numero_nota_retorno, xml_nota_retorno')
           .eq('id', ordemData.recebimento_id)
           .single();
         pdfUrl = recebimento?.pdf_nota_retorno || '';
+        xmlUrl = recebimento?.xml_nota_retorno || '';
       }
 
       // Buscar dados do orçamento vinculado se existir
@@ -178,6 +180,7 @@ export function EmitirNotaRetornoModal({
         cliente_nome: ordem.cliente_nome,
         valor: 0,
         pdf_nota_fiscal_url: pdfUrl,
+        xml_nota_fiscal_url: xmlUrl,
         equipamento: ordem.equipamento,
         empresa_id: empresaAtual?.id || ''
       };
