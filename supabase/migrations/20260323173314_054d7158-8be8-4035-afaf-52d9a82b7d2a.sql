@@ -1,0 +1,2 @@
+UPDATE ordens_servico SET status = 'aguardando_retorno', updated_at = now() WHERE numero_ordem = 'MH-027-25';
+UPDATE recebimentos SET status = 'em_analise', numero_nota_retorno = NULL, data_nota_retorno = NULL, pdf_nota_retorno = NULL, updated_at = now() WHERE numero_ordem = 'MH-027-25';
