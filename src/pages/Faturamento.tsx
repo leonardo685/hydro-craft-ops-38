@@ -699,9 +699,11 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                 )}
               </TabsContent>
             </Tabs>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="faturadas" className="space-y-6 mt-6">
+        {defaultTab === "faturadas" && (
+          <div className="space-y-6 mt-6">
             {/* Sub-abas para separar Notas de Retorno e Faturamento */}
             <Tabs defaultValue="notas-retorno" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
