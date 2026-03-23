@@ -1004,8 +1004,8 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                 )}
               </TabsContent>
             </Tabs>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
 
       {/* Modal para Emitir Nota Fiscal */}
