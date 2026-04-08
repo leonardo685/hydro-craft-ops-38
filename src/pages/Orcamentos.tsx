@@ -1005,22 +1005,37 @@ export default function Orcamentos() {
       );
       yPosition += alturaAssunto;
       
-      // Segunda linha: Valor Total + Condição Pagamento + Prazo Entrega
+      // Segunda linha: Total Value + Payment Terms + Proposal Validity
       const col3Width = (pageWidth - 40) / 3;
       const alturaLinha2 = Math.max(
         desenharCelulaComQuebraLinha(`${pdfT.totalValue}: ${valorTotal}`, 20, yPosition, col3Width, 8),
         desenharCelulaComQuebraLinha(`${pdfT.paymentTerms}: ${prazo}`, 20 + col3Width, yPosition, col3Width, 8),
-        desenharCelulaComQuebraLinha(`${pdfT.deliveryTime}: ${prazoEntrega}`, 20 + col3Width * 2, yPosition, col3Width, 8)
+        desenharCelulaComQuebraLinha(`${pdfT.proposalValidity}: ${validade}`, 20 + col3Width * 2, yPosition, col3Width, 8)
       );
       yPosition += alturaLinha2;
       
-      // Terceira linha: Garantia + Frete + Validade Proposta
+      // Terceira linha: Sale Tax + Total with Tax + Delivery Time
+      const valorNumerico = Number(orcamento.valor || 0);
+      const saleTaxRate = 0.085;
+      const saleTaxValue = valorNumerico * saleTaxRate;
+      const totalWithTax = valorNumerico + saleTaxValue;
+      const saleTaxFormatado = formatCurrency(saleTaxValue);
+      const totalWithTaxFormatado = formatCurrency(totalWithTax);
+      
       const alturaLinha3 = Math.max(
-        desenharCelulaComQuebraLinha(`${pdfT.warranty}: ${garantia}`, 20, yPosition, col3Width, 8),
-        desenharCelulaComQuebraLinha(`${pdfT.freight}: ${frete}`, 20 + col3Width, yPosition, col3Width, 8),
-        desenharCelulaComQuebraLinha(`${pdfT.proposalValidity}: ${validade}`, 20 + col3Width * 2, yPosition, col3Width, 8)
+        desenharCelulaComQuebraLinha(`${pdfT.saleTax} (8.5%): ${saleTaxFormatado}`, 20, yPosition, col3Width, 8),
+        desenharCelulaComQuebraLinha(`${pdfT.totalWithTax}: ${totalWithTaxFormatado}`, 20 + col3Width, yPosition, col3Width, 8),
+        desenharCelulaComQuebraLinha(`${pdfT.deliveryTime}: ${prazoEntrega}`, 20 + col3Width * 2, yPosition, col3Width, 8)
       );
       yPosition += alturaLinha3;
+      
+      // Quarta linha: Garantia + Frete
+      const alturaLinha4 = Math.max(
+        desenharCelulaComQuebraLinha(`${pdfT.warranty}: ${garantia}`, 20, yPosition, col3Width, 8),
+        desenharCelulaComQuebraLinha(`${pdfT.freight}: ${frete}`, 20 + col3Width, yPosition, col3Width, 8),
+        desenharCelulaComQuebraLinha('', 20 + col3Width * 2, yPosition, col3Width, 8)
+      );
+      yPosition += alturaLinha4;
 
       // === OBSERVAÇÕES ===
       if (orcamento.descricao && orcamento.descricao.trim()) {
