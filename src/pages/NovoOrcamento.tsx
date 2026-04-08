@@ -100,6 +100,7 @@ export default function NovoOrcamento() {
   const [dadosOrcamento, setDadosOrcamento] = useState({
     id: '', // Add id for editing
     tipoOrdem: '',
+    tipoDocumento: 'proposal' as 'proposal' | 'invoice',
     numeroOrdem: '', // Will be generated automatically
     urgencia: false,
     cliente: '',
