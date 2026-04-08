@@ -67,28 +67,33 @@ export default function NovoOrcamento() {
 
   const { categorias, loading: loadingCategorias } = useCategoriasFinanceiras();
 
-  // Filtrar apenas categorias de receita operacional (entrada), excluindo não operacionais
+  // Filtrar categorias de receita operacional (entrada)
+  // Preferimos subcategorias (filhas), mas permitimos categoria mãe quando ela não possui filhas.
   const receitasOperacionais = useMemo(() => {
-    // Encontrar a categoria mãe "Receitas Não Operacionais" para excluir suas filhas
-    const categoriaNaoOperacional = categorias.find(cat => 
-      cat.tipo === 'mae' && 
-      cat.classificacao === 'entrada' && 
-      cat.nome.toLowerCase().includes('não operacion')
+    const categoriaNaoOperacional = categorias.find(cat =>
+      cat.tipo === 'mae' &&
+      cat.classificacao === 'entrada' &&
+      (cat.nome.toLowerCase().includes('não operacion') || cat.nome.toLowerCase().includes('nao operacion'))
+    );
+
+    const categoriasMaeComFilhas = new Set(
+      categorias
+        .filter(cat => cat.tipo === 'filha' && cat.categoriaMaeId)
+        .map(cat => cat.categoriaMaeId as string)
     );
 
     return categorias.filter(cat => {
-      // Incluir apenas categorias de entrada (receita)
       if (cat.classificacao !== 'entrada') return false;
-      
-      // Excluir categorias mãe (queremos apenas as filhas para seleção)
-      if (cat.tipo === 'mae') return false;
-      
-      // Excluir filhas de "Receitas Não Operacionais"
-      if (categoriaNaoOperacional && cat.categoriaMaeId === categoriaNaoOperacional.id) {
+
+      if (cat.tipo === 'filha') {
+        return !categoriaNaoOperacional || cat.categoriaMaeId !== categoriaNaoOperacional.id;
+      }
+
+      if (categoriaNaoOperacional && cat.id === categoriaNaoOperacional.id) {
         return false;
       }
-      
-      return true;
+
+      return !categoriasMaeComFilhas.has(cat.id);
     });
   }, [categorias]);
   
