@@ -3044,7 +3044,8 @@ export default function NovoOrcamento() {
     adicionarRodape();
 
     // Salvar PDF
-    doc.save(`Orcamento_${dadosOrcamento.numeroOrdem.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
+    const pdfPrefix = dadosOrcamento.tipoDocumento === 'invoice' ? 'Invoice' : 'Orcamento';
+    doc.save(`${pdfPrefix}_${dadosOrcamento.numeroOrdem.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
     toast({
       title: "Sucesso",
       description: "PDF exportado com sucesso!"
