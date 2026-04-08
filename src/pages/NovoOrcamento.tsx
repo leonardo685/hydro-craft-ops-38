@@ -1866,6 +1866,21 @@ export default function NovoOrcamento() {
       doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
       doc.text(`Valor Total: ${valorTotalFormatado}`, 22, yPosition + 5.5);
       doc.text(`Condição Pagamento: ${condicaoPagamento}`, 22 + col3Width, yPosition + 5.5);
+      doc.text(`Validade Proposta: ${validadeProposta}`, 22 + col3Width * 2, yPosition + 5.5);
+      yPosition += 8;
+      
+      // Sale Tax + Total with Tax
+      const saleTaxRate = 0.085;
+      const saleTaxValue = valorComDesconto * saleTaxRate;
+      const totalWithTax = valorComDesconto + saleTaxValue;
+      const saleTaxFormatado = `R$ ${saleTaxValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+      const totalWithTaxFormatado = `R$ ${totalWithTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+      
+      doc.rect(20, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+      doc.text(`Sale Tax (8.5%): ${saleTaxFormatado}`, 22, yPosition + 5.5);
+      doc.text(`Total com Tax: ${totalWithTaxFormatado}`, 22 + col3Width, yPosition + 5.5);
       doc.text(`Prazo Entrega: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
       yPosition += 8;
       
@@ -1874,7 +1889,6 @@ export default function NovoOrcamento() {
       doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
       doc.text(`Garantia: ${garantia}`, 22, yPosition + 5.5);
       doc.text(`Frete: ${frete}`, 22 + col3Width, yPosition + 5.5);
-      doc.text(`Validade Proposta: ${validadeProposta}`, 22 + col3Width * 2, yPosition + 5.5);
       yPosition += 8;
       yPosition += 10;
 
