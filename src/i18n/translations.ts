@@ -1074,6 +1074,16 @@ export const translations = {
       orderNumberNotFound: 'Número da ordem não encontrado',
       orderNotFinished: 'Esta ordem ainda não foi finalizada',
       loadError: 'Erro ao carregar laudo',
+      // PDF labels
+      pdfPage: 'Página',
+      pdfOf: 'de',
+      pdfGeneratedAt: 'Gerado em',
+      pdfTel: 'Tel',
+      pdfNotInformed: 'Não informado',
+      pdfPhotoContinuation: 'FOTOS DO EQUIPAMENTO (continuação)',
+      pdfErrorLoadingImage: 'Erro ao carregar',
+      pdfOk: 'OK',
+      pdfNok: 'NOK',
     },
     // Acesso Ordem Pública
     acessoOrdem: {
@@ -2184,6 +2194,16 @@ export const translations = {
       orderNumberNotFound: 'Order number not found',
       orderNotFinished: 'This order has not been finalized yet',
       loadError: 'Error loading report',
+      // PDF labels
+      pdfPage: 'Page',
+      pdfOf: 'of',
+      pdfGeneratedAt: 'Generated at',
+      pdfTel: 'Phone',
+      pdfNotInformed: 'Not informed',
+      pdfPhotoContinuation: 'EQUIPMENT PHOTOS (continued)',
+      pdfErrorLoadingImage: 'Error loading',
+      pdfOk: 'OK',
+      pdfNok: 'NOK',
     },
     // Access page
     acessoOrdem: {
@@ -2772,6 +2792,16 @@ export const translations = {
       orderNumberNotFound: 'Número de orden no encontrado',
       orderNotFinished: 'Esta orden aún no ha sido finalizada',
       loadError: 'Error al cargar informe',
+      // PDF labels
+      pdfPage: 'Página',
+      pdfOf: 'de',
+      pdfGeneratedAt: 'Generado el',
+      pdfTel: 'Tel',
+      pdfNotInformed: 'No informado',
+      pdfPhotoContinuation: 'FOTOS DEL EQUIPO (continuación)',
+      pdfErrorLoadingImage: 'Error al cargar',
+      pdfOk: 'OK',
+      pdfNok: 'NOK',
     },
     messages: {
       success: 'Éxito',
