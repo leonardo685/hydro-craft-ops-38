@@ -2501,7 +2501,7 @@ export default function NovoOrcamento() {
     doc.text(`${pdfT.warranty}: ${garantia}`, 22, yPosition + 5.5);
     doc.text(`${pdfT.freight}: ${frete}`, 22 + col3Width, yPosition + 5.5);
     doc.text(`${pdfT.proposalValidity}: ${validadeProposta}`, 22 + col3Width * 2, yPosition + 5.5);
-    yPosition += 8;
+    yPosition += 15;
 
     // === DADOS TÉCNICOS DO EQUIPAMENTO ===
     if (dadosTecnicos) {
