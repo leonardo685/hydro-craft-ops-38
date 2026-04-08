@@ -349,9 +349,9 @@ export default function LaudoPublico() {
       
       const EMPRESA_INFO = {
         nome: empresaData?.razao_social || empresaData?.nome || "Empresa",
-        cnpj: empresaData?.cnpj || "Não informado",
-        telefone: empresaData?.telefone || "Não informado",
-        email: empresaData?.email || "Não informado",
+        cnpj: empresaData?.cnpj || t('laudoPublico.pdfNotInformed'),
+        telefone: empresaData?.telefone || t('laudoPublico.pdfNotInformed'),
+        email: empresaData?.email || t('laudoPublico.pdfNotInformed'),
         labelIdentificacao
       };
       
@@ -371,8 +371,9 @@ export default function LaudoPublico() {
           adicionarDetalheDecorativo();
           doc.setFontSize(8);
           doc.setTextColor(128, 128, 128);
-          doc.text(`Página ${i} de ${totalPages}`, 15, pageHeight - 10);
-          doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth - 60, pageHeight - 10);
+          doc.text(`${t('laudoPublico.pdfPage')} ${i} ${t('laudoPublico.pdfOf')} ${totalPages}`, 15, pageHeight - 10);
+          const dateLocale = language === 'en' ? 'en-US' : language === 'es' ? 'es-ES' : 'pt-BR';
+          doc.text(`${t('laudoPublico.pdfGeneratedAt')}: ${new Date().toLocaleString(dateLocale)}`, pageWidth - 70, pageHeight - 10);
         }
       };
       
@@ -385,7 +386,7 @@ export default function LaudoPublico() {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.text(`${EMPRESA_INFO.labelIdentificacao}: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
-      doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
+      doc.text(`${t('laudoPublico.pdfTel')}: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
       doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
       
       // Linha decorativa
@@ -403,13 +404,13 @@ export default function LaudoPublico() {
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(220, 38, 38);
-      doc.text("LAUDO TÉCNICO", pageWidth / 2, yPosition, { align: "center" });
+      doc.text(t('laudoPublico.technicalReport').toUpperCase(), pageWidth / 2, yPosition, { align: "center" });
       doc.setTextColor(0, 0, 0);
       
       const numeroOrdemCorreto = ordemServico.recebimentos?.numero_ordem || ordemServico.numero_ordem;
       doc.setFontSize(12);
       doc.setFont("helvetica", "normal");
-      doc.text(`Ordem de Serviço: ${numeroOrdemCorreto}`, pageWidth / 2, yPosition + 8, { align: "center" });
+      doc.text(`${t('laudoPublico.serviceOrder')}: ${numeroOrdemCorreto}`, pageWidth / 2, yPosition + 8, { align: "center" });
       
       yPosition = 68;
       
