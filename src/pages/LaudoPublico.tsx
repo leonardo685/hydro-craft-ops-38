@@ -483,87 +483,89 @@ export default function LaudoPublico() {
       };
       
       // === INFORMAÇÕES DA ORDEM ===
+      const dateLocaleObj = language === 'en' ? enUS : ptBR;
+      const dateFormat = language === 'en' ? 'MM/dd/yyyy' : 'dd/MM/yyyy';
       const dadosOrdem = [
-        { label: 'Cliente:', value: ordemServico.cliente_nome || '-' },
-        { label: 'Equipamento:', value: ordemServico.equipamento || '-' },
-        { label: 'Data de Entrada:', value: format(new Date(ordemServico.data_entrada), "dd/MM/yyyy", { locale: ptBR }) },
-        { label: 'Status:', value: 'Finalizado' }
+        { label: `${t('laudoPublico.client')}:`, value: ordemServico.cliente_nome || '-' },
+        { label: `${t('laudoPublico.equipment')}:`, value: ordemServico.equipamento || '-' },
+        { label: `${t('laudoPublico.entryDate')}:`, value: format(new Date(ordemServico.data_entrada), dateFormat, { locale: dateLocaleObj }) },
+        { label: `${t('laudoPublico.status')}:`, value: t('laudoPublico.finished') }
       ];
-      criarTabela('Informações da Ordem', dadosOrdem, [128, 128, 128]);
+      criarTabela(t('laudoPublico.orderInfo'), dadosOrdem, [128, 128, 128]);
       
       // === RESULTADO DO TESTE ===
       if (teste) {
         const corResultado = teste.resultado_teste === 'aprovado' ? [34, 197, 94] : [239, 68, 68];
         const dadosTeste = [
-          { label: 'Tipo de Teste:', value: teste.tipo_teste || '-' },
-          { label: 'Data/Hora do Teste:', value: format(new Date(teste.data_hora_teste), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) },
-          { label: 'Resultado:', value: teste.resultado_teste === 'aprovado' ? '✓ APROVADO' : '✗ REPROVADO' }
+          { label: `${t('laudoPublico.testType')}:`, value: teste.tipo_teste || '-' },
+          { label: `${t('laudoPublico.testDate')}:`, value: format(new Date(teste.data_hora_teste), `${dateFormat} 'às' HH:mm`, { locale: dateLocaleObj }) },
+          { label: `${t('laudoPublico.testResult')}:`, value: teste.resultado_teste === 'aprovado' ? `✓ ${t('laudoPublico.approved').toUpperCase()}` : `✗ ${t('laudoPublico.rejected').toUpperCase()}` }
         ];
-        criarTabela('Resultado do Teste', dadosTeste, corResultado);
+        criarTabela(t('laudoPublico.testResult'), dadosTeste, corResultado);
         
         // Parâmetros de Teste
         const parametros: Array<{label: string, value: string}> = [];
-        if (teste.pressao_teste) parametros.push({ label: 'Pressão de Teste:', value: teste.pressao_teste });
-        if (teste.temperatura_operacao) parametros.push({ label: 'Temperatura de Operação:', value: teste.temperatura_operacao });
-        if (teste.tempo_minutos) parametros.push({ label: 'Tempo de Teste:', value: `${teste.tempo_minutos} minutos` });
-        if (teste.curso) parametros.push({ label: 'Curso:', value: teste.curso });
-        if (teste.qtd_ciclos) parametros.push({ label: 'Quantidade de Ciclos:', value: teste.qtd_ciclos });
-        if (teste.pressao_maxima_trabalho) parametros.push({ label: 'Pressão Máxima de Trabalho:', value: teste.pressao_maxima_trabalho });
-        if (teste.pressao_avanco) parametros.push({ label: 'Pressão de Avanço:', value: teste.pressao_avanco });
-        if (teste.pressao_retorno) parametros.push({ label: 'Pressão de Retorno:', value: teste.pressao_retorno });
-        if (teste.espessura_camada) parametros.push({ label: 'Espessura da Camada:', value: teste.espessura_camada });
+        if (teste.pressao_teste) parametros.push({ label: `${t('laudoPublico.testPressure')}:`, value: teste.pressao_teste });
+        if (teste.temperatura_operacao) parametros.push({ label: `${t('laudoPublico.operatingTemp')}:`, value: teste.temperatura_operacao });
+        if (teste.tempo_minutos) parametros.push({ label: `${t('laudoPublico.testTime')}:`, value: `${teste.tempo_minutos} ${t('laudoPublico.minutes')}` });
+        if (teste.curso) parametros.push({ label: `${t('laudoPublico.stroke')}:`, value: teste.curso });
+        if (teste.qtd_ciclos) parametros.push({ label: `${t('laudoPublico.cycleQty')}:`, value: teste.qtd_ciclos });
+        if (teste.pressao_maxima_trabalho) parametros.push({ label: `${t('laudoPublico.maxWorkPressure')}:`, value: teste.pressao_maxima_trabalho });
+        if (teste.pressao_avanco) parametros.push({ label: `${t('laudoPublico.advancePressure')}:`, value: teste.pressao_avanco });
+        if (teste.pressao_retorno) parametros.push({ label: `${t('laudoPublico.returnPressure')}:`, value: teste.pressao_retorno });
+        if (teste.espessura_camada) parametros.push({ label: `${t('laudoPublico.layerThickness')}:`, value: teste.espessura_camada });
         
         if (parametros.length > 0) {
-          criarTabela('Parâmetros de Teste ISO10100', parametros, [128, 128, 128]);
+          criarTabela(t('laudoPublico.testParametersISO'), parametros, [128, 128, 128]);
         }
         
         // Verificações de Vazamento
         const verificacoes: Array<{label: string, value: string}> = [];
         if (teste.check_vazamento_pistao !== null) {
-          verificacoes.push({ label: 'Vazamento no Pistão:', value: teste.check_vazamento_pistao ? '✓ OK' : '✗ NOK' });
+          verificacoes.push({ label: `${t('laudoPublico.pistonLeak')}:`, value: teste.check_vazamento_pistao ? `✓ ${t('laudoPublico.pdfOk')}` : `✗ ${t('laudoPublico.pdfNok')}` });
         }
         if (teste.check_vazamento_vedacoes_estaticas !== null) {
-          verificacoes.push({ label: 'Vazamento nas Vedações Estáticas:', value: teste.check_vazamento_vedacoes_estaticas ? '✓ OK' : '✗ NOK' });
+          verificacoes.push({ label: `${t('laudoPublico.staticSealsLeak')}:`, value: teste.check_vazamento_vedacoes_estaticas ? `✓ ${t('laudoPublico.pdfOk')}` : `✗ ${t('laudoPublico.pdfNok')}` });
         }
         if (teste.check_vazamento_haste !== null) {
-          verificacoes.push({ label: 'Vazamento na Haste:', value: teste.check_vazamento_haste ? '✓ OK' : '✗ NOK' });
+          verificacoes.push({ label: `${t('laudoPublico.stemLeak')}:`, value: teste.check_vazamento_haste ? `✓ ${t('laudoPublico.pdfOk')}` : `✗ ${t('laudoPublico.pdfNok')}` });
         }
         
-        // Verificação Geral: é OK se todas as verificações de vazamento estão OK
+        // Verificação Geral
         const todasVerificacoesOK = 
           (teste.check_vazamento_pistao === null || teste.check_vazamento_pistao === true) &&
           (teste.check_vazamento_vedacoes_estaticas === null || teste.check_vazamento_vedacoes_estaticas === true) &&
           (teste.check_vazamento_haste === null || teste.check_vazamento_haste === true);
         
-        verificacoes.push({ label: 'Verificação Geral:', value: todasVerificacoesOK ? '✓ OK' : '✗ NOK' });
+        verificacoes.push({ label: `${t('laudoPublico.generalCheck')}:`, value: todasVerificacoesOK ? `✓ ${t('laudoPublico.pdfOk')}` : `✗ ${t('laudoPublico.pdfNok')}` });
         
         if (verificacoes.length > 0) {
-          criarTabela('Verificações de Vazamento', verificacoes, [128, 128, 128]);
+          criarTabela(t('laudoPublico.leakChecks'), verificacoes, [128, 128, 128]);
         }
         
         // Observações
         const observacao = teste.observacoes_teste || teste.observacao;
         if (observacao) {
-          criarTabela('Observações', [{ label: '', value: observacao }], [128, 128, 128]);
+          criarTabela(t('laudoPublico.observations'), [{ label: '', value: observacao }], [128, 128, 128]);
         }
       }
       
       // === DADOS DIMENSIONAIS ===
       if (dadosDimensionais) {
         const dimensoes: Array<{label: string, value: string}> = [];
-        if (dadosDimensionais.camisa) dimensoes.push({ label: 'Diâmetro Camisa:', value: dadosDimensionais.camisa });
-        if (dadosDimensionais.curso) dimensoes.push({ label: 'Curso:', value: dadosDimensionais.curso });
-        if (dadosDimensionais.haste_comprimento) dimensoes.push({ label: 'Haste (Ø x Compr.):', value: dadosDimensionais.haste_comprimento });
-        if (dadosDimensionais.conexao_a) dimensoes.push({ label: 'Conexão A:', value: dadosDimensionais.conexao_a });
-        if (dadosDimensionais.conexao_b) dimensoes.push({ label: 'Conexão B:', value: dadosDimensionais.conexao_b });
-        if (dadosDimensionais.pressao_trabalho) dimensoes.push({ label: 'Pressão de Trabalho:', value: dadosDimensionais.pressao_trabalho });
-        if (dadosDimensionais.temperatura_trabalho) dimensoes.push({ label: 'Temperatura de Trabalho:', value: dadosDimensionais.temperatura_trabalho });
-        if (dadosDimensionais.fluido_trabalho) dimensoes.push({ label: 'Fluido de Trabalho:', value: dadosDimensionais.fluido_trabalho });
-        if (dadosDimensionais.ambiente_trabalho) dimensoes.push({ label: 'Ambiente de Trabalho:', value: dadosDimensionais.ambiente_trabalho });
-        if (dadosDimensionais.potencia) dimensoes.push({ label: 'Potência:', value: dadosDimensionais.potencia });
+        if (dadosDimensionais.camisa) dimensoes.push({ label: `${t('laudoPublico.shirtDiameter')}:`, value: dadosDimensionais.camisa });
+        if (dadosDimensionais.curso) dimensoes.push({ label: `${t('laudoPublico.stroke')}:`, value: dadosDimensionais.curso });
+        if (dadosDimensionais.haste_comprimento) dimensoes.push({ label: `${t('laudoPublico.rodLength')}:`, value: dadosDimensionais.haste_comprimento });
+        if (dadosDimensionais.conexao_a) dimensoes.push({ label: `${t('laudoPublico.connectionA')}:`, value: dadosDimensionais.conexao_a });
+        if (dadosDimensionais.conexao_b) dimensoes.push({ label: `${t('laudoPublico.connectionB')}:`, value: dadosDimensionais.conexao_b });
+        if (dadosDimensionais.pressao_trabalho) dimensoes.push({ label: `${t('laudoPublico.workPressure')}:`, value: dadosDimensionais.pressao_trabalho });
+        if (dadosDimensionais.temperatura_trabalho) dimensoes.push({ label: `${t('laudoPublico.workTemperature')}:`, value: dadosDimensionais.temperatura_trabalho });
+        if (dadosDimensionais.fluido_trabalho) dimensoes.push({ label: `${t('laudoPublico.workFluid')}:`, value: dadosDimensionais.fluido_trabalho });
+        if (dadosDimensionais.ambiente_trabalho) dimensoes.push({ label: `${t('laudoPublico.workEnvironment')}:`, value: dadosDimensionais.ambiente_trabalho });
+        if (dadosDimensionais.potencia) dimensoes.push({ label: `${t('laudoPublico.power')}:`, value: dadosDimensionais.potencia });
         
         if (dimensoes.length > 0) {
-          criarTabela('Dados Dimensionais', dimensoes, [128, 128, 128]);
+          criarTabela(t('laudoPublico.dimensionalData'), dimensoes, [128, 128, 128]);
         }
       }
       
@@ -571,30 +573,30 @@ export default function LaudoPublico() {
       const pecas = Array.isArray(ordemServico.pecas_necessarias) ? ordemServico.pecas_necessarias : [];
       if (pecas.length > 0) {
         const dadosPecas = pecas.map((item: any) => ({
-          label: item.peca || item.descricao || item.nome || 'Peça',
-          value: `Qtd: ${item.quantidade || 1}${item.codigo ? ` | Cód: ${item.codigo}` : ''}`
+          label: item.peca || item.descricao || item.nome || t('laudoPublico.partsUsed'),
+          value: `${t('laudoPublico.qty')}: ${item.quantidade || 1}${item.codigo ? ` | ${t('laudoPublico.code')}: ${item.codigo}` : ''}`
         }));
-        criarTabela('Peças Utilizadas', dadosPecas, [128, 128, 128]);
+        criarTabela(t('laudoPublico.partsUsed'), dadosPecas, [128, 128, 128]);
       }
       
       // === SERVIÇOS REALIZADOS ===
       const servicos = Array.isArray(ordemServico.servicos_necessarios) ? ordemServico.servicos_necessarios : [];
       if (servicos.length > 0) {
         const dadosServicos = servicos.map((servico: any) => ({
-          label: servico.descricao || servico.nome || 'Serviço',
+          label: servico.descricao || servico.nome || t('laudoPublico.servicesPerformed'),
           value: servico.detalhes || servico.observacao || '-'
         }));
-        criarTabela('Serviços Realizados', dadosServicos, [128, 128, 128]);
+        criarTabela(t('laudoPublico.servicesPerformed'), dadosServicos, [128, 128, 128]);
       }
       
       // === USINAGEM ===
       const usinagem = Array.isArray(ordemServico.usinagem_necessaria) ? ordemServico.usinagem_necessaria : [];
       if (usinagem.length > 0) {
         const dadosUsinagem = usinagem.map((item: any) => ({
-          label: item.descricao || item.nome || 'Usinagem',
+          label: item.descricao || item.nome || t('laudoPublico.machining'),
           value: item.detalhes || item.observacao || '-'
         }));
-        criarTabela('Usinagem', dadosUsinagem, [128, 128, 128]);
+        criarTabela(t('laudoPublico.machining'), dadosUsinagem, [128, 128, 128]);
       }
       
       // === FOTOS DO EQUIPAMENTO ===
