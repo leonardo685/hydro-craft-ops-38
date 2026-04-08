@@ -181,11 +181,17 @@ export default function NovoOrcamento() {
     try {
       const anoAtual = new Date().getFullYear().toString().slice(-2);
       
-      // Buscar TODOS os orçamentos do ano atual para encontrar o MAIOR número
-      const { data, error } = await supabase
+      // Buscar orçamentos do ano atual FILTRANDO POR EMPRESA para evitar colisão multi-tenant
+      let query = supabase
         .from('orcamentos')
         .select('numero')
         .ilike('numero', `%/${anoAtual}`);
+      
+      if (empresaAtual?.id) {
+        query = query.eq('empresa_id', empresaAtual.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Erro ao buscar orçamentos:', error);
