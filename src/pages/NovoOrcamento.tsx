@@ -1404,7 +1404,7 @@ export default function NovoOrcamento() {
         valor: valorFinal,
         desconto_percentual: informacoesComerciais.desconto,
         status: 'pendente',
-        observacoes: `Tipo: ${dadosOrcamento.tipoOrdem} | Solicitante: ${dadosOrcamento.solicitante}`,
+        observacoes: `Tipo: ${dadosOrcamento.tipoOrdem} | Solicitante: ${dadosOrcamento.solicitante} | Documento: ${dadosOrcamento.tipoDocumento}`,
         numero_nota_entrada: dadosOrcamento.numeroNota || null,
         ordem_referencia: ordemRef,
         ordem_servico_id: ordemServicoId || null,
@@ -3096,7 +3096,7 @@ export default function NovoOrcamento() {
                   </p>
                 </div>
                 <div>
-                  <Label htmlFor="tipoOrdem">{t('novoOrcamento.orderType')} *</Label>
+                  <Label htmlFor="tipoOrdem">{t('novoOrcamento.serviceType')} *</Label>
                   <Select 
                     value={dadosOrcamento.tipoOrdem} 
                     onValueChange={value => setDadosOrcamento(prev => ({
@@ -3125,6 +3125,24 @@ export default function NovoOrcamento() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {t('novoOrcamento.operationalRevenueCategories')}
                   </p>
+                </div>
+                <div>
+                  <Label htmlFor="tipoDocumento">{t('novoOrcamento.orderType')} *</Label>
+                  <Select 
+                    value={dadosOrcamento.tipoDocumento} 
+                    onValueChange={value => setDadosOrcamento(prev => ({
+                      ...prev,
+                      tipoDocumento: value as 'proposal' | 'invoice'
+                    }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('novoOrcamento.selectPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="proposal">{t('novoOrcamento.orderTypeProposal')}</SelectItem>
+                      <SelectItem value="invoice">{t('novoOrcamento.orderTypeInvoice')}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
               </div>
