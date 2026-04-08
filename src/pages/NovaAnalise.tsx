@@ -692,7 +692,7 @@ const NovaOrdemServico = () => {
   };
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || !empresaAtual?.id) return;
     
     const decodedId = id ? decodeURIComponent(id) : '';
     console.log('🔍 Buscando análise para:', decodedId);
