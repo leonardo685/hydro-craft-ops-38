@@ -692,7 +692,7 @@ const NovaOrdemServico = () => {
   };
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || !empresaAtual?.id) return;
     
     const decodedId = id ? decodeURIComponent(id) : '';
     console.log('🔍 Buscando análise para:', decodedId);
@@ -731,6 +731,7 @@ const NovaOrdemServico = () => {
             )
           `)
           .eq('numero_ordem', decodedId)
+          .eq('empresa_id', empresaAtual!.id)
           .order('created_at', { ascending: true })
           .limit(1);
 
@@ -1177,7 +1178,7 @@ const NovaOrdemServico = () => {
         console.log('⚠️ Recebimento não encontrado para ID:', decodedId);
       }
     });
-  }, [id, recebimentos, loading]);
+  }, [id, recebimentos, loading, empresaAtual?.id]);
 
   // Handler para upload de documentos técnicos
   const handleDocumentoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
