@@ -665,7 +665,7 @@ export default function LaudoPublico() {
                   doc.rect(xPos, yPos, maxFotoWidth, maxFotoHeight, 'F');
                   doc.setTextColor(150, 150, 150);
                   doc.setFontSize(8);
-                  doc.text('Erro ao carregar', xPos + maxFotoWidth / 2, yPos + maxFotoHeight / 2, { align: 'center' });
+                  doc.text(t('laudoPublico.pdfErrorLoadingImage'), xPos + maxFotoWidth / 2, yPos + maxFotoHeight / 2, { align: 'center' });
                   resolve();
                 };
                 img.src = fotosPagina[j].arquivo_url;
