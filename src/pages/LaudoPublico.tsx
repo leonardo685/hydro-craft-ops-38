@@ -611,7 +611,7 @@ export default function LaudoPublico() {
         doc.setTextColor(255, 255, 255);
         doc.setFillColor(128, 128, 128);
         doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
-        doc.text('FOTOS DO EQUIPAMENTO', pageWidth / 2, yPosition + 6, { align: 'center' });
+        doc.text(t('laudoPublico.equipmentPhotos').toUpperCase(), pageWidth / 2, yPosition + 6, { align: 'center' });
         yPosition += 12;
         
         const fotosPorPagina = 4;
@@ -627,7 +627,7 @@ export default function LaudoPublico() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(11);
             doc.setTextColor(220, 38, 38);
-            doc.text('FOTOS DO EQUIPAMENTO (continuação)', 20, yPosition);
+            doc.text(t('laudoPublico.pdfPhotoContinuation'), 20, yPosition);
             doc.setTextColor(0, 0, 0);
             yPosition += 10;
           }
