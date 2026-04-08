@@ -100,6 +100,7 @@ export default function NovoOrcamento() {
   const [dadosOrcamento, setDadosOrcamento] = useState({
     id: '', // Add id for editing
     tipoOrdem: '',
+    tipoDocumento: 'proposal' as 'proposal' | 'invoice',
     numeroOrdem: '', // Will be generated automatically
     urgencia: false,
     cliente: '',
@@ -349,8 +350,9 @@ export default function NovoOrcamento() {
         });
         
         setDadosOrcamento({
-          id: orcamentoEdicao.id || '', // Garantir que sempre tenha o ID
+          id: orcamentoEdicao.id || '',
           tipoOrdem: orcamentoEdicao.observacoes?.split('|')[0]?.replace('Tipo:', '')?.trim() || 'reforma',
+          tipoDocumento: (orcamentoEdicao.observacoes?.includes('Documento: invoice') ? 'invoice' : 'proposal') as 'proposal' | 'invoice',
           numeroOrdem: orcamentoEdicao.numero || '',
           urgencia: false,
           cliente: orcamentoEdicao.cliente_nome || '',
@@ -1402,7 +1404,7 @@ export default function NovoOrcamento() {
         valor: valorFinal,
         desconto_percentual: informacoesComerciais.desconto,
         status: 'pendente',
-        observacoes: `Tipo: ${dadosOrcamento.tipoOrdem} | Solicitante: ${dadosOrcamento.solicitante}`,
+        observacoes: `Tipo: ${dadosOrcamento.tipoOrdem} | Solicitante: ${dadosOrcamento.solicitante} | Documento: ${dadosOrcamento.tipoDocumento}`,
         numero_nota_entrada: dadosOrcamento.numeroNota || null,
         ordem_referencia: ordemRef,
         ordem_servico_id: ordemServicoId || null,
@@ -1768,7 +1770,8 @@ export default function NovoOrcamento() {
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(220, 38, 38);
-      doc.text("PROPOSTA COMERCIAL", pageWidth / 2, yPosition, { align: "center" });
+      const pdfTitleRev = dadosOrcamento.tipoDocumento === 'invoice' ? 'FATURA' : 'PROPOSTA COMERCIAL';
+      doc.text(pdfTitleRev, pageWidth / 2, yPosition, { align: "center" });
       yPosition += 8;
       doc.setFontSize(12);
       doc.text(`REVISÃO ${revisao.numero_revisao}`, pageWidth / 2, yPosition, { align: "center" });
@@ -2354,7 +2357,8 @@ export default function NovoOrcamento() {
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(220, 38, 38);
-    doc.text(pdfT.commercialProposal, pageWidth / 2, yPosition, { align: "center" });
+    const pdfTitle = dadosOrcamento.tipoDocumento === 'invoice' ? (pdfT.invoice || 'INVOICE') : pdfT.commercialProposal;
+    doc.text(pdfTitle, pageWidth / 2, yPosition, { align: "center" });
     doc.setTextColor(0, 0, 0);
     
     yPosition = 65;
@@ -3094,7 +3098,7 @@ export default function NovoOrcamento() {
                   </p>
                 </div>
                 <div>
-                  <Label htmlFor="tipoOrdem">{t('novoOrcamento.orderType')} *</Label>
+                  <Label htmlFor="tipoOrdem">{t('novoOrcamento.serviceType')} *</Label>
                   <Select 
                     value={dadosOrcamento.tipoOrdem} 
                     onValueChange={value => setDadosOrcamento(prev => ({
@@ -3123,6 +3127,24 @@ export default function NovoOrcamento() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {t('novoOrcamento.operationalRevenueCategories')}
                   </p>
+                </div>
+                <div>
+                  <Label htmlFor="tipoDocumento">{t('novoOrcamento.orderType')} *</Label>
+                  <Select 
+                    value={dadosOrcamento.tipoDocumento} 
+                    onValueChange={value => setDadosOrcamento(prev => ({
+                      ...prev,
+                      tipoDocumento: value as 'proposal' | 'invoice'
+                    }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('novoOrcamento.selectPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="proposal">{t('novoOrcamento.orderTypeProposal')}</SelectItem>
+                      <SelectItem value="invoice">{t('novoOrcamento.orderTypeInvoice')}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
               </div>
