@@ -1770,7 +1770,8 @@ export default function NovoOrcamento() {
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(220, 38, 38);
-      doc.text("PROPOSTA COMERCIAL", pageWidth / 2, yPosition, { align: "center" });
+      const pdfTitleRev = dadosOrcamento.tipoDocumento === 'invoice' ? 'FATURA' : 'PROPOSTA COMERCIAL';
+      doc.text(pdfTitleRev, pageWidth / 2, yPosition, { align: "center" });
       yPosition += 8;
       doc.setFontSize(12);
       doc.text(`REVISÃO ${revisao.numero_revisao}`, pageWidth / 2, yPosition, { align: "center" });
@@ -2356,7 +2357,8 @@ export default function NovoOrcamento() {
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(220, 38, 38);
-    doc.text(pdfT.commercialProposal, pageWidth / 2, yPosition, { align: "center" });
+    const pdfTitle = dadosOrcamento.tipoDocumento === 'invoice' ? (pdfT.invoice || 'INVOICE') : pdfT.commercialProposal;
+    doc.text(pdfTitle, pageWidth / 2, yPosition, { align: "center" });
     doc.setTextColor(0, 0, 0);
     
     yPosition = 65;
