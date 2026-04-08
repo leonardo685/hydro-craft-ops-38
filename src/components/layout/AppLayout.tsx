@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSelectorDropdown } from "@/components/LanguageSelectorDropdown";
 import { ReactNode } from "react";
 import fixzysLogo from "@/assets/fixzys-logo.png";
 import { MorphPanel } from "@/components/ui/ai-input";
@@ -36,6 +37,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   </p>
                 </div>
               </div>
+              <LanguageSelectorDropdown />
               <ThemeToggle />
             </div>
           </header>
