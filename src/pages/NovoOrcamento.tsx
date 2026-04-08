@@ -129,7 +129,7 @@ export default function NovoOrcamento() {
     assuntoProposta: '',
     frete: 'CIF',
     freteIncluso: false,
-    mostrarPecas: false,
+    mostrarPecas: true,
     mostrarValores: true
   });
   const [itensAnalise, setItensAnalise] = useState<{
