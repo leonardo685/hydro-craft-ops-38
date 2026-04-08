@@ -731,6 +731,7 @@ const NovaOrdemServico = () => {
             )
           `)
           .eq('numero_ordem', decodedId)
+          .eq('empresa_id', empresaAtual!.id)
           .order('created_at', { ascending: true })
           .limit(1);
 
