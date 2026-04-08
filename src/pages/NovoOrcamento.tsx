@@ -350,8 +350,9 @@ export default function NovoOrcamento() {
         });
         
         setDadosOrcamento({
-          id: orcamentoEdicao.id || '', // Garantir que sempre tenha o ID
+          id: orcamentoEdicao.id || '',
           tipoOrdem: orcamentoEdicao.observacoes?.split('|')[0]?.replace('Tipo:', '')?.trim() || 'reforma',
+          tipoDocumento: (orcamentoEdicao.observacoes?.includes('Documento: invoice') ? 'invoice' : 'proposal') as 'proposal' | 'invoice',
           numeroOrdem: orcamentoEdicao.numero || '',
           urgencia: false,
           cliente: orcamentoEdicao.cliente_nome || '',
