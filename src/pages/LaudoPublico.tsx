@@ -806,7 +806,21 @@ export default function LaudoPublico() {
             </CardHeader>
             <CardContent>
               <p className="text-foreground whitespace-pre-wrap">
-                {ordemServico.motivo_falha}
+                {(() => {
+                  const motivo = ordemServico.motivo_falha || '';
+                  const translationMap: Record<string, Record<string, string>> = {
+                    'revisao_completa': { 'pt-BR': 'Revisão Completa', 'en': 'Complete Revision', 'es': 'Revisión Completa' },
+                    'haste_quebrada': { 'pt-BR': 'Haste Quebrada', 'en': 'Broken Rod', 'es': 'Vástago Roto' },
+                    'vazamento_vedacoes': { 'pt-BR': 'Vazamento nas Vedações', 'en': 'Seal Leakage', 'es': 'Fuga en Sellos' },
+                    'outros': { 'pt-BR': 'Outros', 'en': 'Others', 'es': 'Otros' },
+                  };
+                  // Try exact key match
+                  if (translationMap[motivo]) return translationMap[motivo][language] || motivo;
+                  // Try matching by Portuguese label
+                  const byLabel = Object.values(translationMap).find(t => t['pt-BR']?.toLowerCase() === motivo.toLowerCase());
+                  if (byLabel) return byLabel[language] || motivo;
+                  return motivo;
+                })()}
               </p>
             </CardContent>
           </Card>
