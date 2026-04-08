@@ -1178,7 +1178,7 @@ const NovaOrdemServico = () => {
         console.log('⚠️ Recebimento não encontrado para ID:', decodedId);
       }
     });
-  }, [id, recebimentos, loading]);
+  }, [id, recebimentos, loading, empresaAtual?.id]);
 
   // Handler para upload de documentos técnicos
   const handleDocumentoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
