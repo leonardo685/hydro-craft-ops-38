@@ -137,6 +137,16 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
 
       setEmpresaAtual(empresaSelecionada);
 
+      // Auto-set language based on company (Brazilian companies default to pt-BR)
+      if (empresaSelecionada) {
+        const isMecHydroUS = empresaSelecionada.nome?.toUpperCase().includes('MEC HYDRO');
+        const savedLang = localStorage.getItem('app_language');
+        // Only auto-set if no language was manually saved, or on first load
+        if (!savedLang) {
+          localStorage.setItem('app_language', isMecHydroUS ? 'en' : 'pt-BR');
+        }
+      }
+
       // Verificar se é owner
       if (empresaSelecionada) {
         const userEmpresa = userEmpresasData.find(ue => ue.empresa_id === empresaSelecionada!.id);
@@ -169,6 +179,10 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
     
     localStorage.setItem(EMPRESA_STORAGE_KEY, empresaId);
     setEmpresaAtual(empresa);
+
+    // Auto-set language based on company
+    const isMecHydroUS = empresa.nome?.toUpperCase().includes('MEC HYDRO');
+    localStorage.setItem('app_language', isMecHydroUS ? 'en' : 'pt-BR');
 
     // Atualizar status de owner
     const userEmpresa = userEmpresas.find(ue => ue.empresa_id === empresaId);
