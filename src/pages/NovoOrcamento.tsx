@@ -1869,20 +1869,29 @@ export default function NovoOrcamento() {
       doc.text(`Validade Proposta: ${validadeProposta}`, 22 + col3Width * 2, yPosition + 5.5);
       yPosition += 8;
       
-      // Sale Tax + Total with Tax
-      const saleTaxRate = 0.085;
-      const saleTaxValue = valorComDesconto * saleTaxRate;
-      const totalWithTax = valorComDesconto + saleTaxValue;
-      const saleTaxFormatado = `R$ ${saleTaxValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-      const totalWithTaxFormatado = `R$ ${totalWithTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-      
-      doc.rect(20, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
-      doc.text(`Sale Tax (8.5%): ${saleTaxFormatado}`, 22, yPosition + 5.5);
-      doc.text(`Total com Tax: ${totalWithTaxFormatado}`, 22 + col3Width, yPosition + 5.5);
-      doc.text(`Prazo Entrega: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
-      yPosition += 8;
+      // Sale Tax + Total with Tax (apenas para MEC HYDRO - empresa dos EUA)
+      const isMecHydro = empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO');
+      if (isMecHydro) {
+        const saleTaxRate = 0.085;
+        const saleTaxValue = valorComDesconto * saleTaxRate;
+        const totalWithTax = valorComDesconto + saleTaxValue;
+        const saleTaxFormatado = `R$ ${saleTaxValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+        const totalWithTaxFormatado = `R$ ${totalWithTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+        
+        doc.rect(20, yPosition, col3Width, 8);
+        doc.rect(20 + col3Width, yPosition, col3Width, 8);
+        doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+        doc.text(`Sale Tax (8.5%): ${saleTaxFormatado}`, 22, yPosition + 5.5);
+        doc.text(`Total com Tax: ${totalWithTaxFormatado}`, 22 + col3Width, yPosition + 5.5);
+        doc.text(`Prazo Entrega: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
+        yPosition += 8;
+      } else {
+        doc.rect(20, yPosition, col3Width, 8);
+        doc.rect(20 + col3Width, yPosition, col3Width, 8);
+        doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+        doc.text(`Prazo Entrega: ${prazoEntrega}`, 22, yPosition + 5.5);
+        yPosition += 8;
+      }
       
       doc.rect(20, yPosition, col3Width, 8);
       doc.rect(20 + col3Width, yPosition, col3Width, 8);
@@ -2508,20 +2517,29 @@ export default function NovoOrcamento() {
     doc.text(`${pdfT.proposalValidity}: ${validadeProposta}`, 22 + col3Width * 2, yPosition + 5.5);
     yPosition += 8;
     
-    // Terceira linha: Sale Tax + Total with Tax
-    const saleTaxRate = 0.085;
-    const saleTaxValue = valorComDesconto * saleTaxRate;
-    const totalWithTax = valorComDesconto + saleTaxValue;
-    const saleTaxFormatado = `R$ ${saleTaxValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-    const totalWithTaxFormatado = `R$ ${totalWithTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-    
-    doc.rect(20, yPosition, col3Width, 8);
-    doc.rect(20 + col3Width, yPosition, col3Width, 8);
-    doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
-    doc.text(`${pdfT.saleTax} (8.5%): ${saleTaxFormatado}`, 22, yPosition + 5.5);
-    doc.text(`${pdfT.totalWithTax}: ${totalWithTaxFormatado}`, 22 + col3Width, yPosition + 5.5);
-    doc.text(`${pdfT.deliveryTime}: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
-    yPosition += 8;
+    // Terceira linha: Sale Tax + Total with Tax (apenas para MEC HYDRO - empresa dos EUA)
+    const isMecHydroExport = empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO');
+    if (isMecHydroExport) {
+      const saleTaxRate = 0.085;
+      const saleTaxValue = valorComDesconto * saleTaxRate;
+      const totalWithTax = valorComDesconto + saleTaxValue;
+      const saleTaxFormatado = `R$ ${saleTaxValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+      const totalWithTaxFormatado = `R$ ${totalWithTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+      
+      doc.rect(20, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+      doc.text(`${pdfT.saleTax} (8.5%): ${saleTaxFormatado}`, 22, yPosition + 5.5);
+      doc.text(`${pdfT.totalWithTax}: ${totalWithTaxFormatado}`, 22 + col3Width, yPosition + 5.5);
+      doc.text(`${pdfT.deliveryTime}: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
+      yPosition += 8;
+    } else {
+      doc.rect(20, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+      doc.text(`${pdfT.deliveryTime}: ${prazoEntrega}`, 22, yPosition + 5.5);
+      yPosition += 8;
+    }
     
     // Quarta linha: Garantia + Frete
     doc.rect(20, yPosition, col3Width, 8);
