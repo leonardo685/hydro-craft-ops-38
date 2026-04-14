@@ -1014,19 +1014,29 @@ export default function Orcamentos() {
       );
       yPosition += alturaLinha2;
       
-      // Terceira linha: Sale Tax + Total with Tax + Delivery Time
-      const valorNumerico = Number(orcamento.valor || 0);
-      const saleTaxRate = 0.085;
-      const saleTaxValue = valorNumerico * saleTaxRate;
-      const totalWithTax = valorNumerico + saleTaxValue;
-      const saleTaxFormatado = formatCurrency(saleTaxValue);
-      const totalWithTaxFormatado = formatCurrency(totalWithTax);
-      
-      const alturaLinha3 = Math.max(
-        desenharCelulaComQuebraLinha(`${pdfT.saleTax} (8.5%): ${saleTaxFormatado}`, 20, yPosition, col3Width, 8),
-        desenharCelulaComQuebraLinha(`${pdfT.totalWithTax}: ${totalWithTaxFormatado}`, 20 + col3Width, yPosition, col3Width, 8),
-        desenharCelulaComQuebraLinha(`${pdfT.deliveryTime}: ${prazoEntrega}`, 20 + col3Width * 2, yPosition, col3Width, 8)
-      );
+      // Terceira linha: Sale Tax + Total with Tax + Delivery Time (apenas para MEC HYDRO)
+      const isMecHydroOrc = empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO');
+      let alturaLinha3: number;
+      if (isMecHydroOrc) {
+        const valorNumerico = Number(orcamento.valor || 0);
+        const saleTaxRate = 0.085;
+        const saleTaxValue = valorNumerico * saleTaxRate;
+        const totalWithTax = valorNumerico + saleTaxValue;
+        const saleTaxFormatado = formatCurrency(saleTaxValue);
+        const totalWithTaxFormatado = formatCurrency(totalWithTax);
+        
+        alturaLinha3 = Math.max(
+          desenharCelulaComQuebraLinha(`${pdfT.saleTax} (8.5%): ${saleTaxFormatado}`, 20, yPosition, col3Width, 8),
+          desenharCelulaComQuebraLinha(`${pdfT.totalWithTax}: ${totalWithTaxFormatado}`, 20 + col3Width, yPosition, col3Width, 8),
+          desenharCelulaComQuebraLinha(`${pdfT.deliveryTime}: ${prazoEntrega}`, 20 + col3Width * 2, yPosition, col3Width, 8)
+        );
+      } else {
+        alturaLinha3 = Math.max(
+          desenharCelulaComQuebraLinha(`${pdfT.deliveryTime}: ${prazoEntrega}`, 20, yPosition, col3Width, 8),
+          desenharCelulaComQuebraLinha('', 20 + col3Width, yPosition, col3Width, 8),
+          desenharCelulaComQuebraLinha('', 20 + col3Width * 2, yPosition, col3Width, 8)
+        );
+      }
       yPosition += alturaLinha3;
       
       // Quarta linha: Garantia + Frete
