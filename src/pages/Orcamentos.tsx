@@ -670,6 +670,9 @@ export default function Orcamentos() {
         doc.triangle(pageWidth - 20, 8, pageWidth - 5, 8, pageWidth - 5, 23, 'F');
       };
 
+      // Carregar logo para marca d'água
+      const { dataUrl: watermarkImg } = await loadLogoForPDF(empresaAtual?.logo_url);
+
       // Função para adicionar rodapé
       const adicionarRodape = (numeroPagina: number) => {
         const rodapeY = pageHeight - 15;

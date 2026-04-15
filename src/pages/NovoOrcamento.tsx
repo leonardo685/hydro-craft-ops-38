@@ -1731,6 +1731,9 @@ export default function NovoOrcamento() {
         doc.triangle(pageWidth - 15, pageHeight - 30, pageWidth, pageHeight - 30, pageWidth, pageHeight, 'F');
       };
 
+      // Carregar logo para marca d'água
+      const { dataUrl: watermarkImg } = await loadLogoForPDF(empresaAtual?.logo_url);
+
       // Função para adicionar rodapé
       const adicionarRodape = () => {
         const totalPages = doc.getNumberOfPages();
@@ -2240,6 +2243,9 @@ export default function NovoOrcamento() {
       doc.setFillColor(0, 0, 0);
       doc.triangle(pageWidth - 15, pageHeight - 30, pageWidth, pageHeight - 30, pageWidth, pageHeight, 'F');
     };
+
+    // Carregar logo para marca d'água
+    const { dataUrl: watermarkImg } = await loadLogoForPDF(empresaAtual?.logo_url);
 
     // Função para adicionar rodapé
     const adicionarRodape = () => {
