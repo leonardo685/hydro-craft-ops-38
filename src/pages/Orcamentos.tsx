@@ -790,9 +790,7 @@ export default function Orcamentos() {
           });
 
           // Bordas
-          doc.setDrawColor(200, 200, 200);
           doc.setLineWidth(0.1);
-          doc.rect(20, y, pageWidth - 40, rowHeight);
           
           y += rowHeight;
         });
@@ -817,8 +815,6 @@ export default function Orcamentos() {
         const alturaCalculada = Math.max(alturaMinima, textLines.length * lineHeight + cellPadding * 2);
         
         // Desenhar célula
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(x, y, largura, alturaCalculada);
         
         // Desenhar texto linha por linha
         textLines.forEach((line: string, index: number) => {
@@ -899,8 +895,6 @@ export default function Orcamentos() {
       // Título centralizado "Informações do Cliente"
       doc.setFillColor(220, 220, 220);
       doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, pageWidth - 40, 10);
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 0, 0);
@@ -913,9 +907,6 @@ export default function Orcamentos() {
       // Primeira linha: Nº Orçamento + Data
       const colWidth = (pageWidth - 40) / 2;
       
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, colWidth, 8);
-      doc.rect(20 + colWidth, yPosition, colWidth, 8);
       
       // Adicionar indicação de revisão no número do orçamento
       const numeroExibicao = orcamento.numero_revisao 
@@ -936,15 +927,10 @@ export default function Orcamentos() {
       yPosition += alturaCliente;
       
       // Terceira linha: CNPJ (altura fixa, geralmente curto)
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, pageWidth - 40, 8);
       doc.text(`${pdfT.taxId}: ${cnpjCliente || pdfT.na}`, 22, yPosition + 5.5);
       yPosition += 8;
 
       // Quarta linha: NF de Entrada e Ordem Referência (duas colunas) - sempre exibir
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, colWidth, 8);
-      doc.rect(20 + colWidth, yPosition, colWidth, 8);
       
       doc.text(`${pdfT.entryInvoice}: ${orcamento.numero_nota_entrada || pdfT.na}`, 22, yPosition + 5.5);
       doc.text(`${pdfT.referenceOrder}: ${orcamento.ordem_referencia || pdfT.na}`, 22 + colWidth, yPosition + 5.5);
@@ -965,8 +951,6 @@ export default function Orcamentos() {
       // Título centralizado "Condições Comerciais"
       doc.setFillColor(220, 220, 220);
       doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, pageWidth - 40, 10);
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 0, 0);
@@ -1088,9 +1072,8 @@ export default function Orcamentos() {
         }
         
         // Desenhar caixa
-        doc.setDrawColor(200, 200, 200);
         doc.setFillColor(250, 250, 250);
-        doc.rect(20, yPosition, pageWidth - 40, boxHeight, 'FD');
+        doc.rect(20, yPosition, pageWidth - 40, boxHeight, 'F');
         
         // Adicionar texto das observações
         let textY = yPosition + boxPadding + 4;
@@ -1155,11 +1138,9 @@ export default function Orcamentos() {
               yPosition = 20;
             }
             
-            doc.setDrawColor(200, 200, 200);
             
             // Primeira coluna
             if (camposTecnicos[i]) {
-              doc.rect(20, yPosition, col3Width, 8);
               doc.setFont("helvetica", "bold");
               doc.text(`${camposTecnicos[i].label}:`, 22, yPosition + 5.5);
               const labelWidth = doc.getTextWidth(`${camposTecnicos[i].label}: `);
@@ -1169,7 +1150,6 @@ export default function Orcamentos() {
             
             // Segunda coluna
             if (camposTecnicos[i + 1]) {
-              doc.rect(20 + col3Width, yPosition, col3Width, 8);
               doc.setFont("helvetica", "bold");
               doc.text(`${camposTecnicos[i + 1].label}:`, 22 + col3Width, yPosition + 5.5);
               const labelWidth = doc.getTextWidth(`${camposTecnicos[i + 1].label}: `);
@@ -1179,7 +1159,6 @@ export default function Orcamentos() {
             
             // Terceira coluna
             if (camposTecnicos[i + 2]) {
-              doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
               doc.setFont("helvetica", "bold");
               doc.text(`${camposTecnicos[i + 2].label}:`, 22 + col3Width * 2, yPosition + 5.5);
               const labelWidth = doc.getTextWidth(`${camposTecnicos[i + 2].label}: `);
@@ -1237,14 +1216,11 @@ export default function Orcamentos() {
         const boxHeight = 8;
         const boxX = pageWidth - 20 - 25 - boxWidth;
         
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
         doc.text(pdfT.partsTotal, boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
-        doc.rect(valorBoxX, yPosition, 25, boxHeight);
         const totalPecasTexto = totalPecas > 0 ? formatCurrency(totalPecas) : '';
         doc.text(totalPecasTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
@@ -1303,14 +1279,11 @@ export default function Orcamentos() {
         const boxHeight = 8;
         const boxX = pageWidth - 20 - 25 - boxWidth;
         
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
         doc.text(pdfT.servicesTotal, boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
-        doc.rect(valorBoxX, yPosition, 25, boxHeight);
         const totalServicosTexto = totalServicos > 0 ? formatCurrency(totalServicos) : '';
         doc.text(totalServicosTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
@@ -1369,14 +1342,11 @@ export default function Orcamentos() {
         const boxHeight = 8;
         const boxX = pageWidth - 20 - 25 - boxWidth;
         
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
         doc.text(pdfT.machiningTotal, boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
-        doc.rect(valorBoxX, yPosition, 25, boxHeight);
         const totalUsinagemTexto = totalUsinagem > 0 ? formatCurrency(totalUsinagem) : '';
         doc.text(totalUsinagemTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         

@@ -1796,8 +1796,6 @@ export default function NovoOrcamento() {
       // Informações do Cliente
       doc.setFillColor(220, 220, 220);
       doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, pageWidth - 40, 10);
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.text("Informações do Cliente", pageWidth / 2, yPosition + 7, { align: "center" });
@@ -1807,18 +1805,13 @@ export default function NovoOrcamento() {
       doc.setFont("helvetica", "normal");
       
       const colWidth = (pageWidth - 40) / 2;
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, colWidth, 8);
-      doc.rect(20 + colWidth, yPosition, colWidth, 8);
       doc.text(`Nº Orçamento: ${revisao.numero} REV ${revisao.numero_revisao}`, 22, yPosition + 5.5);
       doc.text(`Data: ${new Date(revisao.data_revisao).toLocaleDateString('pt-BR')}`, 22 + colWidth, yPosition + 5.5);
       yPosition += 8;
       
-      doc.rect(20, yPosition, pageWidth - 40, 8);
       doc.text(`Nome do Cliente: ${revisao.cliente_nome || 'N/A'}`, 22, yPosition + 5.5);
       yPosition += 8;
       
-      doc.rect(20, yPosition, pageWidth - 40, 8);
       doc.text(`CNPJ: ${cnpjCliente || 'N/A'}`, 22, yPosition + 5.5);
       yPosition += 8;
       
@@ -1829,8 +1822,6 @@ export default function NovoOrcamento() {
       
       doc.setFillColor(220, 220, 220);
       doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, pageWidth - 40, 10);
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.text("Condições Comerciais", pageWidth / 2, yPosition + 7, { align: "center" });
@@ -1855,15 +1846,10 @@ export default function NovoOrcamento() {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, pageWidth - 40, 8);
       doc.text(`Assunto: ${assunto}`, 22, yPosition + 5.5);
       yPosition += 8;
       
       const col3Width = (pageWidth - 40) / 3;
-      doc.rect(20, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
       doc.text(`Valor Total: ${valorTotalFormatado}`, 22, yPosition + 5.5);
       doc.text(`Condição Pagamento: ${condicaoPagamento}`, 22 + col3Width, yPosition + 5.5);
       doc.text(`Validade Proposta: ${validadeProposta}`, 22 + col3Width * 2, yPosition + 5.5);
@@ -1878,24 +1864,15 @@ export default function NovoOrcamento() {
         const saleTaxFormatado = `R$ ${saleTaxValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
         const totalWithTaxFormatado = `R$ ${totalWithTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
         
-        doc.rect(20, yPosition, col3Width, 8);
-        doc.rect(20 + col3Width, yPosition, col3Width, 8);
-        doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
         doc.text(`Sale Tax (8.5%): ${saleTaxFormatado}`, 22, yPosition + 5.5);
         doc.text(`Total com Tax: ${totalWithTaxFormatado}`, 22 + col3Width, yPosition + 5.5);
         doc.text(`Prazo Entrega: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
         yPosition += 8;
       } else {
-        doc.rect(20, yPosition, col3Width, 8);
-        doc.rect(20 + col3Width, yPosition, col3Width, 8);
-        doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
         doc.text(`Prazo Entrega: ${prazoEntrega}`, 22, yPosition + 5.5);
         yPosition += 8;
       }
       
-      doc.rect(20, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
       doc.text(`Garantia: ${garantia}`, 22, yPosition + 5.5);
       doc.text(`Frete: ${frete}`, 22 + col3Width, yPosition + 5.5);
       yPosition += 8;
@@ -1919,8 +1896,6 @@ export default function NovoOrcamento() {
         doc.setFontSize(9);
         doc.setFillColor(220, 220, 220);
         doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(20, yPosition, pageWidth - 40, 8);
 
         doc.text('Descrição', colDescricao + 2, yPosition + 5.5);
         doc.text('Qtd.', colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
@@ -1946,8 +1921,6 @@ export default function NovoOrcamento() {
             doc.setFillColor(255, 255, 255);
           }
           doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
-          doc.setDrawColor(200, 200, 200);
-          doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
           const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
           doc.text(desc, colDescricao + 2, yPosition + 5.5);
@@ -1968,14 +1941,11 @@ export default function NovoOrcamento() {
         const boxHeight = 8;
         const boxX = pageWidth - 20 - 25 - boxWidth;
         
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.text('Total de Peças', boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
-        doc.rect(valorBoxX, yPosition, 25, boxHeight);
         const totalPecasTexto = totalPecas > 0 ? `R$ ${totalPecas.toFixed(2).replace('.', ',')}` : '';
         doc.text(totalPecasTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
@@ -2002,8 +1972,6 @@ export default function NovoOrcamento() {
         doc.setFontSize(9);
         doc.setFillColor(220, 220, 220);
         doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(20, yPosition, pageWidth - 40, 8);
 
         doc.text('Descrição', colDescricao + 2, yPosition + 5.5);
         doc.text('Qtd.', colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
@@ -2030,8 +1998,6 @@ export default function NovoOrcamento() {
             doc.setFillColor(255, 255, 255);
           }
           doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
-          doc.setDrawColor(200, 200, 200);
-          doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
           const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
           doc.text(desc, colDescricao + 2, yPosition + 5.5);
@@ -2052,14 +2018,11 @@ export default function NovoOrcamento() {
         const boxHeight = 8;
         const boxX = pageWidth - 20 - 25 - boxWidth;
         
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.text('Total de Serviços', boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
-        doc.rect(valorBoxX, yPosition, 25, boxHeight);
         const totalServicosTexto = totalServicos > 0 ? `R$ ${totalServicos.toFixed(2).replace('.', ',')}` : '';
         doc.text(totalServicosTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
@@ -2086,8 +2049,6 @@ export default function NovoOrcamento() {
         doc.setFontSize(9);
         doc.setFillColor(220, 220, 220);
         doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(20, yPosition, pageWidth - 40, 8);
 
         doc.text('Descrição', colDescricao + 2, yPosition + 5.5);
         doc.text('Qtd.', colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
@@ -2114,8 +2075,6 @@ export default function NovoOrcamento() {
             doc.setFillColor(255, 255, 255);
           }
           doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
-          doc.setDrawColor(200, 200, 200);
-          doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
           const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
           doc.text(desc, colDescricao + 2, yPosition + 5.5);
@@ -2136,14 +2095,11 @@ export default function NovoOrcamento() {
         const boxHeight = 8;
         const boxX = pageWidth - 20 - 25 - boxWidth;
         
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.text('Total de Usinagem', boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
-        doc.rect(valorBoxX, yPosition, 25, boxHeight);
         const totalUsinagemTexto = totalUsinagem > 0 ? `R$ ${totalUsinagem.toFixed(2)}` : '';
         doc.text(totalUsinagemTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
@@ -2320,8 +2276,6 @@ export default function NovoOrcamento() {
           doc.setFillColor(255, 255, 255);
         }
         doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(20, yPosition, pageWidth - 40, rowHeight);
         
         doc.setFont('helvetica', 'bold');
         doc.text(item.label, 25, yPosition + 7);
@@ -2332,8 +2286,6 @@ export default function NovoOrcamento() {
           const extraHeight = (valorLines.length - 1) * 5;
           doc.setFillColor(index % 2 === 0 ? 245 : 255, index % 2 === 0 ? 245 : 255, index % 2 === 0 ? 245 : 255);
           doc.rect(20, yPosition, pageWidth - 40, rowHeight + extraHeight, 'F');
-          doc.setDrawColor(200, 200, 200);
-          doc.rect(20, yPosition, pageWidth - 40, rowHeight + extraHeight);
           
           doc.setFont('helvetica', 'bold');
           doc.text(item.label, 25, yPosition + 7);
@@ -2422,8 +2374,6 @@ export default function NovoOrcamento() {
     // Título centralizado "Informações do Cliente"
     doc.setFillColor(220, 220, 220);
     doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(20, yPosition, pageWidth - 40, 10);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 0, 0);
@@ -2436,20 +2386,15 @@ export default function NovoOrcamento() {
     // Primeira linha: Nº Orçamento + Data
     const colWidth = (pageWidth - 40) / 2;
     
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(20, yPosition, colWidth, 8);
-    doc.rect(20 + colWidth, yPosition, colWidth, 8);
     doc.text(`${pdfT.quoteNumber}: ${dadosOrcamento.numeroOrdem || 'N/A'}`, 22, yPosition + 5.5);
     doc.text(`${pdfT.date}: ${new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR')}`, 22 + colWidth, yPosition + 5.5);
     yPosition += 8;
     
     // Segunda linha: Nome do Cliente (linha inteira)
-    doc.rect(20, yPosition, pageWidth - 40, 8);
     doc.text(`${pdfT.clientName}: ${dadosOrcamento.cliente || 'N/A'}`, 22, yPosition + 5.5);
     yPosition += 8;
     
     // Terceira linha: CNPJ (linha inteira)
-    doc.rect(20, yPosition, pageWidth - 40, 8);
     doc.text(`${pdfT.taxId}: ${cnpjCliente || 'N/A'}`, 22, yPosition + 5.5);
     yPosition += 8;
     
@@ -2471,8 +2416,6 @@ export default function NovoOrcamento() {
     // Título centralizado "Condições Comerciais"
     doc.setFillColor(220, 220, 220);
     doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(20, yPosition, pageWidth - 40, 10);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 0, 0);
@@ -2501,17 +2444,12 @@ export default function NovoOrcamento() {
     doc.setFont("helvetica", "normal");
     
     // Primeira linha: Assunto (span full width)
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(20, yPosition, pageWidth - 40, 8);
     doc.text(`${pdfT.subject}: ${assunto}`, 22, yPosition + 5.5);
     yPosition += 8;
     
     // Segunda linha: Total Value + Payment Terms + Proposal Validity
     const col3Width = (pageWidth - 40) / 3;
     
-    doc.rect(20, yPosition, col3Width, 8);
-    doc.rect(20 + col3Width, yPosition, col3Width, 8);
-    doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
     doc.text(`${pdfT.totalValue}: ${valorTotalFormatado}`, 22, yPosition + 5.5);
     doc.text(`${pdfT.paymentTerms}: ${condicaoPagamento}`, 22 + col3Width, yPosition + 5.5);
     doc.text(`${pdfT.proposalValidity}: ${validadeProposta}`, 22 + col3Width * 2, yPosition + 5.5);
@@ -2526,25 +2464,16 @@ export default function NovoOrcamento() {
       const saleTaxFormatado = `R$ ${saleTaxValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
       const totalWithTaxFormatado = `R$ ${totalWithTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
       
-      doc.rect(20, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
       doc.text(`${pdfT.saleTax} (8.5%): ${saleTaxFormatado}`, 22, yPosition + 5.5);
       doc.text(`${pdfT.totalWithTax}: ${totalWithTaxFormatado}`, 22 + col3Width, yPosition + 5.5);
       doc.text(`${pdfT.deliveryTime}: ${prazoEntrega}`, 22 + col3Width * 2, yPosition + 5.5);
       yPosition += 8;
     } else {
-      doc.rect(20, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
       doc.text(`${pdfT.deliveryTime}: ${prazoEntrega}`, 22, yPosition + 5.5);
       yPosition += 8;
     }
     
     // Quarta linha: Garantia + Frete
-    doc.rect(20, yPosition, col3Width, 8);
-    doc.rect(20 + col3Width, yPosition, col3Width, 8);
-    doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
     doc.text(`${pdfT.warranty}: ${garantia}`, 22, yPosition + 5.5);
     doc.text(`${pdfT.freight}: ${frete}`, 22 + col3Width, yPosition + 5.5);
     yPosition += 15;
@@ -2566,8 +2495,6 @@ export default function NovoOrcamento() {
         // Título centralizado "Dados Técnicos do Equipamento"
         doc.setFillColor(220, 220, 220);
         doc.rect(20, yPosition, pageWidth - 40, 10, 'F');
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(20, yPosition, pageWidth - 40, 10);
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 0, 0);
@@ -2621,11 +2548,9 @@ export default function NovoOrcamento() {
         const col3Width = (pageWidth - 40) / 3;
         
         for (let i = 0; i < camposTecnicos.length; i += 3) {
-          doc.setDrawColor(200, 200, 200);
           
           // Primeira coluna
           if (camposTecnicos[i]) {
-            doc.rect(20, yPosition, col3Width, 8);
             doc.setFont("helvetica", "bold");
             doc.text(`${camposTecnicos[i].label}:`, 22, yPosition + 5.5);
             const labelWidth = doc.getTextWidth(`${camposTecnicos[i].label}: `);
@@ -2635,7 +2560,6 @@ export default function NovoOrcamento() {
           
           // Segunda coluna
           if (camposTecnicos[i + 1]) {
-            doc.rect(20 + col3Width, yPosition, col3Width, 8);
             doc.setFont("helvetica", "bold");
             doc.text(`${camposTecnicos[i + 1].label}:`, 22 + col3Width, yPosition + 5.5);
             const labelWidth = doc.getTextWidth(`${camposTecnicos[i + 1].label}: `);
@@ -2645,7 +2569,6 @@ export default function NovoOrcamento() {
           
           // Terceira coluna
           if (camposTecnicos[i + 2]) {
-            doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
             doc.setFont("helvetica", "bold");
             doc.text(`${camposTecnicos[i + 2].label}:`, 22 + col3Width * 2, yPosition + 5.5);
             const labelWidth = doc.getTextWidth(`${camposTecnicos[i + 2].label}: `);
@@ -2679,8 +2602,6 @@ export default function NovoOrcamento() {
       doc.setFontSize(9);
       doc.setFillColor(220, 220, 220);
       doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, pageWidth - 40, 8);
 
       doc.text(pdfT.description, colDescricao + 2, yPosition + 5.5);
       doc.text(pdfT.qty, colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
@@ -2709,8 +2630,6 @@ export default function NovoOrcamento() {
           doc.setFillColor(255, 255, 255);
         }
         doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
           const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
         doc.text(desc, colDescricao + 2, yPosition + 5.5);
@@ -2735,14 +2654,11 @@ export default function NovoOrcamento() {
         const boxHeight = 8;
         const boxX = pageWidth - 20 - 25 - boxWidth;
         
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.text(pdfT.partsTotal, boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
-        doc.rect(valorBoxX, yPosition, 25, boxHeight);
         const totalPecasTexto = totalPecas > 0 ? `R$ ${totalPecas.toFixed(2).replace('.', ',')}` : '';
         doc.text(totalPecasTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
       }
@@ -2772,8 +2688,6 @@ export default function NovoOrcamento() {
       doc.setFontSize(9);
       doc.setFillColor(220, 220, 220);
       doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, pageWidth - 40, 8);
 
       doc.text(pdfT.description, colDescricao + 2, yPosition + 5.5);
       doc.text(pdfT.qty, colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
@@ -2804,8 +2718,6 @@ export default function NovoOrcamento() {
           doc.setFillColor(255, 255, 255);
         }
         doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
           const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
         doc.text(desc, colDescricao + 2, yPosition + 5.5);
@@ -2830,14 +2742,11 @@ export default function NovoOrcamento() {
         const boxHeight = 8;
         const boxX = pageWidth - 20 - 25 - boxWidth;
         
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.text(pdfT.servicesTotal, boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
-        doc.rect(valorBoxX, yPosition, 25, boxHeight);
         const totalServicosTexto = totalServicos > 0 ? `R$ ${totalServicos.toFixed(2).replace('.', ',')}` : '';
         doc.text(totalServicosTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
       }
@@ -2867,8 +2776,6 @@ export default function NovoOrcamento() {
       doc.setFontSize(9);
       doc.setFillColor(220, 220, 220);
       doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(20, yPosition, pageWidth - 40, 8);
 
       doc.text(pdfT.description, colDescricao + 2, yPosition + 5.5);
       doc.text(pdfT.qty, colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
@@ -2899,8 +2806,6 @@ export default function NovoOrcamento() {
           doc.setFillColor(255, 255, 255);
         }
         doc.rect(20, yPosition, pageWidth - 40, rowHeight, 'F');
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
         const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
         doc.text(desc, colDescricao + 2, yPosition + 5.5);
@@ -2925,14 +2830,11 @@ export default function NovoOrcamento() {
         const boxHeight = 8;
         const boxX = pageWidth - 20 - 25 - boxWidth;
         
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(boxX, yPosition, boxWidth, boxHeight);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.text(pdfT.machiningTotal, boxX + 2, yPosition + 5.5);
         
         const valorBoxX = boxX + boxWidth;
-        doc.rect(valorBoxX, yPosition, 25, boxHeight);
         const totalUsinagemTexto = totalUsinagem > 0 ? `R$ ${totalUsinagem.toFixed(2)}` : '';
         doc.text(totalUsinagemTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
       }
