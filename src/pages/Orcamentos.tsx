@@ -19,7 +19,7 @@ import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 import { VincularOrdensModal } from "@/components/VincularOrdensModal";
 import jsPDF from "jspdf";
-import { addLogoToPDF } from "@/lib/pdf-logo-utils";
+import { addLogoToPDF, loadLogoForPDF } from "@/lib/pdf-logo-utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";

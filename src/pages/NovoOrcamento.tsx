@@ -18,7 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FotoEquipamento } from "@/hooks/use-recebimentos";
 import jsPDF from "jspdf";
-import { addLogoToPDF } from "@/lib/pdf-logo-utils";
+import { addLogoToPDF, loadLogoForPDF } from "@/lib/pdf-logo-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations } from "@/i18n/translations";
