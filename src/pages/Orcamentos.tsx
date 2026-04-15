@@ -674,6 +674,15 @@ export default function Orcamentos() {
       const adicionarRodape = (numeroPagina: number) => {
         const rodapeY = pageHeight - 15;
         
+        // Marca d'água com logo
+        try {
+          doc.saveGraphicsState();
+          const gs = new (doc as any).GState({ opacity: 0.08 });
+          doc.setGState(gs);
+          doc.addImage(watermarkImg, 'JPEG', (pageWidth - 100) / 2, (pageHeight - 50) / 2, 100, 50);
+          doc.restoreGraphicsState();
+        } catch (e) { /* watermark optional */ }
+        
         // Triângulos decorativos no canto inferior direito
         doc.setFillColor(220, 38, 38);
         doc.triangle(pageWidth - 30, pageHeight - 5, pageWidth - 15, pageHeight - 5, pageWidth - 15, pageHeight - 20, 'F');

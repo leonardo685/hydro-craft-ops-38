@@ -1736,6 +1736,14 @@ export default function NovoOrcamento() {
         const totalPages = doc.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
           doc.setPage(i);
+          // Marca d'água com logo
+          try {
+            doc.saveGraphicsState();
+            const gs = new (doc as any).GState({ opacity: 0.08 });
+            doc.setGState(gs);
+            doc.addImage(watermarkImg, 'JPEG', (pageWidth - 100) / 2, (pageHeight - 50) / 2, 100, 50);
+            doc.restoreGraphicsState();
+          } catch (e) { /* watermark optional */ }
           adicionarDetalheDecorativo();
           doc.setFontSize(8);
           doc.setTextColor(128, 128, 128);
@@ -2238,6 +2246,14 @@ export default function NovoOrcamento() {
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
+        // Marca d'água com logo
+        try {
+          doc.saveGraphicsState();
+          const gs = new (doc as any).GState({ opacity: 0.08 });
+          doc.setGState(gs);
+          doc.addImage(watermarkImg, 'JPEG', (pageWidth - 100) / 2, (pageHeight - 50) / 2, 100, 50);
+          doc.restoreGraphicsState();
+        } catch (e) { /* watermark optional */ }
         adicionarDetalheDecorativo();
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
