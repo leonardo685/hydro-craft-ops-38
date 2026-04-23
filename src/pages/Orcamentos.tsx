@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2 } from "lucide-react";
+import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2, AlertTriangle } from "lucide-react";
 import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
