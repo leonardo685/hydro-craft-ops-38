@@ -65,8 +65,9 @@ export function VincularOrdensModal({
       if (errorVinculadas) throw errorVinculadas;
       setOrdensVinculadas(vinculadas || []);
 
-      // Buscar ordens disponíveis (sem vínculo com orçamento) - TODAS independente do status
-      const { data: disponiveis, error: errorDisponiveis } = await supabase
+      // Buscar TODAS as ordens da empresa (independente de status ou vínculo com outros orçamentos)
+      // Excluir apenas as já vinculadas a este orçamento específico
+      const { data: todasOrdens, error: errorDisponiveis } = await supabase
         .from('ordens_servico')
         .select(`
           *,
@@ -76,13 +77,15 @@ export function VincularOrdensModal({
           )
         `)
         .eq('empresa_id', empresaAtual.id)
-        .is('orcamento_id', null)
         .order('created_at', { ascending: false });
 
       if (errorDisponiveis) throw errorDisponiveis;
-      
-      console.log(`📋 Ordens disponíveis para vincular: ${disponiveis?.length || 0}`);
-      setOrdensDisponiveis(disponiveis || []);
+
+      const idsVinculadas = new Set((vinculadas || []).map((o: any) => o.id));
+      const disponiveis = (todasOrdens || []).filter((o: any) => !idsVinculadas.has(o.id));
+
+      console.log(`📋 Ordens disponíveis para vincular: ${disponiveis.length}`);
+      setOrdensDisponiveis(disponiveis);
 
     } catch (error) {
       console.error('Erro ao carregar ordens:', error);
