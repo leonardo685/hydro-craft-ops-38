@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2 } from "lucide-react";
+import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2, AlertTriangle } from "lucide-react";
 import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -209,6 +209,17 @@ export default function Orcamentos() {
 
   const handleCreateOrcamentoFromOrdemServico = () => {
     if (selectedOrdemServico) {
+      const statusOrdem = (selectedOrdemServico.status || '').toLowerCase();
+      const ordemFinalizada = ['finalizado', 'finalizada', 'concluido', 'concluída', 'concluida', 'entregue'].includes(statusOrdem);
+
+      if (ordemFinalizada) {
+        const numeroOrdem = selectedOrdemServico.recebimentos?.numero_ordem || selectedOrdemServico.numero_ordem;
+        const confirmar = window.confirm(
+          `⚠️ Atenção!\n\nA ordem ${numeroOrdem} já foi FINALIZADA.\n\nDeseja realmente criar um novo orçamento baseado nesta ordem?`
+        );
+        if (!confirmar) return;
+      }
+
       navigate(`/orcamentos/novo?ordemServicoId=${selectedOrdemServico.id}`);
       setIsSheetOpen(false);
     } else {
@@ -1631,16 +1642,27 @@ export default function Orcamentos() {
                         </SelectTrigger>
                         <SelectContent className="max-h-60">
                           {ordensFiltered.length > 0 ? (
-                            ordensFiltered.map((ordem) => (
-                              <SelectItem key={ordem.id} value={ordem.id}>
-                                 <div className="flex flex-col">
-                                   <span className="font-medium">{ordem.recebimentos?.numero_ordem || ordem.numero_ordem}</span>
-                                   <span className="text-sm text-muted-foreground">
-                                     {ordem.cliente_nome} - {ordem.equipamento}
-                                   </span>
-                                 </div>
-                              </SelectItem>
-                            ))
+                            ordensFiltered.map((ordem) => {
+                              const statusLower = (ordem.status || '').toLowerCase();
+                              const isFinalizada = ['finalizado', 'finalizada', 'concluido', 'concluída', 'concluida', 'entregue'].includes(statusLower);
+                              return (
+                                <SelectItem key={ordem.id} value={ordem.id}>
+                                  <div className="flex flex-col">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">{ordem.recebimentos?.numero_ordem || ordem.numero_ordem}</span>
+                                      {isFinalizada && (
+                                        <Badge variant="outline" className="text-[10px] py-0 h-4 border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/30">
+                                          Finalizada
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <span className="text-sm text-muted-foreground">
+                                      {ordem.cliente_nome} - {ordem.equipamento}
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              );
+                            })
                           ) : (
                             <SelectItem value="no-ordens" disabled>
                               <div className="text-center text-muted-foreground">
@@ -1654,16 +1676,35 @@ export default function Orcamentos() {
                     </div>
 
                     {selectedOrdemServico && (
-                      <div className="p-3 bg-accent/5 rounded-lg border">
-                         <div className="space-y-1">
-                           <div className="font-medium text-sm">{selectedOrdemServico.recebimentos?.numero_ordem || selectedOrdemServico.numero_ordem}</div>
-                           <div className="text-sm text-muted-foreground">{selectedOrdemServico.cliente_nome}</div>
-                           <div className="text-xs text-muted-foreground">{selectedOrdemServico.equipamento}</div>
-                           <Badge variant="outline" className="text-xs mt-2">
-                             {selectedOrdemServico.status}
-                           </Badge>
-                         </div>
-                      </div>
+                      (() => {
+                        const statusLower = (selectedOrdemServico.status || '').toLowerCase();
+                        const isFinalizada = ['finalizado', 'finalizada', 'concluido', 'concluída', 'concluida', 'entregue'].includes(statusLower);
+                        return (
+                          <>
+                            <div className="p-3 bg-accent/5 rounded-lg border">
+                              <div className="space-y-1">
+                                <div className="font-medium text-sm">{selectedOrdemServico.recebimentos?.numero_ordem || selectedOrdemServico.numero_ordem}</div>
+                                <div className="text-sm text-muted-foreground">{selectedOrdemServico.cliente_nome}</div>
+                                <div className="text-xs text-muted-foreground">{selectedOrdemServico.equipamento}</div>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs mt-2 ${isFinalizada ? 'border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/30' : ''}`}
+                                >
+                                  {selectedOrdemServico.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            {isFinalizada && (
+                              <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-sm flex items-start gap-2">
+                                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                                <div>
+                                  <strong>Esta ordem já foi finalizada.</strong> Você ainda pode criar um novo orçamento baseado nela — uma confirmação será exibida ao continuar.
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()
                     )}
 
                     <Button 
