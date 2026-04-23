@@ -199,7 +199,8 @@ export default function Orcamentos() {
       const filtered = ordensServico.filter((ordem) =>
         ordem.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ordem.equipamento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ordem.recebimentos?.numero_ordem?.toLowerCase().includes(searchTerm.toLowerCase())
+        ordem.recebimentos?.numero_ordem?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ordem.numero_ordem?.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setOrdensFiltered(filtered);
     } else {
