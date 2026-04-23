@@ -209,6 +209,17 @@ export default function Orcamentos() {
 
   const handleCreateOrcamentoFromOrdemServico = () => {
     if (selectedOrdemServico) {
+      const statusOrdem = (selectedOrdemServico.status || '').toLowerCase();
+      const ordemFinalizada = ['finalizado', 'finalizada', 'concluido', 'concluída', 'concluida', 'entregue'].includes(statusOrdem);
+
+      if (ordemFinalizada) {
+        const numeroOrdem = selectedOrdemServico.recebimentos?.numero_ordem || selectedOrdemServico.numero_ordem;
+        const confirmar = window.confirm(
+          `⚠️ Atenção!\n\nA ordem ${numeroOrdem} já foi FINALIZADA.\n\nDeseja realmente criar um novo orçamento baseado nesta ordem?`
+        );
+        if (!confirmar) return;
+      }
+
       navigate(`/orcamentos/novo?ordemServicoId=${selectedOrdemServico.id}`);
       setIsSheetOpen(false);
     } else {
