@@ -76,6 +76,11 @@ export default function OrdensServico() {
             id,
             numero,
             status
+          ),
+          orcamento_vinculado:orcamentos!ordens_servico_orcamento_id_fkey (
+            id,
+            numero,
+            status
           )
         `)
         .eq('empresa_id', empresaAtual.id)
@@ -109,14 +114,14 @@ export default function OrdensServico() {
       return ordem.status;
     }
     
-    // Verifica se tem orçamentos vinculados
-    const temOrcamentos = ordem.orcamentos && ordem.orcamentos.length > 0;
+    // Verifica se tem orçamentos vinculados (em qualquer direção do relacionamento)
+    const temOrcamentosFK = Array.isArray(ordem.orcamentos) && ordem.orcamentos.length > 0;
+    const temOrcamentoVinculado = !!ordem.orcamento_id || !!ordem.orcamento_vinculado;
     
-    if (!temOrcamentos) {
+    if (!temOrcamentosFK && !temOrcamentoVinculado) {
       return 'aguardando_orcamento';
-    } else {
-      return 'aguardando_aprovacao';
     }
+    return 'aguardando_aprovacao';
   };
 
   const handleSort = (key: string) => {
