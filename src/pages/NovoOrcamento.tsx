@@ -729,10 +729,16 @@ export default function NovoOrcamento() {
           if (ordemServico) {
             // Reutilizar o número da ordem de serviço existente como Ordem Referência
             // (não gerar um novo número quando o orçamento é criado a partir de uma OS)
+            console.log('🔎 [OrdemRef] OS carregada:', {
+              os_id: ordemServico.id,
+              os_numero_ordem: ordemServico.numero_ordem,
+              recebimento_numero_ordem: ordemServico.recebimentos?.numero_ordem,
+            });
             const ordemRef =
               ordemServico.recebimentos?.numero_ordem ||
               ordemServico.numero_ordem ||
               (await gerarProximaOrdemReferencia());
+            console.log('🔎 [OrdemRef] valor final:', ordemRef);
             
             // Preencher dados do orçamento com dados da ordem de serviço
             setDadosOrcamento(prev => ({
