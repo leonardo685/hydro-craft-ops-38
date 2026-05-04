@@ -729,16 +729,19 @@ export default function NovoOrcamento() {
           if (ordemServico) {
             // Reutilizar o número da ordem de serviço existente como Ordem Referência
             // (não gerar um novo número quando o orçamento é criado a partir de uma OS)
-            console.log('🔎 [OrdemRef] OS carregada:', {
+            console.log('🔎 [OrdemRef v2] OS carregada:', {
               os_id: ordemServico.id,
               os_numero_ordem: ordemServico.numero_ordem,
               recebimento_numero_ordem: ordemServico.recebimentos?.numero_ordem,
             });
+            // PRIORIDADE: numero_ordem da OS sempre vence. Só cai no fallback se ambos estiverem vazios.
             const ordemRef =
-              ordemServico.recebimentos?.numero_ordem ||
               ordemServico.numero_ordem ||
-              (await gerarProximaOrdemReferencia());
-            console.log('🔎 [OrdemRef] valor final:', ordemRef);
+              ordemServico.recebimentos?.numero_ordem ||
+              '';
+            console.log('🔎 [OrdemRef v2] valor final aplicado:', ordemRef);
+            // Marcar como já gerado para impedir que outro fluxo sobrescreva
+            numeroGeradoRef.current = true;
             
             // Preencher dados do orçamento com dados da ordem de serviço
             setDadosOrcamento(prev => ({
@@ -748,7 +751,7 @@ export default function NovoOrcamento() {
               clienteId: ordemServico.recebimentos?.cliente_id || '',
               solicitante: '',
               numeroNota: ordemServico.recebimentos?.nota_fiscal || '',
-              numeroSerie: ordemServico.recebimentos?.numero_ordem || ordemRef, // Usar número da ordem do recebimento
+              numeroSerie: ordemRef, // SEMPRE usar o numero_ordem da OS (MH-XXX-YY)
               dataAbertura: new Date().toISOString().split('T')[0],
               observacoes: ordemServico.observacoes_tecnicas || '',
               tag: ordemServico.equipamento || ''
