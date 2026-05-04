@@ -727,8 +727,12 @@ export default function NovoOrcamento() {
           }
 
           if (ordemServico) {
-            // Gerar ordem de referência automaticamente
-            const ordemRef = await gerarProximaOrdemReferencia();
+            // Reutilizar o número da ordem de serviço existente como Ordem Referência
+            // (não gerar um novo número quando o orçamento é criado a partir de uma OS)
+            const ordemRef =
+              ordemServico.recebimentos?.numero_ordem ||
+              ordemServico.numero_ordem ||
+              (await gerarProximaOrdemReferencia());
             
             // Preencher dados do orçamento com dados da ordem de serviço
             setDadosOrcamento(prev => ({
