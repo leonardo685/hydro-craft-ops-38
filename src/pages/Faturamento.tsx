@@ -401,10 +401,15 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
     
     // Filtro de número de pedido
     if (numeroFiltroFat) {
-      const numeroMatch = orcamento.numero?.toLowerCase().includes(numeroFiltroFat.toLowerCase()) ||
-                          orcamento.ordem_numero?.toLowerCase().includes(numeroFiltroFat.toLowerCase()) ||
-                          orcamento.ordem_referencia?.toLowerCase().includes(numeroFiltroFat.toLowerCase()) ||
-                          orcamento.descricao?.toLowerCase().includes(numeroFiltroFat.toLowerCase());
+      const termo = numeroFiltroFat.toLowerCase();
+      const ordensMatch = (orcamento.ordens_vinculadas || []).some(
+        (o: any) => o.numero_ordem?.toLowerCase().includes(termo)
+      );
+      const numeroMatch = orcamento.numero?.toLowerCase().includes(termo) ||
+                          orcamento.ordem_numero?.toLowerCase().includes(termo) ||
+                          orcamento.ordem_referencia?.toLowerCase().includes(termo) ||
+                          orcamento.descricao?.toLowerCase().includes(termo) ||
+                          ordensMatch;
       if (!numeroMatch) passa = false;
     }
     
@@ -546,12 +551,12 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">Número</label>
+                      <label className="text-sm text-muted-foreground mb-2 block">Nº Ordem</label>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           type="text"
-                          placeholder="Buscar por número..."
+                          placeholder="Ex: MH-047-26"
                           value={numeroFiltroFat}
                           onChange={(e) => setNumeroFiltroFat(e.target.value)}
                           className="pl-9"
