@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Html5Qrcode } from "html5-qrcode";
-import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Search } from "lucide-react";
-import { useEmpresaId } from "@/hooks/use-empresa-id";
 
 interface ScanQRCodeModalProps {
   open: boolean;
@@ -18,7 +16,6 @@ const SCANNER_ID = "qr-internal-scanner-region";
 
 export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
   const navigate = useNavigate();
-  const { empresaId } = useEmpresaId();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [loading, setLoading] = useState(false);
   const [manual, setManual] = useState("");
@@ -80,57 +77,11 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
     if (!numeroOrdem) return;
     setLoading(true);
     try {
-      // 1. Buscar ordem de serviço
-      let osQuery = supabase
-        .from("ordens_servico")
-        .select("id, status, recebimento_id, numero_ordem")
-        .eq("numero_ordem", numeroOrdem);
-      if (empresaId) osQuery = osQuery.eq("empresa_id", empresaId);
-      const { data: ordens } = await osQuery;
-
-      if (ordens && ordens.length > 0) {
-        const ordem = ordens[0];
-        toast.success(`Ordem ${numeroOrdem} encontrada (${ordem.status})`);
-        onOpenChange(false);
-        navigate(`/visualizar-ordem-servico/${ordem.id}`);
-        return;
-      }
-
-      // 2. Buscar recebimento
-      let recQuery = supabase
-        .from("recebimentos")
-        .select("id, numero_ordem, status, na_empresa")
-        .eq("numero_ordem", numeroOrdem);
-      if (empresaId) recQuery = recQuery.eq("empresa_id", empresaId);
-      const { data: recebimentos } = await recQuery;
-
-      if (recebimentos && recebimentos.length > 0) {
-        const r = recebimentos[0];
-        toast.success(`Recebimento ${numeroOrdem} (${r.status})`);
-        onOpenChange(false);
-        navigate(`/recebimentos/${r.id}`);
-        return;
-      }
-
-      // 3. Buscar orçamento por ordem_referencia
-      let orcQuery = supabase
-        .from("orcamentos")
-        .select("id, numero, status")
-        .or(`ordem_referencia.eq.${numeroOrdem},numero.eq.${numeroOrdem}`);
-      if (empresaId) orcQuery = orcQuery.eq("empresa_id", empresaId);
-      const { data: orcamentos } = await orcQuery;
-
-      if (orcamentos && orcamentos.length > 0) {
-        toast.success(`Orçamento encontrado (${orcamentos[0].status})`);
-        onOpenChange(false);
-        navigate(`/orcamentos`);
-        return;
-      }
-
-      toast.error(`Nenhum registro encontrado para ${numeroOrdem}`);
+      onOpenChange(false);
+      navigate(`/processo-interno/${numeroOrdem}`);
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao buscar ordem");
+      toast.error("Erro ao abrir ordem");
     } finally {
       setLoading(false);
     }
