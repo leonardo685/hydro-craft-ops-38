@@ -2,10 +2,13 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelectorDropdown } from "@/components/LanguageSelectorDropdown";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import fixzysLogo from "@/assets/fixzys-logo.png";
 import { MorphPanel } from "@/components/ui/ai-input";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Button } from "@/components/ui/button";
+import { QrCode } from "lucide-react";
+import { ScanQRCodeModal } from "@/components/ScanQRCodeModal";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -13,6 +16,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { t } = useLanguage();
+  const [scanOpen, setScanOpen] = useState(false);
 
   return (
     <SidebarProvider defaultOpen={false}>
@@ -37,6 +41,15 @@ export function AppLayout({ children }: AppLayoutProps) {
                   </p>
                 </div>
               </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setScanOpen(true)}
+                title="Ler QR Code"
+                className="rounded-full"
+              >
+                <QrCode className="w-4 h-4" />
+              </Button>
               <LanguageSelectorDropdown />
               <ThemeToggle />
             </div>
@@ -47,6 +60,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </main>
         <MorphPanel />
       </div>
+      <ScanQRCodeModal open={scanOpen} onOpenChange={setScanOpen} />
     </SidebarProvider>
   );
 }
