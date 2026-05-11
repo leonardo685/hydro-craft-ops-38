@@ -28,6 +28,7 @@ import HistoricoLancamentos from "@/pages/HistoricoLancamentos";
 import AdminPermissions from "@/pages/AdminPermissions";
 import UploadVideoTeste from "@/pages/UploadVideoTeste";
 import Configuracoes from "@/pages/Configuracoes";
+import ProcessoInterno from "@/pages/ProcessoInterno";
 
 export function AuthenticatedApp() {
   return (
@@ -61,6 +62,7 @@ export function AuthenticatedApp() {
           <Route path="/historico-lancamentos" element={<ProtectedRoute><HistoricoLancamentos /></ProtectedRoute>} />
           <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
           <Route path="/upload-video-teste" element={<ProtectedRoute><UploadVideoTeste /></ProtectedRoute>} />
+          <Route path="/processo-interno/:numeroOrdem" element={<ProtectedRoute><ProcessoInterno /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </EmpresaProvider>
