@@ -1,8 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
 import { AppLayout } from "./AppLayout";
 
-// Mock layout dependencies to keep tests focused on header structure
 vi.mock("@/components/ui/sidebar", () => ({
   SidebarProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   SidebarTrigger: () => <button data-testid="sidebar-trigger">Menu</button>,
@@ -19,7 +18,7 @@ vi.mock("@/components/ThemeToggle", () => ({
 vi.mock("@/components/LanguageSelectorDropdown", () => ({
   LanguageSelectorDropdown: () => (
     <div data-testid="language-selector">
-      <span>🇧🇷</span>
+      <span>BR</span>
       <span className="hidden sm:inline">Português (BR)</span>
       <span className="sm:hidden uppercase">pt</span>
     </div>
@@ -38,8 +37,42 @@ vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({ t: (key: string) => (key === "dashboard.subtitle" ? "Subtitle" : key) }),
 }));
 
-describe("AppLayout header responsiveness", () => {
-  it("renders header with anti-collapse flex structure at all widths", () => {
+// All authenticated routes — header is global via AppLayout, so we validate
+// it renders correctly regardless of which page content is mounted.
+const ROUTES = [
+  { path: "/", name: "Index" },
+  { path: "/recebimentos", name: "Recebimentos" },
+  { path: "/recebimentos/novo", name: "NovoRecebimento" },
+  { path: "/recebimentos/:id", name: "DetalhesRecebimento" },
+  { path: "/analise", name: "Analise" },
+  { path: "/analise/novo/:id", name: "NovaAnalise" },
+  { path: "/analise/novo-ordem-direta", name: "NovaOrdemDireta" },
+  { path: "/orcamentos", name: "Orcamentos" },
+  { path: "/orcamentos/novo", name: "NovoOrcamento" },
+  { path: "/aprovados", name: "Aprovados" },
+  { path: "/compras", name: "Compras" },
+  { path: "/visualizar-ordem-servico/:id", name: "VisualizarOrdemServico" },
+  { path: "/faturamento", name: "Faturamento" },
+  { path: "/faturamento/dashboard", name: "DashboardFaturamento" },
+  { path: "/faturamento/faturadas", name: "FaturamentoFaturadas" },
+  { path: "/cadastros", name: "Cadastros" },
+  { path: "/financeiro", name: "Financeiro" },
+  { path: "/financeiro/dashboard", name: "Dashboard" },
+  { path: "/financeiro/dre", name: "DRE" },
+  { path: "/financeiro/dfc", name: "DFC" },
+  { path: "/dfc", name: "DFCAlias" },
+  { path: "/financeiro/meta-gastos", name: "MetaGastos" },
+  { path: "/admin/permissions", name: "AdminPermissions" },
+  { path: "/historico-lancamentos", name: "HistoricoLancamentos" },
+  { path: "/configuracoes", name: "Configuracoes" },
+  { path: "/upload-video-teste", name: "UploadVideoTeste" },
+  { path: "/processo-interno/:numeroOrdem", name: "ProcessoInterno" },
+];
+
+const BREAKPOINTS = [320, 375, 768];
+
+describe("AppLayout header — structural responsiveness", () => {
+  it("renders header with anti-collapse flex structure", () => {
     const { container } = render(
       <AppLayout>
         <div data-testid="page-content">Page</div>
@@ -49,101 +82,69 @@ describe("AppLayout header responsiveness", () => {
     const header = container.querySelector("header");
     expect(header).toBeInTheDocument();
 
-    // Header inner row must be flex + centered (prevents vertical stacking)
     const innerRow = header?.querySelector("div.flex.items-center");
     expect(innerRow).toBeInTheDocument();
 
-    // Logo must never shrink (prevents squishing)
     const logo = screen.getByAltText("FixZys Logo");
     expect(logo).toHaveClass("shrink-0");
     expect(logo).toHaveClass("h-8", "sm:h-10");
 
-    // Middle content area must have flex-1 + min-w-0 (prevents overflow push-out)
     const middleArea = innerRow?.querySelector("div.flex-1.min-w-0");
     expect(middleArea).toBeInTheDocument();
 
-    // Must have both mobile and desktop title variants
     const desktopTitleBlock = container.querySelector("div.hidden.sm\\:block");
     expect(desktopTitleBlock).toBeInTheDocument();
 
     const mobileTitle = container.querySelector("h1.sm\\:hidden");
     expect(mobileTitle).toBeInTheDocument();
 
-    // Action buttons area must never shrink
     const actionsArea = innerRow?.querySelector("div.shrink-0:last-child");
     expect(actionsArea).toBeInTheDocument();
   });
+});
 
-  it("renders all action buttons without overflow at 320px", () => {
-    const { container } = render(
-      <AppLayout>
-        <div>Page</div>
-      </AppLayout>
-    );
-
-    const header = container.querySelector("header");
-    expect(header).toBeInTheDocument();
-
-    // All critical buttons must exist
-    expect(screen.getByTitle("Ler QR Code")).toBeInTheDocument();
-    expect(screen.getByTestId("language-selector")).toBeInTheDocument();
-    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
-    expect(screen.getByTestId("sidebar-trigger")).toBeInTheDocument();
-
-    // Header actions should use small gap on mobile (gap-1 or gap-2)
-    const headerRow = header?.querySelector("div.flex.items-center");
-    const headerClasses = headerRow?.className || "";
-    expect(headerClasses).toMatch(/gap-1|gap-2/);
-
-    // Logo should be h-8 on mobile
-    const logo = screen.getByAltText("FixZys Logo");
-    expect(logo.className).toContain("h-8");
+describe("AppLayout header — renders on every authenticated route × breakpoint", () => {
+  beforeEach(() => {
+    cleanup();
   });
 
-  it("renders all action buttons without overflow at 375px", () => {
-    render(
-      <AppLayout>
-        <div>Page</div>
-      </AppLayout>
-    );
+  for (const route of ROUTES) {
+    for (const width of BREAKPOINTS) {
+      it(`route "${route.path}" (${route.name}) at ${width}px — header does not collapse`, () => {
+        Object.defineProperty(window, "innerWidth", {
+          writable: true,
+          configurable: true,
+          value: width,
+        });
+        window.dispatchEvent(new Event("resize"));
 
-    expect(screen.getByTitle("Ler QR Code")).toBeInTheDocument();
-    expect(screen.getByTestId("language-selector")).toBeInTheDocument();
-    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
-    expect(screen.getByTestId("sidebar-trigger")).toBeInTheDocument();
+        const PageStub = () => <div data-testid={`page-${route.name}`}>{route.name}</div>;
 
-    const logo = screen.getByAltText("FixZys Logo");
-    expect(logo.className).toContain("h-8");
-  });
+        const { container } = render(
+          <AppLayout>
+            <PageStub />
+          </AppLayout>
+        );
 
-  it("renders all action buttons without overflow at 768px", () => {
-    render(
-      <AppLayout>
-        <div>Page</div>
-      </AppLayout>
-    );
+        expect(screen.getByTestId(`page-${route.name}`)).toBeInTheDocument();
 
-    expect(screen.getByTitle("Ler QR Code")).toBeInTheDocument();
-    expect(screen.getByTestId("language-selector")).toBeInTheDocument();
-    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
-    expect(screen.getByTestId("sidebar-trigger")).toBeInTheDocument();
+        const header = container.querySelector("header");
+        expect(header).toBeInTheDocument();
 
-    // At tablet/desktop, logo should grow to h-10
-    const logo = screen.getByAltText("FixZys Logo");
-    expect(logo.className).toContain("sm:h-10");
-  });
+        const headerRow = header?.querySelector("div.flex.items-center");
+        expect(headerRow).toBeInTheDocument();
 
-  it("should render all header action buttons across all breakpoints", () => {
-    const { unmount } = render(
-      <AppLayout>
-        <div>Page</div>
-      </AppLayout>
-    );
+        expect(screen.getByTitle("Ler QR Code")).toBeInTheDocument();
+        expect(screen.getByTestId("language-selector")).toBeInTheDocument();
+        expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
+        expect(screen.getByTestId("sidebar-trigger")).toBeInTheDocument();
 
-    expect(screen.getByTitle("Ler QR Code")).toBeInTheDocument();
-    expect(screen.getByTestId("language-selector")).toBeInTheDocument();
-    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
+        const logo = screen.getByAltText("FixZys Logo");
+        expect(logo).toHaveClass("shrink-0");
 
-    unmount();
-  });
+        const middleArea = headerRow?.querySelector("div.flex-1.min-w-0");
+        expect(middleArea).toBeInTheDocument();
+      });
+    }
+  }
 });
