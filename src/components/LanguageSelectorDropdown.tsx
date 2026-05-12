@@ -39,7 +39,8 @@ export function LanguageSelectorDropdown() {
         )}
       >
         <span>{selected.flag}</span>
-        <span>{selected.label}</span>
+        <span className="hidden sm:inline">{selected.label}</span>
+        <span className="sm:hidden uppercase">{selected.code.split('-')[0]}</span>
         <ChevronDown
           className={cn(
             "w-4 h-4 text-muted-foreground transition-transform",
