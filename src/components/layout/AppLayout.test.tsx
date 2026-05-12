@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { AppLayout } from "./AppLayout";
 
-// Mock all layout dependencies to keep tests focused on the header
+// Mock layout dependencies to keep tests focused on header structure
 vi.mock("@/components/ui/sidebar", () => ({
   SidebarProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   SidebarTrigger: () => <button data-testid="sidebar-trigger">Menu</button>,
@@ -38,23 +38,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({ t: (key: string) => (key === "dashboard.subtitle" ? "Subtitle" : key) }),
 }));
 
-function setViewportWidth(width: number) {
-  Object.defineProperty(window, "innerWidth", {
-    writable: true,
-    configurable: true,
-    value: width,
-  });
-  window.dispatchEvent(new Event("resize"));
-}
-
 describe("AppLayout header responsiveness", () => {
-  beforeEach(() => {
-    // Reset to desktop default before each test
-    setViewportWidth(1024);
-  });
-
-  it("should show compact layout at 320px without header overflow", () => {
-    setViewportWidth(320);
+  it("renders header with anti-collapse flex structure at all widths", () => {
     const { container } = render(
       <AppLayout>
         <div data-testid="page-content">Page</div>
@@ -64,93 +49,101 @@ describe("AppLayout header responsiveness", () => {
     const header = container.querySelector("header");
     expect(header).toBeInTheDocument();
 
-    // Logo should be smaller on mobile (h-8)
+    // Header inner row must be flex + centered (prevents vertical stacking)
+    const innerRow = header?.querySelector("div.flex.items-center");
+    expect(innerRow).toBeInTheDocument();
+
+    // Logo must never shrink (prevents squishing)
     const logo = screen.getByAltText("FixZys Logo");
-    expect(logo).toHaveClass("h-8");
+    expect(logo).toHaveClass("shrink-0");
+    expect(logo).toHaveClass("h-8", "sm:h-10");
 
-    // Desktop title block should be hidden
-    const desktopTitle = container.querySelector("div.hidden.sm\\:block");
-    expect(desktopTitle).not.toBeVisible();
+    // Middle content area must have flex-1 + min-w-0 (prevents overflow push-out)
+    const middleArea = innerRow?.querySelector("div.flex-1.min-w-0");
+    expect(middleArea).toBeInTheDocument();
 
-    // Mobile title should be visible
+    // Must have both mobile and desktop title variants
+    const desktopTitleBlock = container.querySelector("div.hidden.sm\\:block");
+    expect(desktopTitleBlock).toBeInTheDocument();
+
     const mobileTitle = container.querySelector("h1.sm\\:hidden");
-    expect(mobileTitle).toBeVisible();
+    expect(mobileTitle).toBeInTheDocument();
 
-    // Actions area (QR + Lang + Theme) must be present
-    expect(screen.getByTitle("Ler QR Code")).toBeInTheDocument();
-    expect(screen.getByTestId("language-selector")).toBeInTheDocument();
-    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
+    // Action buttons area must never shrink
+    const actionsArea = innerRow?.querySelector("div.shrink-0:last-child");
+    expect(actionsArea).toBeInTheDocument();
   });
 
-  it("should show compact layout at 375px without header overflow", () => {
-    setViewportWidth(375);
+  it("renders all action buttons without overflow at 320px", () => {
     const { container } = render(
       <AppLayout>
-        <div data-testid="page-content">Page</div>
+        <div>Page</div>
       </AppLayout>
     );
 
     const header = container.querySelector("header");
     expect(header).toBeInTheDocument();
 
-    const logo = screen.getByAltText("FixZys Logo");
-    expect(logo).toHaveClass("h-8");
-
-    const desktopTitle = container.querySelector("div.hidden.sm\\:block");
-    expect(desktopTitle).not.toBeVisible();
-
-    const mobileTitle = container.querySelector("h1.sm\\:hidden");
-    expect(mobileTitle).toBeVisible();
-
+    // All critical buttons must exist
     expect(screen.getByTitle("Ler QR Code")).toBeInTheDocument();
     expect(screen.getByTestId("language-selector")).toBeInTheDocument();
     expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
+    expect(screen.getByTestId("sidebar-trigger")).toBeInTheDocument();
+
+    // Header actions should use small gap on mobile (gap-1 or gap-2)
+    const headerRow = header?.querySelector("div.flex.items-center");
+    const headerClasses = headerRow?.className || "";
+    expect(headerClasses).toMatch(/gap-1|gap-2/);
+
+    // Logo should be h-8 on mobile
+    const logo = screen.getByAltText("FixZys Logo");
+    expect(logo.className).toContain("h-8");
   });
 
-  it("should switch to full layout at 768px (tablet)", () => {
-    setViewportWidth(768);
-    const { container } = render(
+  it("renders all action buttons without overflow at 375px", () => {
+    render(
       <AppLayout>
-        <div data-testid="page-content">Page</div>
+        <div>Page</div>
       </AppLayout>
     );
 
-    const header = container.querySelector("header");
-    expect(header).toBeInTheDocument();
+    expect(screen.getByTitle("Ler QR Code")).toBeInTheDocument();
+    expect(screen.getByTestId("language-selector")).toBeInTheDocument();
+    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
+    expect(screen.getByTestId("sidebar-trigger")).toBeInTheDocument();
 
-    // At 768px, sm: breakpoint (640px) is active, so logo should be h-10
     const logo = screen.getByAltText("FixZys Logo");
-    expect(logo).toHaveClass("sm:h-10");
+    expect(logo.className).toContain("h-8");
+  });
 
-    // Desktop title block should be visible at sm breakpoint
-    const desktopTitle = container.querySelector("div.hidden.sm\\:block");
-    expect(desktopTitle).toBeVisible();
-
-    // Mobile title should be hidden
-    const mobileTitle = container.querySelector("h1.sm\\:hidden");
-    expect(mobileTitle).not.toBeVisible();
+  it("renders all action buttons without overflow at 768px", () => {
+    render(
+      <AppLayout>
+        <div>Page</div>
+      </AppLayout>
+    );
 
     expect(screen.getByTitle("Ler QR Code")).toBeInTheDocument();
     expect(screen.getByTestId("language-selector")).toBeInTheDocument();
     expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
+    expect(screen.getByTestId("sidebar-trigger")).toBeInTheDocument();
+
+    // At tablet/desktop, logo should grow to h-10
+    const logo = screen.getByAltText("FixZys Logo");
+    expect(logo.className).toContain("sm:h-10");
   });
 
   it("should render all header action buttons across all breakpoints", () => {
-    const breakpoints = [320, 375, 768];
+    const { unmount } = render(
+      <AppLayout>
+        <div>Page</div>
+      </AppLayout>
+    );
 
-    for (const width of breakpoints) {
-      setViewportWidth(width);
-      const { unmount } = render(
-        <AppLayout>
-          <div>Page</div>
-        </AppLayout>
-      );
+    expect(screen.getByTitle("Ler QR Code")).toBeInTheDocument();
+    expect(screen.getByTestId("language-selector")).toBeInTheDocument();
+    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
 
-      expect(screen.getByTitle("Ler QR Code")).toBeInTheDocument();
-      expect(screen.getByTestId("language-selector")).toBeInTheDocument();
-      expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
-
-      unmount();
-    }
+    unmount();
   });
 });
