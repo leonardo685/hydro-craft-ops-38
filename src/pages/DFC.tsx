@@ -36,6 +36,7 @@ import { FileSpreadsheet, Edit, Calculator } from "lucide-react";
 import { UploadExtratoModal } from "@/components/UploadExtratoModal";
 import { SolverLancamentosModal } from "@/components/SolverLancamentosModal";
 import { ResponsiveContainer, ComposedChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar, Line } from "recharts";
+import { RefreshButton } from "@/components/RefreshButton";
 export default function DFC() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1250,9 +1251,12 @@ export default function DFC() {
   const lancamentoAtual = lancamentos.find(l => l.id === confirmarPagamentoDialog.lancamentoId);
   return <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">DFC - Fluxo de Caixa</h1>
-          <p className="text-muted-foreground">Demonstração do Fluxo de Caixa com Extrato e Planejamento</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">DFC - Fluxo de Caixa</h1>
+            <p className="text-muted-foreground">Demonstração do Fluxo de Caixa com Extrato e Planejamento</p>
+          </div>
+          <RefreshButton onRefresh={refetch} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
