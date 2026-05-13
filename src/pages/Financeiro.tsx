@@ -28,11 +28,12 @@ import { toast } from "sonner";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 import { useNavigate } from 'react-router-dom';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { RefreshButton } from "@/components/RefreshButton";
 
 export default function Financeiro() {
   const navigate = useNavigate();
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
-  const { lancamentos, loading: loadingLancamentos, adicionarLancamento } = useLancamentosFinanceiros();
+  const { lancamentos, loading: loadingLancamentos, adicionarLancamento, refetch: refetchLancamentos } = useLancamentosFinanceiros();
   const { clientes } = useClientes();
   const { fornecedores: fornecedoresData } = useFornecedores();
   
@@ -1377,9 +1378,12 @@ export default function Financeiro() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Financeiro</h1>
-          <p className="text-muted-foreground">Gestão financeira e relatórios</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Financeiro</h1>
+            <p className="text-muted-foreground">Gestão financeira e relatórios</p>
+          </div>
+          <RefreshButton onRefresh={refetchLancamentos} />
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">
