@@ -2569,12 +2569,13 @@ export default function Financeiro() {
                             </div>
 
                             <div className="flex gap-2 pt-4">
-                              <Button onClick={handleLancamento}>
-                                Adicionar Lançamento
+                              <Button onClick={handleLancamento} disabled={isSubmittingLancamento}>
+                                {isSubmittingLancamento ? "Adicionando..." : "Adicionar Lançamento"}
                               </Button>
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 onClick={() => setIsLancamentoDialogOpen(false)}
+                                disabled={isSubmittingLancamento}
                               >
                                 Cancelar
                               </Button>
