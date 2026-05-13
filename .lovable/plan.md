@@ -1,30 +1,44 @@
+## Objetivo
+Adicionar um botão de atualização (refresh) em todas as páginas/aba financeiras para recarregar os dados das tabelas sem perder os filtros aplicados.
 
+## Páginas afetadas
+- Financeiro
+- DFC
+- DRE
+- Meta de Gastos
+- Histórico de Lançamentos
 
-## Plan: Auto-fill Pedido Number in Return Note Text
+## Como funciona hoje
+Todos os hooks financeiros já expõem uma função `refetch`:
+- `useLancamentosFinanceiros` → `refetch`
+- `useMetasGastos` → `refetch`
+- `useCategoriasFinanceiras` → `refetch`
+- `useHistoricoLancamentos` → usa `useQuery` do TanStack, precisa retornar `refetch`
 
-### Problem
-The return note text currently shows `II - Pedido N (a configurar)` even when the linked budget (orçamento) has a `numero_pedido` stored from approval.
+## Implementação
 
-### Solution
-Fetch `numero_pedido` from the linked `orcamentos` table when the modal opens and use it in the `textoNota` template.
+1. **Ajustar `useHistoricoLancamentos`**
+   - Retornar a função `refetch` do `useQuery` para permitir atualização manual.
 
-### Changes to `src/components/EmitirNotaRetornoModal.tsx`
+2. **Adicionar botão de atualização em cada página**
+   - Colocar um botão com ícone `RefreshCw` ao lado do título da página (ou no header do card de filtros).
+   - Ao clicar, chamar `refetch()` do(s) hook(s) correspondente(s).
+   - O botão mostra estado de carregamento (`isRefetching`) enquanto os dados são buscados.
 
-1. **Add state** for `numeroPedido` (string, default empty)
+3. **Páginas e hooks de refresh**
 
-2. **Add useEffect** that runs when modal opens with `ordem.orcamento_vinculado` set — queries `orcamentos` by `numero` to get `numero_pedido` and stores it in state
+   | Página | Hook(s) a atualizar |
+   |--------|---------------------|
+   | Financeiro | `useLancamentosFinanceiros().refetch` |
+   | DFC | `useLancamentosFinanceiros().refetch` |
+   | DRE | `useLancamentosFinanceiros().refetch` |
+   | MetaGastos | `useMetasGastos().refetch` + `useLancamentosFinanceiros().refetch` |
+   | HistoricoLancamentos | `useHistoricoLancamentos().refetch` |
 
-3. **Update `textoNota`** from:
-   ```
-   II - Pedido N (a configurar)
-   ```
-   to:
-   ```
-   II - Pedido ${numeroPedido || 'N (a configurar)'}
-   ```
+4. **Comportamento**
+   - Apenas recarrega os dados do backend.
+   - Não reseta nenhum estado de filtro, ordenação, busca ou aba ativa.
+   - O botão gira durante o carregamento.
 
-This way, when a budget has a linked order number (pedido), it auto-fills; otherwise it keeps the placeholder text.
-
-### Files Modified
-- `src/components/EmitirNotaRetornoModal.tsx`
-
+## Resultado esperado
+O usuário pode, a qualquer momento, clicar em "Atualizar" para ver os dados mais recentes do banco sem perder sua configuração de filtros atual.
