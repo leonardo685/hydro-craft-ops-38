@@ -41,6 +41,7 @@ export default function Financeiro() {
   const [dataFinal, setDataFinal] = useState("");
   const [periodoSelecionado, setPeriodoSelecionado] = useState("");
   const [contaBancariaFiltro, setContaBancariaFiltro] = useState("todas");
+  const [isSubmittingLancamento, setIsSubmittingLancamento] = useState(false);
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
 
   // Estados para ordenação de colunas
@@ -1109,6 +1110,7 @@ export default function Financeiro() {
   const saldoDia = totalEntradas - totalSaidas;
 
   const handleLancamento = async () => {
+    if (isSubmittingLancamento) return;
     if (!lancamentoForm.valor || !lancamentoForm.descricao) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
@@ -1143,10 +1145,12 @@ export default function Financeiro() {
         return;
       }
     }
-    
+
+    setIsSubmittingLancamento(true);
+    try {
     const valorTotal = parseFloat(lancamentoForm.valor);
     const dataBase = lancamentoForm.dataEsperada;
-    
+
     // Lógica especial para transferências entre contas
     if (lancamentoForm.tipo === 'transferencia') {
       const contaOrigem = contasBancarias.find(c => c.id === lancamentoForm.conta);
@@ -1364,6 +1368,9 @@ export default function Financeiro() {
       });
       setDatasParcelasCustom([]);
       setIsLancamentoDialogOpen(false);
+    }
+    } finally {
+      setIsSubmittingLancamento(false);
     }
   };
 
@@ -2562,12 +2569,13 @@ export default function Financeiro() {
                             </div>
 
                             <div className="flex gap-2 pt-4">
-                              <Button onClick={handleLancamento}>
-                                Adicionar Lançamento
+                              <Button onClick={handleLancamento} disabled={isSubmittingLancamento}>
+                                {isSubmittingLancamento ? "Adicionando..." : "Adicionar Lançamento"}
                               </Button>
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 onClick={() => setIsLancamentoDialogOpen(false)}
+                                disabled={isSubmittingLancamento}
                               >
                                 Cancelar
                               </Button>
