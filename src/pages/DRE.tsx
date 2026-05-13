@@ -9,6 +9,7 @@ import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { DetalhesCategoriaDREModal } from "@/components/DetalhesCategoriaDREModal";
+import { RefreshButton } from "@/components/RefreshButton";
 
 interface DREItem {
   codigo?: string;
@@ -22,8 +23,8 @@ interface DREItem {
 }
 
 export default function DRE() {
-  const { lancamentos, loading } = useLancamentosFinanceiros();
-  const { categorias } = useCategoriasFinanceiras();
+  const { lancamentos, loading, refetch: refetchLancamentos } = useLancamentosFinanceiros();
+  const { categorias, refetch: refetchCategorias } = useCategoriasFinanceiras();
   
   const [filtrosDRE, setFiltrosDRE] = useState({
     ano: new Date().getFullYear().toString(),
@@ -354,9 +355,12 @@ export default function DRE() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">DRE</h1>
-          <p className="text-muted-foreground">Demonstração do Resultado do Exercício</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">DRE</h1>
+            <p className="text-muted-foreground">Demonstração do Resultado do Exercício</p>
+          </div>
+          <RefreshButton onRefresh={async () => { await Promise.all([refetchLancamentos(), refetchCategorias()]); }} />
         </div>
 
         <Card>
