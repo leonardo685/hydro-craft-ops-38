@@ -1110,6 +1110,7 @@ export default function Financeiro() {
   const saldoDia = totalEntradas - totalSaidas;
 
   const handleLancamento = async () => {
+    if (isSubmittingLancamento) return;
     if (!lancamentoForm.valor || !lancamentoForm.descricao) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
@@ -1144,10 +1145,12 @@ export default function Financeiro() {
         return;
       }
     }
-    
+
+    setIsSubmittingLancamento(true);
+    try {
     const valorTotal = parseFloat(lancamentoForm.valor);
     const dataBase = lancamentoForm.dataEsperada;
-    
+
     // Lógica especial para transferências entre contas
     if (lancamentoForm.tipo === 'transferencia') {
       const contaOrigem = contasBancarias.find(c => c.id === lancamentoForm.conta);
