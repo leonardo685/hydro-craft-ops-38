@@ -1,0 +1,1 @@
+UPDATE ordens_servico SET status = 'pendente' WHERE id = '5b8b65d6-7fdb-40ed-9b8b-0253c6592be6';
