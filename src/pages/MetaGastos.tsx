@@ -27,6 +27,7 @@ import { useEmpresa } from "@/contexts/EmpresaContext";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { translations } from "@/i18n/translations";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { RefreshButton } from "@/components/RefreshButton";
 
 import jsPDF from "jspdf";
 
@@ -79,8 +80,8 @@ export default function MetaGastos() {
   const { empresaAtual } = useEmpresa();
   const [modeloGestao, setModeloGestao] = useState<'dre' | 'esperado' | 'realizado'>('realizado');
   const { getCategoriasForSelect } = useCategoriasFinanceiras();
-  const { lancamentos } = useLancamentosFinanceiros();
-  const { metas, loading, adicionarMeta, atualizarMeta, deletarMeta } = useMetasGastos(modeloGestao);
+  const { lancamentos, refetch: refetchLancamentos } = useLancamentosFinanceiros();
+  const { metas, loading, adicionarMeta, atualizarMeta, deletarMeta, refetch: refetchMetas } = useMetasGastos(modeloGestao);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -1112,6 +1113,7 @@ export default function MetaGastos() {
             <p className="text-muted-foreground">{t('metaGastos.pageSubtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
+            <RefreshButton onRefresh={async () => { await Promise.all([refetchMetas(), refetchLancamentos()]); }} />
             <Select value={modeloGestao} onValueChange={(value: 'dre' | 'esperado' | 'realizado') => setModeloGestao(value)}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
