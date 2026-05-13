@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { gerarDatasParcelamento } from "@/lib/lancamento-utils";
 import { useNavigate } from 'react-router-dom';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { RefreshButton } from "@/components/RefreshButton";
 
 export default function Financeiro() {
   const navigate = useNavigate();
