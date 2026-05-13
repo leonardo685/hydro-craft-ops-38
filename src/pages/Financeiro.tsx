@@ -1369,6 +1369,9 @@ export default function Financeiro() {
       setDatasParcelasCustom([]);
       setIsLancamentoDialogOpen(false);
     }
+    } finally {
+      setIsSubmittingLancamento(false);
+    }
   };
 
   return (
