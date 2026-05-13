@@ -41,6 +41,7 @@ export default function Financeiro() {
   const [dataFinal, setDataFinal] = useState("");
   const [periodoSelecionado, setPeriodoSelecionado] = useState("");
   const [contaBancariaFiltro, setContaBancariaFiltro] = useState("todas");
+  const [isSubmittingLancamento, setIsSubmittingLancamento] = useState(false);
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
 
   // Estados para ordenação de colunas
