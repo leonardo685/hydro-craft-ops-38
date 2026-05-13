@@ -5,12 +5,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useHistoricoLancamentos } from "@/hooks/use-historico-lancamentos";
+import { RefreshButton } from "@/components/RefreshButton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Search, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 
 export default function HistoricoLancamentos() {
-  const { data: historico, isLoading } = useHistoricoLancamentos();
+  const { data: historico, isLoading, refetch } = useHistoricoLancamentos();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortColumn, setSortColumn] = useState<string | null>("created_at");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
@@ -156,11 +157,14 @@ export default function HistoricoLancamentos() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Histórico de Lançamentos</h1>
-          <p className="text-muted-foreground mt-2">
-            Visualize todas as alterações realizadas nos lançamentos financeiros
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Histórico de Lançamentos</h1>
+            <p className="text-muted-foreground mt-2">
+              Visualize todas as alterações realizadas nos lançamentos financeiros
+            </p>
+          </div>
+          <RefreshButton onRefresh={() => refetch()} />
         </div>
 
         <Card>
