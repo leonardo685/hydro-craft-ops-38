@@ -2219,6 +2219,18 @@ export type Database = {
           role: string
         }[]
       }
+      get_empresa_public_info: {
+        Args: { p_empresa_id: string }
+        Returns: {
+          cnpj: string
+          email: string
+          logo_url: string
+          nome: string
+          razao_social: string
+          telefone: string
+          tipo_identificacao: string
+        }[]
+      }
       get_user_empresa_id: { Args: never; Returns: string }
       has_role: {
         Args: {
