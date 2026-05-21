@@ -153,10 +153,26 @@ export function CustosCilindrosForm({ itens, onChange }: Props) {
                 {itens.map((item, index) => (
                   <div key={index} className="border rounded-lg p-3 bg-muted/30 space-y-2">
                     <div className="flex items-center gap-2">
+                      <Input
+                        value={item.nome ?? ""}
+                        onChange={(e) => atualizarItem(index, "nome", e.target.value)}
+                        placeholder="Nome da peça (ex: Haste, Camisa...)"
+                        className="flex-1 h-9"
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => remover(index)}
+                        className="text-destructive hover:text-destructive h-9 w-9"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <Select
                         value={item.tipo}
                         onValueChange={(v) => {
-                          const novo = recalcularItemCilindro({ ...novoItem(v as TipoItemCilindro) });
+                          const novo = recalcularItemCilindro({ ...novoItem(v as TipoItemCilindro), nome: item.nome });
                           const novos = [...itens];
                           novos[index] = novo;
                           onChange(novos);
@@ -173,14 +189,6 @@ export function CustosCilindrosForm({ itens, onChange }: Props) {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => remover(index)}
-                        className="text-destructive hover:text-destructive h-9 w-9"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
                     {renderCamposItem(item, index)}
                     <div className="flex justify-between items-center text-sm pt-2 border-t">
