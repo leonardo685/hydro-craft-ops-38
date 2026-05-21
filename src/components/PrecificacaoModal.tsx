@@ -644,6 +644,12 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
             </CardContent>
           </Card>
 
+          {/* Custos Cilindros Hidráulicos */}
+          <CustosCilindrosForm
+            itens={custosCilindros}
+            onChange={setCustosCilindros}
+          />
+
           {/* Upload de Fotos para Precificação */}
           <Card>
             <CardHeader className="pb-3">
