@@ -179,28 +179,22 @@ export default function AcessoOrdemPublica() {
       }
 
       const telefoneNormalizado = normalizarTelefone(data.telefone);
-      const { data: clientesExistentes } = await supabase
-        .from("clientes_marketing")
-        .select("id, nome, telefone");
-
-      const clienteExistente = clientesExistentes?.find(
-        c => normalizarTelefone(c.telefone) === telefoneNormalizado
-      );
+      const { data: clienteExistente } = await supabase
+        .rpc('buscar_cliente_marketing_por_telefone', { p_telefone: telefoneNormalizado })
+        .maybeSingle();
 
       if (clienteExistente) {
         const ipAcesso = await obterIP();
         const userAgent = navigator.userAgent;
 
-        await supabase
-          .from("clientes_marketing")
-          .update({
-            numero_ordem: numeroOrdem,
-            ordem_servico_id: ordemServico.id,
-            data_acesso: new Date().toISOString(),
-            ip_acesso: ipAcesso,
-            user_agent: userAgent,
-          })
-          .eq("id", clienteExistente.id);
+        await supabase.rpc('registrar_acesso_publico', {
+          p_numero_ordem: numeroOrdem,
+          p_telefone: telefoneFormatado,
+          p_nome: null,
+          p_empresa: null,
+          p_ip: ipAcesso,
+          p_user_agent: userAgent,
+        });
 
         toast.success(`${t('acessoOrdem.welcomeBack')} ${clienteExistente.nome}!`);
         navigate(`/laudo-publico/${numeroOrdem}`);
@@ -243,17 +237,14 @@ export default function AcessoOrdemPublica() {
       const ipAcesso = await obterIP();
       const userAgent = navigator.userAgent;
 
-      const { error: insertError } = await supabase
-        .from("clientes_marketing")
-        .insert({
-          ordem_servico_id: ordemServico.id,
-          numero_ordem: numeroOrdem,
-          nome: data.nome,
-          empresa: data.empresa,
-          telefone: formatarTelefoneParaSalvar(telefoneVerificado),
-          ip_acesso: ipAcesso,
-          user_agent: userAgent,
-        });
+      const { error: insertError } = await supabase.rpc('registrar_acesso_publico', {
+        p_numero_ordem: numeroOrdem,
+        p_telefone: telefoneVerificado,
+        p_nome: data.nome,
+        p_empresa: data.empresa,
+        p_ip: ipAcesso,
+        p_user_agent: userAgent,
+      });
 
       if (insertError) throw insertError;
 

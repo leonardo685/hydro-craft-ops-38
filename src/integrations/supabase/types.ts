@@ -2197,9 +2197,27 @@ export type Database = {
         Args: { nota_id: string }
         Returns: undefined
       }
+      buscar_cliente_marketing_por_telefone: {
+        Args: { p_telefone: string }
+        Returns: {
+          id: string
+          nome: string
+        }[]
+      }
       gerar_proximo_numero_ordem: {
         Args: { p_empresa_id: string }
         Returns: string
+      }
+      get_convite_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          email: string
+          empresa_id: string
+          empresa_nome: string
+          expires_at: string
+          id: string
+          role: string
+        }[]
       }
       get_user_empresa_id: { Args: never; Returns: string }
       has_role: {
@@ -2210,6 +2228,17 @@ export type Database = {
         Returns: boolean
       }
       limpar_itens_duplicados: { Args: never; Returns: number }
+      registrar_acesso_publico: {
+        Args: {
+          p_empresa?: string
+          p_ip?: string
+          p_nome?: string
+          p_numero_ordem: string
+          p_telefone: string
+          p_user_agent?: string
+        }
+        Returns: string
+      }
       registrar_atividade: {
         Args: {
           p_descricao: string
