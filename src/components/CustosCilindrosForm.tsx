@@ -23,6 +23,7 @@ interface Props {
 
 const novoItem = (tipo: TipoItemCilindro = "sae1045"): ItemCilindro => ({
   tipo,
+  quantidade: 1,
   ...VALORES_PADRAO_CILINDRO[tipo],
   valorTotal: 0,
 });
@@ -159,6 +160,19 @@ export function CustosCilindrosForm({ itens, onChange }: Props) {
                         placeholder="Nome da peça (ex: Haste, Camisa...)"
                         className="flex-1 h-9"
                       />
+                      <div className="flex items-center gap-1">
+                        <Label className="text-xs whitespace-nowrap">Qtd</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={item.quantidade ?? 1}
+                          onChange={(e) =>
+                            atualizarItem(index, "quantidade", e.target.value === "" ? 1 : Number(e.target.value))
+                          }
+                          className="h-9 w-20"
+                        />
+                      </div>
                       <Button
                         size="icon"
                         variant="ghost"
@@ -172,7 +186,11 @@ export function CustosCilindrosForm({ itens, onChange }: Props) {
                       <Select
                         value={item.tipo}
                         onValueChange={(v) => {
-                          const novo = recalcularItemCilindro({ ...novoItem(v as TipoItemCilindro), nome: item.nome });
+                          const novo = recalcularItemCilindro({
+                            ...novoItem(v as TipoItemCilindro),
+                            nome: item.nome,
+                            quantidade: item.quantidade ?? 1,
+                          });
                           const novos = [...itens];
                           novos[index] = novo;
                           onChange(novos);
