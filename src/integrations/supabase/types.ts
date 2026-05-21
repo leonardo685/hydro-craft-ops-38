@@ -1082,6 +1082,7 @@ export type Database = {
           comissao_percentual: number | null
           comissao_valor: number | null
           created_at: string | null
+          custos_cilindros: Json
           custos_variaveis: Json | null
           desconto_percentual: number | null
           empresa_id: string | null
@@ -1094,6 +1095,7 @@ export type Database = {
           percentuais_customizados: Json | null
           percentual_margem: number | null
           preco_desejado: number
+          total_custos_cilindros: number
           total_custos_variaveis: number | null
           updated_at: string | null
         }
@@ -1101,6 +1103,7 @@ export type Database = {
           comissao_percentual?: number | null
           comissao_valor?: number | null
           created_at?: string | null
+          custos_cilindros?: Json
           custos_variaveis?: Json | null
           desconto_percentual?: number | null
           empresa_id?: string | null
@@ -1113,6 +1116,7 @@ export type Database = {
           percentuais_customizados?: Json | null
           percentual_margem?: number | null
           preco_desejado?: number
+          total_custos_cilindros?: number
           total_custos_variaveis?: number | null
           updated_at?: string | null
         }
@@ -1120,6 +1124,7 @@ export type Database = {
           comissao_percentual?: number | null
           comissao_valor?: number | null
           created_at?: string | null
+          custos_cilindros?: Json
           custos_variaveis?: Json | null
           desconto_percentual?: number | null
           empresa_id?: string | null
@@ -1132,6 +1137,7 @@ export type Database = {
           percentuais_customizados?: Json | null
           percentual_margem?: number | null
           preco_desejado?: number
+          total_custos_cilindros?: number
           total_custos_variaveis?: number | null
           updated_at?: string | null
         }
@@ -1510,6 +1516,7 @@ export type Database = {
           comissao_valor: number | null
           condicao_pagamento: string | null
           created_at: string
+          custos_cilindros: Json
           custos_variaveis: Json | null
           data_aprovacao: string | null
           data_aprovacao_gestor: string | null
@@ -1543,6 +1550,7 @@ export type Database = {
           preco_desejado: number | null
           status: string
           status_negociacao: string | null
+          total_custos_cilindros: number
           total_custos_variaveis: number | null
           updated_at: string
           validade_proposta: string | null
@@ -1557,6 +1565,7 @@ export type Database = {
           comissao_valor?: number | null
           condicao_pagamento?: string | null
           created_at?: string
+          custos_cilindros?: Json
           custos_variaveis?: Json | null
           data_aprovacao?: string | null
           data_aprovacao_gestor?: string | null
@@ -1590,6 +1599,7 @@ export type Database = {
           preco_desejado?: number | null
           status?: string
           status_negociacao?: string | null
+          total_custos_cilindros?: number
           total_custos_variaveis?: number | null
           updated_at?: string
           validade_proposta?: string | null
@@ -1604,6 +1614,7 @@ export type Database = {
           comissao_valor?: number | null
           condicao_pagamento?: string | null
           created_at?: string
+          custos_cilindros?: Json
           custos_variaveis?: Json | null
           data_aprovacao?: string | null
           data_aprovacao_gestor?: string | null
@@ -1637,6 +1648,7 @@ export type Database = {
           preco_desejado?: number | null
           status?: string
           status_negociacao?: string | null
+          total_custos_cilindros?: number
           total_custos_variaveis?: number | null
           updated_at?: string
           validade_proposta?: string | null

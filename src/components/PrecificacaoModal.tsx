@@ -19,7 +19,10 @@ import {
   formatarPercentual,
   gerarPDFPrecificacao,
   type CustoVariavel,
+  type ItemCilindro,
+  calcularTotalCilindros,
 } from "@/lib/precificacao-utils";
+import { CustosCilindrosForm } from "@/components/CustosCilindrosForm";
 
 interface PrecificacaoModalProps {
   open: boolean;
@@ -36,6 +39,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
   const [comissaoPercentual, setComissaoPercentual] = useState(0);
   const [percentuaisCustomizados, setPercentuaisCustomizados] = useState<CustoVariavel[]>([]);
   const [custosVariaveis, setCustosVariaveis] = useState<CustoVariavel[]>([]);
+  const [custosCilindros, setCustosCilindros] = useState<ItemCilindro[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [historicoPrecificacao, setHistoricoPrecificacao] = useState<any[]>([]);
   const [carregandoHistorico, setCarregandoHistorico] = useState(false);
@@ -93,6 +97,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
       setComissaoPercentual(orcamento.comissao_percentual || 0);
       setPercentuaisCustomizados(orcamento.percentuais_customizados || []);
       setCustosVariaveis(orcamento.custos_variaveis || []);
+      setCustosCilindros(orcamento.custos_cilindros || []);
     }
   }, [orcamento]);
 
@@ -109,7 +114,8 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
   const totalPercentuaisCustomizados = calcularTotalCustosVariaveis(percentuaisCustomizados);
   const valoresPercentuaisCustomizados = (precoDesejado * totalPercentuaisCustomizados) / 100;
   const totalCustosVariaveis = calcularTotalCustosVariaveis(custosVariaveis);
-  const totalCustos = impostosValor + comissaoValor + valoresPercentuaisCustomizados + totalCustosVariaveis;
+  const totalCustosCilindros = calcularTotalCilindros(custosCilindros);
+  const totalCustos = impostosValor + comissaoValor + valoresPercentuaisCustomizados + totalCustosVariaveis + totalCustosCilindros;
   const margemContribuicao = calcularMargemContribuicao(precoDesejado, totalCustos);
   const percentualMargem = calcularPercentualMargem(margemContribuicao, precoDesejado);
 
@@ -250,7 +256,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
       // 1. Verificar se já existe precificação (para criar histórico)
       const { data: orcamentoAtual } = await supabase
         .from("orcamentos")
-        .select("preco_desejado, desconto_percentual, impostos_percentual, impostos_valor, comissao_percentual, comissao_valor, percentuais_customizados, custos_variaveis, total_custos_variaveis, margem_contribuicao, percentual_margem")
+        .select("preco_desejado, desconto_percentual, impostos_percentual, impostos_valor, comissao_percentual, comissao_valor, percentuais_customizados, custos_variaveis, total_custos_variaveis, custos_cilindros, total_custos_cilindros, margem_contribuicao, percentual_margem")
         .eq("id", orcamento.id)
         .maybeSingle();
 
@@ -282,10 +288,12 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
             percentuais_customizados: orcamentoAtual.percentuais_customizados,
             custos_variaveis: orcamentoAtual.custos_variaveis,
             total_custos_variaveis: orcamentoAtual.total_custos_variaveis,
+            custos_cilindros: (orcamentoAtual as any).custos_cilindros ?? [],
+            total_custos_cilindros: (orcamentoAtual as any).total_custos_cilindros ?? 0,
             margem_contribuicao: orcamentoAtual.margem_contribuicao,
             percentual_margem: orcamentoAtual.percentual_margem,
             empresa_id: empresaAtual?.id
-          });
+          } as any);
         
         if (errorHistorico) {
           console.error('Erro ao salvar histórico:', errorHistorico);
@@ -306,6 +314,8 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
           percentuais_customizados: percentuaisCustomizados,
           custos_variaveis: custosVariaveis,
           total_custos_variaveis: totalCustosVariaveis,
+          custos_cilindros: custosCilindros,
+          total_custos_cilindros: totalCustosCilindros,
           margem_contribuicao: margemContribuicao,
           percentual_margem: percentualMargem,
         } as any)
@@ -633,6 +643,12 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
               </div>
             </CardContent>
           </Card>
+
+          {/* Custos Cilindros Hidráulicos */}
+          <CustosCilindrosForm
+            itens={custosCilindros}
+            onChange={setCustosCilindros}
+          />
 
           {/* Upload de Fotos para Precificação */}
           <Card>
