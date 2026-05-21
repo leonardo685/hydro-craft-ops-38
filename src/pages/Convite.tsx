@@ -45,19 +45,8 @@ export default function Convite() {
   const verificarConvite = async () => {
     try {
       const { data, error } = await supabase
-        .from('convites_empresa')
-        .select(`
-          id,
-          empresa_id,
-          role,
-          email,
-          expires_at,
-          empresa:empresas(nome)
-        `)
-        .eq('token', token)
-        .eq('used', false)
-        .gt('expires_at', new Date().toISOString())
-        .single();
+        .rpc('get_convite_by_token', { p_token: token })
+        .maybeSingle();
 
       if (error || !data) {
         setError('Convite inválido, expirado ou já utilizado.');
@@ -65,8 +54,12 @@ export default function Convite() {
       }
 
       const conviteData: ConviteData = {
-        ...data,
-        empresa: Array.isArray(data.empresa) ? data.empresa[0] : data.empresa
+        id: data.id,
+        empresa_id: data.empresa_id,
+        role: data.role,
+        email: data.email,
+        expires_at: data.expires_at,
+        empresa: { nome: data.empresa_nome },
       };
 
       setConvite(conviteData);
