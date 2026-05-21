@@ -256,7 +256,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
       // 1. Verificar se já existe precificação (para criar histórico)
       const { data: orcamentoAtual } = await supabase
         .from("orcamentos")
-        .select("preco_desejado, desconto_percentual, impostos_percentual, impostos_valor, comissao_percentual, comissao_valor, percentuais_customizados, custos_variaveis, total_custos_variaveis, margem_contribuicao, percentual_margem")
+        .select("preco_desejado, desconto_percentual, impostos_percentual, impostos_valor, comissao_percentual, comissao_valor, percentuais_customizados, custos_variaveis, total_custos_variaveis, custos_cilindros, total_custos_cilindros, margem_contribuicao, percentual_margem")
         .eq("id", orcamento.id)
         .maybeSingle();
 
@@ -288,10 +288,12 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
             percentuais_customizados: orcamentoAtual.percentuais_customizados,
             custos_variaveis: orcamentoAtual.custos_variaveis,
             total_custos_variaveis: orcamentoAtual.total_custos_variaveis,
+            custos_cilindros: (orcamentoAtual as any).custos_cilindros ?? [],
+            total_custos_cilindros: (orcamentoAtual as any).total_custos_cilindros ?? 0,
             margem_contribuicao: orcamentoAtual.margem_contribuicao,
             percentual_margem: orcamentoAtual.percentual_margem,
             empresa_id: empresaAtual?.id
-          });
+          } as any);
         
         if (errorHistorico) {
           console.error('Erro ao salvar histórico:', errorHistorico);
@@ -312,6 +314,8 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
           percentuais_customizados: percentuaisCustomizados,
           custos_variaveis: custosVariaveis,
           total_custos_variaveis: totalCustosVariaveis,
+          custos_cilindros: custosCilindros,
+          total_custos_cilindros: totalCustosCilindros,
           margem_contribuicao: margemContribuicao,
           percentual_margem: percentualMargem,
         } as any)
