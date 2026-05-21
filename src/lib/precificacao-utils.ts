@@ -21,6 +21,7 @@ export type TipoItemCilindro =
 
 export interface ItemCilindro {
   tipo: TipoItemCilindro;
+  nome?: string;
   // Dimensões (mm)
   diametroExterno?: number;
   diametroInterno?: number;
