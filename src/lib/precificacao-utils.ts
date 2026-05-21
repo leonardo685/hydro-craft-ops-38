@@ -22,6 +22,7 @@ export type TipoItemCilindro =
 export interface ItemCilindro {
   tipo: TipoItemCilindro;
   nome?: string;
+  quantidade?: number;
   // Dimensões (mm)
   diametroExterno?: number;
   diametroInterno?: number;
@@ -109,36 +110,37 @@ export const calcularValorBrunimento = (horas: number, valorHora: number): numbe
 // Recalcula peso e valorTotal de um item conforme seu tipo.
 export const recalcularItemCilindro = (item: ItemCilindro): ItemCilindro => {
   const novo = { ...item };
+  const qtd = item.quantidade && item.quantidade > 0 ? item.quantidade : 1;
   switch (item.tipo) {
     case "sae1045":
     case "sae1045_cromado":
       novo.peso = calcularPesoCilindroMacico(item.diametroExterno || 0, item.comprimento || 0, DENSIDADES.aco);
-      novo.valorTotal = (novo.peso || 0) * (item.valorKg || 0);
+      novo.valorTotal = (novo.peso || 0) * (item.valorKg || 0) * qtd;
       break;
     case "bronze_tm23":
       novo.peso = calcularPesoCilindroMacico(item.diametroExterno || 0, item.comprimento || 0, DENSIDADES.bronze);
-      novo.valorTotal = (novo.peso || 0) * (item.valorKg || 0);
+      novo.valorTotal = (novo.peso || 0) * (item.valorKg || 0) * qtd;
       break;
     case "ferro_fundido":
       novo.peso = calcularPesoCilindroMacico(item.diametroExterno || 0, item.comprimento || 0, DENSIDADES.ferro_fundido);
-      novo.valorTotal = (novo.peso || 0) * (item.valorKg || 0);
+      novo.valorTotal = (novo.peso || 0) * (item.valorKg || 0) * qtd;
       break;
     case "tubo_brunido":
     case "oxicorte_redondo":
       novo.peso = calcularPesoTubo(item.diametroExterno || 0, item.diametroInterno || 0, item.comprimento || 0, DENSIDADES.aco);
-      novo.valorTotal = (novo.peso || 0) * (item.valorKg || 0);
+      novo.valorTotal = (novo.peso || 0) * (item.valorKg || 0) * qtd;
       break;
     case "sae1020_chapa":
       novo.peso = calcularPesoChapa(item.espessura || 0, item.largura || 0, item.comprimento || 0, DENSIDADES.aco);
-      novo.valorTotal = (novo.peso || 0) * (item.valorKg || 0);
+      novo.valorTotal = (novo.peso || 0) * (item.valorKg || 0) * qtd;
       break;
     case "servico_cromo":
       novo.peso = undefined;
-      novo.valorTotal = calcularValorCromo(item.diametroExterno || 0, item.comprimento || 0, item.valorDecimetro || 0);
+      novo.valorTotal = calcularValorCromo(item.diametroExterno || 0, item.comprimento || 0, item.valorDecimetro || 0) * qtd;
       break;
     case "servico_brunimento":
       novo.peso = undefined;
-      novo.valorTotal = calcularValorBrunimento(item.horas || 0, item.valorHora || 0);
+      novo.valorTotal = calcularValorBrunimento(item.horas || 0, item.valorHora || 0) * qtd;
       break;
   }
   return novo;
