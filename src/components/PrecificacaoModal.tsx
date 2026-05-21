@@ -19,7 +19,10 @@ import {
   formatarPercentual,
   gerarPDFPrecificacao,
   type CustoVariavel,
+  type ItemCilindro,
+  calcularTotalCilindros,
 } from "@/lib/precificacao-utils";
+import { CustosCilindrosForm } from "@/components/CustosCilindrosForm";
 
 interface PrecificacaoModalProps {
   open: boolean;
@@ -36,6 +39,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
   const [comissaoPercentual, setComissaoPercentual] = useState(0);
   const [percentuaisCustomizados, setPercentuaisCustomizados] = useState<CustoVariavel[]>([]);
   const [custosVariaveis, setCustosVariaveis] = useState<CustoVariavel[]>([]);
+  const [custosCilindros, setCustosCilindros] = useState<ItemCilindro[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [historicoPrecificacao, setHistoricoPrecificacao] = useState<any[]>([]);
   const [carregandoHistorico, setCarregandoHistorico] = useState(false);
@@ -93,6 +97,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
       setComissaoPercentual(orcamento.comissao_percentual || 0);
       setPercentuaisCustomizados(orcamento.percentuais_customizados || []);
       setCustosVariaveis(orcamento.custos_variaveis || []);
+      setCustosCilindros(orcamento.custos_cilindros || []);
     }
   }, [orcamento]);
 
@@ -109,7 +114,8 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
   const totalPercentuaisCustomizados = calcularTotalCustosVariaveis(percentuaisCustomizados);
   const valoresPercentuaisCustomizados = (precoDesejado * totalPercentuaisCustomizados) / 100;
   const totalCustosVariaveis = calcularTotalCustosVariaveis(custosVariaveis);
-  const totalCustos = impostosValor + comissaoValor + valoresPercentuaisCustomizados + totalCustosVariaveis;
+  const totalCustosCilindros = calcularTotalCilindros(custosCilindros);
+  const totalCustos = impostosValor + comissaoValor + valoresPercentuaisCustomizados + totalCustosVariaveis + totalCustosCilindros;
   const margemContribuicao = calcularMargemContribuicao(precoDesejado, totalCustos);
   const percentualMargem = calcularPercentualMargem(margemContribuicao, precoDesejado);
 
