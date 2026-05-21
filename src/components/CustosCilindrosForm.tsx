@@ -12,6 +12,7 @@ import {
   recalcularItemCilindro,
   calcularTotalCilindros,
   formatarMoeda,
+  VALORES_PADRAO_CILINDRO,
 } from "@/lib/precificacao-utils";
 import { useState } from "react";
 
@@ -22,6 +23,7 @@ interface Props {
 
 const novoItem = (tipo: TipoItemCilindro = "sae1045"): ItemCilindro => ({
   tipo,
+  ...VALORES_PADRAO_CILINDRO[tipo],
   valorTotal: 0,
 });
 
