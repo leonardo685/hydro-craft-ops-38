@@ -306,14 +306,11 @@ export default function LaudoPublico() {
 
         setFotos(fotosData);
 
-        // Buscar dados completos da empresa
+        // Buscar dados públicos da empresa via RPC (somente campos seguros)
         if (ordem.empresa_id) {
-          const { data: empresa } = await supabase
-            .from("empresas")
-            .select("logo_url, razao_social, nome, cnpj, telefone, email, tipo_identificacao")
-            .eq("id", ordem.empresa_id)
-            .maybeSingle();
-          
+          const { data: empresaRows } = await supabase
+            .rpc("get_empresa_public_info", { p_empresa_id: ordem.empresa_id });
+          const empresa = Array.isArray(empresaRows) ? empresaRows[0] : empresaRows;
           if (empresa) {
             setEmpresaData(empresa);
             if (empresa.logo_url) {
