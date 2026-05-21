@@ -44,6 +44,19 @@ export const DENSIDADES: Record<string, number> = {
   ferro_fundido: 7.2,
 };
 
+// Valores padrão extraídos da planilha "Preço MP Cilindros Hidráulicos"
+export const VALORES_PADRAO_CILINDRO: Record<TipoItemCilindro, Partial<ItemCilindro>> = {
+  sae1045: { valorKg: 6.5 },
+  sae1045_cromado: { valorKg: 22.0 },
+  tubo_brunido: { valorKg: 43.93 },
+  bronze_tm23: { valorKg: 23.0 },
+  sae1020_chapa: { valorKg: 24.0 },
+  oxicorte_redondo: { valorKg: 28.0 },
+  ferro_fundido: { valorKg: 45.0 },
+  servico_cromo: { valorDecimetro: 24.0 },
+  servico_brunimento: { valorHora: 50.0 },
+};
+
 export const TIPOS_CILINDRO: { value: TipoItemCilindro; label: string; categoria: "materia_prima" | "servico" }[] = [
   { value: "sae1045", label: "SAE 1045 (Êmbolo, Amortecedor, Tampa, Varão, Tirante)", categoria: "materia_prima" },
   { value: "sae1045_cromado", label: "SAE 1045 Cromado (Haste)", categoria: "materia_prima" },
