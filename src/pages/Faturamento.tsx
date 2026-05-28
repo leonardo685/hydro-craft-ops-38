@@ -53,7 +53,8 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
   const [clienteFiltro, setClienteFiltro] = useState("");
-  const [numeroFiltro, setNumeroFiltro] = useState("");
+  const [nfFiltro, setNfFiltro] = useState("");
+  const [orcamentoFiltro, setOrcamentoFiltro] = useState("");
   const [pedidoFiltro, setPedidoFiltro] = useState("");
 
   // Estados para filtros da aba Faturamento
@@ -308,7 +309,7 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
   const totalNotasFiscais = totalNotasServico + totalNotasVenda;
 
   // Verificar se há algum filtro aplicado
-  const temFiltrosAtivos = dataInicio || dataFim || clienteFiltro || numeroFiltro || pedidoFiltro;
+  const temFiltrosAtivos = dataInicio || dataFim || clienteFiltro || nfFiltro || orcamentoFiltro || pedidoFiltro;
   const temFiltrosAtivosFat = dataInicioFat || dataFimFat || clienteFiltroFat || numeroFiltroFat;
 
   // Filtrar notas faturadas
@@ -338,19 +339,25 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
       passa = passa && nota.cliente_nome.toLowerCase().includes(clienteFiltro.toLowerCase());
     }
     
-    // Filtro de número de pedido/ordem
-    if (numeroFiltro) {
-      const nota_any = nota as any;
-      const numeroMatch = nota.numero_ordem?.toLowerCase().includes(numeroFiltro.toLowerCase()) ||
-                          nota_any.ordem_referencia?.toLowerCase().includes(numeroFiltro.toLowerCase()) ||
-                          nota_any.descricao?.toLowerCase().includes(numeroFiltro.toLowerCase());
-      if (!numeroMatch) passa = false;
+    // Filtro por número da NF (nota fiscal ou nota de retorno)
+    if (nfFiltro) {
+      const termo = nfFiltro.toLowerCase();
+      const nfMatch =
+        nota.numero_nf?.toLowerCase().includes(termo) ||
+        nota.numero_nota_retorno?.toLowerCase().includes(termo);
+      if (!nfMatch) passa = false;
     }
-    
-    // Filtro de número do pedido dedicado
+
+    // Filtro por número do orçamento
+    if (orcamentoFiltro) {
+      const termo = orcamentoFiltro.toLowerCase();
+      const orcMatch = nota.numero_orcamento?.toLowerCase().includes(termo);
+      if (!orcMatch) passa = false;
+    }
+
+    // Filtro por número do pedido
     if (pedidoFiltro) {
-      const nota_any = nota as any;
-      const pedidoMatch = nota_any.numero_pedido?.toLowerCase().includes(pedidoFiltro.toLowerCase());
+      const pedidoMatch = nota.numero_pedido?.toLowerCase().includes(pedidoFiltro.toLowerCase());
       if (!pedidoMatch) passa = false;
     }
     
@@ -744,14 +751,27 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                     <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">Número</label>
+                      <label className="text-sm text-muted-foreground mb-2 block">Nº NF</label>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           type="text"
-                          placeholder="Buscar por número..."
-                          value={numeroFiltro}
-                          onChange={(e) => setNumeroFiltro(e.target.value)}
+                          placeholder="Buscar por NF..."
+                          value={nfFiltro}
+                          onChange={(e) => setNfFiltro(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">Nº Orçamento</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="text"
+                          placeholder="Buscar por orçamento..."
+                          value={orcamentoFiltro}
+                          onChange={(e) => setOrcamentoFiltro(e.target.value)}
                           className="pl-9"
                         />
                       </div>
@@ -798,7 +818,8 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                       <Button
                         variant="outline"
                         onClick={() => {
-                          setNumeroFiltro("");
+                          setNfFiltro("");
+                          setOrcamentoFiltro("");
                           setPedidoFiltro("");
                           setDataInicio("");
                           setDataFim("");
