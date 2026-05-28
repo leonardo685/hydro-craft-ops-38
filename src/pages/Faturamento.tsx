@@ -25,6 +25,10 @@ interface NotaFaturada {
   data_entrada: string;
   pdf_nota_fiscal?: string;
   pdf_nota_retorno?: string;
+  numero_nf?: string;
+  numero_nota_retorno?: string;
+  numero_orcamento?: string;
+  numero_pedido?: string;
   tipo: 'nota_fiscal' | 'nota_retorno' | 'orcamento_com_entrada' | 'orcamento_simples';
 }
 
@@ -168,7 +172,9 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
           equipamento,
           data_entrada,
           pdf_nota_fiscal,
-          recebimentos(numero_ordem, pdf_nota_retorno)
+          orcamento_id,
+          recebimentos(numero_ordem, pdf_nota_retorno, numero_nota_retorno),
+          orcamentos:orcamento_id(numero, numero_pedido)
         `)
         .eq('empresa_id', empresaAtual.id)
         .eq('status', 'faturado')
@@ -196,6 +202,7 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
       // Processar ordens de serviço para notas de retorno (vão para "Notas Fiscais Emitidas")
       ordensData?.forEach(ordem => {
         const recebimento = Array.isArray(ordem.recebimentos) ? ordem.recebimentos[0] : ordem.recebimentos;
+        const orcVinc = Array.isArray((ordem as any).orcamentos) ? (ordem as any).orcamentos[0] : (ordem as any).orcamentos;
         notasRetorno.push({
           id: ordem.id,
           numero_ordem: recebimento?.numero_ordem || 'N/A',
@@ -204,6 +211,9 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
           data_entrada: ordem.data_entrada,
           pdf_nota_fiscal: ordem.pdf_nota_fiscal,
           pdf_nota_retorno: recebimento?.pdf_nota_retorno,
+          numero_nota_retorno: recebimento?.numero_nota_retorno,
+          numero_orcamento: orcVinc?.numero,
+          numero_pedido: orcVinc?.numero_pedido,
           tipo: 'nota_retorno'
         });
       });
@@ -216,6 +226,9 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
           data_entrada: orcamento.data_criacao,
           equipamento: orcamento.equipamento,
           cliente_nome: orcamento.cliente_nome,
+          numero_nf: orcamento.numero_nf,
+          numero_orcamento: orcamento.numero,
+          numero_pedido: orcamento.numero_pedido,
           tipo: orcamento.ordem_servico_id ? 'orcamento_com_entrada' : 'orcamento_simples'
         });
       });
@@ -810,15 +823,27 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
                               <FileText className="h-5 w-5 text-primary" />
-                              Nota de Retorno - {nota.numero_ordem}
+                              Nota de Retorno {nota.numero_nota_retorno ? `Nº ${nota.numero_nota_retorno}` : `- ${nota.numero_ordem}`}
                             </CardTitle>
                             <CardDescription className="mt-1">
                               {nota.equipamento} - {nota.cliente_nome}
                             </CardDescription>
                           </div>
-                          <Badge className="bg-green-100 text-green-700 border-green-200">
-                            Faturado
-                          </Badge>
+                          <div className="flex items-center gap-2 flex-wrap justify-end">
+                            <Badge className="bg-green-100 text-green-700 border-green-200">
+                              Faturado
+                            </Badge>
+                            {nota.numero_orcamento && (
+                              <Badge variant="outline" className="text-primary border-primary/30">
+                                Orçamento: {nota.numero_orcamento}
+                              </Badge>
+                            )}
+                            {nota.numero_pedido && (
+                              <Badge variant="outline" className="text-primary border-primary/30">
+                                Pedido: {nota.numero_pedido}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
@@ -910,16 +935,22 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
                               <FileText className="h-5 w-5 text-primary" />
-                              {nota.tipo === 'orcamento_com_entrada' ? 'Nota de Faturamento - OS' : 'Nota de Faturamento'} - {nota.numero_ordem}
+                              {nota.tipo === 'orcamento_com_entrada' ? 'Nota de Faturamento - OS' : 'Nota de Faturamento'}
+                              {nota.numero_nf ? ` Nº ${nota.numero_nf}` : ` - ${nota.numero_ordem}`}
                             </CardTitle>
                             <CardDescription className="mt-1">
                               {nota.equipamento} - {nota.cliente_nome}
                             </CardDescription>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap justify-end">
                             <Badge className="bg-green-100 text-green-700 border-green-200">
                               Faturado
                             </Badge>
+                            {nota.numero_orcamento && (
+                              <Badge variant="outline" className="text-primary border-primary/30">
+                                Orçamento: {nota.numero_orcamento}
+                              </Badge>
+                            )}
                             {(nota as any).numero_pedido && (
                               <Badge variant="outline" className="text-primary border-primary/30">
                                 Pedido: {(nota as any).numero_pedido}
