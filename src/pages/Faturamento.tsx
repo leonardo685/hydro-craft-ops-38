@@ -823,15 +823,27 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
                               <FileText className="h-5 w-5 text-primary" />
-                              Nota de Retorno - {nota.numero_ordem}
+                              Nota de Retorno {nota.numero_nota_retorno ? `Nº ${nota.numero_nota_retorno}` : `- ${nota.numero_ordem}`}
                             </CardTitle>
                             <CardDescription className="mt-1">
                               {nota.equipamento} - {nota.cliente_nome}
                             </CardDescription>
                           </div>
-                          <Badge className="bg-green-100 text-green-700 border-green-200">
-                            Faturado
-                          </Badge>
+                          <div className="flex items-center gap-2 flex-wrap justify-end">
+                            <Badge className="bg-green-100 text-green-700 border-green-200">
+                              Faturado
+                            </Badge>
+                            {nota.numero_orcamento && (
+                              <Badge variant="outline" className="text-primary border-primary/30">
+                                Orçamento: {nota.numero_orcamento}
+                              </Badge>
+                            )}
+                            {nota.numero_pedido && (
+                              <Badge variant="outline" className="text-primary border-primary/30">
+                                Pedido: {nota.numero_pedido}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
@@ -923,16 +935,22 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
                               <FileText className="h-5 w-5 text-primary" />
-                              {nota.tipo === 'orcamento_com_entrada' ? 'Nota de Faturamento - OS' : 'Nota de Faturamento'} - {nota.numero_ordem}
+                              {nota.tipo === 'orcamento_com_entrada' ? 'Nota de Faturamento - OS' : 'Nota de Faturamento'}
+                              {nota.numero_nf ? ` Nº ${nota.numero_nf}` : ` - ${nota.numero_ordem}`}
                             </CardTitle>
                             <CardDescription className="mt-1">
                               {nota.equipamento} - {nota.cliente_nome}
                             </CardDescription>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap justify-end">
                             <Badge className="bg-green-100 text-green-700 border-green-200">
                               Faturado
                             </Badge>
+                            {nota.numero_orcamento && (
+                              <Badge variant="outline" className="text-primary border-primary/30">
+                                Orçamento: {nota.numero_orcamento}
+                              </Badge>
+                            )}
                             {(nota as any).numero_pedido && (
                               <Badge variant="outline" className="text-primary border-primary/30">
                                 Pedido: {(nota as any).numero_pedido}
