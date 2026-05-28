@@ -25,6 +25,10 @@ interface NotaFaturada {
   data_entrada: string;
   pdf_nota_fiscal?: string;
   pdf_nota_retorno?: string;
+  numero_nf?: string;
+  numero_nota_retorno?: string;
+  numero_orcamento?: string;
+  numero_pedido?: string;
   tipo: 'nota_fiscal' | 'nota_retorno' | 'orcamento_com_entrada' | 'orcamento_simples';
 }
 
@@ -168,7 +172,9 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
           equipamento,
           data_entrada,
           pdf_nota_fiscal,
-          recebimentos(numero_ordem, pdf_nota_retorno)
+          orcamento_id,
+          recebimentos(numero_ordem, pdf_nota_retorno, numero_nota_retorno),
+          orcamentos:orcamento_id(numero, numero_pedido)
         `)
         .eq('empresa_id', empresaAtual.id)
         .eq('status', 'faturado')
@@ -196,6 +202,7 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
       // Processar ordens de serviço para notas de retorno (vão para "Notas Fiscais Emitidas")
       ordensData?.forEach(ordem => {
         const recebimento = Array.isArray(ordem.recebimentos) ? ordem.recebimentos[0] : ordem.recebimentos;
+        const orcVinc = Array.isArray((ordem as any).orcamentos) ? (ordem as any).orcamentos[0] : (ordem as any).orcamentos;
         notasRetorno.push({
           id: ordem.id,
           numero_ordem: recebimento?.numero_ordem || 'N/A',
@@ -204,6 +211,9 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
           data_entrada: ordem.data_entrada,
           pdf_nota_fiscal: ordem.pdf_nota_fiscal,
           pdf_nota_retorno: recebimento?.pdf_nota_retorno,
+          numero_nota_retorno: recebimento?.numero_nota_retorno,
+          numero_orcamento: orcVinc?.numero,
+          numero_pedido: orcVinc?.numero_pedido,
           tipo: 'nota_retorno'
         });
       });
@@ -216,6 +226,9 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
           data_entrada: orcamento.data_criacao,
           equipamento: orcamento.equipamento,
           cliente_nome: orcamento.cliente_nome,
+          numero_nf: orcamento.numero_nf,
+          numero_orcamento: orcamento.numero,
+          numero_pedido: orcamento.numero_pedido,
           tipo: orcamento.ordem_servico_id ? 'orcamento_com_entrada' : 'orcamento_simples'
         });
       });
