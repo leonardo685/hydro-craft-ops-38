@@ -751,14 +751,27 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                     <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">Número</label>
+                      <label className="text-sm text-muted-foreground mb-2 block">Nº NF</label>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           type="text"
-                          placeholder="Buscar por número..."
-                          value={numeroFiltro}
-                          onChange={(e) => setNumeroFiltro(e.target.value)}
+                          placeholder="Buscar por NF..."
+                          value={nfFiltro}
+                          onChange={(e) => setNfFiltro(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">Nº Orçamento</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="text"
+                          placeholder="Buscar por orçamento..."
+                          value={orcamentoFiltro}
+                          onChange={(e) => setOrcamentoFiltro(e.target.value)}
                           className="pl-9"
                         />
                       </div>
@@ -805,7 +818,8 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                       <Button
                         variant="outline"
                         onClick={() => {
-                          setNumeroFiltro("");
+                          setNfFiltro("");
+                          setOrcamentoFiltro("");
                           setPedidoFiltro("");
                           setDataInicio("");
                           setDataFim("");
