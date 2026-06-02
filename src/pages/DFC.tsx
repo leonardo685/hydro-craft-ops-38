@@ -749,6 +749,10 @@ export default function DFC() {
       toast.success(`Lançamentos recorrentes criados com sucesso! ${datas.length} lançamentos gerados.`);
       resetForm();
     }
+    } finally {
+      setIsSubmittingLancamento(false);
+      setIsLancamentoDialogOpen(false);
+    }
   };
   const resetForm = () => {
     setLancamentoForm({
