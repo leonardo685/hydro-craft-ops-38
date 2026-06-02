@@ -608,6 +608,7 @@ export default function DFC() {
   }, [totalEntradasFiltradas, totalSaidasFiltradas]);
 
   const handleLancamento = async () => {
+    if (isSubmittingLancamento) return;
     if (!lancamentoForm.valor || !lancamentoForm.descricao) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
@@ -629,6 +630,8 @@ export default function DFC() {
         return;
       }
     }
+    setIsSubmittingLancamento(true);
+    try {
     const valorTotal = parseFloat(lancamentoForm.valor);
     const dataBase = lancamentoForm.dataEsperada;
 
