@@ -71,6 +71,7 @@ export default function DFC() {
   const [contaSelecionada, setContaSelecionada] = useState('todas');
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
+  const [isSubmittingLancamento, setIsSubmittingLancamento] = useState(false);
   const [isExtratoUploadOpen, setIsExtratoUploadOpen] = useState(false);
   const [isSolverModalOpen, setIsSolverModalOpen] = useState(false);
   const [colunasVisiveisExpanded, setColunasVisiveisExpanded] = useState(true);
