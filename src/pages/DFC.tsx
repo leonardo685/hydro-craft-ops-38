@@ -2112,7 +2112,9 @@ export default function DFC() {
                           </div>
                           <div className="flex justify-end gap-2 pt-4">
                             <Button variant="outline" onClick={() => setIsLancamentoDialogOpen(false)}>Cancelar</Button>
-                            <Button onClick={handleLancamento}>Adicionar Lançamento</Button>
+                            <Button onClick={handleLancamento} disabled={isSubmittingLancamento}>
+                              {isSubmittingLancamento ? "Salvando..." : "Adicionar Lançamento"}
+                            </Button>
                           </div>
                           </div>
                         </div>
