@@ -71,6 +71,7 @@ export default function DFC() {
   const [contaSelecionada, setContaSelecionada] = useState('todas');
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
+  const [isSubmittingLancamento, setIsSubmittingLancamento] = useState(false);
   const [isExtratoUploadOpen, setIsExtratoUploadOpen] = useState(false);
   const [isSolverModalOpen, setIsSolverModalOpen] = useState(false);
   const [colunasVisiveisExpanded, setColunasVisiveisExpanded] = useState(true);
@@ -607,6 +608,7 @@ export default function DFC() {
   }, [totalEntradasFiltradas, totalSaidasFiltradas]);
 
   const handleLancamento = async () => {
+    if (isSubmittingLancamento) return;
     if (!lancamentoForm.valor || !lancamentoForm.descricao) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
@@ -628,6 +630,8 @@ export default function DFC() {
         return;
       }
     }
+    setIsSubmittingLancamento(true);
+    try {
     const valorTotal = parseFloat(lancamentoForm.valor);
     const dataBase = lancamentoForm.dataEsperada;
 
@@ -744,6 +748,10 @@ export default function DFC() {
       }
       toast.success(`Lançamentos recorrentes criados com sucesso! ${datas.length} lançamentos gerados.`);
       resetForm();
+    }
+    } finally {
+      setIsSubmittingLancamento(false);
+      setIsLancamentoDialogOpen(false);
     }
   };
   const resetForm = () => {
@@ -2104,7 +2112,9 @@ export default function DFC() {
                           </div>
                           <div className="flex justify-end gap-2 pt-4">
                             <Button variant="outline" onClick={() => setIsLancamentoDialogOpen(false)}>Cancelar</Button>
-                            <Button onClick={handleLancamento}>Adicionar Lançamento</Button>
+                            <Button onClick={handleLancamento} disabled={isSubmittingLancamento}>
+                              {isSubmittingLancamento ? "Salvando..." : "Adicionar Lançamento"}
+                            </Button>
                           </div>
                           </div>
                         </div>
