@@ -65,9 +65,13 @@ export function ComprasDashboard() {
       const compras = comprasRes.data || [];
       const fornecedores = fornecRes.data || [];
 
+      // Ignorar ordens já finalizadas/faturadas/aguardando retorno
+      const statusFinalizados = new Set(["finalizada", "finalizado", "faturado", "aguardando_retorno", "concluido"]);
+      const isAberta = (c: any) => c.ordens_servico && !statusFinalizados.has(c.ordens_servico.status);
+
       const inicioMes = startOfMonth(new Date()).getTime();
-      const abertas = compras.filter((c) => c.status === "aprovado").length;
-      const cotando = compras.filter((c) => c.status === "cotando").length;
+      const abertas = compras.filter((c) => c.status === "aprovado" && isAberta(c)).length;
+      const cotando = compras.filter((c) => c.status === "cotando" && isAberta(c)).length;
       const compradasMes = compras.filter(
         (c) => c.status === "comprado" && c.data_compra && new Date(c.data_compra).getTime() >= inicioMes
       ).length;
@@ -101,7 +105,7 @@ export function ComprasDashboard() {
 
       // Ordens em aberto + dias paradas
       const ordensAbertas = compras
-        .filter((c: any) => c.status !== "comprado" && c.ordens_servico)
+        .filter((c: any) => c.status !== "comprado" && isAberta(c))
         .map((c: any) => ({
           numero_ordem: c.ordens_servico.numero_ordem,
           cliente_nome: c.ordens_servico.cliente_nome,
