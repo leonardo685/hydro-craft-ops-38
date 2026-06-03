@@ -39,11 +39,10 @@ export default function CotacaoPublica() {
         setForn(f);
         setObsGeral(f.observacao_resposta || "");
 
-        const [c, i, p, e] = await Promise.all([
+        const [c, i, p] = await Promise.all([
           supabase.from("cotacoes").select("*").eq("id", f.cotacao_id).single(),
           supabase.from("cotacao_itens").select("*").eq("cotacao_id", f.cotacao_id).order("created_at"),
           supabase.from("cotacao_propostas").select("*").eq("cotacao_fornecedor_id", f.id),
-          supabase.rpc("get_empresa_public_info", { p_empresa_id: f.empresa_id }).then(() => null).catch(() => null),
         ]);
         setCotacao(c.data);
         setItens(i.data || []);
