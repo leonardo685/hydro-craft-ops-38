@@ -1,59 +1,103 @@
+## Módulo Compras — Reestruturação
 
-## Objetivo
+Transformar a página atual (`src/pages/Compras.tsx`) em um módulo com 3 abas: **Dashboard**, **Kanban** e **Cotações**. Mantém o Kanban atual intacto e adiciona inteligência de compras em volta dele.
 
-Na aba de Precificação (modal `PrecificacaoModal`), adicionar um novo bloco **"Custos Cilindros Hidráulicos"** com um formulário suspenso (collapsible) que replica os cálculos da planilha enviada. O bloco devolve apenas o **Valor Total** consolidado para a tela principal de precificação, somando aos demais custos.
+---
 
-## Estrutura do formulário suspenso
+### Aba 1 — Dashboard
 
-Card colapsável com botão "Adicionar item" que permite incluir múltiplas linhas. Para cada linha o usuário escolhe o **tipo** e preenche as dimensões; o sistema calcula peso e valor total automaticamente.
+KPIs no topo (cards):
+- Total comprado no mês / acumulado ano
+- Ticket médio por pedido de compra
+- Nº de ordens com compras abertas (aprovado + cotando)
+- **Prazo médio negociado (DPO)** — média ponderada do campo `prazo_pagamento_dias` dos pedidos de compra no período (não usa data de pagamento real)
+- % de compras com cotação formal antes da emissão
 
-### Tipos de itens (Matérias-primas)
+Gráficos:
+- Barras: gasto mensal últimos 6 meses
+- Pizza: top 5 fornecedores no período
+- Pizza: gasto por categoria de item (peça / usinagem / serviço)
+- Linha: evolução do prazo médio negociado mês a mês
+- Tabela: top 10 itens mais comprados (qtd + R$)
 
-Baseado na planilha:
+Filtros: período, fornecedor, categoria.
 
-| Tipo | Campos de entrada | Cálculo do peso |
-|---|---|---|
-| SAE 1045 (Êmbolo, Amortecedor, Tampa, Varão, Tirante) | Ø Externo (mm), Comprimento (mm), Valor/KG | Cilindro maciço, densidade aço 7,85 g/cm³ |
-| SAE 1045 Cromado (Haste) | Ø Externo (mm), Comprimento (mm), Valor/KG | Cilindro maciço, densidade aço 7,85 |
-| Tubo Brunido (Camisa) | Ø Externo, Ø Interno, Parede, Comprimento, Valor/KG | Tubo (área anular × L × 7,85) |
-| Bronze TM 23 | Ø Externo, Comprimento, Valor/KG | Cilindro maciço, densidade bronze 8,8 |
-| SAE 1020 Oxicorte (Cabeçote) | Espessura, Largura, Comprimento, Valor/KG | Chapa: E×L×C × 7,85 |
-| Oxicorte Redondo | Ø Externo, Ø Interno, Parede, Comprimento, Valor/KG | Tubo/disco × 7,85 |
-| Ferro Fundido | Ø Externo, Comprimento, Valor/KG | Cilindro maciço, densidade ferro fundido 7,2 |
+---
 
-Para cada um: **Valor Total = Peso (kg) × Valor/KG**.
+### Aba 2 — Kanban (atual)
 
-### Tipos de itens (Serviços)
+Mantém exatamente como está hoje: Aprovado → Cotando → Comprado, com busca por número, modais de itens, etc. Apenas movido para dentro da `Tabs`.
 
-| Tipo | Campos | Cálculo |
-|---|---|---|
-| Serviço de Cromo | Ø Haste, Comprimento, Valor/Decímetro | Área superficial (π×D×L) em dm² × Valor/dm² |
-| Serviço de Brunimento | Ø Camisa, Comprimento, Horas, Valor/hora | Horas × Valor/hora |
+---
 
-### Cálculos auxiliares exibidos
-Cada linha mostra peso calculado (quando aplicável) e valor total individual. Rodapé do bloco exibe **Total Cilindros Hidráulicos**.
+### Aba 3 — Cotações & Fornecedores
 
-## Integração com precificação principal
+Processo de RFQ (Request for Quote):
 
-- O total do bloco é incluído em `totalCustos` (somado a `totalCustosVariaveis`) e impacta `margemContribuicao` / `percentualMargem`.
-- Persistido em uma nova coluna `custos_cilindros` (jsonb) na tabela `orcamentos`, salvando a lista de itens e o total.
-- Histórico de precificação e PDF passam a incluir esse total.
+1. Botão "Nova Cotação" na coluna **Cotando** do Kanban (ou direto na aba).
+2. Selecionar itens de **uma ou mais ordens aprovadas** (já existe `EditableItemsModal`/`ItemSelectionModal` para reaproveitar).
+3. **Selecionar fornecedores** (multi-select) a partir da tabela `fornecedores` já cadastrada — sem cadastro novo, apenas filtrar/buscar nos existentes.
+4. Disparar via n8n (mesmo padrão de webhook dos orçamentos) → e-mail / WhatsApp com lista de itens + link público com token.
+5. Fornecedor responde via link público (sem login): preço por item, prazo de entrega, validade da proposta.
+6. Tela de **comparativo**: matriz item × fornecedor, melhor preço destacado, possibilidade de aprovar fornecedor diferente por item.
+7. Ao aprovar → cria registro em `pedidos_compra` com `prazo_pagamento_dias` (ex: 28 ddl) preenchido a partir do que foi negociado com o fornecedor, e move a `compra` para status `comprado` no Kanban.
 
-## Detalhes técnicos
+Aprimoramentos em **fornecedores** (sem criar nova entidade — estender a existente):
+- Adicionar colunas: `whatsapp`, `email_cotacao`, `prazo_pagamento_padrao_dias` (default usado na cotação, ex: 28), `rating` (1-5), `categorias` (text[] — peças, usinagem, serviços).
+- Histórico do último preço cobrado por item (tabela `fornecedor_itens_historico`).
+- Sugestão automática de fornecedores na nova cotação baseada em categoria do item + rating + histórico de resposta.
 
-- Novo componente `CustosCilindrosForm.tsx` (collapsible com `Accordion` ou `Collapsible` do shadcn).
-- Helpers em `src/lib/precificacao-utils.ts`:
-  - `calcularPesoCilindroMacico(diametroMm, comprimentoMm, densidade)`
-  - `calcularPesoTubo(deMm, diMm, comprimentoMm, densidade)`
-  - `calcularPesoChapa(espMm, largMm, compMm, densidade)`
-  - `calcularValorCromo(diametroMm, comprimentoMm, valorDm2)` — área lateral em dm²
-  - `calcularValorBrunimento(horas, valorHora)`
-  - `calcularTotalCilindros(itens)`
-- Migração: `alter table orcamentos add column custos_cilindros jsonb default '[]'::jsonb;`
-- `PrecificacaoModal`: novo estado `custosCilindros`, render do card antes/depois do "Custos Variáveis", inclusão em `handleSalvar`, `historico_precificacao` (também precisa coluna nova), `gerarPDFPrecificacao` e `handleBaixarPDFRevisao`.
+---
 
-## Pontos a confirmar antes de implementar
+### Mudanças de schema (migrations)
 
-1. **Densidades** — usar 7,85 (aço), 8,8 (bronze TM 23), 7,2 (ferro fundido)? Ou densidades específicas que a empresa adota?
-2. **Valores padrão de R$/KG** — devo deixar em branco para o usuário digitar a cada orçamento, ou criar um cadastro de "tabela de preços de matéria-prima" reutilizável (com botão "atualizar tabela")?
-3. **Histórico/PDF** — incluir o detalhamento dos itens de cilindro no PDF de precificação ou apenas a linha "Custos Cilindros Hidráulicos: R$ X"?
+```sql
+-- Estender fornecedores
+ALTER TABLE fornecedores
+  ADD COLUMN whatsapp text,
+  ADD COLUMN email_cotacao text,
+  ADD COLUMN prazo_pagamento_padrao_dias int DEFAULT 28,
+  ADD COLUMN rating smallint,
+  ADD COLUMN categorias text[] DEFAULT '{}';
+
+-- Novas tabelas (com GRANTs + RLS por empresa_id)
+cotacoes (id, numero, empresa_id, status, criado_por, created_at, observacoes)
+cotacao_itens (id, cotacao_id, ordem_servico_id, tipo, descricao, quantidade, unidade)
+cotacao_fornecedores (id, cotacao_id, fornecedor_id, token_publico, enviado_em, respondido_em)
+cotacao_propostas (id, cotacao_fornecedor_id, cotacao_item_id, preco_unitario, prazo_entrega_dias, observacao)
+pedidos_compra (id, empresa_id, cotacao_id, fornecedor_id, numero, valor_total, prazo_pagamento_dias, data_compra, status)
+pedido_compra_itens (id, pedido_compra_id, cotacao_item_id, preco_unitario, quantidade)
+fornecedor_itens_historico (id, fornecedor_id, descricao_item, ultimo_preco, ultima_data)
+```
+
+Todas com `empresa_id`, RLS via `user_belongs_to_empresa`, e GRANTs para `authenticated` + `service_role`. Tabela `cotacao_fornecedores` precisa policy adicional para leitura pública via `token_publico` (página pública de resposta).
+
+DPO calculado direto de `pedidos_compra.prazo_pagamento_dias` ponderado por `valor_total` — sem depender de `lancamentos_financeiros`.
+
+---
+
+### Webhooks n8n (mesmo padrão dos orçamentos)
+
+Eventos:
+- `cotacao.criada` → dispara e-mail/WhatsApp para fornecedores selecionados
+- `cotacao.lembrete` → 48h sem resposta
+- `cotacao.respondida` → notifica comprador
+- `pedido_compra.aprovado` → confirmação ao fornecedor
+
+URLs configuráveis em `configuracoes_sistema`.
+
+---
+
+### Fases sugeridas
+
+**Fase 1 (esta entrega):** Aba Dashboard + aba Kanban (movido) + estender `fornecedores` com os campos novos.
+**Fase 2:** Tabelas de cotação + tela de RFQ + link público + comparativo.
+**Fase 3:** `pedidos_compra` formal + webhooks n8n + integração com Financeiro (gera `lancamentos_financeiros` automático na data esperada = `data_compra + prazo_pagamento_dias`).
+
+---
+
+### Confirmações antes de codar
+
+1. Começo pela **Fase 1** apenas (Dashboard + Kanban em tabs + campos extras em fornecedores) ou já encarar Fase 1 + 2 juntas?
+2. O webhook do n8n para cotações pode reaproveitar `configuracoes_sistema` (mesmo padrão de `webhook_aprovacao_orcamento`) — ok?
+3. Link público de resposta do fornecedor: **sem login, com token** (estilo magic-link) — confirma?
