@@ -678,11 +678,13 @@ export type Database = {
       }
       fornecedores: {
         Row: {
+          categorias: string[] | null
           cep: string | null
           cidade: string | null
           cnpj_cpf: string | null
           created_at: string
           email: string | null
+          email_cotacao: string | null
           empresa_id: string | null
           endereco: string | null
           estado: string | null
@@ -691,16 +693,21 @@ export type Database = {
           inscricao_municipal: string | null
           nome: string
           observacoes: string | null
+          prazo_pagamento_padrao_dias: number | null
+          rating: number | null
           telefone: string | null
           tipo_identificacao: string | null
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
+          categorias?: string[] | null
           cep?: string | null
           cidade?: string | null
           cnpj_cpf?: string | null
           created_at?: string
           email?: string | null
+          email_cotacao?: string | null
           empresa_id?: string | null
           endereco?: string | null
           estado?: string | null
@@ -709,16 +716,21 @@ export type Database = {
           inscricao_municipal?: string | null
           nome: string
           observacoes?: string | null
+          prazo_pagamento_padrao_dias?: number | null
+          rating?: number | null
           telefone?: string | null
           tipo_identificacao?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
+          categorias?: string[] | null
           cep?: string | null
           cidade?: string | null
           cnpj_cpf?: string | null
           created_at?: string
           email?: string | null
+          email_cotacao?: string | null
           empresa_id?: string | null
           endereco?: string | null
           estado?: string | null
@@ -727,9 +739,12 @@ export type Database = {
           inscricao_municipal?: string | null
           nome?: string
           observacoes?: string | null
+          prazo_pagamento_padrao_dias?: number | null
+          rating?: number | null
           telefone?: string | null
           tipo_identificacao?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {
