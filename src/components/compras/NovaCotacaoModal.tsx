@@ -54,12 +54,13 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
   const [filtroForn, setFiltroForn] = useState("");
   const [ordens, setOrdens] = useState<OrdemRow[]>([]);
   const [ordemSelecionada, setOrdemSelecionada] = useState<string>("");
+  const [itensCotados, setItensCotados] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open || !empresaAtual?.id) return;
     (async () => {
-      const [forn, comp] = await Promise.all([
+      const [forn, comp, cotados] = await Promise.all([
         supabase
           .from("fornecedores")
           .select("id, nome, email_cotacao, email, whatsapp, telefone, prazo_pagamento_padrao_dias")
@@ -70,8 +71,20 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
           .select("ordens_servico!inner(id, numero_ordem, cliente_nome, equipamento, status, pecas_necessarias, usinagem_necessaria)")
           .eq("empresa_id", empresaAtual.id)
           .in("status", ["aprovado", "cotando"]),
+        supabase
+          .from("cotacao_itens")
+          .select("ordem_servico_id, descricao, cotacoes!inner(empresa_id)")
+          .eq("cotacoes.empresa_id", empresaAtual.id)
+          .not("ordem_servico_id", "is", null),
       ]);
       setFornecedores((forn.data as any) || []);
+      const cotadosSet = new Set<string>();
+      ((cotados.data as any[]) || []).forEach((ci) => {
+        if (ci.ordem_servico_id && ci.descricao) {
+          cotadosSet.add(`${ci.ordem_servico_id}|${ci.descricao.trim().toLowerCase()}`);
+        }
+      });
+      setItensCotados(cotadosSet);
       const ords: OrdemRow[] = [];
       ((comp.data as any[]) || []).forEach((c) => {
         const os = c.ordens_servico;
@@ -127,19 +140,20 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
 
   const selecionarOrdem = (ordemId: string) => {
     setOrdemSelecionada(ordemId);
-    const ordem = ordens.find((o) => o.id === ordemId);
-    if (!ordem) {
-      setItens([]);
-      return;
-    }
-    setItens(
-      ordem.pecas.map((p) => ({
-        descricao: p.descricao,
-        quantidade: p.quantidade,
-        unidade: p.unidade,
-        ordem_servico_id: ordem.id,
-      }))
-    );
+    setItens([]);
+  };
+
+  const isPecaSelecionada = (ordemId: string, descricao: string) =>
+    itens.some((i) => i.ordem_servico_id === ordemId && i.descricao === descricao);
+
+  const togglePeca = (ordemId: string, p: { descricao: string; quantidade: number; unidade: string }) => {
+    setItens((prev) => {
+      const exists = prev.some((i) => i.ordem_servico_id === ordemId && i.descricao === p.descricao);
+      if (exists) {
+        return prev.filter((i) => !(i.ordem_servico_id === ordemId && i.descricao === p.descricao));
+      }
+      return [...prev, { descricao: p.descricao, quantidade: p.quantidade, unidade: p.unidade, ordem_servico_id: ordemId }];
+    });
   };
 
   const removeItem = (idx: number) => setItens((prev) => prev.filter((_, i) => i !== idx));
