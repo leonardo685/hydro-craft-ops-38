@@ -79,14 +79,14 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
         const pecas: { descricao: string; quantidade: number; unidade: string }[] = [];
         (os.pecas_necessarias || []).forEach((p: any) => {
           pecas.push({
-            descricao: p.descricao || p.nome || "Peça",
+            descricao: p.peca || p.descricao || p.nome || "Peça",
             quantidade: Number(p.quantidade || 1),
             unidade: p.unidade || "un",
           });
         });
         (os.usinagem_necessaria || []).forEach((p: any) => {
           pecas.push({
-            descricao: `${p.descricao || p.nome || "Usinagem"} (usinagem)`,
+            descricao: `${p.trabalho || p.descricao || p.nome || "Usinagem"} (usinagem)`,
             quantidade: Number(p.quantidade || 1),
             unidade: p.unidade || "un",
           });
