@@ -275,9 +275,42 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
                   </SelectContent>
                 </Select>
                 {ordemSelecionada && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Itens carregados da ordem. Edite, remova ou adicione itens manuais abaixo.
-                  </p>
+                  <div className="mt-3 border rounded-md divide-y">
+                    {(ordens.find((o) => o.id === ordemSelecionada)?.pecas || []).length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Esta ordem não tem itens. Adicione manualmente abaixo.
+                      </p>
+                    ) : (
+                      (ordens.find((o) => o.id === ordemSelecionada)?.pecas || []).map((p, i) => {
+                        const cotado = itensCotados.has(`${ordemSelecionada}|${p.descricao.trim().toLowerCase()}`);
+                        const selecionado = isPecaSelecionada(ordemSelecionada, p.descricao);
+                        return (
+                          <label
+                            key={i}
+                            className="flex items-center gap-3 px-3 py-2 hover:bg-muted cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={selecionado}
+                              onCheckedChange={() => togglePeca(ordemSelecionada, p)}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm flex items-center gap-2 flex-wrap">
+                                <span className="truncate">{p.descricao}</span>
+                                {cotado && (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    já cotado
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {p.quantidade} {p.unidade}
+                              </div>
+                            </div>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
                 )}
               </div>
 
