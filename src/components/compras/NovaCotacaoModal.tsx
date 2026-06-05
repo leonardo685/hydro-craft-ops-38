@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { toast } from "sonner";
 import { Plus, Trash2, Search } from "lucide-react";
@@ -35,6 +36,14 @@ interface FornecedorRow {
   prazo_pagamento_padrao_dias: number | null;
 }
 
+interface OrdemRow {
+  id: string;
+  numero_ordem: string;
+  cliente_nome: string | null;
+  equipamento: string | null;
+  pecas: { descricao: string; quantidade: number; unidade: string }[];
+}
+
 export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
   const { empresaAtual } = useEmpresa();
   const [observacoes, setObservacoes] = useState("");
@@ -43,7 +52,8 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
   const [fornecedores, setFornecedores] = useState<FornecedorRow[]>([]);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [filtroForn, setFiltroForn] = useState("");
-  const [pecasSugeridas, setPecasSugeridas] = useState<{ descricao: string; quantidade: number; unidade: string; ordem_servico_id: string; numero_ordem: string }[]>([]);
+  const [ordens, setOrdens] = useState<OrdemRow[]>([]);
+  const [ordemSelecionada, setOrdemSelecionada] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -57,22 +67,21 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
           .order("nome"),
         supabase
           .from("compras")
-          .select("ordens_servico!inner(id, numero_ordem, status, pecas_necessarias, usinagem_necessaria)")
+          .select("ordens_servico!inner(id, numero_ordem, cliente_nome, equipamento, status, pecas_necessarias, usinagem_necessaria)")
           .eq("empresa_id", empresaAtual.id)
           .in("status", ["aprovado", "cotando"]),
       ]);
       setFornecedores((forn.data as any) || []);
-      const pecas: any[] = [];
+      const ords: OrdemRow[] = [];
       ((comp.data as any[]) || []).forEach((c) => {
         const os = c.ordens_servico;
         if (!os) return;
+        const pecas: { descricao: string; quantidade: number; unidade: string }[] = [];
         (os.pecas_necessarias || []).forEach((p: any) => {
           pecas.push({
             descricao: p.descricao || p.nome || "Peça",
             quantidade: Number(p.quantidade || 1),
             unidade: p.unidade || "un",
-            ordem_servico_id: os.id,
-            numero_ordem: os.numero_ordem,
           });
         });
         (os.usinagem_necessaria || []).forEach((p: any) => {
@@ -80,12 +89,18 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
             descricao: `${p.descricao || p.nome || "Usinagem"} (usinagem)`,
             quantidade: Number(p.quantidade || 1),
             unidade: p.unidade || "un",
-            ordem_servico_id: os.id,
-            numero_ordem: os.numero_ordem,
           });
         });
+        ords.push({
+          id: os.id,
+          numero_ordem: os.numero_ordem,
+          cliente_nome: os.cliente_nome,
+          equipamento: os.equipamento,
+          pecas,
+        });
       });
-      setPecasSugeridas(pecas);
+      ords.sort((a, b) => a.numero_ordem.localeCompare(b.numero_ordem));
+      setOrdens(ords);
     })();
   }, [open, empresaAtual?.id]);
 
@@ -95,6 +110,7 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
     setItens([]);
     setSelecionados(new Set());
     setFiltroForn("");
+    setOrdemSelecionada("");
   };
 
   const addItem = (i: Partial<ItemForm>) => {
@@ -107,6 +123,23 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
         ordem_servico_id: i.ordem_servico_id || null,
       },
     ]);
+  };
+
+  const selecionarOrdem = (ordemId: string) => {
+    setOrdemSelecionada(ordemId);
+    const ordem = ordens.find((o) => o.id === ordemId);
+    if (!ordem) {
+      setItens([]);
+      return;
+    }
+    setItens(
+      ordem.pecas.map((p) => ({
+        descricao: p.descricao,
+        quantidade: p.quantidade,
+        unidade: p.unidade,
+        ordem_servico_id: ordem.id,
+      }))
+    );
   };
 
   const removeItem = (idx: number) => setItens((prev) => prev.filter((_, i) => i !== idx));
@@ -213,37 +246,38 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
 
             {/* Itens */}
             <div>
+              <div className="mb-3">
+                <Label className="text-base">Ordem de serviço</Label>
+                <Select value={ordemSelecionada} onValueChange={selecionarOrdem}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={ordens.length === 0 ? "Nenhuma ordem em aberto" : "Selecione uma ordem"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ordens.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.numero_ordem} — {o.cliente_nome || "Sem cliente"} ({o.pecas.length} itens)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {ordemSelecionada && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Itens carregados da ordem. Edite, remova ou adicione itens manuais abaixo.
+                  </p>
+                )}
+              </div>
+
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-base">Itens da cotação ({itens.length})</Label>
-                <Button size="sm" variant="outline" onClick={() => addItem({})}>
+                <Button size="sm" variant="outline" onClick={() => addItem({ ordem_servico_id: ordemSelecionada || null })}>
                   <Plus className="h-4 w-4 mr-1" /> Item manual
                 </Button>
               </div>
 
-              {pecasSugeridas.length > 0 && (
-                <div className="border rounded-md p-3 mb-3 bg-muted/30">
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Sugestões das ordens em aberto:
-                  </p>
-                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
-                    {pecasSugeridas.map((p, i) => (
-                      <Badge
-                        key={i}
-                        variant="secondary"
-                        className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
-                        onClick={() => addItem(p)}
-                      >
-                        + {p.numero_ordem}: {p.descricao} ({p.quantidade})
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               <div className="space-y-2">
                 {itens.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-6 border rounded-md">
-                    Nenhum item ainda. Clique nas sugestões acima ou em "Item manual".
+                    Selecione uma ordem acima para carregar seus itens, ou adicione um item manual.
                   </p>
                 )}
                 {itens.map((it, idx) => (
