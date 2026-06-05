@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
-    VitePWA({
+    mode === 'production' && VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon-192x192.png', 'icon-512x512.png', 'apple-touch-icon.png'],
       manifest: {
