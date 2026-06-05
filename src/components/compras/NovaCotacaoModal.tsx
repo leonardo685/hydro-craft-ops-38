@@ -35,6 +35,14 @@ interface FornecedorRow {
   prazo_pagamento_padrao_dias: number | null;
 }
 
+interface OrdemRow {
+  id: string;
+  numero_ordem: string;
+  cliente_nome: string | null;
+  equipamento: string | null;
+  pecas: { descricao: string; quantidade: number; unidade: string }[];
+}
+
 export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
   const { empresaAtual } = useEmpresa();
   const [observacoes, setObservacoes] = useState("");
@@ -43,7 +51,8 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
   const [fornecedores, setFornecedores] = useState<FornecedorRow[]>([]);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [filtroForn, setFiltroForn] = useState("");
-  const [pecasSugeridas, setPecasSugeridas] = useState<{ descricao: string; quantidade: number; unidade: string; ordem_servico_id: string; numero_ordem: string }[]>([]);
+  const [ordens, setOrdens] = useState<OrdemRow[]>([]);
+  const [ordemSelecionada, setOrdemSelecionada] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -57,22 +66,21 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
           .order("nome"),
         supabase
           .from("compras")
-          .select("ordens_servico!inner(id, numero_ordem, status, pecas_necessarias, usinagem_necessaria)")
+          .select("ordens_servico!inner(id, numero_ordem, cliente_nome, equipamento, status, pecas_necessarias, usinagem_necessaria)")
           .eq("empresa_id", empresaAtual.id)
           .in("status", ["aprovado", "cotando"]),
       ]);
       setFornecedores((forn.data as any) || []);
-      const pecas: any[] = [];
+      const ords: OrdemRow[] = [];
       ((comp.data as any[]) || []).forEach((c) => {
         const os = c.ordens_servico;
         if (!os) return;
+        const pecas: { descricao: string; quantidade: number; unidade: string }[] = [];
         (os.pecas_necessarias || []).forEach((p: any) => {
           pecas.push({
             descricao: p.descricao || p.nome || "Peça",
             quantidade: Number(p.quantidade || 1),
             unidade: p.unidade || "un",
-            ordem_servico_id: os.id,
-            numero_ordem: os.numero_ordem,
           });
         });
         (os.usinagem_necessaria || []).forEach((p: any) => {
@@ -80,12 +88,18 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
             descricao: `${p.descricao || p.nome || "Usinagem"} (usinagem)`,
             quantidade: Number(p.quantidade || 1),
             unidade: p.unidade || "un",
-            ordem_servico_id: os.id,
-            numero_ordem: os.numero_ordem,
           });
         });
+        ords.push({
+          id: os.id,
+          numero_ordem: os.numero_ordem,
+          cliente_nome: os.cliente_nome,
+          equipamento: os.equipamento,
+          pecas,
+        });
       });
-      setPecasSugeridas(pecas);
+      ords.sort((a, b) => a.numero_ordem.localeCompare(b.numero_ordem));
+      setOrdens(ords);
     })();
   }, [open, empresaAtual?.id]);
 
@@ -95,6 +109,7 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
     setItens([]);
     setSelecionados(new Set());
     setFiltroForn("");
+    setOrdemSelecionada("");
   };
 
   const addItem = (i: Partial<ItemForm>) => {
@@ -107,6 +122,23 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
         ordem_servico_id: i.ordem_servico_id || null,
       },
     ]);
+  };
+
+  const selecionarOrdem = (ordemId: string) => {
+    setOrdemSelecionada(ordemId);
+    const ordem = ordens.find((o) => o.id === ordemId);
+    if (!ordem) {
+      setItens([]);
+      return;
+    }
+    setItens(
+      ordem.pecas.map((p) => ({
+        descricao: p.descricao,
+        quantidade: p.quantidade,
+        unidade: p.unidade,
+        ordem_servico_id: ordem.id,
+      }))
+    );
   };
 
   const removeItem = (idx: number) => setItens((prev) => prev.filter((_, i) => i !== idx));
