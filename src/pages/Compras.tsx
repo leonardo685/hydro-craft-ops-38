@@ -1,13 +1,23 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ComprasDashboard } from "@/components/compras/ComprasDashboard";
 import { ComprasKanban } from "@/components/compras/ComprasKanban";
 import { CotacoesTab } from "@/components/compras/CotacoesTab";
 import { BarChart3, Kanban, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+
+type ComprasView = "dashboard" | "kanban" | "cotacoes";
+
+const comprasTabs: { value: ComprasView; label: string; icon: typeof BarChart3 }[] = [
+  { value: "dashboard", label: "Dashboard", icon: BarChart3 },
+  { value: "kanban", label: "Kanban", icon: Kanban },
+  { value: "cotacoes", label: "Cotações", icon: FileText },
+];
 
 export default function Compras() {
   const { t } = useLanguage();
+  const [activeView, setActiveView] = useState<ComprasView>("kanban");
 
   return (
     <AppLayout>
@@ -17,29 +27,32 @@ export default function Compras() {
           <p className="text-muted-foreground">{t("compras.subtitle")}</p>
         </div>
 
-        <Tabs defaultValue="kanban" className="w-full">
-          <TabsList className="grid w-full max-w-xl grid-cols-3">
-            <TabsTrigger value="dashboard" className="gap-2">
-              <BarChart3 className="h-4 w-4" /> Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="kanban" className="gap-2">
-              <Kanban className="h-4 w-4" /> Kanban
-            </TabsTrigger>
-            <TabsTrigger value="cotacoes" className="gap-2">
-              <FileText className="h-4 w-4" /> Cotações
-            </TabsTrigger>
-          </TabsList>
+        <div className="flex w-full flex-wrap gap-2 rounded-md bg-muted p-1 md:w-fit">
+          {comprasTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeView === tab.value;
 
-          <TabsContent value="dashboard" className="mt-6">
-            <ComprasDashboard />
-          </TabsContent>
-          <TabsContent value="kanban" className="mt-6">
-            <ComprasKanban />
-          </TabsContent>
-          <TabsContent value="cotacoes" className="mt-6">
-            <CotacoesTab />
-          </TabsContent>
-        </Tabs>
+            return (
+              <Button
+                key={tab.value}
+                type="button"
+                variant={isActive ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setActiveView(tab.value)}
+                className="gap-2"
+              >
+                <Icon className="h-4 w-4" />
+                {tab.label}
+              </Button>
+            );
+          })}
+        </div>
+
+        <div>
+          {activeView === "dashboard" && <ComprasDashboard />}
+          {activeView === "kanban" && <ComprasKanban />}
+          {activeView === "cotacoes" && <CotacoesTab />}
+        </div>
       </div>
     </AppLayout>
   );
