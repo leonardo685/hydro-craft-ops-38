@@ -197,16 +197,13 @@ export function ComprasKanban() {
                             {t("compras.goBack")}
                           </Button>
                         )}
-                        {status !== "comprado" && (
+                        {status === "cotando" && (
                           <Button
                             size="sm"
-                            onClick={() => {
-                              const nextStatus = status === "aprovado" ? "cotando" : "comprado";
-                              updateStatus(compra.id, nextStatus);
-                            }}
+                            onClick={() => updateStatus(compra.id, "comprado")}
                             className="flex-1"
                           >
-                            {status === "aprovado" ? t("compras.startQuote") : t("compras.finalizePurchase")}
+                            {t("compras.finalizePurchase")}
                             <ChevronRight className="h-4 w-4 ml-1" />
                           </Button>
                         )}
