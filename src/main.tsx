@@ -7,7 +7,7 @@ const isLovablePreview =
   window.location.hostname.includes('lovableproject.com') ||
   window.location.hostname.startsWith('id-preview--');
 
-if ((import.meta.env.DEV || isLovablePreview) && 'serviceWorker' in navigator) {
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     const registrations = await navigator.serviceWorker.getRegistrations();
     await Promise.all(registrations.map((registration) => registration.unregister()));
