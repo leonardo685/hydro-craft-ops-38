@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X, Minus } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
@@ -130,6 +131,8 @@ export default function NovoOrcamento() {
     frete: 'CIF',
     freteIncluso: false,
     mostrarPecas: true,
+    mostrarServicos: true,
+    mostrarUsinagem: true,
     mostrarValores: true
   });
   const [itensAnalise, setItensAnalise] = useState<{
@@ -3545,15 +3548,27 @@ export default function NovoOrcamento() {
         {/* Peças */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
-              {t('novoOrcamento.parts')}
-            </CardTitle>
+            <div className="flex items-center justify-between gap-4">
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                {t('novoOrcamento.parts')}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="toggle-pecas" className="text-sm text-muted-foreground cursor-pointer">
+                  Mostrar no orçamento
+                </Label>
+                <Switch
+                  id="toggle-pecas"
+                  checked={informacoesComerciais.mostrarPecas !== false}
+                  onCheckedChange={(v) => setInformacoesComerciais(prev => ({ ...prev, mostrarPecas: v }))}
+                />
+              </div>
+            </div>
             <CardDescription>
               {analiseId ? t('novoOrcamento.partsDescAnalysis') : t('novoOrcamento.partsDescNew')}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          {informacoesComerciais.mostrarPecas !== false && <CardContent>
             {itensAnalise.pecas.length > 0 ? <>
                 <Table>
                   <TableHeader>
@@ -3625,21 +3640,33 @@ export default function NovoOrcamento() {
                   {t('novoOrcamento.addFirstPart')}
                 </Button>
               </div>}
-          </CardContent>
+          </CardContent>}
         </Card>
 
         {/* Serviços */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wrench className="h-5 w-5 text-primary" />
-              {t('novoOrcamento.services')}
-            </CardTitle>
+            <div className="flex items-center justify-between gap-4">
+              <CardTitle className="flex items-center gap-2">
+                <Wrench className="h-5 w-5 text-primary" />
+                {t('novoOrcamento.services')}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="toggle-servicos" className="text-sm text-muted-foreground cursor-pointer">
+                  Mostrar no orçamento
+                </Label>
+                <Switch
+                  id="toggle-servicos"
+                  checked={informacoesComerciais.mostrarServicos !== false}
+                  onCheckedChange={(v) => setInformacoesComerciais(prev => ({ ...prev, mostrarServicos: v }))}
+                />
+              </div>
+            </div>
             <CardDescription>
               {analiseId ? t('novoOrcamento.servicesDescAnalysis') : t('novoOrcamento.servicesDescNew')}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          {informacoesComerciais.mostrarServicos !== false && <CardContent>
             {itensAnalise.servicos.length > 0 ? <>
                 <Table>
                   <TableHeader>
@@ -3705,21 +3732,33 @@ export default function NovoOrcamento() {
                   {t('novoOrcamento.addFirstService')}
                 </Button>
               </div>}
-          </CardContent>
+          </CardContent>}
         </Card>
 
         {/* Usinagem */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-primary" />
-              {t('novoOrcamento.machining')}
-            </CardTitle>
+            <div className="flex items-center justify-between gap-4">
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-primary" />
+                {t('novoOrcamento.machining')}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="toggle-usinagem" className="text-sm text-muted-foreground cursor-pointer">
+                  Mostrar no orçamento
+                </Label>
+                <Switch
+                  id="toggle-usinagem"
+                  checked={informacoesComerciais.mostrarUsinagem !== false}
+                  onCheckedChange={(v) => setInformacoesComerciais(prev => ({ ...prev, mostrarUsinagem: v }))}
+                />
+              </div>
+            </div>
             <CardDescription>
               {analiseId ? t('novoOrcamento.machiningDescAnalysis') : t('novoOrcamento.machiningDescNew')}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          {informacoesComerciais.mostrarUsinagem !== false && <CardContent>
             {itensAnalise.usinagem.length > 0 ? <>
                 <Table>
                   <TableHeader>
@@ -3785,7 +3824,7 @@ export default function NovoOrcamento() {
                   {t('novoOrcamento.addFirstMachining')}
                 </Button>
               </div>}
-          </CardContent>
+          </CardContent>}
         </Card>
 
         {/* Informações Comerciais */}
