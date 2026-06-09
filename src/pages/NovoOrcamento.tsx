@@ -42,6 +42,7 @@ export default function NovoOrcamento() {
   const [searchParams] = useSearchParams();
   const analiseId = searchParams.get('analiseId');
   const ordemServicoId = searchParams.get('ordemServicoId');
+  const editId = searchParams.get('editId');
   const orcamentoParaEdicao = location.state?.orcamento;
   const copiaOrcamento = location.state?.copiaOrcamento;
   const { empresaAtual } = useEmpresa();
@@ -60,6 +61,31 @@ export default function NovoOrcamento() {
       numeroGeradoRef.current = true; // Número já definido pelo orçamento existente
     }
   }, [orcamentoParaEdicao]);
+
+  // Fallback: se chegou /orcamentos/novo?editId=XXX sem state, buscar do banco
+  useEffect(() => {
+    if (!editId) return;
+    if (orcamentoRef.current?.id === editId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('orcamentos')
+        .select('*')
+        .eq('id', editId)
+        .maybeSingle();
+      if (error) {
+        console.error('Erro ao buscar orçamento para edição:', error);
+        return;
+      }
+      if (!cancelled && data) {
+        orcamentoRef.current = data;
+        numeroGeradoRef.current = true;
+        // Força re-render do useEffect de carregarDados
+        setDadosOrcamento(prev => ({ ...prev, id: data.id }));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editId]);
   
   const {
     clientes,
