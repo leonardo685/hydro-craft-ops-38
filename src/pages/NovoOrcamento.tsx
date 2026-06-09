@@ -42,6 +42,7 @@ export default function NovoOrcamento() {
   const [searchParams] = useSearchParams();
   const analiseId = searchParams.get('analiseId');
   const ordemServicoId = searchParams.get('ordemServicoId');
+  const editId = searchParams.get('editId');
   const orcamentoParaEdicao = location.state?.orcamento;
   const copiaOrcamento = location.state?.copiaOrcamento;
   const { empresaAtual } = useEmpresa();
@@ -52,6 +53,9 @@ export default function NovoOrcamento() {
   
   // Ref para controlar se o número já foi gerado (evitar race condition)
   const numeroGeradoRef = useRef(false);
+
+  // Trigger para re-executar carregarDados após fetch via editId
+  const [editFetchTick, setEditFetchTick] = useState(0);
   
   // Atualizar ref apenas quando receber novo orçamento
   useEffect(() => {
@@ -60,6 +64,30 @@ export default function NovoOrcamento() {
       numeroGeradoRef.current = true; // Número já definido pelo orçamento existente
     }
   }, [orcamentoParaEdicao]);
+
+  // Fallback: se chegou /orcamentos/novo?editId=XXX sem state, buscar do banco
+  useEffect(() => {
+    if (!editId) return;
+    if (orcamentoRef.current?.id === editId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('orcamentos')
+        .select('*')
+        .eq('id', editId)
+        .maybeSingle();
+      if (error) {
+        console.error('Erro ao buscar orçamento para edição:', error);
+        return;
+      }
+      if (!cancelled && data) {
+        orcamentoRef.current = data;
+        numeroGeradoRef.current = true;
+        setEditFetchTick((n) => n + 1);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editId]);
   
   const {
     clientes,
@@ -1003,7 +1031,7 @@ export default function NovoOrcamento() {
     };
 
     carregarDados();
-  }, [analiseId, ordemServicoId, clientes]); // Removido orcamentoParaEdicao das dependências
+  }, [analiseId, ordemServicoId, clientes, editFetchTick]); // editFetchTick re-dispara após fetch por editId
 
   const handleUploadFoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
