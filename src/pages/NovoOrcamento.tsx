@@ -1938,9 +1938,6 @@ export default function NovoOrcamento() {
         doc.text(`Frete: ${frete}`, 22 + col3Width * 2, yPosition + 5.5);
         yPosition += 8;
         yPosition += 10;
-        // (linhas separadas de Garantia/Frete removidas — agora consolidadas acima)
-        // Skip rendering the legacy Garantia/Frete row below
-        // by jumping over it via a flag
       }
       if (isMecHydro) {
         doc.rect(20, yPosition, col3Width, 8);
