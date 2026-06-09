@@ -2586,16 +2586,21 @@ export default function NovoOrcamento() {
       doc.rect(20 + col3Width, yPosition, col3Width, 8);
       doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
       doc.text(`${pdfT.deliveryTime}: ${prazoEntrega}`, 22, yPosition + 5.5);
+      doc.text(`${pdfT.warranty}: ${garantia}`, 22 + col3Width, yPosition + 5.5);
+      doc.text(`${pdfT.freight}: ${frete}`, 22 + col3Width * 2, yPosition + 5.5);
       yPosition += 8;
     }
-    
-    // Quarta linha: Garantia + Frete
-    doc.rect(20, yPosition, col3Width, 8);
-    doc.rect(20 + col3Width, yPosition, col3Width, 8);
-    doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
-    doc.text(`${pdfT.warranty}: ${garantia}`, 22, yPosition + 5.5);
-    doc.text(`${pdfT.freight}: ${frete}`, 22 + col3Width, yPosition + 5.5);
-    yPosition += 15;
+
+    if (isMecHydroExport) {
+      // Quarta linha apenas para MEC HYDRO: Garantia + Frete
+      doc.rect(20, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width, yPosition, col3Width, 8);
+      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+      doc.text(`${pdfT.warranty}: ${garantia}`, 22, yPosition + 5.5);
+      doc.text(`${pdfT.freight}: ${frete}`, 22 + col3Width, yPosition + 5.5);
+      yPosition += 8;
+    }
+    yPosition += 7;
 
     // === DADOS TÉCNICOS DO EQUIPAMENTO ===
     if (dadosTecnicos) {
