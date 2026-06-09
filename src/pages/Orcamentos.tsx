@@ -343,7 +343,9 @@ export default function Orcamentos() {
       status: orcamento.status,
       objetoCompleto: orcamento
     });
-    navigate('/orcamentos/novo', { state: { orcamento } });
+    // Passar também via URL como fallback caso o location.state seja perdido
+    // (refresh, restauração de sessão, navegação intermediária, etc).
+    navigate(`/orcamentos/novo?editId=${orcamento.id}`, { state: { orcamento } });
   };
 
   const abrirPrecificacao = (orcamento: any) => {
