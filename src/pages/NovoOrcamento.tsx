@@ -1031,7 +1031,7 @@ export default function NovoOrcamento() {
     };
 
     carregarDados();
-  }, [analiseId, ordemServicoId, clientes]); // Removido orcamentoParaEdicao das dependências
+  }, [analiseId, ordemServicoId, clientes, editFetchTick]); // editFetchTick re-dispara após fetch por editId
 
   const handleUploadFoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
