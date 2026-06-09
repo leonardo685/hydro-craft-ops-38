@@ -1934,16 +1934,23 @@ export default function NovoOrcamento() {
         doc.rect(20 + col3Width, yPosition, col3Width, 8);
         doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
         doc.text(`Prazo Entrega: ${prazoEntrega}`, 22, yPosition + 5.5);
+        doc.text(`Garantia: ${garantia}`, 22 + col3Width, yPosition + 5.5);
+        doc.text(`Frete: ${frete}`, 22 + col3Width * 2, yPosition + 5.5);
         yPosition += 8;
+        yPosition += 10;
+        // (linhas separadas de Garantia/Frete removidas — agora consolidadas acima)
+        // Skip rendering the legacy Garantia/Frete row below
+        // by jumping over it via a flag
       }
-      
-      doc.rect(20, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width, yPosition, col3Width, 8);
-      doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
-      doc.text(`Garantia: ${garantia}`, 22, yPosition + 5.5);
-      doc.text(`Frete: ${frete}`, 22 + col3Width, yPosition + 5.5);
-      yPosition += 8;
-      yPosition += 10;
+      if (isMecHydro) {
+        doc.rect(20, yPosition, col3Width, 8);
+        doc.rect(20 + col3Width, yPosition, col3Width, 8);
+        doc.rect(20 + col3Width * 2, yPosition, col3Width, 8);
+        doc.text(`Garantia: ${garantia}`, 22, yPosition + 5.5);
+        doc.text(`Frete: ${frete}`, 22 + col3Width, yPosition + 5.5);
+        yPosition += 8;
+        yPosition += 10;
+      }
 
       // Tabela de Peças
       if (itensRevisaoOrganizados.pecas.length > 0) {
