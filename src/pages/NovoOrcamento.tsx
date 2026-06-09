@@ -53,6 +53,9 @@ export default function NovoOrcamento() {
   
   // Ref para controlar se o número já foi gerado (evitar race condition)
   const numeroGeradoRef = useRef(false);
+
+  // Trigger para re-executar carregarDados após fetch via editId
+  const [editFetchTick, setEditFetchTick] = useState(0);
   
   // Atualizar ref apenas quando receber novo orçamento
   useEffect(() => {
@@ -80,8 +83,7 @@ export default function NovoOrcamento() {
       if (!cancelled && data) {
         orcamentoRef.current = data;
         numeroGeradoRef.current = true;
-        // Força re-render do useEffect de carregarDados
-        setDadosOrcamento(prev => ({ ...prev, id: data.id }));
+        setEditFetchTick((n) => n + 1);
       }
     })();
     return () => { cancelled = true; };
