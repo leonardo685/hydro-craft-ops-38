@@ -2767,7 +2767,7 @@ export default function NovoOrcamento() {
     }
 
     // Tabela: Serviços a Executar (com código)
-    if (itensAnalise.servicos.length > 0) {
+    if (itensAnalise.servicos.length > 0 && informacoesComerciais.mostrarServicos !== false) {
       // Verificar se há espaço suficiente para pelo menos o título + cabeçalho + 2 linhas
       const espacoNecessario = 10 + 8 + 16; // ~34mm
       if (yPosition + espacoNecessario > pageHeight - 30) {
@@ -2862,7 +2862,7 @@ export default function NovoOrcamento() {
     }
 
     // Tabela: Usinagem Necessária (com código)
-    if (itensAnalise.usinagem.length > 0) {
+    if (itensAnalise.usinagem.length > 0 && informacoesComerciais.mostrarUsinagem !== false) {
       // Verificar se há espaço suficiente para pelo menos o título + cabeçalho + 2 linhas
       const espacoNecessario = 10 + 8 + 16; // ~34mm
       if (yPosition + espacoNecessario > pageHeight - 30) {
