@@ -652,30 +652,36 @@ export type Database = {
           cotacao_fornecedor_id: string
           cotacao_item_id: string
           created_at: string
+          descricao_alternativa: string | null
           id: string
           observacao: string | null
           prazo_entrega_dias: number | null
           preco_unitario: number | null
+          tipo: string
           updated_at: string
         }
         Insert: {
           cotacao_fornecedor_id: string
           cotacao_item_id: string
           created_at?: string
+          descricao_alternativa?: string | null
           id?: string
           observacao?: string | null
           prazo_entrega_dias?: number | null
           preco_unitario?: number | null
+          tipo?: string
           updated_at?: string
         }
         Update: {
           cotacao_fornecedor_id?: string
           cotacao_item_id?: string
           created_at?: string
+          descricao_alternativa?: string | null
           id?: string
           observacao?: string | null
           prazo_entrega_dias?: number | null
           preco_unitario?: number | null
+          tipo?: string
           updated_at?: string
         }
         Relationships: [

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Link2, CheckCircle2, Clock } from "lucide-react";
+import { Link2, CheckCircle2, Clock, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -195,11 +195,17 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                             const valorAtual = p?.preco_unitario != null ? String(p.preco_unitario) : "";
                             const isBest =
                               melhor != null && p?.preco_unitario != null && Number(p.preco_unitario) === melhor;
+                            const isUsinagem = p?.tipo === "usinagem";
                             return (
                               <TableCell
                                 key={f.id}
                                 className={isBest ? "bg-green-50 dark:bg-green-950/30" : ""}
                               >
+                                {isUsinagem && (
+                                  <Badge variant="outline" className="mb-1 gap-1 text-[10px]">
+                                    <Wrench className="h-3 w-3" /> usinagem
+                                  </Badge>
+                                )}
                                 <Input
                                   type="number"
                                   step="0.01"
@@ -219,6 +225,16 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                                 {p?.prazo_entrega_dias != null && (
                                   <div className="text-xs text-muted-foreground">
                                     {p.prazo_entrega_dias}d entrega
+                                  </div>
+                                )}
+                                {isUsinagem && p?.descricao_alternativa && (
+                                  <div className="text-xs text-muted-foreground italic mt-1 text-right">
+                                    {p.descricao_alternativa}
+                                  </div>
+                                )}
+                                {p?.observacao && (
+                                  <div className="text-xs text-muted-foreground mt-1 text-right">
+                                    {p.observacao}
                                   </div>
                                 )}
                               </TableCell>

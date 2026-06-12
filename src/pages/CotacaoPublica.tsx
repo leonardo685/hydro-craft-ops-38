@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Wrench, Package } from "lucide-react";
 
 export default function CotacaoPublica() {
   const { token } = useParams<{ token: string }>();
@@ -18,7 +18,9 @@ export default function CotacaoPublica() {
   const [forn, setForn] = useState<any>(null);
   const [cotacao, setCotacao] = useState<any>(null);
   const [itens, setItens] = useState<any[]>([]);
-  const [propostas, setPropostas] = useState<Record<string, { preco: string; prazo: string; obs: string }>>({});
+  const [propostas, setPropostas] = useState<
+    Record<string, { preco: string; prazo: string; obs: string; tipo: "peca" | "usinagem"; descricao_alternativa: string }>
+  >({});
   const [obsGeral, setObsGeral] = useState("");
   const [empresa, setEmpresa] = useState<any>(null);
 
@@ -59,6 +61,8 @@ export default function CotacaoPublica() {
             preco: pr.preco_unitario != null ? String(pr.preco_unitario) : "",
             prazo: pr.prazo_entrega_dias != null ? String(pr.prazo_entrega_dias) : "",
             obs: pr.observacao || "",
+            tipo: (pr.tipo as "peca" | "usinagem") || "peca",
+            descricao_alternativa: pr.descricao_alternativa || "",
           };
         });
         setPropostas(map);
@@ -68,11 +72,33 @@ export default function CotacaoPublica() {
     })();
   }, [token]);
 
-  const setProp = (itemId: string, k: "preco" | "prazo" | "obs", v: string) => {
+  const setProp = (
+    itemId: string,
+    k: "preco" | "prazo" | "obs" | "tipo" | "descricao_alternativa",
+    v: string,
+  ) => {
     setPropostas((prev) => ({
       ...prev,
-      [itemId]: { preco: "", prazo: "", obs: "", ...prev[itemId], [k]: v },
+      [itemId]: {
+        preco: "",
+        prazo: "",
+        obs: "",
+        tipo: "peca",
+        descricao_alternativa: "",
+        ...prev[itemId],
+        [k]: v as any,
+      },
     }));
+  };
+
+  const toggleUsinagem = (itemId: string) => {
+    setPropostas((prev) => {
+      const cur = prev[itemId] || { preco: "", prazo: "", obs: "", tipo: "peca", descricao_alternativa: "" };
+      return {
+        ...prev,
+        [itemId]: { ...cur, tipo: cur.tipo === "usinagem" ? "peca" : "usinagem" },
+      };
+    });
   };
 
   const handleEnviar = async () => {
@@ -83,13 +109,15 @@ export default function CotacaoPublica() {
       const rows = itens
         .map((it) => {
           const p = propostas[it.id];
-          if (!p || (!p.preco && !p.prazo && !p.obs)) return null;
+          if (!p || (!p.preco && !p.prazo && !p.obs && p.tipo !== "usinagem")) return null;
           return {
             cotacao_fornecedor_id: forn.id,
             cotacao_item_id: it.id,
             preco_unitario: p.preco ? Number(p.preco.replace(",", ".")) : null,
             prazo_entrega_dias: p.prazo ? parseInt(p.prazo) : null,
             observacao: p.obs || null,
+            tipo: p.tipo || "peca",
+            descricao_alternativa: p.tipo === "usinagem" ? (p.descricao_alternativa || null) : null,
           };
         })
         .filter(Boolean) as any[];
@@ -190,17 +218,45 @@ export default function CotacaoPublica() {
                 <TableRow>
                   <TableHead>Item</TableHead>
                   <TableHead className="w-20 text-right">Qtd</TableHead>
+                  <TableHead className="w-40">Tipo</TableHead>
                   <TableHead className="w-32">Preço unitário</TableHead>
                   <TableHead className="w-28">Prazo (dias)</TableHead>
                   <TableHead>Obs.</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {itens.map((it) => (
+                {itens.map((it) => {
+                  const prop = propostas[it.id];
+                  const isUsinagem = prop?.tipo === "usinagem";
+                  return (
                   <TableRow key={it.id}>
-                    <TableCell className="font-medium">{it.descricao}</TableCell>
+                    <TableCell className="font-medium">
+                      {it.descricao}
+                      {isUsinagem && (
+                        <div className="mt-2">
+                          <Input
+                            placeholder="Descreva a usinagem proposta (ex: torneamento + retífica, material X)"
+                            value={prop?.descricao_alternativa || ""}
+                            onChange={(e) => setProp(it.id, "descricao_alternativa", e.target.value)}
+                          />
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       {Number(it.quantidade)} {it.unidade}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={isUsinagem ? "default" : "outline"}
+                        className="w-full gap-1"
+                        onClick={() => toggleUsinagem(it.id)}
+                        title="Marque se você não tem a peça pronta e propõe usinar"
+                      >
+                        {isUsinagem ? <Wrench className="h-3 w-3" /> : <Package className="h-3 w-3" />}
+                        {isUsinagem ? "Usinagem" : "Peça pronta"}
+                      </Button>
                     </TableCell>
                     <TableCell>
                       <Input
@@ -227,7 +283,8 @@ export default function CotacaoPublica() {
                       />
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
