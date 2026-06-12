@@ -140,7 +140,19 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
 
   const selecionarOrdem = (ordemId: string) => {
     setOrdemSelecionada(ordemId);
-    setItens([]);
+    const ord = ordens.find((o) => o.id === ordemId);
+    if (!ord) {
+      setItens([]);
+      return;
+    }
+    setItens(
+      ord.pecas.map((p) => ({
+        descricao: p.descricao,
+        quantidade: p.quantidade,
+        unidade: p.unidade,
+        ordem_servico_id: ordemId,
+      })),
+    );
   };
 
   const isPecaSelecionada = (ordemId: string, descricao: string) =>
