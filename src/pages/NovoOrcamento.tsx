@@ -1987,7 +1987,8 @@ export default function NovoOrcamento() {
             yPosition = 20;
           }
 
-          const rowHeight = 8;
+          const descLines = doc.splitTextToSize(item.descricao || '', 66);
+          const rowHeight = Math.max(8, descLines.length * 3.5 + 3);
           if (index % 2 === 0) {
             doc.setFillColor(245, 245, 245);
           } else {
@@ -1997,8 +1998,7 @@ export default function NovoOrcamento() {
           doc.setDrawColor(200, 200, 200);
           doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
-          const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
-          doc.text(desc, colDescricao + 2, yPosition + 5.5);
+          doc.text(descLines, colDescricao + 2, yPosition + 4);
           doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
           doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
           
@@ -2071,7 +2071,8 @@ export default function NovoOrcamento() {
             yPosition = 20;
           }
 
-          const rowHeight = 8;
+          const descLines = doc.splitTextToSize(item.descricao || '', 66);
+          const rowHeight = Math.max(8, descLines.length * 3.5 + 3);
           if (index % 2 === 0) {
             doc.setFillColor(245, 245, 245);
           } else {
@@ -2081,8 +2082,7 @@ export default function NovoOrcamento() {
           doc.setDrawColor(200, 200, 200);
           doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
-          const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
-          doc.text(desc, colDescricao + 2, yPosition + 5.5);
+          doc.text(descLines, colDescricao + 2, yPosition + 4);
           doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
           doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
           
@@ -2155,7 +2155,8 @@ export default function NovoOrcamento() {
             yPosition = 20;
           }
 
-          const rowHeight = 8;
+          const descLines = doc.splitTextToSize(item.descricao || '', 66);
+          const rowHeight = Math.max(8, descLines.length * 3.5 + 3);
           if (index % 2 === 0) {
             doc.setFillColor(245, 245, 245);
           } else {
@@ -2165,8 +2166,7 @@ export default function NovoOrcamento() {
           doc.setDrawColor(200, 200, 200);
           doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
-          const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
-          doc.text(desc, colDescricao + 2, yPosition + 5.5);
+          doc.text(descLines, colDescricao + 2, yPosition + 4);
           doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
           doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
           
@@ -2755,7 +2755,8 @@ export default function NovoOrcamento() {
           yPosition = 20;
         }
 
-        const rowHeight = 8;
+        const descLines = doc.splitTextToSize(item.descricao || '', 66);
+        const rowHeight = Math.max(8, descLines.length * 3.5 + 3);
         if (index % 2 === 0) {
           doc.setFillColor(245, 245, 245);
         } else {
@@ -2765,8 +2766,7 @@ export default function NovoOrcamento() {
         doc.setDrawColor(200, 200, 200);
         doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
-          const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
-        doc.text(desc, colDescricao + 2, yPosition + 5.5);
+        doc.text(descLines, colDescricao + 2, yPosition + 4);
         doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
         doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
         
@@ -2850,7 +2850,8 @@ export default function NovoOrcamento() {
           yPosition = 20;
         }
 
-        const rowHeight = 8;
+        const descLines = doc.splitTextToSize(item.descricao || '', 66);
+        const rowHeight = Math.max(8, descLines.length * 3.5 + 3);
         if (index % 2 === 0) {
           doc.setFillColor(245, 245, 245);
         } else {
@@ -2860,8 +2861,7 @@ export default function NovoOrcamento() {
         doc.setDrawColor(200, 200, 200);
         doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
-          const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
-        doc.text(desc, colDescricao + 2, yPosition + 5.5);
+        doc.text(descLines, colDescricao + 2, yPosition + 4);
         doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
         doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
         
@@ -2945,7 +2945,8 @@ export default function NovoOrcamento() {
           yPosition = 20;
         }
 
-        const rowHeight = 8;
+        const descLines = doc.splitTextToSize(item.descricao || '', 66);
+        const rowHeight = Math.max(8, descLines.length * 3.5 + 3);
         if (index % 2 === 0) {
           doc.setFillColor(245, 245, 245);
         } else {
@@ -2955,8 +2956,7 @@ export default function NovoOrcamento() {
         doc.setDrawColor(200, 200, 200);
         doc.rect(20, yPosition, pageWidth - 40, rowHeight);
 
-        const desc = item.descricao.length > 40 ? item.descricao.substring(0, 38) + '...' : item.descricao;
-        doc.text(desc, colDescricao + 2, yPosition + 5.5);
+        doc.text(descLines, colDescricao + 2, yPosition + 4);
         doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
         doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
         
