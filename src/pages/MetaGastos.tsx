@@ -225,13 +225,14 @@ export default function MetaGastos() {
   };
 
   const handleSalvarMeta = async () => {
-    if (!metaForm.categoriaId || !metaForm.valorMeta) {
+    if (!metaForm.valorMeta || (metaForm.escopo === 'categoria' && !metaForm.categoriaId)) {
       toast.error(t('metaGastos.fillAllFields'));
       return;
     }
 
     const metaData = {
-      categoriaId: metaForm.categoriaId,
+      escopo: metaForm.escopo,
+      categoriaId: metaForm.escopo === 'categoria' ? metaForm.categoriaId : null,
       valorMeta: parseFloat(metaForm.valorMeta),
       periodo: metaForm.periodo,
       dataInicio: metaForm.dataInicio,
@@ -262,7 +263,8 @@ export default function MetaGastos() {
     
     setEditandoId(meta.id);
     setMetaForm({
-      categoriaId: meta.categoriaId,
+      escopo: meta.escopo,
+      categoriaId: meta.categoriaId || '',
       valorMeta: String(meta.valorMeta),
       periodo: meta.periodo,
       dataInicio: meta.dataInicio,
@@ -286,6 +288,7 @@ export default function MetaGastos() {
     const dataFimInicial = calcularDataFim(hoje, 'mensal');
     
     setMetaForm({
+      escopo: 'categoria',
       categoriaId: '',
       valorMeta: '',
       periodo: 'mensal',
