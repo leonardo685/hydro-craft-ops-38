@@ -5,7 +5,8 @@ import { useEmpresaId } from '@/hooks/use-empresa-id';
 
 export interface MetaGasto {
   id: string;
-  categoriaId: string;
+  categoriaId: string | null;
+  escopo: 'categoria' | 'total_entradas' | 'total_saidas';
   valorMeta: number;
   periodo: 'mensal' | 'trimestral' | 'anual';
   dataInicio: Date;
@@ -44,6 +45,7 @@ export const useMetasGastos = (modeloGestao?: 'dre' | 'esperado' | 'realizado') 
       const metasFormatadas = (data || []).map(meta => ({
         id: meta.id,
         categoriaId: meta.categoria_id,
+        escopo: ((meta as any).escopo || 'categoria') as 'categoria' | 'total_entradas' | 'total_saidas',
         valorMeta: Number(meta.valor_meta),
         periodo: meta.periodo as 'mensal' | 'trimestral' | 'anual',
         dataInicio: new Date(meta.data_inicio),
@@ -72,7 +74,8 @@ export const useMetasGastos = (modeloGestao?: 'dre' | 'esperado' | 'realizado') 
       const { error } = await supabase
         .from('metas_gastos')
         .insert({
-          categoria_id: meta.categoriaId,
+          categoria_id: meta.escopo === 'categoria' ? meta.categoriaId : null,
+          escopo: meta.escopo,
           valor_meta: meta.valorMeta,
           periodo: meta.periodo,
           data_inicio: meta.dataInicio.toISOString(),
@@ -80,7 +83,7 @@ export const useMetasGastos = (modeloGestao?: 'dre' | 'esperado' | 'realizado') 
           observacoes: meta.observacoes || null,
           modelo_gestao: meta.modeloGestao,
           empresa_id: empresaId
-        });
+        } as any);
 
       if (error) throw error;
 
@@ -101,7 +104,8 @@ export const useMetasGastos = (modeloGestao?: 'dre' | 'esperado' | 'realizado') 
     try {
       const updateData: any = {};
       
-      if (meta.categoriaId) updateData.categoria_id = meta.categoriaId;
+      if (meta.categoriaId !== undefined) updateData.categoria_id = meta.categoriaId;
+      if (meta.escopo) updateData.escopo = meta.escopo;
       if (meta.valorMeta !== undefined) updateData.valor_meta = meta.valorMeta;
       if (meta.periodo) updateData.periodo = meta.periodo;
       if (meta.dataInicio) updateData.data_inicio = meta.dataInicio.toISOString();
