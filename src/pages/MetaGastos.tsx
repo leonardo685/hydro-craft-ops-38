@@ -151,13 +151,7 @@ export default function MetaGastos() {
       const dataFim = new Date(meta.dataFim);
       
       const categoriaSelecionada = getCategoriasForSelect().find(c => c.value === meta.categoriaId);
-      console.log('🎯 Processando Meta:', {
-        categoria: categoriaSelecionada?.label,
-        categoriaId: meta.categoriaId,
-        periodo: `${dataInicio.toLocaleDateString()} até ${dataFim.toLocaleDateString()}`,
-        modelo: modeloGestao
-      });
-      
+
       const lancamentosFiltrados = lancamentos.filter(l => {
         // Definir qual data usar baseado no modelo de gestão
         let dataReferencia: Date;
@@ -178,51 +172,31 @@ export default function MetaGastos() {
         }
         
         const dentroDoPeríodo = dataReferencia >= dataInicio && dataReferencia <= dataFim;
-        const mesmaCategoria = l.categoriaId === meta.categoriaId;
-        const ehSaida = l.tipo === 'saida';
-        
-        if (mesmaCategoria) {
-          console.log('✅ Lançamento encontrado:', {
-            descricao: l.descricao,
-            valor: l.valor,
-            dataReferencia: dataReferencia.toLocaleDateString(),
-            dataInicio: dataInicio.toLocaleDateString(),
-            dataFim: dataFim.toLocaleDateString(),
-            dentroDoPeríodo,
-            deveConsiderar,
-            ehSaida,
-            pago: l.pago,
-            tipo: l.tipo
-          });
+
+        if (!deveConsiderar || !dentroDoPeríodo) return false;
+
+        if (meta.escopo === 'total_entradas') {
+          return l.tipo === 'entrada';
         }
-        
-        // Debug: Log todos os lançamentos de saída para ver o que está disponível
-        if (ehSaida && l.descricao.toLowerCase().includes('aluguel')) {
-          console.log('🏠 Lançamento de Aluguel:', {
-            descricao: l.descricao,
-            categoriaLancamento: l.categoriaId,
-            categoriaMeta: meta.categoriaId,
-            mesmaCategoria,
-            dataReferencia: dataReferencia.toLocaleDateString(),
-            dentroDoPeríodo
-          });
+        if (meta.escopo === 'total_saidas') {
+          return l.tipo === 'saida';
         }
-        
-        return ehSaida && deveConsiderar && mesmaCategoria && dentroDoPeríodo;
+        return l.tipo === 'saida' && l.categoriaId === meta.categoriaId;
       });
       
       const valorGasto = lancamentosFiltrados.reduce((acc, l) => acc + l.valor, 0);
-      
-      console.log('💰 Resultado:', {
-        categoria: categoriaSelecionada?.label,
-        lancamentosEncontrados: lancamentosFiltrados.length,
-        totalGasto: valorGasto
-      });
+
+      const nomeExibicao = meta.escopo === 'total_entradas'
+        ? 'Total de Entradas'
+        : meta.escopo === 'total_saidas'
+          ? 'Total de Saídas'
+          : (categoriaSelecionada?.label || 'Sem nome');
 
       return {
         id: meta.id,
         categoriaId: meta.categoriaId,
-        categoriaNome: categoriaSelecionada?.label || 'Sem nome',
+        categoriaNome: nomeExibicao,
+        escopo: meta.escopo,
         valorMeta: meta.valorMeta,
         periodo: meta.periodo,
         dataInicio: new Date(meta.dataInicio),
