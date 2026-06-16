@@ -1121,7 +1121,26 @@ export default function MetaGastos() {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label>Tipo de Meta *</Label>
+                  <Select
+                    value={metaForm.escopo}
+                    onValueChange={(value: 'categoria' | 'total_entradas' | 'total_saidas') =>
+                      setMetaForm(prev => ({ ...prev, escopo: value, categoriaId: value === 'categoria' ? prev.categoriaId : '' }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="categoria">Por Categoria</SelectItem>
+                      <SelectItem value="total_entradas">Total de Entradas</SelectItem>
+                      <SelectItem value="total_saidas">Total de Saídas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
+                  {metaForm.escopo === 'categoria' && (
                   <div className="space-y-2">
                     <Label>{t('metaGastos.category')} *</Label>
                     <Select value={metaForm.categoriaId} onValueChange={(value) => setMetaForm(prev => ({ ...prev, categoriaId: value }))}>
@@ -1137,6 +1156,7 @@ export default function MetaGastos() {
                       </SelectContent>
                     </Select>
                   </div>
+                  )}
                   <div className="space-y-2">
                     <Label>{t('metaGastos.goalValue')} *</Label>
                     <Input
