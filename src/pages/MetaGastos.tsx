@@ -33,8 +33,9 @@ import jsPDF from "jspdf";
 
 interface MetaGasto {
   id: string;
-  categoriaId: string;
+  categoriaId: string | null;
   categoriaNome: string;
+  escopo: 'categoria' | 'total_entradas' | 'total_saidas';
   valorMeta: number;
   periodo: 'mensal' | 'trimestral' | 'anual';
   dataInicio: Date;
@@ -90,6 +91,7 @@ export default function MetaGastos() {
   const [filtroStatus, setFiltroStatus] = useState("todos");
 
   const [metaForm, setMetaForm] = useState({
+    escopo: 'categoria' as 'categoria' | 'total_entradas' | 'total_saidas',
     categoriaId: '',
     valorMeta: '',
     periodo: 'mensal' as 'mensal' | 'trimestral' | 'anual',
@@ -149,13 +151,7 @@ export default function MetaGastos() {
       const dataFim = new Date(meta.dataFim);
       
       const categoriaSelecionada = getCategoriasForSelect().find(c => c.value === meta.categoriaId);
-      console.log('🎯 Processando Meta:', {
-        categoria: categoriaSelecionada?.label,
-        categoriaId: meta.categoriaId,
-        periodo: `${dataInicio.toLocaleDateString()} até ${dataFim.toLocaleDateString()}`,
-        modelo: modeloGestao
-      });
-      
+
       const lancamentosFiltrados = lancamentos.filter(l => {
         // Definir qual data usar baseado no modelo de gestão
         let dataReferencia: Date;
@@ -176,51 +172,31 @@ export default function MetaGastos() {
         }
         
         const dentroDoPeríodo = dataReferencia >= dataInicio && dataReferencia <= dataFim;
-        const mesmaCategoria = l.categoriaId === meta.categoriaId;
-        const ehSaida = l.tipo === 'saida';
-        
-        if (mesmaCategoria) {
-          console.log('✅ Lançamento encontrado:', {
-            descricao: l.descricao,
-            valor: l.valor,
-            dataReferencia: dataReferencia.toLocaleDateString(),
-            dataInicio: dataInicio.toLocaleDateString(),
-            dataFim: dataFim.toLocaleDateString(),
-            dentroDoPeríodo,
-            deveConsiderar,
-            ehSaida,
-            pago: l.pago,
-            tipo: l.tipo
-          });
+
+        if (!deveConsiderar || !dentroDoPeríodo) return false;
+
+        if (meta.escopo === 'total_entradas') {
+          return l.tipo === 'entrada';
         }
-        
-        // Debug: Log todos os lançamentos de saída para ver o que está disponível
-        if (ehSaida && l.descricao.toLowerCase().includes('aluguel')) {
-          console.log('🏠 Lançamento de Aluguel:', {
-            descricao: l.descricao,
-            categoriaLancamento: l.categoriaId,
-            categoriaMeta: meta.categoriaId,
-            mesmaCategoria,
-            dataReferencia: dataReferencia.toLocaleDateString(),
-            dentroDoPeríodo
-          });
+        if (meta.escopo === 'total_saidas') {
+          return l.tipo === 'saida';
         }
-        
-        return ehSaida && deveConsiderar && mesmaCategoria && dentroDoPeríodo;
+        return l.tipo === 'saida' && l.categoriaId === meta.categoriaId;
       });
       
       const valorGasto = lancamentosFiltrados.reduce((acc, l) => acc + l.valor, 0);
-      
-      console.log('💰 Resultado:', {
-        categoria: categoriaSelecionada?.label,
-        lancamentosEncontrados: lancamentosFiltrados.length,
-        totalGasto: valorGasto
-      });
+
+      const nomeExibicao = meta.escopo === 'total_entradas'
+        ? 'Total de Entradas'
+        : meta.escopo === 'total_saidas'
+          ? 'Total de Saídas'
+          : (categoriaSelecionada?.label || 'Sem nome');
 
       return {
         id: meta.id,
         categoriaId: meta.categoriaId,
-        categoriaNome: categoriaSelecionada?.label || 'Sem nome',
+        categoriaNome: nomeExibicao,
+        escopo: meta.escopo,
         valorMeta: meta.valorMeta,
         periodo: meta.periodo,
         dataInicio: new Date(meta.dataInicio),
@@ -249,13 +225,14 @@ export default function MetaGastos() {
   };
 
   const handleSalvarMeta = async () => {
-    if (!metaForm.categoriaId || !metaForm.valorMeta) {
+    if (!metaForm.valorMeta || (metaForm.escopo === 'categoria' && !metaForm.categoriaId)) {
       toast.error(t('metaGastos.fillAllFields'));
       return;
     }
 
     const metaData = {
-      categoriaId: metaForm.categoriaId,
+      escopo: metaForm.escopo,
+      categoriaId: metaForm.escopo === 'categoria' ? metaForm.categoriaId : null,
       valorMeta: parseFloat(metaForm.valorMeta),
       periodo: metaForm.periodo,
       dataInicio: metaForm.dataInicio,
@@ -286,7 +263,8 @@ export default function MetaGastos() {
     
     setEditandoId(meta.id);
     setMetaForm({
-      categoriaId: meta.categoriaId,
+      escopo: meta.escopo,
+      categoriaId: meta.categoriaId || '',
       valorMeta: String(meta.valorMeta),
       periodo: meta.periodo,
       dataInicio: meta.dataInicio,
@@ -310,6 +288,7 @@ export default function MetaGastos() {
     const dataFimInicial = calcularDataFim(hoje, 'mensal');
     
     setMetaForm({
+      escopo: 'categoria',
       categoriaId: '',
       valorMeta: '',
       periodo: 'mensal',
@@ -1142,7 +1121,26 @@ export default function MetaGastos() {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label>Tipo de Meta *</Label>
+                  <Select
+                    value={metaForm.escopo}
+                    onValueChange={(value: 'categoria' | 'total_entradas' | 'total_saidas') =>
+                      setMetaForm(prev => ({ ...prev, escopo: value, categoriaId: value === 'categoria' ? prev.categoriaId : '' }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="categoria">Por Categoria</SelectItem>
+                      <SelectItem value="total_entradas">Total de Entradas</SelectItem>
+                      <SelectItem value="total_saidas">Total de Saídas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
+                  {metaForm.escopo === 'categoria' && (
                   <div className="space-y-2">
                     <Label>{t('metaGastos.category')} *</Label>
                     <Select value={metaForm.categoriaId} onValueChange={(value) => setMetaForm(prev => ({ ...prev, categoriaId: value }))}>
@@ -1158,6 +1156,7 @@ export default function MetaGastos() {
                       </SelectContent>
                     </Select>
                   </div>
+                  )}
                   <div className="space-y-2">
                     <Label>{t('metaGastos.goalValue')} *</Label>
                     <Input

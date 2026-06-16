@@ -1605,11 +1605,12 @@ export type Database = {
       }
       metas_gastos: {
         Row: {
-          categoria_id: string
+          categoria_id: string | null
           created_at: string
           data_fim: string
           data_inicio: string
           empresa_id: string | null
+          escopo: string
           id: string
           modelo_gestao: string
           observacoes: string | null
@@ -1618,11 +1619,12 @@ export type Database = {
           valor_meta: number
         }
         Insert: {
-          categoria_id: string
+          categoria_id?: string | null
           created_at?: string
           data_fim: string
           data_inicio: string
           empresa_id?: string | null
+          escopo?: string
           id?: string
           modelo_gestao?: string
           observacoes?: string | null
@@ -1631,11 +1633,12 @@ export type Database = {
           valor_meta: number
         }
         Update: {
-          categoria_id?: string
+          categoria_id?: string | null
           created_at?: string
           data_fim?: string
           data_inicio?: string
           empresa_id?: string | null
+          escopo?: string
           id?: string
           modelo_gestao?: string
           observacoes?: string | null
