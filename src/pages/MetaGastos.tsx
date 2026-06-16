@@ -33,8 +33,9 @@ import jsPDF from "jspdf";
 
 interface MetaGasto {
   id: string;
-  categoriaId: string;
+  categoriaId: string | null;
   categoriaNome: string;
+  escopo: 'categoria' | 'total_entradas' | 'total_saidas';
   valorMeta: number;
   periodo: 'mensal' | 'trimestral' | 'anual';
   dataInicio: Date;
@@ -90,6 +91,7 @@ export default function MetaGastos() {
   const [filtroStatus, setFiltroStatus] = useState("todos");
 
   const [metaForm, setMetaForm] = useState({
+    escopo: 'categoria' as 'categoria' | 'total_entradas' | 'total_saidas',
     categoriaId: '',
     valorMeta: '',
     periodo: 'mensal' as 'mensal' | 'trimestral' | 'anual',
