@@ -28,6 +28,7 @@ import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { translations } from "@/i18n/translations";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { RefreshButton } from "@/components/RefreshButton";
+import { PlanejamentoCaixa } from "@/components/PlanejamentoCaixa";
 
 import jsPDF from "jspdf";
 
@@ -1275,9 +1276,10 @@ export default function MetaGastos() {
         </div>
 
         <Tabs defaultValue="metas" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsList className="grid w-full grid-cols-3 max-w-2xl">
             <TabsTrigger value="metas">{t('metaGastos.spendingGoals')}</TabsTrigger>
             <TabsTrigger value="estrategico">{t('metaGastos.strategicPlanning')}</TabsTrigger>
+            <TabsTrigger value="planejamento-caixa">Planejamento de Caixa</TabsTrigger>
           </TabsList>
 
           {/* ABA 1: METAS DE GASTOS */}
@@ -2261,6 +2263,11 @@ export default function MetaGastos() {
               </>
             )}
 
+          </TabsContent>
+
+          {/* ABA 3: PLANEJAMENTO DE CAIXA */}
+          <TabsContent value="planejamento-caixa" className="space-y-6">
+            <PlanejamentoCaixa />
           </TabsContent>
         </Tabs>
       </div>
