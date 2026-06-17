@@ -2264,6 +2264,11 @@ export default function MetaGastos() {
             )}
 
           </TabsContent>
+
+          {/* ABA 3: PLANEJAMENTO DE CAIXA */}
+          <TabsContent value="planejamento-caixa" className="space-y-6">
+            <PlanejamentoCaixa />
+          </TabsContent>
         </Tabs>
       </div>
     </AppLayout>
