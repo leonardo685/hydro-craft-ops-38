@@ -1340,10 +1340,9 @@ export default function DFC() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="dfc">DFC</TabsTrigger>
             <TabsTrigger value="extrato">Extrato</TabsTrigger>
-            <TabsTrigger value="planejamento">Planejamento de Caixa</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dfc" className="space-y-6">
