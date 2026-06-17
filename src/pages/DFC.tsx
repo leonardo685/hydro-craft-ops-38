@@ -67,7 +67,7 @@ export default function DFC() {
 
   // Inicializar activeTab com base no parâmetro da URL
   const tabParam = searchParams.get('tab');
-  const initialTab = tabParam === 'extrato' || tabParam === 'planejamento' || tabParam === 'dfc' ? tabParam : 'dfc';
+  const initialTab = tabParam === 'extrato' || tabParam === 'dfc' ? tabParam : 'dfc';
   const [contaSelecionada, setContaSelecionada] = useState('todas');
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLancamentoDialogOpen, setIsLancamentoDialogOpen] = useState(false);
@@ -198,7 +198,7 @@ export default function DFC() {
   // Verificar parâmetro da URL para abrir tab específica
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'extrato' || tab === 'planejamento' || tab === 'dfc') {
+    if (tab === 'extrato' || tab === 'dfc') {
       setActiveTab(tab);
     }
   }, [searchParams]);
