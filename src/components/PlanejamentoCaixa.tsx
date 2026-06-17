@@ -25,6 +25,8 @@ export function PlanejamentoCaixa() {
   const [dataInicial, setDataInicial] = useState("");
   const [dataFinal, setDataFinal] = useState("");
   const [contaBancariaFiltro, setContaBancariaFiltro] = useState("todas");
+  const [tiposSelecionados, setTiposSelecionados] = useState<string[]>(["entrada", "saida"]);
+  const [statusSelecionados, setStatusSelecionados] = useState<string[]>(["no_prazo", "atrasado"]);
   const [buscaAtiva, setBuscaAtiva] = useState(false);
   const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
   const [lancamentosOcultosTemporarios, setLancamentosOcultosTemporarios] = useState<Set<string>>(new Set());
@@ -83,6 +85,11 @@ export function PlanejamentoCaixa() {
         if (dataInicioFiltro && d < dataInicioFiltro) return false;
         if (dataFimFiltro && d > dataFimFiltro) return false;
         if (contaBancariaFiltro !== "todas" && l.contaBancaria !== contaBancariaFiltro) return false;
+        const tipoMov = l.tipo === "entrada" ? "entrada" : "saida";
+        if (!tiposSelecionados.includes(tipoMov)) return false;
+        const atrasado = d < new Date();
+        const statusMov = atrasado ? "atrasado" : "no_prazo";
+        if (!statusSelecionados.includes(statusMov)) return false;
         return true;
       })
       .map(l => ({
@@ -103,6 +110,8 @@ export function PlanejamentoCaixa() {
     setDataInicial("");
     setDataFinal("");
     setContaBancariaFiltro("todas");
+    setTiposSelecionados(["entrada", "saida"]);
+    setStatusSelecionados(["no_prazo", "atrasado"]);
     setMovimentacoesFiltradas([]);
     setBuscaAtiva(false);
     setLancamentosOcultosTemporarios(new Set());
@@ -185,6 +194,51 @@ export function PlanejamentoCaixa() {
                 {contasBancarias.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Tipo de Movimentação</Label>
+              <div className="flex flex-wrap gap-4 p-3 border rounded-md">
+                {[
+                  { id: "entrada", label: "Entradas" },
+                  { id: "saida", label: "Saídas" },
+                ].map(opt => (
+                  <label key={opt.id} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={tiposSelecionados.includes(opt.id)}
+                      onCheckedChange={(c) => {
+                        setTiposSelecionados(prev =>
+                          c ? [...prev, opt.id] : prev.filter(t => t !== opt.id)
+                        );
+                      }}
+                    />
+                    <span className="text-sm">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Situação</Label>
+              <div className="flex flex-wrap gap-4 p-3 border rounded-md">
+                {[
+                  { id: "no_prazo", label: "No prazo" },
+                  { id: "atrasado", label: "Atrasados" },
+                ].map(opt => (
+                  <label key={opt.id} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={statusSelecionados.includes(opt.id)}
+                      onCheckedChange={(c) => {
+                        setStatusSelecionados(prev =>
+                          c ? [...prev, opt.id] : prev.filter(t => t !== opt.id)
+                        );
+                      }}
+                    />
+                    <span className="text-sm">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
 
           {!buscaAtiva ? (
