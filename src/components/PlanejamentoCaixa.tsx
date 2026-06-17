@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowDown, ArrowDownLeft, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, ChevronUp, FileDown } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { useContasBancarias } from "@/hooks/use-contas-bancarias";
@@ -28,7 +28,6 @@ export function PlanejamentoCaixa() {
   const [tiposSelecionados, setTiposSelecionados] = useState<string[]>(["entrada", "saida"]);
   const [statusSelecionados, setStatusSelecionados] = useState<string[]>(["no_prazo", "atrasado"]);
   const [buscaAtiva, setBuscaAtiva] = useState(false);
-  const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState<any[]>([]);
   const [lancamentosOcultosTemporarios, setLancamentosOcultosTemporarios] = useState<Set<string>>(new Set());
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(null);
@@ -39,7 +38,7 @@ export function PlanejamentoCaixa() {
   }));
 
   // Atualizar datas a partir de período pré-definido
-  useMemo(() => {
+  useEffect(() => {
     if (!periodoSelecionado || periodoSelecionado === "personalizado") return;
     const hoje = new Date();
     let inicio: Date; let fim: Date;
@@ -68,15 +67,10 @@ export function PlanejamentoCaixa() {
     });
   };
 
-  const handleBuscarMovimentacoes = () => {
-    if (!periodoSelecionado && !dataInicial && !dataFinal) {
-      setMovimentacoesFiltradas([]);
-      setBuscaAtiva(false);
-      return;
-    }
+  const movimentacoesFiltradas = useMemo(() => {
     const dataInicioFiltro = dataInicial ? new Date(dataInicial + "T00:00:00") : null;
     const dataFimFiltro = dataFinal ? new Date(dataFinal + "T23:59:59") : null;
-    const movs = lancamentos
+    return lancamentos
       .filter(l => {
         if (l.pago) return false;
         if (l.tipo === "transferencia") return false;
@@ -101,7 +95,13 @@ export function PlanejamentoCaixa() {
         valor: l.valor,
         status: l.pago ? "pago" : new Date(l.dataEsperada) < new Date() ? "vencido" : "pendente",
       }));
-    setMovimentacoesFiltradas(movs);
+  }, [lancamentos, dataInicial, dataFinal, contaBancariaFiltro, tiposSelecionados, statusSelecionados, getNomeCategoriaMae]);
+
+  const handleBuscarMovimentacoes = () => {
+    if (!periodoSelecionado && !dataInicial && !dataFinal) {
+      setBuscaAtiva(false);
+      return;
+    }
     setBuscaAtiva(true);
   };
 
@@ -112,7 +112,6 @@ export function PlanejamentoCaixa() {
     setContaBancariaFiltro("todas");
     setTiposSelecionados(["entrada", "saida"]);
     setStatusSelecionados(["no_prazo", "atrasado"]);
-    setMovimentacoesFiltradas([]);
     setBuscaAtiva(false);
     setLancamentosOcultosTemporarios(new Set());
   };
@@ -247,7 +246,7 @@ export function PlanejamentoCaixa() {
             <Button onClick={limparFiltros} variant="outline" className="w-full">Limpar Filtros</Button>
           )}
 
-          {movimentacoesFiltradas.length > 0 && (
+          {buscaAtiva && movimentacoesFiltradas.length > 0 && (
             <div className="space-y-4 mt-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Resultados da Busca</h3>
@@ -343,6 +342,12 @@ export function PlanejamentoCaixa() {
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {buscaAtiva && movimentacoesFiltradas.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhuma movimentação encontrada com os filtros selecionados.
             </div>
           )}
         </CardContent>
