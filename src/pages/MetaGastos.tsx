@@ -1331,6 +1331,69 @@ export default function MetaGastos() {
               </Card>
             </div>
 
+            {/* Gráfico de Rosca: Visão Geral das Metas */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('metaGastos.goalsOverview') || 'Visão Geral das Metas'}</CardTitle>
+                <p className="text-sm text-muted-foreground">{t('metaGastos.goalsOverviewDesc') || 'Percentual utilizado do total de metas'}</p>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: t('metaGastos.spentLabel') || 'Gasto', value: totalGasto, color: '#ef4444' },
+                        { name: t('metaGastos.available') || 'Disponível', value: Math.max(disponivel, 0), color: '#22c55e' },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={80}
+                      outerRadius={110}
+                      paddingAngle={2}
+                      dataKey="value"
+                      startAngle={90}
+                      endAngle={-270}
+                      stroke="none"
+                    >
+                      {[
+                        { color: '#ef4444' },
+                        { color: '#22c55e' },
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number) => formatCurrency(value)}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                      }}
+                    />
+                    <text
+                      x="50%"
+                      y="50%"
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      className="fill-foreground"
+                    >
+                      <tspan x="50%" dy="-0.4em" fontSize="28" fontWeight="bold">
+                        {totalMetas > 0 ? ((totalGasto / totalMetas) * 100).toFixed(1) : 0}%
+                      </tspan>
+                      <tspan x="50%" dy="1.4em" fontSize="14" className="fill-muted-foreground">
+                        {t('metaGastos.utilized') || 'Utilizado'}
+                      </tspan>
+                    </text>
+                    <Legend
+                      verticalAlign="bottom"
+                      height={36}
+                      formatter={(value: string) => value}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
             {/* Gráfico de Barras: Metas vs Gastos */}
             {dadosGraficoMetas.length > 0 && (
               <Card>
