@@ -1343,7 +1343,7 @@ export default function DFC() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="dfc">DFC</TabsTrigger>
             <TabsTrigger value="extrato">Extrato</TabsTrigger>
-            <TabsTrigger value="planejamento">Planejamento</TabsTrigger>
+            <TabsTrigger value="planejamento">Planejamento de Caixa</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dfc" className="space-y-6">
