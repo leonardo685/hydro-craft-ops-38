@@ -19,11 +19,24 @@ serve(async (req) => {
 
     const { ordemId, dadosTeste } = await req.json()
 
+    // Buscar empresa_id da ordem para preencher no teste (necessário para RLS)
+    const { data: ordemData, error: ordemError } = await supabaseClient
+      .from('ordens_servico')
+      .select('empresa_id')
+      .eq('id', ordemId)
+      .single()
+
+    if (ordemError) {
+      console.error('Erro ao buscar ordem:', ordemError)
+      throw ordemError
+    }
+
     // Inserir dados do teste
     const { error: insertError } = await supabaseClient
       .from('testes_equipamentos')
       .insert({
         ordem_servico_id: ordemId,
+        empresa_id: ordemData?.empresa_id,
         curso: dadosTeste.curso,
         qtd_ciclos: dadosTeste.qtdCiclos,
         pressao_maxima_trabalho: dadosTeste.pressaoMaximaTrabalho,
