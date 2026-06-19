@@ -208,12 +208,16 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
       console.log('Upload concluído! URL:', videoUrl);
 
       // Atualizar o teste com a URL do vídeo
-      const { error } = await supabase
+      const { data: updateData, error } = await supabase
         .from('testes_equipamentos')
         .update({ video_url: videoUrl })
-        .eq('id', testeInfo.id);
+        .eq('id', testeInfo.id)
+        .select();
 
       if (error) throw error;
+      if (!updateData || updateData.length === 0) {
+        throw new Error('Não foi possível salvar o vídeo no teste (permissão negada). Atualize a página e tente novamente.');
+      }
 
       setUploadStatus('success');
       toast({
