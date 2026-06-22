@@ -529,7 +529,7 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                           <TableHead className="w-[70px]">Un</TableHead>
                           <TableHead className="text-right w-[130px]">Valor unit.</TableHead>
                           <TableHead className="text-right w-[130px]">Total</TableHead>
-                          <TableHead className="w-[40px]"></TableHead>
+                          <TableHead className="w-[40px]">{" "}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
