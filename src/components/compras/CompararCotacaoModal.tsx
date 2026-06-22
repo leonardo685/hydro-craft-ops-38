@@ -481,9 +481,155 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
               </div>
             </div>
 
+            {/* Fechamento com vencedor */}
+            {cotacao.vencedor_fornecedor_id && (() => {
+              const venc = forns.find((f) => f.id === cotacao.vencedor_fornecedor_id);
+              if (!venc) return null;
+              const totalFech = itens.reduce((acc, it) => {
+                const p = proposta(venc.id, it.id);
+                if (p?.preco_unitario == null) return acc;
+                return acc + Number(p.preco_unitario) * Number(it.quantidade);
+              }, 0);
+              return (
+                <div className="border-2 border-green-500 rounded-md p-4 bg-green-50/50 dark:bg-green-950/20 space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-green-600" />
+                      <h3 className="text-base font-semibold">Fechamento com {venc.fornecedor_nome}</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-muted-foreground">Prazo pagamento (dias):</label>
+                      <Input
+                        type="number"
+                        key={`prazo-${venc.prazo_pagamento_dias ?? ""}`}
+                        defaultValue={venc.prazo_pagamento_dias ?? 28}
+                        className="h-8 w-24"
+                        onBlur={(e) => {
+                          const cur = String(venc.prazo_pagamento_dias ?? "");
+                          if (e.target.value === cur) return;
+                          salvarPrazoPagamento(venc.id, e.target.value);
+                        }}
+                        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                      />
+                      <Button size="sm" variant="outline" onClick={() => sincronizarTodasOS()}>
+                        <RefreshCw className="h-3 w-3 mr-1" /> Sincronizar OS
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Edite itens, valores e quantidades abaixo. Tudo é sincronizado automaticamente com a OS vinculada (peças/usinagens, QR code e histórico).
+                  </p>
+                  <div className="border rounded-md overflow-x-auto bg-background">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[100px]">Tipo</TableHead>
+                          <TableHead>Descrição</TableHead>
+                          <TableHead className="text-right w-[90px]">Qtd</TableHead>
+                          <TableHead className="w-[70px]">Un</TableHead>
+                          <TableHead className="text-right w-[130px]">Valor unit.</TableHead>
+                          <TableHead className="text-right w-[130px]">Total</TableHead>
+                          <TableHead className="w-[40px]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {itens.map((it) => {
+                          const tipo = itemTipo(it);
+                          const p = proposta(venc.id, it.id);
+                          const unit = p?.preco_unitario != null ? Number(p.preco_unitario) : 0;
+                          const total = unit * Number(it.quantidade);
+                          return (
+                            <TableRow key={it.id}>
+                              <TableCell>
+                                <Badge variant={tipo === "usinagem" ? "outline" : "secondary"} className="gap-1 text-[10px]">
+                                  {tipo === "usinagem" && <Wrench className="h-3 w-3" />}
+                                  {tipo === "usinagem" ? "Usinagem" : "Peça"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  key={`desc-${it.descricao}`}
+                                  defaultValue={it.descricao}
+                                  className="h-8"
+                                  onBlur={(e) => atualizarItemFechamento(it.id, "descricao", e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  key={`qtd-${it.quantidade}`}
+                                  defaultValue={it.quantidade}
+                                  className="h-8 text-right"
+                                  onBlur={(e) => atualizarItemFechamento(it.id, "quantidade", e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  key={`un-${it.unidade}`}
+                                  defaultValue={it.unidade || "un"}
+                                  className="h-8"
+                                  onBlur={(e) => atualizarItemFechamento(it.id, "unidade", e.target.value)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  key={`vunit-${unit}`}
+                                  defaultValue={unit || ""}
+                                  placeholder="0,00"
+                                  className="h-8 text-right"
+                                  onBlur={(e) => salvarPrecoVencedor(it.id, e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                />
+                              </TableCell>
+                              <TableCell className="text-right text-sm font-medium">
+                                {total > 0 ? fmt(total) : "—"}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-destructive"
+                                  onClick={() => removerItemFechamento(it.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        <TableRow className="bg-muted/40">
+                          <TableCell colSpan={5} className="font-semibold">Total do fechamento</TableCell>
+                          <TableCell className="text-right font-semibold">{totalFech > 0 ? fmt(totalFech) : "—"}</TableCell>
+                          <TableCell></TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => adicionarItemFechamento("peca")}>
+                      <Plus className="h-3 w-3 mr-1" /> Adicionar peça
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => adicionarItemFechamento("usinagem")}>
+                      <Plus className="h-3 w-3 mr-1" /> Adicionar usinagem
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Comparativo */}
-            <div>
-              <h3 className="text-sm font-semibold mb-2">Comparativo (preço unitário e total)</h3>
+            <Collapsible defaultOpen={!cotacao.vencedor_fornecedor_id}>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold">Comparativo (preço unitário e total)</h3>
+                <CollapsibleTrigger asChild>
+                  <Button size="sm" variant="ghost">Mostrar / ocultar</Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent>
               <div className="border rounded-md overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -604,7 +750,8 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                   </TableBody>
                 </Table>
               </div>
-            </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </div>
       </DialogContent>
