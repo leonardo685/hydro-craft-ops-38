@@ -485,7 +485,8 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
             {cotacao.vencedor_fornecedor_id && (() => {
               const venc = forns.find((f) => f.id === cotacao.vencedor_fornecedor_id);
               if (!venc) return null;
-              const totalFech = itens.reduce((acc, it) => {
+              const itensFech = itens.filter((it) => itemTipo(it) !== "usinagem");
+              const totalFech = itensFech.reduce((acc, it) => {
                 const p = proposta(venc.id, it.id);
                 if (p?.preco_unitario == null) return acc;
                 return acc + Number(p.preco_unitario) * Number(it.quantidade);
@@ -533,7 +534,7 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {itens.map((it) => {
+                        {itensFech.map((it) => {
                           const tipo = itemTipo(it);
                           const p = proposta(venc.id, it.id);
                           const unit = p?.preco_unitario != null ? Number(p.preco_unitario) : 0;
@@ -612,9 +613,6 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => adicionarItemFechamento("peca")}>
                       <Plus className="h-3 w-3 mr-1" /> Adicionar peça
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => adicionarItemFechamento("usinagem")}>
-                      <Plus className="h-3 w-3 mr-1" /> Adicionar usinagem
                     </Button>
                   </div>
                 </div>
