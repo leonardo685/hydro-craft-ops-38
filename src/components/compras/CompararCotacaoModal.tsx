@@ -482,25 +482,6 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                         )}
                         · {f.prazo_pagamento_dias || 28}ddl
                       </div>
-                      <div className="flex items-center gap-1 mt-2">
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">Total manual:</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          key={`manual-${f.valor_total_manual ?? ""}`}
-                          defaultValue={f.valor_total_manual ?? ""}
-                          placeholder="R$ total geral"
-                          className="h-7 text-right text-xs"
-                          onBlur={(e) => {
-                            const cur = f.valor_total_manual != null ? String(f.valor_total_manual) : "";
-                            if (e.target.value === cur) return;
-                            salvarTotalManual(f.id, e.target.value);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                          }}
-                        />
-                      </div>
                     </div>
                     <Button size="sm" variant="outline" onClick={() => copiarLink(f.token_publico)}>
                       <Link2 className="h-3 w-3 mr-1" /> Link
