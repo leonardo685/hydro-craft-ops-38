@@ -73,8 +73,16 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
         .update({ vencedor_fornecedor_id: fornId === "__none__" ? null : fornId })
         .eq("id", cotacaoId!);
       if (error) throw error;
-      toast.success("Vencedor atualizado");
-      carregar();
+      toast.success(fornId === "__none__" ? "Vencedor removido" : "Vencedor confirmado — ajuste valores abaixo");
+      await carregar();
+      if (fornId !== "__none__") {
+        // sync inicial: propaga compras já existentes do vencedor para a OS
+        const ords = Array.from(new Set(itens.map((i) => i.ordem_servico_id).filter(Boolean))) as string[];
+        for (const o of ords) {
+          // eslint-disable-next-line no-await-in-loop
+          await sincronizarOS(o);
+        }
+      }
     } catch (e: any) {
       toast.error("Erro: " + e.message);
     }
