@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Link2, CheckCircle2, Clock, Wrench, Trophy, Plus, Trash2, RefreshCw } from "lucide-react";
+import { Link2, CheckCircle2, Clock, Wrench, Trophy, Plus, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
   const [forns, setForns] = useState<any[]>([]);
   const [propostas, setPropostas] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [finalizando, setFinalizando] = useState(false);
 
   const carregar = async () => {
     if (!cotacaoId) return;
@@ -324,6 +325,7 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
     }
     toast.success("Item adicionado — preencha descrição e valor");
     await carregar();
+    await sincronizarTodasOS();
   };
 
   const removerItemFechamento = async (itemId: string) => {
