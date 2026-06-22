@@ -604,7 +604,7 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                         <TableRow className="bg-muted/40">
                           <TableCell colSpan={5} className="font-semibold">Total do fechamento</TableCell>
                           <TableCell className="text-right font-semibold">{totalFech > 0 ? fmt(totalFech) : "—"}</TableCell>
-                          <TableCell></TableCell>
+                          <TableCell>{" "}</TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
