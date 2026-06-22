@@ -97,13 +97,6 @@ export function NovaCotacaoModal({ open, onOpenChange, onCreated }: Props) {
             unidade: p.unidade || "un",
           });
         });
-        (os.usinagem_necessaria || []).forEach((p: any) => {
-          pecas.push({
-            descricao: `${p.trabalho || p.descricao || p.nome || "Usinagem"} (usinagem)`,
-            quantidade: Number(p.quantidade || 1),
-            unidade: p.unidade || "un",
-          });
-        });
         ords.push({
           id: os.id,
           numero_ordem: os.numero_ordem,
