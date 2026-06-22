@@ -1,0 +1,1 @@
+ALTER TABLE public.cotacoes ADD COLUMN IF NOT EXISTS vencedor_fornecedor_id uuid REFERENCES public.cotacao_fornecedores(id) ON DELETE SET NULL;

@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Link2, CheckCircle2, Clock, Wrench } from "lucide-react";
+import { Link2, CheckCircle2, Clock, Wrench, Trophy } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -54,6 +55,30 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
 
   const proposta = (fornId: string, itemId: string) =>
     propostas.find((p) => p.cotacao_fornecedor_id === fornId && p.cotacao_item_id === itemId);
+
+  const salvarTotal = async (fornId: string, itemId: string, totalStr: string) => {
+    const item = itens.find((i) => i.id === itemId);
+    if (!item) return;
+    const qtd = Number(item.quantidade) || 0;
+    if (qtd <= 0) return;
+    const total = totalStr === "" ? null : Number(totalStr.replace(",", "."));
+    const unit = total == null ? null : Number((total / qtd).toFixed(4));
+    await salvarPreco(fornId, itemId, unit == null ? "" : String(unit));
+  };
+
+  const definirVencedor = async (fornId: string) => {
+    try {
+      const { error } = await supabase
+        .from("cotacoes")
+        .update({ vencedor_fornecedor_id: fornId === "__none__" ? null : fornId })
+        .eq("id", cotacaoId!);
+      if (error) throw error;
+      toast.success("Vencedor atualizado");
+      carregar();
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    }
+  };
 
   const salvarPreco = async (fornId: string, itemId: string, valor: string) => {
     const existente = proposta(fornId, itemId);
@@ -123,7 +148,8 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0">
+        <div className="px-6 pt-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             Cotação {cotacao.numero}
@@ -133,17 +159,52 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
             <p className="text-sm text-muted-foreground">{cotacao.observacoes}</p>
           )}
         </DialogHeader>
+        </div>
 
-        <ScrollArea className="flex-1 pr-2">
-          <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
+          <div className="space-y-6 pt-4">
             {/* Status fornecedores */}
             <div>
-              <h3 className="text-sm font-semibold mb-2">Fornecedores convidados</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold">Fornecedores convidados</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Trophy className="h-3 w-3" /> Vencedor:
+                  </span>
+                  <Select
+                    value={cotacao.vencedor_fornecedor_id || "__none__"}
+                    onValueChange={definirVencedor}
+                  >
+                    <SelectTrigger className="h-8 w-[220px]">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">— Nenhum —</SelectItem>
+                      {forns.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.fornecedor_nome}
+                          {totalForn(f.id) > 0 ? ` · ${fmt(totalForn(f.id))}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {forns.map((f) => (
-                  <div key={f.id} className="border rounded-md p-3 flex items-center justify-between gap-2">
+                  <div
+                    key={f.id}
+                    className={`border rounded-md p-3 flex items-center justify-between gap-2 ${
+                      cotacao.vencedor_fornecedor_id === f.id ? "border-green-500 bg-green-50 dark:bg-green-950/30" : ""
+                    }`}
+                  >
                     <div className="min-w-0">
-                      <div className="font-medium text-sm truncate">{f.fornecedor_nome}</div>
+                      <div className="font-medium text-sm truncate flex items-center gap-1">
+                        {cotacao.vencedor_fornecedor_id === f.id && (
+                          <Trophy className="h-3 w-3 text-green-600" />
+                        )}
+                        {f.fornecedor_nome}
+                      </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                         {f.respondido_em ? (
                           <span className="text-green-600 flex items-center gap-1">
@@ -167,7 +228,7 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
 
             {/* Comparativo */}
             <div>
-              <h3 className="text-sm font-semibold mb-2">Comparativo (preço unitário)</h3>
+              <h3 className="text-sm font-semibold mb-2">Comparativo (preço unitário e total)</h3>
               <div className="border rounded-md overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -175,7 +236,7 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                       <TableHead className="min-w-[200px]">Item</TableHead>
                       <TableHead className="text-right">Qtd</TableHead>
                       {forns.map((f) => (
-                        <TableHead key={f.id} className="text-right min-w-[120px]">
+                        <TableHead key={f.id} className="text-right min-w-[180px]">
                           {f.fornecedor_nome}
                         </TableHead>
                       ))}
@@ -193,6 +254,10 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                           {forns.map((f) => {
                             const p = proposta(f.id, it.id);
                             const valorAtual = p?.preco_unitario != null ? String(p.preco_unitario) : "";
+                            const totalAtual =
+                              p?.preco_unitario != null
+                                ? String(Number((Number(p.preco_unitario) * Number(it.quantidade)).toFixed(2)))
+                                : "";
                             const isBest =
                               melhor != null && p?.preco_unitario != null && Number(p.preco_unitario) === melhor;
                             const isUsinagem = p?.tipo === "usinagem";
@@ -206,20 +271,37 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                                     <Wrench className="h-3 w-3" /> usinagem
                                   </Badge>
                                 )}
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  defaultValue={valorAtual}
-                                  placeholder="0,00"
-                                  className={`h-8 text-right ${isBest ? "font-semibold" : ""}`}
-                                  onBlur={(e) => salvarPreco(f.id, it.id, e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                                  }}
-                                />
+                                <div className="flex gap-1 items-center">
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    key={`unit-${valorAtual}`}
+                                    defaultValue={valorAtual}
+                                    placeholder="unit"
+                                    title="Preço unitário"
+                                    className={`h-8 text-right ${isBest ? "font-semibold" : ""}`}
+                                    onBlur={(e) => salvarPreco(f.id, it.id, e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                                    }}
+                                  />
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    key={`tot-${totalAtual}`}
+                                    defaultValue={totalAtual}
+                                    placeholder="total"
+                                    title="Valor total (calcula unitário)"
+                                    className="h-8 text-right"
+                                    onBlur={(e) => salvarTotal(f.id, it.id, e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                                    }}
+                                  />
+                                </div>
                                 {p?.preco_unitario != null && (
                                   <div className="text-xs text-right text-muted-foreground mt-1">
-                                    {fmt(Number(p.preco_unitario))}
+                                    {fmt(Number(p.preco_unitario))} · total {fmt(Number(p.preco_unitario) * Number(it.quantidade))}
                                   </div>
                                 )}
                                 {p?.prazo_entrega_dias != null && (
@@ -261,7 +343,7 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
               </div>
             </div>
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
