@@ -161,6 +161,209 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
   const fmt = (n: number) =>
     n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+  // ============== Fechamento (vencedor) ==============
+
+  const isUsinagemDesc = (s: string) => /\(\s*usinagem\s*\)/i.test(s || "");
+  const stripUsinagem = (s: string) => (s || "").replace(/\s*\(\s*usinagem\s*\)\s*$/i, "").trim();
+  const itemTipo = (it: any): "peca" | "usinagem" =>
+    it?.tipo === "usinagem" || isUsinagemDesc(it?.descricao) ? "usinagem" : "peca";
+
+  const sincronizarOS = async (ordemId: string) => {
+    if (!ordemId || !cotacaoId) return;
+    // Itens originais da cotação para esta OS (snapshot atual no banco)
+    const { data: itensOS, error: eItens } = await supabase
+      .from("cotacao_itens")
+      .select("id, descricao, quantidade, unidade, tipo")
+      .eq("cotacao_id", cotacaoId)
+      .eq("ordem_servico_id", ordemId);
+    if (eItens) {
+      toast.error("Erro lendo itens da cotação: " + eItens.message);
+      return;
+    }
+
+    const venc = cotacao?.vencedor_fornecedor_id as string | null;
+    if (!venc) return;
+
+    // Propostas do vencedor (somente compradas — preço > 0)
+    const itemIds = (itensOS || []).map((i: any) => i.id);
+    let propsVenc: any[] = [];
+    if (itemIds.length) {
+      const { data: pp } = await supabase
+        .from("cotacao_propostas")
+        .select("cotacao_item_id, preco_unitario")
+        .eq("cotacao_fornecedor_id", venc)
+        .in("cotacao_item_id", itemIds);
+      propsVenc = pp || [];
+    }
+    const compradosMap = new Map<string, number>();
+    propsVenc.forEach((p) => {
+      if (p.preco_unitario != null) compradosMap.set(p.cotacao_item_id, Number(p.preco_unitario));
+    });
+
+    // Conjuntos "cotado" (descrições normalizadas) para remover da OS antes de regravar
+    const cotadoPecas = new Set<string>();
+    const cotadoUsinagem = new Set<string>();
+    (itensOS || []).forEach((i: any) => {
+      const t = itemTipo(i);
+      const desc = t === "usinagem" ? stripUsinagem(i.descricao) : i.descricao;
+      (t === "usinagem" ? cotadoUsinagem : cotadoPecas).add((desc || "").trim().toLowerCase());
+    });
+
+    // OS atual
+    const { data: os, error: eOs } = await supabase
+      .from("ordens_servico")
+      .select("pecas_necessarias, usinagem_necessaria, numero_ordem")
+      .eq("id", ordemId)
+      .single();
+    if (eOs) {
+      toast.error("Erro lendo OS: " + eOs.message);
+      return;
+    }
+
+    const pecasMant = ((os?.pecas_necessarias as any[]) || []).filter(
+      (p) => !cotadoPecas.has(((p.peca || p.descricao || "") as string).trim().toLowerCase()),
+    );
+    const usinMant = ((os?.usinagem_necessaria as any[]) || []).filter(
+      (u) => !cotadoUsinagem.has(((u.trabalho || u.descricao || "") as string).trim().toLowerCase()),
+    );
+
+    const novasPecas: any[] = [...pecasMant];
+    const novasUsin: any[] = [...usinMant];
+
+    (itensOS || []).forEach((i: any) => {
+      const valor = compradosMap.get(i.id);
+      if (valor == null) return; // vencedor não comprou esse item
+      const t = itemTipo(i);
+      if (t === "usinagem") {
+        novasUsin.push({
+          trabalho: stripUsinagem(i.descricao),
+          quantidade: Number(i.quantidade) || 1,
+          valor,
+          comprado: true,
+        });
+      } else {
+        novasPecas.push({
+          peca: i.descricao,
+          quantidade: Number(i.quantidade) || 1,
+          valor,
+          comprado: true,
+        });
+      }
+    });
+
+    const { error: eUp } = await supabase
+      .from("ordens_servico")
+      .update({ pecas_necessarias: novasPecas, usinagem_necessaria: novasUsin })
+      .eq("id", ordemId);
+    if (eUp) {
+      toast.error("Falha ao atualizar OS " + (os?.numero_ordem || "") + ": " + eUp.message);
+      return;
+    }
+    toast.success("OS " + (os?.numero_ordem || "") + " sincronizada");
+  };
+
+  const sincronizarTodasOS = async () => {
+    const ords = Array.from(new Set(itens.map((i) => i.ordem_servico_id).filter(Boolean))) as string[];
+    for (const o of ords) {
+      // eslint-disable-next-line no-await-in-loop
+      await sincronizarOS(o);
+    }
+  };
+
+  const salvarPrazoPagamento = async (fornId: string, dias: string) => {
+    const num = dias === "" ? null : parseInt(dias, 10);
+    const { error } = await supabase
+      .from("cotacao_fornecedores")
+      .update({ prazo_pagamento_dias: num })
+      .eq("id", fornId);
+    if (error) return toast.error("Erro: " + error.message);
+    toast.success("Prazo de pagamento salvo");
+    carregar();
+  };
+
+  const adicionarItemFechamento = async (tipo: "peca" | "usinagem") => {
+    const ords = Array.from(new Set(itens.map((i) => i.ordem_servico_id).filter(Boolean))) as string[];
+    const ordemId = ords[0] || null; // se houver várias, usa a primeira; usuário pode editar depois
+    if (!ordemId) {
+      toast.error("Cotação sem OS vinculada — não é possível sincronizar item novo");
+      return;
+    }
+    const descPlaceholder = tipo === "usinagem" ? "Nova usinagem (usinagem)" : "Nova peça";
+    const { data: novo, error } = await supabase
+      .from("cotacao_itens")
+      .insert({
+        cotacao_id: cotacaoId!,
+        ordem_servico_id: ordemId,
+        descricao: descPlaceholder,
+        quantidade: 1,
+        unidade: "un",
+        tipo,
+      })
+      .select("id")
+      .single();
+    if (error) return toast.error("Erro: " + error.message);
+    // cria proposta zerada para o vencedor para já aparecer na lista
+    if (cotacao?.vencedor_fornecedor_id && novo?.id) {
+      await supabase.from("cotacao_propostas").upsert(
+        {
+          cotacao_fornecedor_id: cotacao.vencedor_fornecedor_id,
+          cotacao_item_id: novo.id,
+          preco_unitario: 0,
+          tipo,
+        },
+        { onConflict: "cotacao_fornecedor_id,cotacao_item_id" },
+      );
+    }
+    toast.success("Item adicionado — preencha descrição e valor");
+    await carregar();
+  };
+
+  const removerItemFechamento = async (itemId: string) => {
+    // Apaga propostas associadas a esse item e o próprio item
+    await supabase.from("cotacao_propostas").delete().eq("cotacao_item_id", itemId);
+    const { error } = await supabase.from("cotacao_itens").delete().eq("id", itemId);
+    if (error) return toast.error("Erro: " + error.message);
+    toast.success("Item removido");
+    await carregar();
+    await sincronizarTodasOS();
+  };
+
+  const atualizarItemFechamento = async (
+    itemId: string,
+    campo: "descricao" | "quantidade" | "unidade",
+    valor: string,
+  ) => {
+    const it = itens.find((i) => i.id === itemId);
+    if (!it) return;
+    let v: any = valor;
+    if (campo === "quantidade") v = Number(valor.replace(",", ".")) || 0;
+    if (it[campo] === v) return;
+    const { error } = await supabase.from("cotacao_itens").update({ [campo]: v }).eq("id", itemId);
+    if (error) return toast.error("Erro: " + error.message);
+    await carregar();
+    await sincronizarTodasOS();
+  };
+
+  const salvarPrecoVencedor = async (itemId: string, valor: string) => {
+    if (!cotacao?.vencedor_fornecedor_id) return;
+    const num = valor === "" ? null : Number(valor.replace(",", "."));
+    const existente = proposta(cotacao.vencedor_fornecedor_id, itemId);
+    if (existente && Number(existente.preco_unitario ?? NaN) === Number(num)) return;
+    const { error } = await supabase.from("cotacao_propostas").upsert(
+      {
+        cotacao_fornecedor_id: cotacao.vencedor_fornecedor_id,
+        cotacao_item_id: itemId,
+        preco_unitario: num,
+        prazo_entrega_dias: existente?.prazo_entrega_dias ?? null,
+        observacao: existente?.observacao ?? null,
+      },
+      { onConflict: "cotacao_fornecedor_id,cotacao_item_id" },
+    );
+    if (error) return toast.error("Erro: " + error.message);
+    await carregar();
+    await sincronizarTodasOS();
+  };
+
   if (!cotacao) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
