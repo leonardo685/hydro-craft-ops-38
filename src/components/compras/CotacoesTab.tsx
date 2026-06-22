@@ -205,7 +205,7 @@ export function CotacoesTab() {
       .select(`
         id, numero, status, observacoes, prazo_resposta, created_at,
         cotacao_itens(count),
-        cotacao_fornecedores(id, respondido_em)
+        cotacao_fornecedores!cotacao_fornecedores_cotacao_id_fkey(id, respondido_em)
       `)
       .eq("empresa_id", empresaAtual.id)
       .order("created_at", { ascending: false });
