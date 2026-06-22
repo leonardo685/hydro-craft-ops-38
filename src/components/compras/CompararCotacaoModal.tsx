@@ -3,11 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Link2, CheckCircle2, Clock, Wrench, Trophy } from "lucide-react";
+import { Link2, CheckCircle2, Clock, Wrench, Trophy, Plus, Trash2, RefreshCw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -73,8 +73,16 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
         .update({ vencedor_fornecedor_id: fornId === "__none__" ? null : fornId })
         .eq("id", cotacaoId!);
       if (error) throw error;
-      toast.success("Vencedor atualizado");
-      carregar();
+      toast.success(fornId === "__none__" ? "Vencedor removido" : "Vencedor confirmado — ajuste valores abaixo");
+      await carregar();
+      if (fornId !== "__none__") {
+        // sync inicial: propaga compras já existentes do vencedor para a OS
+        const ords = Array.from(new Set(itens.map((i) => i.ordem_servico_id).filter(Boolean))) as string[];
+        for (const o of ords) {
+          // eslint-disable-next-line no-await-in-loop
+          await sincronizarOS(o);
+        }
+      }
     } catch (e: any) {
       toast.error("Erro: " + e.message);
     }
@@ -160,6 +168,209 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
 
   const fmt = (n: number) =>
     n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  // ============== Fechamento (vencedor) ==============
+
+  const isUsinagemDesc = (s: string) => /\(\s*usinagem\s*\)/i.test(s || "");
+  const stripUsinagem = (s: string) => (s || "").replace(/\s*\(\s*usinagem\s*\)\s*$/i, "").trim();
+  const itemTipo = (it: any): "peca" | "usinagem" =>
+    it?.tipo === "usinagem" || isUsinagemDesc(it?.descricao) ? "usinagem" : "peca";
+
+  const sincronizarOS = async (ordemId: string) => {
+    if (!ordemId || !cotacaoId) return;
+    // Itens originais da cotação para esta OS (snapshot atual no banco)
+    const { data: itensOS, error: eItens } = await supabase
+      .from("cotacao_itens")
+      .select("id, descricao, quantidade, unidade, tipo")
+      .eq("cotacao_id", cotacaoId)
+      .eq("ordem_servico_id", ordemId);
+    if (eItens) {
+      toast.error("Erro lendo itens da cotação: " + eItens.message);
+      return;
+    }
+
+    const venc = cotacao?.vencedor_fornecedor_id as string | null;
+    if (!venc) return;
+
+    // Propostas do vencedor (somente compradas — preço > 0)
+    const itemIds = (itensOS || []).map((i: any) => i.id);
+    let propsVenc: any[] = [];
+    if (itemIds.length) {
+      const { data: pp } = await supabase
+        .from("cotacao_propostas")
+        .select("cotacao_item_id, preco_unitario")
+        .eq("cotacao_fornecedor_id", venc)
+        .in("cotacao_item_id", itemIds);
+      propsVenc = pp || [];
+    }
+    const compradosMap = new Map<string, number>();
+    propsVenc.forEach((p) => {
+      if (p.preco_unitario != null) compradosMap.set(p.cotacao_item_id, Number(p.preco_unitario));
+    });
+
+    // Conjuntos "cotado" (descrições normalizadas) para remover da OS antes de regravar
+    const cotadoPecas = new Set<string>();
+    const cotadoUsinagem = new Set<string>();
+    (itensOS || []).forEach((i: any) => {
+      const t = itemTipo(i);
+      const desc = t === "usinagem" ? stripUsinagem(i.descricao) : i.descricao;
+      (t === "usinagem" ? cotadoUsinagem : cotadoPecas).add((desc || "").trim().toLowerCase());
+    });
+
+    // OS atual
+    const { data: os, error: eOs } = await supabase
+      .from("ordens_servico")
+      .select("pecas_necessarias, usinagem_necessaria, numero_ordem")
+      .eq("id", ordemId)
+      .single();
+    if (eOs) {
+      toast.error("Erro lendo OS: " + eOs.message);
+      return;
+    }
+
+    const pecasMant = ((os?.pecas_necessarias as any[]) || []).filter(
+      (p) => !cotadoPecas.has(((p.peca || p.descricao || "") as string).trim().toLowerCase()),
+    );
+    const usinMant = ((os?.usinagem_necessaria as any[]) || []).filter(
+      (u) => !cotadoUsinagem.has(((u.trabalho || u.descricao || "") as string).trim().toLowerCase()),
+    );
+
+    const novasPecas: any[] = [...pecasMant];
+    const novasUsin: any[] = [...usinMant];
+
+    (itensOS || []).forEach((i: any) => {
+      const valor = compradosMap.get(i.id);
+      if (valor == null) return; // vencedor não comprou esse item
+      const t = itemTipo(i);
+      if (t === "usinagem") {
+        novasUsin.push({
+          trabalho: stripUsinagem(i.descricao),
+          quantidade: Number(i.quantidade) || 1,
+          valor,
+          comprado: true,
+        });
+      } else {
+        novasPecas.push({
+          peca: i.descricao,
+          quantidade: Number(i.quantidade) || 1,
+          valor,
+          comprado: true,
+        });
+      }
+    });
+
+    const { error: eUp } = await supabase
+      .from("ordens_servico")
+      .update({ pecas_necessarias: novasPecas, usinagem_necessaria: novasUsin })
+      .eq("id", ordemId);
+    if (eUp) {
+      toast.error("Falha ao atualizar OS " + (os?.numero_ordem || "") + ": " + eUp.message);
+      return;
+    }
+    toast.success("OS " + (os?.numero_ordem || "") + " sincronizada");
+  };
+
+  const sincronizarTodasOS = async () => {
+    const ords = Array.from(new Set(itens.map((i) => i.ordem_servico_id).filter(Boolean))) as string[];
+    for (const o of ords) {
+      // eslint-disable-next-line no-await-in-loop
+      await sincronizarOS(o);
+    }
+  };
+
+  const salvarPrazoPagamento = async (fornId: string, dias: string) => {
+    const num = dias === "" ? null : parseInt(dias, 10);
+    const { error } = await supabase
+      .from("cotacao_fornecedores")
+      .update({ prazo_pagamento_dias: num })
+      .eq("id", fornId);
+    if (error) return toast.error("Erro: " + error.message);
+    toast.success("Prazo de pagamento salvo");
+    carregar();
+  };
+
+  const adicionarItemFechamento = async (tipo: "peca" | "usinagem") => {
+    const ords = Array.from(new Set(itens.map((i) => i.ordem_servico_id).filter(Boolean))) as string[];
+    const ordemId = ords[0] || null; // se houver várias, usa a primeira; usuário pode editar depois
+    if (!ordemId) {
+      toast.error("Cotação sem OS vinculada — não é possível sincronizar item novo");
+      return;
+    }
+    const descPlaceholder = tipo === "usinagem" ? "Nova usinagem (usinagem)" : "Nova peça";
+    const { data: novo, error } = await supabase
+      .from("cotacao_itens")
+      .insert({
+        cotacao_id: cotacaoId!,
+        ordem_servico_id: ordemId,
+        descricao: descPlaceholder,
+        quantidade: 1,
+        unidade: "un",
+        tipo,
+      })
+      .select("id")
+      .single();
+    if (error) return toast.error("Erro: " + error.message);
+    // cria proposta zerada para o vencedor para já aparecer na lista
+    if (cotacao?.vencedor_fornecedor_id && novo?.id) {
+      await supabase.from("cotacao_propostas").upsert(
+        {
+          cotacao_fornecedor_id: cotacao.vencedor_fornecedor_id,
+          cotacao_item_id: novo.id,
+          preco_unitario: 0,
+          tipo,
+        },
+        { onConflict: "cotacao_fornecedor_id,cotacao_item_id" },
+      );
+    }
+    toast.success("Item adicionado — preencha descrição e valor");
+    await carregar();
+  };
+
+  const removerItemFechamento = async (itemId: string) => {
+    // Apaga propostas associadas a esse item e o próprio item
+    await supabase.from("cotacao_propostas").delete().eq("cotacao_item_id", itemId);
+    const { error } = await supabase.from("cotacao_itens").delete().eq("id", itemId);
+    if (error) return toast.error("Erro: " + error.message);
+    toast.success("Item removido");
+    await carregar();
+    await sincronizarTodasOS();
+  };
+
+  const atualizarItemFechamento = async (
+    itemId: string,
+    campo: "descricao" | "quantidade" | "unidade",
+    valor: string,
+  ) => {
+    const it = itens.find((i) => i.id === itemId);
+    if (!it) return;
+    let v: any = valor;
+    if (campo === "quantidade") v = Number(valor.replace(",", ".")) || 0;
+    if (it[campo] === v) return;
+    const { error } = await supabase.from("cotacao_itens").update({ [campo]: v }).eq("id", itemId);
+    if (error) return toast.error("Erro: " + error.message);
+    await carregar();
+    await sincronizarTodasOS();
+  };
+
+  const salvarPrecoVencedor = async (itemId: string, valor: string) => {
+    if (!cotacao?.vencedor_fornecedor_id) return;
+    const num = valor === "" ? null : Number(valor.replace(",", "."));
+    const existente = proposta(cotacao.vencedor_fornecedor_id, itemId);
+    if (existente && Number(existente.preco_unitario ?? NaN) === Number(num)) return;
+    const { error } = await supabase.from("cotacao_propostas").upsert(
+      {
+        cotacao_fornecedor_id: cotacao.vencedor_fornecedor_id,
+        cotacao_item_id: itemId,
+        preco_unitario: num,
+        prazo_entrega_dias: existente?.prazo_entrega_dias ?? null,
+        observacao: existente?.observacao ?? null,
+      },
+      { onConflict: "cotacao_fornecedor_id,cotacao_item_id" },
+    );
+    if (error) return toast.error("Erro: " + error.message);
+    await carregar();
+    await sincronizarTodasOS();
+  };
 
   if (!cotacao) {
     return (
@@ -270,9 +481,155 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
               </div>
             </div>
 
+            {/* Fechamento com vencedor */}
+            {cotacao.vencedor_fornecedor_id && (() => {
+              const venc = forns.find((f) => f.id === cotacao.vencedor_fornecedor_id);
+              if (!venc) return null;
+              const totalFech = itens.reduce((acc, it) => {
+                const p = proposta(venc.id, it.id);
+                if (p?.preco_unitario == null) return acc;
+                return acc + Number(p.preco_unitario) * Number(it.quantidade);
+              }, 0);
+              return (
+                <div className="border-2 border-green-500 rounded-md p-4 bg-green-50/50 dark:bg-green-950/20 space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-green-600" />
+                      <h3 className="text-base font-semibold">Fechamento com {venc.fornecedor_nome}</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-muted-foreground">Prazo pagamento (dias):</label>
+                      <Input
+                        type="number"
+                        key={`prazo-${venc.prazo_pagamento_dias ?? ""}`}
+                        defaultValue={venc.prazo_pagamento_dias ?? 28}
+                        className="h-8 w-24"
+                        onBlur={(e) => {
+                          const cur = String(venc.prazo_pagamento_dias ?? "");
+                          if (e.target.value === cur) return;
+                          salvarPrazoPagamento(venc.id, e.target.value);
+                        }}
+                        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                      />
+                      <Button size="sm" variant="outline" onClick={() => sincronizarTodasOS()}>
+                        <RefreshCw className="h-3 w-3 mr-1" /> Sincronizar OS
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Edite itens, valores e quantidades abaixo. Tudo é sincronizado automaticamente com a OS vinculada (peças/usinagens, QR code e histórico).
+                  </p>
+                  <div className="border rounded-md overflow-x-auto bg-background">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[100px]">Tipo</TableHead>
+                          <TableHead>Descrição</TableHead>
+                          <TableHead className="text-right w-[90px]">Qtd</TableHead>
+                          <TableHead className="w-[70px]">Un</TableHead>
+                          <TableHead className="text-right w-[130px]">Valor unit.</TableHead>
+                          <TableHead className="text-right w-[130px]">Total</TableHead>
+                          <TableHead className="w-[40px]">{" "}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {itens.map((it) => {
+                          const tipo = itemTipo(it);
+                          const p = proposta(venc.id, it.id);
+                          const unit = p?.preco_unitario != null ? Number(p.preco_unitario) : 0;
+                          const total = unit * Number(it.quantidade);
+                          return (
+                            <TableRow key={it.id}>
+                              <TableCell>
+                                <Badge variant={tipo === "usinagem" ? "outline" : "secondary"} className="gap-1 text-[10px]">
+                                  {tipo === "usinagem" && <Wrench className="h-3 w-3" />}
+                                  {tipo === "usinagem" ? "Usinagem" : "Peça"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  key={`desc-${it.descricao}`}
+                                  defaultValue={it.descricao}
+                                  className="h-8"
+                                  onBlur={(e) => atualizarItemFechamento(it.id, "descricao", e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  key={`qtd-${it.quantidade}`}
+                                  defaultValue={it.quantidade}
+                                  className="h-8 text-right"
+                                  onBlur={(e) => atualizarItemFechamento(it.id, "quantidade", e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  key={`un-${it.unidade}`}
+                                  defaultValue={it.unidade || "un"}
+                                  className="h-8"
+                                  onBlur={(e) => atualizarItemFechamento(it.id, "unidade", e.target.value)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  key={`vunit-${unit}`}
+                                  defaultValue={unit || ""}
+                                  placeholder="0,00"
+                                  className="h-8 text-right"
+                                  onBlur={(e) => salvarPrecoVencedor(it.id, e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                />
+                              </TableCell>
+                              <TableCell className="text-right text-sm font-medium">
+                                {total > 0 ? fmt(total) : "—"}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-destructive"
+                                  onClick={() => removerItemFechamento(it.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        <TableRow className="bg-muted/40">
+                          <TableCell colSpan={5} className="font-semibold">Total do fechamento</TableCell>
+                          <TableCell className="text-right font-semibold">{totalFech > 0 ? fmt(totalFech) : "—"}</TableCell>
+                          <TableCell>{" "}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => adicionarItemFechamento("peca")}>
+                      <Plus className="h-3 w-3 mr-1" /> Adicionar peça
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => adicionarItemFechamento("usinagem")}>
+                      <Plus className="h-3 w-3 mr-1" /> Adicionar usinagem
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Comparativo */}
-            <div>
-              <h3 className="text-sm font-semibold mb-2">Comparativo (preço unitário e total)</h3>
+            <Collapsible defaultOpen={!cotacao.vencedor_fornecedor_id}>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold">Comparativo (preço unitário e total)</h3>
+                <CollapsibleTrigger asChild>
+                  <Button size="sm" variant="ghost">Mostrar / ocultar</Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent>
               <div className="border rounded-md overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -393,7 +750,8 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                   </TableBody>
                 </Table>
               </div>
-            </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </div>
       </DialogContent>
