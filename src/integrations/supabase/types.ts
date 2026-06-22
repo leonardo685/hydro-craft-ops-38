@@ -550,6 +550,7 @@ export type Database = {
           prazo_pagamento_dias: number | null
           respondido_em: string | null
           token_publico: string
+          valor_total_manual: number | null
         }
         Insert: {
           cotacao_id: string
@@ -564,6 +565,7 @@ export type Database = {
           prazo_pagamento_dias?: number | null
           respondido_em?: string | null
           token_publico?: string
+          valor_total_manual?: number | null
         }
         Update: {
           cotacao_id?: string
@@ -578,6 +580,7 @@ export type Database = {
           prazo_pagamento_dias?: number | null
           respondido_em?: string | null
           token_publico?: string
+          valor_total_manual?: number | null
         }
         Relationships: [
           {

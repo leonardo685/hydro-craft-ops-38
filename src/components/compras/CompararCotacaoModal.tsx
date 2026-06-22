@@ -127,6 +127,31 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
         return acc + Number(p.preco_unitario) * Number(item.quantidade);
       }, 0);
 
+  const totalFornEfetivo = (fornId: string) => {
+    const f = forns.find((x) => x.id === fornId);
+    const manual = f?.valor_total_manual != null ? Number(f.valor_total_manual) : 0;
+    if (manual > 0) return manual;
+    return totalForn(fornId);
+  };
+
+  const salvarTotalManual = async (fornId: string, valor: string) => {
+    const num = valor === "" ? null : Number(valor.replace(",", "."));
+    try {
+      const { error } = await supabase
+        .from("cotacao_fornecedores")
+        .update({
+          valor_total_manual: num,
+          respondido_em: new Date().toISOString(),
+        })
+        .eq("id", fornId);
+      if (error) throw error;
+      toast.success("Total salvo");
+      carregar();
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    }
+  };
+
   const copiarLink = (token: string) => {
     const url = `${window.location.origin}/cotacao/${token}`;
     navigator.clipboard.writeText(url);
@@ -183,7 +208,7 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                       {forns.map((f) => (
                         <SelectItem key={f.id} value={f.id}>
                           {f.fornecedor_nome}
-                          {totalForn(f.id) > 0 ? ` · ${fmt(totalForn(f.id))}` : ""}
+                          {totalFornEfetivo(f.id) > 0 ? ` · ${fmt(totalFornEfetivo(f.id))}` : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -216,6 +241,25 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                           </span>
                         )}
                         · {f.prazo_pagamento_dias || 28}ddl
+                      </div>
+                      <div className="flex items-center gap-1 mt-2">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Total manual:</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          key={`manual-${f.valor_total_manual ?? ""}`}
+                          defaultValue={f.valor_total_manual ?? ""}
+                          placeholder="R$ total geral"
+                          className="h-7 text-right text-xs"
+                          onBlur={(e) => {
+                            const cur = f.valor_total_manual != null ? String(f.valor_total_manual) : "";
+                            if (e.target.value === cur) return;
+                            salvarTotalManual(f.id, e.target.value);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                          }}
+                        />
                       </div>
                     </div>
                     <Button size="sm" variant="outline" onClick={() => copiarLink(f.token_publico)}>
@@ -330,10 +374,18 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                         Total
                       </TableCell>
                       {forns.map((f) => {
-                        const t = totalForn(f.id);
+                        const t = totalFornEfetivo(f.id);
+                        const manual = f.valor_total_manual != null && Number(f.valor_total_manual) > 0;
                         return (
                           <TableCell key={f.id} className="text-right font-semibold">
-                            {t > 0 ? fmt(t) : "—"}
+                            {t > 0 ? (
+                              <span>
+                                {fmt(t)}
+                                {manual && (
+                                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">(manual)</span>
+                                )}
+                              </span>
+                            ) : "—"}
                           </TableCell>
                         );
                       })}

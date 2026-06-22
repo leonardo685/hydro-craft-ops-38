@@ -1,0 +1,1 @@
+ALTER TABLE public.cotacao_fornecedores ADD COLUMN IF NOT EXISTS valor_total_manual numeric;
