@@ -175,9 +175,32 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
             cacheControl: '3600',
           },
           onError: (error) => {
-            console.error('TUS Error:', error);
-            setUploadError(error.message || 'Erro no upload');
-            reject(error);
+            const anyErr = error as any;
+            const status = anyErr?.originalResponse?.getStatus?.();
+            const body = anyErr?.originalResponse?.getBody?.();
+            console.error('❌ [STORAGE] TUS Error:', {
+              message: error.message,
+              status,
+              body,
+              fileName,
+              bucket: bucketName,
+              size: videoFile.size,
+            });
+            let msg = `Falha no upload ao storage (${bucketName}): ${error.message || 'erro desconhecido'}`;
+            if (status === 401 || status === 403) {
+              msg = `Permissão negada no storage (HTTP ${status}). Verifique se você está logado e tem acesso ao bucket "${bucketName}".`;
+            } else if (status === 413) {
+              msg = 'Arquivo excede o limite do storage (HTTP 413).';
+            } else if (status) {
+              msg = `Falha no upload (HTTP ${status}): ${body || error.message}`;
+            }
+            toast({
+              title: `Erro no storage${status ? ` (${status})` : ''}`,
+              description: msg,
+              variant: 'destructive',
+            });
+            setUploadError(msg);
+            reject(new Error(msg));
           },
           onProgress: (bytesUploaded, bytesTotal) => {
             const percentage = Math.round((bytesUploaded / bytesTotal) * 100);
@@ -208,16 +231,37 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
       console.log('Upload concluído! URL:', videoUrl);
 
       // Atualizar o teste com a URL do vídeo
-      const { data: updateData, error } = await supabase
+      console.log('💾 [DB] Atualizando teste', testeInfo.id, 'com video_url');
+      const { data: updateData, error, status, statusText } = await supabase
         .from('testes_equipamentos')
         .update({ video_url: videoUrl })
         .eq('id', testeInfo.id)
         .select();
 
-      if (error) throw error;
-      if (!updateData || updateData.length === 0) {
-        throw new Error('Não foi possível salvar o vídeo no teste (permissão negada). Atualize a página e tente novamente.');
+      if (error) {
+        console.error('❌ [DB] Erro no UPDATE testes_equipamentos:', { error, status, statusText, testeId: testeInfo.id });
+        toast({
+          title: `Erro ao salvar no banco${status ? ` (${status})` : ''}`,
+          description: `${error.message}${error.hint ? ` — ${error.hint}` : ''}`,
+          variant: 'destructive',
+        });
+        throw error;
       }
+      if (!updateData || updateData.length === 0) {
+        console.error('🚫 [DB] UPDATE bloqueado por RLS (0 linhas afetadas)', {
+          testeId: testeInfo.id,
+          ordemId: ordem.id,
+          empresaIdOrdem: ordem.empresa_id,
+        });
+        const msg = 'UPDATE bloqueado pela política de segurança (RLS): 0 linhas atualizadas. O registro do teste pode estar sem empresa_id ou pertencer a outra empresa. Atualize a página e tente novamente.';
+        toast({
+          title: 'Permissão negada (RLS)',
+          description: msg,
+          variant: 'destructive',
+        });
+        throw new Error(msg);
+      }
+      console.log('✅ [DB] video_url salvo com sucesso no teste', testeInfo.id);
 
       setUploadStatus('success');
       toast({
