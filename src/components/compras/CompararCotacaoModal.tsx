@@ -608,11 +608,43 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                             </TableRow>
                           );
                         })}
-                        <TableRow className="bg-muted/40">
-                          <TableCell colSpan={5} className="font-semibold">Total do fechamento</TableCell>
-                          <TableCell className="text-right font-semibold">{totalFech > 0 ? fmt(totalFech) : "—"}</TableCell>
-                          <TableCell>{" "}</TableCell>
-                        </TableRow>
+                         <TableRow className="bg-muted/40">
+                           <TableCell colSpan={4} className="font-semibold">
+                             Total do fechamento
+                             {venc.valor_total_manual != null && Number(venc.valor_total_manual) > 0 && (
+                               <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                 (calculado: {fmt(totalFech)})
+                               </span>
+                             )}
+                           </TableCell>
+                           <TableCell className="text-right">
+                             <div className="flex items-center justify-end gap-1">
+                               <span className="text-xs text-muted-foreground whitespace-nowrap">Manual:</span>
+                               <Input
+                                 type="number"
+                                 step="0.01"
+                                 key={`manual-${venc.valor_total_manual ?? ""}`}
+                                 defaultValue={venc.valor_total_manual ?? ""}
+                                 placeholder="R$"
+                                 className="h-8 text-right w-28"
+                                 onBlur={(e) => {
+                                   const cur = venc.valor_total_manual != null ? String(venc.valor_total_manual) : "";
+                                   if (e.target.value === cur) return;
+                                   salvarTotalManual(venc.id, e.target.value);
+                                 }}
+                                 onKeyDown={(e) => {
+                                   if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                                 }}
+                               />
+                             </div>
+                           </TableCell>
+                           <TableCell className="text-right font-semibold">
+                             {venc.valor_total_manual != null && Number(venc.valor_total_manual) > 0
+                               ? fmt(Number(venc.valor_total_manual))
+                               : totalFech > 0 ? fmt(totalFech) : "—"}
+                           </TableCell>
+                           <TableCell>{" "}</TableCell>
+                         </TableRow>
                       </TableBody>
                     </Table>
                   </div>
