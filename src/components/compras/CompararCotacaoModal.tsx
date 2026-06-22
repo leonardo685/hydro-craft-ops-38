@@ -374,6 +374,33 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
     await sincronizarTodasOS();
   };
 
+  const finalizarCompra = async () => {
+    if (!cotacaoId) return;
+    setFinalizando(true);
+    try {
+      await sincronizarTodasOS();
+      const ords = Array.from(new Set(itens.map((i) => i.ordem_servico_id).filter(Boolean))) as string[];
+      if (ords.length) {
+        const { error: e1 } = await supabase
+          .from("compras")
+          .update({ status: "comprado", data_compra: new Date().toISOString() })
+          .in("ordem_servico_id", ords);
+        if (e1) throw e1;
+      }
+      const { error: e2 } = await supabase
+        .from("cotacoes")
+        .update({ status: "finalizada" })
+        .eq("id", cotacaoId);
+      if (e2) throw e2;
+      toast.success("Compra finalizada");
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error("Erro ao finalizar: " + err.message);
+    } finally {
+      setFinalizando(false);
+    }
+  };
+
   if (!cotacao) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -513,13 +540,10 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                         }}
                         onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                       />
-                      <Button size="sm" variant="outline" onClick={() => sincronizarTodasOS()}>
-                        <RefreshCw className="h-3 w-3 mr-1" /> Sincronizar OS
-                      </Button>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Edite itens, valores e quantidades abaixo. Tudo é sincronizado automaticamente com a OS vinculada (peças/usinagens, QR code e histórico).
+                    Edite itens, valores e quantidades abaixo. As alterações são refletidas em tempo real na OS vinculada (peças/usinagens, QR code e histórico).
                   </p>
                   <div className="border rounded-md overflow-x-auto bg-background">
                     <Table>
@@ -617,6 +641,15 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => adicionarItemFechamento("usinagem")}>
                       <Plus className="h-3 w-3 mr-1" /> Adicionar usinagem
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={finalizarCompra}
+                      disabled={finalizando}
+                      className="ml-auto bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      {finalizando ? "Finalizando..." : "Finalizar compra"}
                     </Button>
                   </div>
                 </div>
