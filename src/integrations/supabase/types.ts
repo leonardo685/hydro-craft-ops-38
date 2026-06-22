@@ -712,6 +712,7 @@ export type Database = {
           prazo_resposta: string | null
           status: string
           updated_at: string
+          vencedor_fornecedor_id: string | null
         }
         Insert: {
           created_at?: string
@@ -723,6 +724,7 @@ export type Database = {
           prazo_resposta?: string | null
           status?: string
           updated_at?: string
+          vencedor_fornecedor_id?: string | null
         }
         Update: {
           created_at?: string
@@ -734,8 +736,17 @@ export type Database = {
           prazo_resposta?: string | null
           status?: string
           updated_at?: string
+          vencedor_fornecedor_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cotacoes_vencedor_fornecedor_id_fkey"
+            columns: ["vencedor_fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "cotacao_fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       documentos_ordem: {
         Row: {
