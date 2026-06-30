@@ -234,6 +234,12 @@ export function AppSidebar() {
                 <span>{t('menu.permissoes')}</span>
               </DropdownMenuItem>
               )}
+              {userRole === 'admin' && (
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/admin/historico-acoes')}>
+                  <History className="mr-2 h-4 w-4" />
+                  <span>Histórico de Ações</span>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/historico-lancamentos')}>
                 <History className="mr-2 h-4 w-4" />
                 <span>Histórico de Lançamentos</span>

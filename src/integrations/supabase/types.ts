@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      acoes_reversiveis: {
+        Row: {
+          created_at: string
+          descricao: string
+          desfeita: boolean
+          desfeita_em: string | null
+          desfeita_por: string | null
+          empresa_id: string | null
+          entidade_principal_id: string | null
+          entidade_principal_tipo: string | null
+          estado_anterior: Json
+          estado_novo: Json
+          id: string
+          tipo: string
+          updated_at: string
+          user_email: string | null
+          user_id: string | null
+          user_nome: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          desfeita?: boolean
+          desfeita_em?: string | null
+          desfeita_por?: string | null
+          empresa_id?: string | null
+          entidade_principal_id?: string | null
+          entidade_principal_tipo?: string | null
+          estado_anterior?: Json
+          estado_novo?: Json
+          id?: string
+          tipo: string
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_nome?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          desfeita?: boolean
+          desfeita_em?: string | null
+          desfeita_por?: string | null
+          empresa_id?: string | null
+          entidade_principal_id?: string | null
+          entidade_principal_tipo?: string | null
+          estado_anterior?: Json
+          estado_novo?: Json
+          id?: string
+          tipo?: string
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_nome?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acoes_reversiveis_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       aprovadores_fluxo: {
         Row: {
           ativo: boolean
