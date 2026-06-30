@@ -26,6 +26,7 @@ import DFC from "@/pages/DFC";
 import MetaGastos from "@/pages/MetaGastos";
 import HistoricoLancamentos from "@/pages/HistoricoLancamentos";
 import AdminPermissions from "@/pages/AdminPermissions";
+import AdminHistoricoAcoes from "@/pages/AdminHistoricoAcoes";
 import UploadVideoTeste from "@/pages/UploadVideoTeste";
 import Configuracoes from "@/pages/Configuracoes";
 import ProcessoInterno from "@/pages/ProcessoInterno";
@@ -59,6 +60,7 @@ export function AuthenticatedApp() {
           <Route path="/dfc" element={<ProtectedRoute requiredPermission="financeiro_dfc"><DFC /></ProtectedRoute>} />
           <Route path="/financeiro/meta-gastos" element={<ProtectedRoute requiredPermission="financeiro_metas"><MetaGastos /></ProtectedRoute>} />
           <Route path="/admin/permissions" element={<ProtectedRoute requiredPermission="admin_permissions"><AdminPermissions /></ProtectedRoute>} />
+          <Route path="/admin/historico-acoes" element={<ProtectedRoute requiredPermission="admin_permissions"><AdminHistoricoAcoes /></ProtectedRoute>} />
           <Route path="/historico-lancamentos" element={<ProtectedRoute><HistoricoLancamentos /></ProtectedRoute>} />
           <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
           <Route path="/upload-video-teste" element={<ProtectedRoute><UploadVideoTeste /></ProtectedRoute>} />
