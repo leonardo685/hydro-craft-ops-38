@@ -202,6 +202,31 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {userRole === 'admin' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname.startsWith('/admin/historico-acoes')}
+                    className="transition-smooth hover:bg-sidebar-accent"
+                  >
+                    <button
+                      onClick={() => navigate('/admin/historico-acoes')}
+                      className="flex items-center gap-3 w-full text-left"
+                    >
+                      <History className="h-4 w-4" />
+                      <span>Histórico de Ações</span>
+                    </button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       
       <SidebarFooter className="border-t border-sidebar-border">
@@ -233,12 +258,6 @@ export function AppSidebar() {
                 <Shield className="mr-2 h-4 w-4" />
                 <span>{t('menu.permissoes')}</span>
               </DropdownMenuItem>
-              )}
-              {userRole === 'admin' && (
-                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/admin/historico-acoes')}>
-                  <History className="mr-2 h-4 w-4" />
-                  <span>Histórico de Ações</span>
-                </DropdownMenuItem>
               )}
               <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/historico-lancamentos')}>
                 <History className="mr-2 h-4 w-4" />
