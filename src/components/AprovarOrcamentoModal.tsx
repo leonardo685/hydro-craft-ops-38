@@ -187,6 +187,28 @@ export const AprovarOrcamentoModal = ({
         }
       }
 
+      // Snapshot do estado anterior do orçamento (para histórico/desfazer)
+      const orcamentoSnapshot = {
+        status: orcamento.status,
+        data_aprovacao: orcamento.data_aprovacao ?? null,
+        valor: orcamento.valor ?? null,
+        prazo_pagamento: orcamento.prazo_pagamento ?? null,
+        data_vencimento: orcamento.data_vencimento ?? null,
+        numero_pedido: orcamento.numero_pedido ?? null,
+        descricao: orcamento.descricao ?? null,
+      };
+
+      // Snapshot da OS vinculada (antes de atualizar)
+      let ordemSnapshot: any = null;
+      if (orcamento.ordem_servico_id) {
+        const { data: osPrev } = await supabase
+          .from('ordens_servico')
+          .select('id, status, valor_estimado, orcamento_id, numero_ordem')
+          .eq('id', orcamento.ordem_servico_id)
+          .maybeSingle();
+        if (osPrev) ordemSnapshot = osPrev;
+      }
+
       // Atualizar orçamento com os dados da aprovação
       const { error } = await supabase
         .from('orcamentos')
@@ -232,6 +254,41 @@ export const AprovarOrcamentoModal = ({
         } else {
           console.log('✅ Ordem de serviço atualizada para aprovada:', orcamento.ordem_servico_id);
         }
+      }
+
+      // Registrar ação reversível (histórico para admin desfazer)
+      try {
+        const { data: userRes } = await supabase.auth.getUser();
+        const u = userRes?.user;
+        let userNome: string | null = null;
+        if (u?.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('nome')
+            .eq('id', u.id)
+            .maybeSingle();
+          userNome = profile?.nome ?? null;
+        }
+        await supabase.from('acoes_reversiveis').insert({
+          empresa_id: empresaAtual?.id ?? null,
+          user_id: u?.id ?? null,
+          user_nome: userNome,
+          user_email: u?.email ?? null,
+          tipo: 'orcamento_aprovado',
+          descricao: `Aprovou orçamento ${orcamento.numero}${orcamento.cliente_nome ? ` (${orcamento.cliente_nome})` : ''}`,
+          entidade_principal_tipo: 'orcamento',
+          entidade_principal_id: orcamento.id,
+          estado_anterior: {
+            orcamento: orcamentoSnapshot,
+            ordem_servico: ordemSnapshot,
+          },
+          estado_novo: {
+            orcamento: { status: 'aprovado', numero_pedido: formData.numeroPedido },
+            ordem_servico: ordemSnapshot ? { id: ordemSnapshot.id, status: 'aprovada' } : null,
+          },
+        });
+      } catch (histErr) {
+        console.warn('Falha ao registrar ação reversível:', histErr);
       }
 
       // Buscar dados da ordem de serviço vinculada se houver
