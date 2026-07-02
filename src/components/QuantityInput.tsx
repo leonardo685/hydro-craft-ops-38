@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 interface QuantityInputProps {
   value: number;
@@ -18,6 +19,12 @@ export const QuantityInput = ({
   max, 
   className 
 }: QuantityInputProps) => {
+  const [display, setDisplay] = useState<string>(String(value ?? min));
+
+  useEffect(() => {
+    setDisplay(String(value ?? min));
+  }, [value]);
+
   const handleIncrement = () => {
     const newValue = value + 1;
     if (!max || newValue <= max) {
@@ -34,29 +41,19 @@ export const QuantityInput = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    
-    // Permite campo vazio temporariamente
-    if (inputValue === '') {
-      return;
-    }
-    
+    setDisplay(inputValue);
+    if (inputValue === '') return;
     const newValue = parseInt(inputValue);
-    
-    // Se não for um número válido, ignora
-    if (isNaN(newValue)) {
-      return;
-    }
-    
-    // Se estiver dentro dos limites, atualiza
-    if (newValue >= min && (!max || newValue <= max)) {
-      onChange(newValue);
-    }
+    if (isNaN(newValue)) return;
+    if (max && newValue > max) return;
+    onChange(newValue);
   };
 
   const handleBlur = () => {
-    // Quando sair do campo, se estiver abaixo do mínimo, força o mínimo
-    if (value < min || isNaN(value)) {
+    const parsed = parseInt(display);
+    if (display === '' || isNaN(parsed) || parsed < min) {
       onChange(min);
+      setDisplay(String(min));
     }
   };
 
@@ -76,7 +73,7 @@ export const QuantityInput = ({
         type="number"
         min={min}
         max={max}
-        value={value}
+        value={display}
         onChange={handleInputChange}
         onBlur={handleBlur}
         className="h-8 w-16 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"

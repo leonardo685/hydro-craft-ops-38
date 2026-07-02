@@ -3639,7 +3639,7 @@ export default function NovoOrcamento() {
                           />
                         </TableCell>
                         <TableCell className="text-center">
-                          <Input type="number" min="1" value={peca.quantidade} onChange={e => atualizarQuantidadeItem('pecas', peca.id, parseInt(e.target.value) || 1)} className="w-16 text-center" />
+                          <Input type="number" min="1" value={peca.quantidade === 0 ? '' : peca.quantidade} onChange={e => atualizarQuantidadeItem('pecas', peca.id, e.target.value === '' ? 0 : (parseInt(e.target.value) || 0))} onBlur={e => { if (!e.target.value || parseInt(e.target.value) < 1) atualizarQuantidadeItem('pecas', peca.id, 1); }} className="w-16 text-center" />
                         </TableCell>
                         <TableCell className="text-right">
                           <Input type="number" step="0.01" min="0" value={peca.valorUnitario} onChange={e => atualizarValorItem('pecas', peca.id, parseFloat(e.target.value) || 0)} className="w-24 text-right" />
@@ -3731,7 +3731,7 @@ export default function NovoOrcamento() {
                     }))} placeholder={t('novoOrcamento.codePlaceholder')} className="min-w-[100px]" />
                         </TableCell>
                         <TableCell className="text-center">
-                          <Input type="number" min="1" value={servico.quantidade} onChange={e => atualizarQuantidadeItem('servicos', servico.id, parseInt(e.target.value) || 1)} className="w-16 text-center" />
+                          <Input type="number" min="1" value={servico.quantidade === 0 ? '' : servico.quantidade} onChange={e => atualizarQuantidadeItem('servicos', servico.id, e.target.value === '' ? 0 : (parseInt(e.target.value) || 0))} onBlur={e => { if (!e.target.value || parseInt(e.target.value) < 1) atualizarQuantidadeItem('servicos', servico.id, 1); }} className="w-16 text-center" />
                         </TableCell>
                         <TableCell className="text-right">
                           <Input type="number" step="0.01" min="0" value={servico.valorUnitario} onChange={e => atualizarValorItem('servicos', servico.id, parseFloat(e.target.value) || 0)} className="w-24 text-right" />
@@ -3823,7 +3823,7 @@ export default function NovoOrcamento() {
                     }))} placeholder={t('novoOrcamento.codePlaceholder')} className="min-w-[100px]" />
                         </TableCell>
                         <TableCell className="text-center">
-                          <Input type="number" min="1" value={usinagem.quantidade} onChange={e => atualizarQuantidadeItem('usinagem', usinagem.id, parseInt(e.target.value) || 1)} className="w-16 text-center" />
+                          <Input type="number" min="1" value={usinagem.quantidade === 0 ? '' : usinagem.quantidade} onChange={e => atualizarQuantidadeItem('usinagem', usinagem.id, e.target.value === '' ? 0 : (parseInt(e.target.value) || 0))} onBlur={e => { if (!e.target.value || parseInt(e.target.value) < 1) atualizarQuantidadeItem('usinagem', usinagem.id, 1); }} className="w-16 text-center" />
                         </TableCell>
                         <TableCell className="text-right">
                           <Input type="number" step="0.01" min="0" value={usinagem.valorUnitario} onChange={e => atualizarValorItem('usinagem', usinagem.id, parseFloat(e.target.value) || 0)} className="w-24 text-right" />
