@@ -8,6 +8,10 @@ import { useLancamentosFinanceiros } from "@/hooks/use-lancamentos-financeiros";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { DetalhesCategoriaDREModal } from "@/components/DetalhesCategoriaDREModal";
 import { RefreshButton } from "@/components/RefreshButton";
 
@@ -26,10 +30,52 @@ export default function DRE() {
   const { lancamentos, loading, refetch: refetchLancamentos } = useLancamentosFinanceiros();
   const { categorias, refetch: refetchCategorias } = useCategoriasFinanceiras();
   
-  const [filtrosDRE, setFiltrosDRE] = useState({
+  const [filtrosDRE, setFiltrosDRE] = useState<{
+    ano: string;
+    meses: string[];
+    clientes: string[];
+    fornecedores: string[];
+  }>({
     ano: new Date().getFullYear().toString(),
-    mes: (new Date().getMonth() + 1).toString().padStart(2, '0')
+    meses: [(new Date().getMonth() + 1).toString().padStart(2, '0')],
+    clientes: [],
+    fornecedores: [],
   });
+  const [buscaCliente, setBuscaCliente] = useState("");
+  const [buscaFornecedor, setBuscaFornecedor] = useState("");
+
+  const MESES = [
+    { v: "01", l: "Janeiro" }, { v: "02", l: "Fevereiro" }, { v: "03", l: "Março" },
+    { v: "04", l: "Abril" }, { v: "05", l: "Maio" }, { v: "06", l: "Junho" },
+    { v: "07", l: "Julho" }, { v: "08", l: "Agosto" }, { v: "09", l: "Setembro" },
+    { v: "10", l: "Outubro" }, { v: "11", l: "Novembro" }, { v: "12", l: "Dezembro" },
+  ];
+
+  const toggleFiltroLista = (chave: 'meses' | 'clientes' | 'fornecedores', valor: string) => {
+    setFiltrosDRE(prev => ({
+      ...prev,
+      [chave]: prev[chave].includes(valor)
+        ? prev[chave].filter(v => v !== valor)
+        : [...prev[chave], valor],
+    }));
+  };
+
+  // Listas de clientes e fornecedores derivadas dos lançamentos
+  const listaClientes = useMemo(() => {
+    const set = new Set<string>();
+    lancamentos.forEach(l => {
+      if (l.tipo === 'entrada' && l.fornecedorCliente) set.add(l.fornecedorCliente);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [lancamentos]);
+
+  const listaFornecedores = useMemo(() => {
+    const set = new Set<string>();
+    lancamentos.forEach(l => {
+      if (l.tipo === 'saida' && l.fornecedorCliente) set.add(l.fornecedorCliente);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [lancamentos]);
 
   const [categoriasExpandidas, setCategoriasExpandidas] = useState<Set<string>>(new Set());
   const [modalDetalhes, setModalDetalhes] = useState<{
@@ -78,7 +124,16 @@ export default function DRE() {
       const data = new Date(dataReferencia);
       const ano = data.getFullYear().toString();
       const mes = (data.getMonth() + 1).toString().padStart(2, '0');
-      return ano === filtrosDRE.ano && mes === filtrosDRE.mes;
+      if (ano !== filtrosDRE.ano) return false;
+      if (filtrosDRE.meses.length > 0 && !filtrosDRE.meses.includes(mes)) return false;
+      // Filtros de cliente/fornecedor
+      if (l.tipo === 'entrada' && filtrosDRE.clientes.length > 0) {
+        if (!l.fornecedorCliente || !filtrosDRE.clientes.includes(l.fornecedorCliente)) return false;
+      }
+      if (l.tipo === 'saida' && filtrosDRE.fornecedores.length > 0) {
+        if (!l.fornecedorCliente || !filtrosDRE.fornecedores.includes(l.fornecedorCliente)) return false;
+      }
+      return true;
     });
 
     console.log('✅ DRE Debug - Lançamentos filtrados:', lancamentosFiltrados.length);
@@ -240,16 +295,19 @@ export default function DRE() {
 
   const totalReceitas = useMemo(() => {
     const lancamentosFiltrados = lancamentos.filter(l => {
-      // Lógica híbrida: recorrências usam data_esperada, simples usam data_emissao
+      if (l.tipo !== 'entrada') return false;
       const ehRecorrencia = !!l.frequenciaRepeticao;
       const dataReferencia = ehRecorrencia ? l.dataEsperada : l.dataEmissao;
-      
       if (!dataReferencia) return false;
-      
       const data = new Date(dataReferencia);
       const ano = data.getFullYear().toString();
       const mes = (data.getMonth() + 1).toString().padStart(2, '0');
-      return ano === filtrosDRE.ano && mes === filtrosDRE.mes && l.tipo === 'entrada';
+      if (ano !== filtrosDRE.ano) return false;
+      if (filtrosDRE.meses.length > 0 && !filtrosDRE.meses.includes(mes)) return false;
+      if (filtrosDRE.clientes.length > 0) {
+        if (!l.fornecedorCliente || !filtrosDRE.clientes.includes(l.fornecedorCliente)) return false;
+      }
+      return true;
     });
     return lancamentosFiltrados.reduce((acc, l) => acc + l.valor, 0);
   }, [lancamentos, filtrosDRE]);
@@ -299,7 +357,15 @@ export default function DRE() {
       const data = new Date(dataReferencia);
       const ano = data.getFullYear().toString();
       const mes = (data.getMonth() + 1).toString().padStart(2, '0');
-      return ano === filtrosDRE.ano && mes === filtrosDRE.mes;
+      if (ano !== filtrosDRE.ano) return false;
+      if (filtrosDRE.meses.length > 0 && !filtrosDRE.meses.includes(mes)) return false;
+      if (l.tipo === 'entrada' && filtrosDRE.clientes.length > 0) {
+        if (!l.fornecedorCliente || !filtrosDRE.clientes.includes(l.fornecedorCliente)) return false;
+      }
+      if (l.tipo === 'saida' && filtrosDRE.fornecedores.length > 0) {
+        if (!l.fornecedorCliente || !filtrosDRE.fornecedores.includes(l.fornecedorCliente)) return false;
+      }
+      return true;
     });
   }, [lancamentos, filtrosDRE]);
 
