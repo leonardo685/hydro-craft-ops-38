@@ -433,7 +433,7 @@ export default function DRE() {
           <CardHeader>
             <CardTitle className="text-base">Filtros</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Ano</label>
@@ -445,31 +445,139 @@ export default function DRE() {
                     <SelectItem value="2023">2023</SelectItem>
                     <SelectItem value="2024">2024</SelectItem>
                     <SelectItem value="2025">2025</SelectItem>
+                    <SelectItem value="2026">2026</SelectItem>
+                    <SelectItem value="2027">2027</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Mês</label>
-                <Select value={filtrosDRE.mes} onValueChange={(value) => setFiltrosDRE({ ...filtrosDRE, mes: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="01">Janeiro</SelectItem>
-                    <SelectItem value="02">Fevereiro</SelectItem>
-                    <SelectItem value="03">Março</SelectItem>
-                    <SelectItem value="04">Abril</SelectItem>
-                    <SelectItem value="05">Maio</SelectItem>
-                    <SelectItem value="06">Junho</SelectItem>
-                    <SelectItem value="07">Julho</SelectItem>
-                    <SelectItem value="08">Agosto</SelectItem>
-                    <SelectItem value="09">Setembro</SelectItem>
-                    <SelectItem value="10">Outubro</SelectItem>
-                    <SelectItem value="11">Novembro</SelectItem>
-                    <SelectItem value="12">Dezembro</SelectItem>
-                  </SelectContent>
-                </Select>
+                <label className="text-sm font-medium">Meses</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      <span className="truncate">
+                        {filtrosDRE.meses.length === 0
+                          ? "Todos os meses"
+                          : filtrosDRE.meses.length === 12
+                            ? "Todos os meses"
+                            : filtrosDRE.meses
+                                .slice()
+                                .sort()
+                                .map(m => MESES.find(x => x.v === m)?.l)
+                                .join(", ")}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50 ml-2 shrink-0" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-2" align="start">
+                    <div className="flex justify-between mb-2 gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setFiltrosDRE(p => ({ ...p, meses: MESES.map(m => m.v) }))}>Todos</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setFiltrosDRE(p => ({ ...p, meses: [] }))}>Limpar</Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 max-h-64 overflow-y-auto">
+                      {MESES.map(m => (
+                        <label key={m.v} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent cursor-pointer">
+                          <Checkbox
+                            checked={filtrosDRE.meses.includes(m.v)}
+                            onCheckedChange={() => toggleFiltroLista('meses', m.v)}
+                          />
+                          <span className="text-sm">{m.l}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Clientes</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      <span className="truncate">
+                        {filtrosDRE.clientes.length === 0
+                          ? "Todos os clientes"
+                          : `${filtrosDRE.clientes.length} selecionado(s)`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50 ml-2 shrink-0" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-2" align="start">
+                    <Input
+                      placeholder="Buscar cliente..."
+                      value={buscaCliente}
+                      onChange={e => setBuscaCliente(e.target.value)}
+                      className="mb-2"
+                    />
+                    <div className="flex justify-between mb-2 gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setFiltrosDRE(p => ({ ...p, clientes: listaClientes }))}>Todos</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setFiltrosDRE(p => ({ ...p, clientes: [] }))}>Limpar</Button>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto space-y-1">
+                      {listaClientes
+                        .filter(c => c.toLowerCase().includes(buscaCliente.toLowerCase()))
+                        .map(c => (
+                          <label key={c} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent cursor-pointer">
+                            <Checkbox
+                              checked={filtrosDRE.clientes.includes(c)}
+                              onCheckedChange={() => toggleFiltroLista('clientes', c)}
+                            />
+                            <span className="text-sm truncate">{c}</span>
+                          </label>
+                        ))}
+                      {listaClientes.length === 0 && (
+                        <p className="text-xs text-muted-foreground p-2">Nenhum cliente encontrado</p>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Fornecedores</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      <span className="truncate">
+                        {filtrosDRE.fornecedores.length === 0
+                          ? "Todos os fornecedores"
+                          : `${filtrosDRE.fornecedores.length} selecionado(s)`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50 ml-2 shrink-0" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-2" align="start">
+                    <Input
+                      placeholder="Buscar fornecedor..."
+                      value={buscaFornecedor}
+                      onChange={e => setBuscaFornecedor(e.target.value)}
+                      className="mb-2"
+                    />
+                    <div className="flex justify-between mb-2 gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setFiltrosDRE(p => ({ ...p, fornecedores: listaFornecedores }))}>Todos</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setFiltrosDRE(p => ({ ...p, fornecedores: [] }))}>Limpar</Button>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto space-y-1">
+                      {listaFornecedores
+                        .filter(f => f.toLowerCase().includes(buscaFornecedor.toLowerCase()))
+                        .map(f => (
+                          <label key={f} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent cursor-pointer">
+                            <Checkbox
+                              checked={filtrosDRE.fornecedores.includes(f)}
+                              onCheckedChange={() => toggleFiltroLista('fornecedores', f)}
+                            />
+                            <span className="text-sm truncate">{f}</span>
+                          </label>
+                        ))}
+                      {listaFornecedores.length === 0 && (
+                        <p className="text-xs text-muted-foreground p-2">Nenhum fornecedor encontrado</p>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </CardContent>
@@ -489,7 +597,9 @@ export default function DRE() {
                     {formatCurrency(totalReceitas)}
                   </div>
                   <Badge variant="outline" className="text-xs mt-1">
-                    {filtrosDRE.mes}/{filtrosDRE.ano}
+                    {filtrosDRE.meses.length === 0 || filtrosDRE.meses.length === 12
+                      ? filtrosDRE.ano
+                      : `${filtrosDRE.meses.slice().sort().join(",")}/${filtrosDRE.ano}`}
                   </Badge>
                 </>
               )}
