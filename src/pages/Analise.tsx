@@ -889,12 +889,17 @@ export default function OrdensServico() {
                          <TableRow key={ordem.id} className="hover:bg-muted/30 transition-fast">
                              <TableCell className="font-medium text-primary">
                                <div className="flex items-center gap-2">
-                                 {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
-                                 {ordem.orcamentos && ordem.orcamentos.length > 0 && ordem.orcamentos[0]?.numero && (
-                                   <Badge className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border-emerald-300 text-sm font-medium">
-                                     #{ordem.orcamentos[0].numero}
-                                   </Badge>
-                                 )}
+                                  {ordem.recebimentos?.numero_ordem || ordem.numero_ordem}
+                                  {(() => {
+                                    const numeroOrc =
+                                      ordem.orcamentos?.[0]?.numero ||
+                                      ordem.orcamento_vinculado?.numero;
+                                    return numeroOrc ? (
+                                      <Badge className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border-emerald-300 text-sm font-medium">
+                                        #{numeroOrc}
+                                      </Badge>
+                                    ) : null;
+                                  })()}
                                </div>
                              </TableCell>
                            <TableCell className="text-primary font-medium">
