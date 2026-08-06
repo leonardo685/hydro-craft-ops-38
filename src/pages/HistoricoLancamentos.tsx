@@ -266,33 +266,99 @@ export default function HistoricoLancamentos() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por descrição, ação, banco ou campo alterado..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="date"
-                  value={filtroDataInicio}
-                  onChange={(e) => setFiltroDataInicio(e.target.value)}
-                  className="w-[150px]"
-                />
-                <span className="text-muted-foreground text-sm">até</span>
-                <Input
-                  type="date"
-                  value={filtroDataFim}
-                  onChange={(e) => setFiltroDataFim(e.target.value)}
-                  className="w-[150px]"
-                />
+            <div className="mb-4 rounded-md border bg-muted/30 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium">Filtros</span>
                 <Button variant="outline" size="sm" onClick={limparFiltros}>
-                  <X className="h-4 w-4 mr-1" /> Limpar
+                  <X className="h-4 w-4 mr-1" /> Limpar filtros
                 </Button>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="relative lg:col-span-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por descrição, ação, banco ou campo..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Data inicial</label>
+                  <Input
+                    type="date"
+                    value={filtroDataInicio}
+                    onChange={(e) => setFiltroDataInicio(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Data final</label>
+                  <Input
+                    type="date"
+                    value={filtroDataFim}
+                    onChange={(e) => setFiltroDataFim(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Ação</label>
+                  <Select value={filtroAcao} onValueChange={setFiltroAcao}>
+                    <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas</SelectItem>
+                      {acoesDisponiveis.map((a) => (
+                        <SelectItem key={a} value={a}>{a}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Banco</label>
+                  <Select value={filtroBanco} onValueChange={setFiltroBanco}>
+                    <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      {bancosDisponiveis.map((b) => (
+                        <SelectItem key={b} value={b}>{b}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Campo alterado</label>
+                  <Select value={filtroCampo} onValueChange={setFiltroCampo}>
+                    <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      {camposDisponiveis.map((c) => (
+                        <SelectItem key={c} value={c}>{getCampoAlterado(c)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Descrição</label>
+                  <Input
+                    placeholder="Filtrar descrição..."
+                    value={filtroDescricao}
+                    onChange={(e) => setFiltroDescricao(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Valor anterior</label>
+                  <Input
+                    placeholder="Filtrar..."
+                    value={filtroValorAnterior}
+                    onChange={(e) => setFiltroValorAnterior(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Valor novo</label>
+                  <Input
+                    placeholder="Filtrar..."
+                    value={filtroValorNovo}
+                    onChange={(e) => setFiltroValorNovo(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -311,74 +377,6 @@ export default function HistoricoLancamentos() {
                     <SortableTableHead column="campo_alterado">Campo Alterado</SortableTableHead>
                     <TableHead>Valor Anterior</TableHead>
                     <TableHead>Valor Novo</TableHead>
-                  </TableRow>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="p-2 text-xs text-muted-foreground">
-                      Use o filtro de datas
-                    </TableHead>
-                    <TableHead className="p-2">
-                      <Select value={filtroAcao} onValueChange={setFiltroAcao}>
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue placeholder="Todas" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="todos">Todas</SelectItem>
-                          {acoesDisponiveis.map((a) => (
-                            <SelectItem key={a} value={a}>{a}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableHead>
-                    <TableHead className="p-2">
-                      <Input
-                        placeholder="Filtrar..."
-                        value={filtroDescricao}
-                        onChange={(e) => setFiltroDescricao(e.target.value)}
-                        className="h-8 text-xs"
-                      />
-                    </TableHead>
-                    <TableHead className="p-2">
-                      <Select value={filtroBanco} onValueChange={setFiltroBanco}>
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue placeholder="Todos" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="todos">Todos</SelectItem>
-                          {bancosDisponiveis.map((b) => (
-                            <SelectItem key={b} value={b}>{b}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableHead>
-                    <TableHead className="p-2">
-                      <Select value={filtroCampo} onValueChange={setFiltroCampo}>
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue placeholder="Todos" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="todos">Todos</SelectItem>
-                          {camposDisponiveis.map((c) => (
-                            <SelectItem key={c} value={c}>{getCampoAlterado(c)}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableHead>
-                    <TableHead className="p-2">
-                      <Input
-                        placeholder="Filtrar..."
-                        value={filtroValorAnterior}
-                        onChange={(e) => setFiltroValorAnterior(e.target.value)}
-                        className="h-8 text-xs"
-                      />
-                    </TableHead>
-                    <TableHead className="p-2">
-                      <Input
-                        placeholder="Filtrar..."
-                        value={filtroValorNovo}
-                        onChange={(e) => setFiltroValorNovo(e.target.value)}
-                        className="h-8 text-xs"
-                      />
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
