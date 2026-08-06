@@ -11,6 +11,11 @@ export interface HistoricoLancamento {
   usuario_id: string | null;
   metadados: any;
   created_at: string;
+  lancamentos_financeiros?: {
+    conta_bancaria: string | null;
+    tipo: string | null;
+    descricao: string | null;
+  } | null;
 }
 
 export function useHistoricoLancamentos() {
@@ -19,12 +24,12 @@ export function useHistoricoLancamentos() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("historico_lancamentos")
-        .select("*")
+        .select("*, lancamentos_financeiros(conta_bancaria, tipo, descricao)")
         .order("created_at", { ascending: false })
         .limit(2000);
 
       if (error) throw error;
-      return data as HistoricoLancamento[];
+      return data as unknown as HistoricoLancamento[];
     },
   });
 }
