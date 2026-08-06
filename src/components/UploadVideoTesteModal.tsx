@@ -104,8 +104,40 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
       description: `${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`,
     });
 
-    // Usar arquivo diretamente sem compressão automática
-    // (compressão pode falhar com arquivos MOV grandes)
+    // Arquivos acima de ~45MB estouram o limite do storage (HTTP 413) → comprimir
+    if (shouldCompress(file)) {
+      toast({
+        title: "Compactando vídeo...",
+        description: "O arquivo é grande, estamos reduzindo o tamanho antes do envio.",
+      });
+      try {
+        const result = await compressVideo(file);
+        console.log('📹 Compressão:', result);
+        if (result.file.size > 49 * 1024 * 1024) {
+          toast({
+            title: "Vídeo ainda muito grande",
+            description: `Após compactar ficou com ${(result.file.size / 1024 / 1024).toFixed(1)}MB. Grave um vídeo mais curto (até ~45MB).`,
+            variant: "destructive",
+          });
+          return;
+        }
+        toast({
+          title: "Vídeo compactado",
+          description: `${(result.originalSize / 1024 / 1024).toFixed(1)}MB → ${(result.compressedSize / 1024 / 1024).toFixed(1)}MB`,
+        });
+        setVideoFile(result.file);
+        return;
+      } catch (err) {
+        console.error('❌ Erro na compressão:', err);
+        toast({
+          title: "Não foi possível compactar",
+          description: "Tente enviar um vídeo menor (até ~45MB).",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setVideoFile(file);
   };
 
@@ -146,7 +178,8 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
       // Gerar nome do arquivo
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem || 'sem-numero';
-      const fileName = `${numeroOrdem}_teste_${timestamp}.mp4`;
+      const isWebm = videoFile.type.includes('webm') || videoFile.name.toLowerCase().endsWith('.webm');
+      const fileName = `${numeroOrdem}_teste_${timestamp}.${isWebm ? 'webm' : 'mp4'}`;
       const bucketName = 'videos-teste';
 
       console.log('Nome do arquivo:', fileName);
@@ -171,7 +204,7 @@ export function UploadVideoTesteModal({ ordem, children, onUploadComplete }: Upl
           metadata: {
             bucketName: bucketName,
             objectName: fileName,
-            contentType: 'video/mp4',
+            contentType: isWebm ? 'video/webm' : 'video/mp4',
             cacheControl: '3600',
           },
           onError: (error) => {
