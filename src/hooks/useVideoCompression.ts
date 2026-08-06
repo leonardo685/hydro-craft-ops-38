@@ -180,8 +180,8 @@ export function useVideoCompression() {
   }, []);
 
   const shouldCompress = useCallback((file: File): boolean => {
-    // Comprimir se o arquivo for maior que 50MB
-    const threshold = 50 * 1024 * 1024;
+    // Comprimir se o arquivo for maior que 45MB (limite global do storage é 50MB)
+    const threshold = 45 * 1024 * 1024;
     return file.size > threshold;
   }, []);
 
