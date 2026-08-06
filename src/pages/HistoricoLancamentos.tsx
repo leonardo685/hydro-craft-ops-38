@@ -1,20 +1,30 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useHistoricoLancamentos } from "@/hooks/use-historico-lancamentos";
 import { RefreshButton } from "@/components/RefreshButton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Search, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Search, ArrowUp, ArrowDown, ArrowUpDown, X } from "lucide-react";
 
 export default function HistoricoLancamentos() {
   const { data: historico, isLoading, refetch } = useHistoricoLancamentos();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortColumn, setSortColumn] = useState<string | null>("created_at");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
+  const [filtroDataInicio, setFiltroDataInicio] = useState("");
+  const [filtroDataFim, setFiltroDataFim] = useState("");
+  const [filtroAcao, setFiltroAcao] = useState("todos");
+  const [filtroDescricao, setFiltroDescricao] = useState("");
+  const [filtroBanco, setFiltroBanco] = useState("todos");
+  const [filtroCampo, setFiltroCampo] = useState("todos");
+  const [filtroValorAnterior, setFiltroValorAnterior] = useState("");
+  const [filtroValorNovo, setFiltroValorNovo] = useState("");
 
   const getTipoAcaoBadge = (tipoAcao: string) => {
     const badges = {
