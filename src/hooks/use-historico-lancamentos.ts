@@ -20,7 +20,8 @@ export function useHistoricoLancamentos() {
       const { data, error } = await supabase
         .from("historico_lancamentos")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(2000);
 
       if (error) throw error;
       return data as HistoricoLancamento[];
