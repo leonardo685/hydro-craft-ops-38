@@ -151,18 +151,99 @@ export default function HistoricoLancamentos() {
     });
   };
 
-  const historicoFiltrado = historico?.filter((item) => {
-    const descricao = item.metadados?.descricao?.toLowerCase() || "";
-    const tipoAcao = item.tipo_acao.toLowerCase();
-    const campoAlterado = getCampoAlterado(item.campo_alterado).toLowerCase();
+  const getBanco = (item: any) => {
+    if (item.campo_alterado === "conta_bancaria") {
+      return item.valor_novo || item.valor_anterior || "-";
+    }
+    return item.lancamentos_financeiros?.conta_bancaria || item.metadados?.conta_bancaria || "-";
+  };
+
+  const getDescricao = (item: any) =>
+    item.metadados?.descricao || item.lancamentos_financeiros?.descricao || "-";
+
+  const bancosDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    (historico || []).forEach((item) => {
+      const banco = getBanco(item);
+      if (banco && banco !== "-") set.add(banco);
+    });
+    return Array.from(set).sort();
+  }, [historico]);
+
+  const acoesDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    (historico || []).forEach((item) => set.add(item.tipo_acao));
+    return Array.from(set).sort();
+  }, [historico]);
+
+  const camposDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    (historico || []).forEach((item) => {
+      if (item.campo_alterado) set.add(item.campo_alterado);
+    });
+    return Array.from(set).sort();
+  }, [historico]);
+
+  const limparFiltros = () => {
+    setSearchTerm("");
+    setFiltroDataInicio("");
+    setFiltroDataFim("");
+    setFiltroAcao("todos");
+    setFiltroDescricao("");
+    setFiltroBanco("todos");
+    setFiltroCampo("todos");
+    setFiltroValorAnterior("");
+    setFiltroValorNovo("");
+  };
+
+  const historicoFiltrado = useMemo(() => {
     const search = searchTerm.toLowerCase();
 
-    return (
-      descricao.includes(search) ||
-      tipoAcao.includes(search) ||
-      campoAlterado.includes(search)
-    );
-  }) || [];
+    return (historico || []).filter((item) => {
+      const descricao = getDescricao(item).toLowerCase();
+      const tipoAcao = item.tipo_acao.toLowerCase();
+      const campoAlterado = getCampoAlterado(item.campo_alterado).toLowerCase();
+      const banco = getBanco(item);
+      const valorAnterior = formatValor(item.valor_anterior, item.campo_alterado).toLowerCase();
+      const valorNovo = formatValor(item.valor_novo, item.campo_alterado).toLowerCase();
+
+      if (
+        search &&
+        !descricao.includes(search) &&
+        !tipoAcao.includes(search) &&
+        !campoAlterado.includes(search) &&
+        !banco.toLowerCase().includes(search)
+      ) {
+        return false;
+      }
+
+      if (filtroDataInicio && new Date(item.created_at) < new Date(`${filtroDataInicio}T00:00:00`)) {
+        return false;
+      }
+      if (filtroDataFim && new Date(item.created_at) > new Date(`${filtroDataFim}T23:59:59`)) {
+        return false;
+      }
+      if (filtroAcao !== "todos" && item.tipo_acao !== filtroAcao) return false;
+      if (filtroDescricao && !descricao.includes(filtroDescricao.toLowerCase())) return false;
+      if (filtroBanco !== "todos" && banco !== filtroBanco) return false;
+      if (filtroCampo !== "todos" && (item.campo_alterado || "") !== filtroCampo) return false;
+      if (filtroValorAnterior && !valorAnterior.includes(filtroValorAnterior.toLowerCase())) return false;
+      if (filtroValorNovo && !valorNovo.includes(filtroValorNovo.toLowerCase())) return false;
+
+      return true;
+    });
+  }, [
+    historico,
+    searchTerm,
+    filtroDataInicio,
+    filtroDataFim,
+    filtroAcao,
+    filtroDescricao,
+    filtroBanco,
+    filtroCampo,
+    filtroValorAnterior,
+    filtroValorNovo,
+  ]);
 
   return (
     <AppLayout>
@@ -185,16 +266,38 @@ export default function HistoricoLancamentos() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-4">
-              <div className="relative">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por descrição, ação ou campo alterado..."
+                  placeholder="Buscar por descrição, ação, banco ou campo alterado..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={filtroDataInicio}
+                  onChange={(e) => setFiltroDataInicio(e.target.value)}
+                  className="w-[150px]"
+                />
+                <span className="text-muted-foreground text-sm">até</span>
+                <Input
+                  type="date"
+                  value={filtroDataFim}
+                  onChange={(e) => setFiltroDataFim(e.target.value)}
+                  className="w-[150px]"
+                />
+                <Button variant="outline" size="sm" onClick={limparFiltros}>
+                  <X className="h-4 w-4 mr-1" /> Limpar
+                </Button>
+              </div>
+            </div>
+
+            <div className="mb-2 text-sm text-muted-foreground">
+              {historicoFiltrado.length} registro(s)
             </div>
 
             <div className="rounded-md border">
@@ -204,21 +307,90 @@ export default function HistoricoLancamentos() {
                     <SortableTableHead column="created_at">Data/Hora</SortableTableHead>
                     <SortableTableHead column="tipo_acao">Ação</SortableTableHead>
                     <TableHead>Descrição</TableHead>
+                    <TableHead>Banco</TableHead>
                     <SortableTableHead column="campo_alterado">Campo Alterado</SortableTableHead>
                     <TableHead>Valor Anterior</TableHead>
                     <TableHead>Valor Novo</TableHead>
+                  </TableRow>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="p-2 text-xs text-muted-foreground">
+                      Use o filtro de datas
+                    </TableHead>
+                    <TableHead className="p-2">
+                      <Select value={filtroAcao} onValueChange={setFiltroAcao}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Todas" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todas</SelectItem>
+                          {acoesDisponiveis.map((a) => (
+                            <SelectItem key={a} value={a}>{a}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableHead>
+                    <TableHead className="p-2">
+                      <Input
+                        placeholder="Filtrar..."
+                        value={filtroDescricao}
+                        onChange={(e) => setFiltroDescricao(e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                    </TableHead>
+                    <TableHead className="p-2">
+                      <Select value={filtroBanco} onValueChange={setFiltroBanco}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Todos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todos</SelectItem>
+                          {bancosDisponiveis.map((b) => (
+                            <SelectItem key={b} value={b}>{b}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableHead>
+                    <TableHead className="p-2">
+                      <Select value={filtroCampo} onValueChange={setFiltroCampo}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Todos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todos</SelectItem>
+                          {camposDisponiveis.map((c) => (
+                            <SelectItem key={c} value={c}>{getCampoAlterado(c)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableHead>
+                    <TableHead className="p-2">
+                      <Input
+                        placeholder="Filtrar..."
+                        value={filtroValorAnterior}
+                        onChange={(e) => setFiltroValorAnterior(e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                    </TableHead>
+                    <TableHead className="p-2">
+                      <Input
+                        placeholder="Filtrar..."
+                        value={filtroValorNovo}
+                        onChange={(e) => setFiltroValorNovo(e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         Carregando histórico...
                       </TableCell>
                     </TableRow>
                   ) : historicoFiltrado.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         Nenhum registro encontrado
                       </TableCell>
                     </TableRow>
@@ -229,14 +401,15 @@ export default function HistoricoLancamentos() {
                           {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </TableCell>
                         <TableCell>{getTipoAcaoBadge(item.tipo_acao)}</TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {item.metadados?.descricao || "-"}
+                        <TableCell className="max-w-[260px] whitespace-normal break-words">
+                          {getDescricao(item)}
                         </TableCell>
+                        <TableCell className="whitespace-nowrap">{getBanco(item)}</TableCell>
                         <TableCell>{getCampoAlterado(item.campo_alterado)}</TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           {formatValor(item.valor_anterior, item.campo_alterado)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           {formatValor(item.valor_novo, item.campo_alterado)}
                         </TableCell>
                       </TableRow>
