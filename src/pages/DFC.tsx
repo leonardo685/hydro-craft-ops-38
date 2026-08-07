@@ -1091,6 +1091,23 @@ export default function DFC() {
         });
       });
 
+      // Lançamentos registrados DIRETAMENTE na categoria mãe (sem subcategoria)
+      // precisam entrar no total, senão o DFC não fecha com o caixa.
+      const valorDireto = calcularValorCategoria(categoriaMae.id);
+      if (valorDireto !== 0) {
+        totalMae += valorDireto;
+        resultado.push({
+          codigo: categoriaMae.codigo,
+          conta: `${categoriaMae.nome} (sem subcategoria)`,
+          valor: valorDireto,
+          percentual: totalReceitas > 0 ? valorDireto / totalReceitas * 100 : 0,
+          tipo: 'categoria_filha',
+          nivel: 2,
+          codigoMae: categoriaMae.codigo,
+          categoriaId: categoriaMae.id
+        });
+      }
+
       // Atualizar valor da categoria mãe
       resultado[indexMae].valor = totalMae;
       resultado[indexMae].percentual = totalReceitas > 0 ? totalMae / totalReceitas * 100 : 0;
