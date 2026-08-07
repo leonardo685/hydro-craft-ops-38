@@ -263,27 +263,22 @@ export function translateTerm(text: string | null | undefined, language: Languag
   if (language === "pt-BR") return text;
 
   const target: "en" | "es" = language === "es" ? "es" : "en";
-  // Trabalha sobre uma versão sem acentos apenas para localizar os termos,
-  // mantendo os índices alinhados com o texto original (deaccent preserva tamanho por caractere base).
   let result = text;
 
   for (const { tr, regex } of COMPILED) {
-    result = result.replace(regex, (match) => applyCase(match, tr[target]));
-    // Também tenta casar a forma sem acento do texto original
+    // deaccent preserva o tamanho, então os índices casam com o texto original
     const plain = deaccent(result);
-    if (plain !== result) {
-      regex.lastIndex = 0;
-      let out = "";
-      let last = 0;
-      let m: RegExpExecArray | null;
-      const re = new RegExp(regex.source, regex.flags);
-      while ((m = re.exec(plain)) !== null) {
-        out += result.slice(last, m.index) + applyCase(result.slice(m.index, m.index + m[0].length), tr[target]);
-        last = m.index + m[0].length;
-        if (m[0].length === 0) break;
-      }
-      result = out + result.slice(last);
+    const re = new RegExp(regex.source, regex.flags);
+    let out = "";
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(plain)) !== null) {
+      if (m[0].length === 0) break;
+      const original = result.slice(m.index, m.index + m[0].length);
+      out += result.slice(last, m.index) + applyCase(original, tr[target]);
+      last = m.index + m[0].length;
     }
+    result = out + result.slice(last);
   }
 
   return result;
