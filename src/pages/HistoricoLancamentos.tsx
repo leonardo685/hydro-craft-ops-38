@@ -13,7 +13,7 @@ import { ptBR } from "date-fns/locale";
 import { Search, ArrowUp, ArrowDown, ArrowUpDown, X } from "lucide-react";
 
 export default function HistoricoLancamentos() {
-  const { data: historico, isLoading, refetch } = useHistoricoLancamentos();
+  const { data: historico, isLoading, error, refetch } = useHistoricoLancamentos();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortColumn, setSortColumn] = useState<string | null>("created_at");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
@@ -414,8 +414,14 @@ export default function HistoricoLancamentos() {
               </div>
             </div>
 
+            {error && (
+              <div className="mb-2 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                Erro ao carregar histórico: {(error as any)?.message || "erro desconhecido"}
+              </div>
+            )}
+
             <div className="mb-2 text-sm text-muted-foreground">
-              {historicoFiltrado.length} registro(s)
+              {historicoFiltrado.length} de {(historico || []).length} registro(s)
             </div>
 
             <div className="rounded-md border">
