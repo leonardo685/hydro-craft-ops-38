@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabasePublico as supabase, setOrdemPublica } from "@/integrations/supabase/ordemPublicaClient";
 import { toast } from "sonner";
 import jsPDF from 'jspdf';
 import defaultLogo from "@/assets/mec-hidro-logo-atualizado.jpg";
