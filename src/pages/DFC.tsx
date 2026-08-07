@@ -384,23 +384,22 @@ export default function DFC() {
 
     // Adicionar lançamentos pagos aos saldos
     lancamentos.forEach(lancamento => {
+      // Excluir lançamentos PAI de parcelamento (evita contagem dupla)
+      if (!lancamento.lancamentoPaiId && lancamento.numeroParcelas && lancamento.numeroParcelas > 1) {
+        return;
+      }
       if (lancamento.pago && lancamento.dataRealizada && lancamento.contaBancaria) {
         // Para transferências, processar saída e entrada
         if (lancamento.tipo === 'transferencia' && lancamento.contaDestino) {
-          // Saída da conta origem
-          if (saldos.hasOwnProperty(lancamento.contaBancaria)) {
-            saldos[lancamento.contaBancaria] -= lancamento.valor;
-          }
+          // Saída da conta origem (cria a chave se a conta não estiver mais cadastrada/ativa,
+          // para que o valor não desapareça do saldo total)
+          saldos[lancamento.contaBancaria] = (saldos[lancamento.contaBancaria] ?? 0) - lancamento.valor;
           // Entrada na conta destino
-          if (saldos.hasOwnProperty(lancamento.contaDestino)) {
-            saldos[lancamento.contaDestino] += lancamento.valor;
-          }
+          saldos[lancamento.contaDestino] = (saldos[lancamento.contaDestino] ?? 0) + lancamento.valor;
         } else {
           // Lançamentos normais (entrada ou saída)
           const valor = lancamento.tipo === 'entrada' ? lancamento.valor : -lancamento.valor;
-          if (saldos.hasOwnProperty(lancamento.contaBancaria)) {
-            saldos[lancamento.contaBancaria] += valor;
-          }
+          saldos[lancamento.contaBancaria] = (saldos[lancamento.contaBancaria] ?? 0) + valor;
         }
       }
     });
@@ -440,7 +439,12 @@ export default function DFC() {
       fornecedor: lancamento.fornecedorCliente || ''
     }));
   }, [lancamentos, getNomeCategoriaMae]);
-  const saldoTotal = contasBancariasAtualizadas.reduce((acc, conta) => acc + conta.saldo, 0);
+  // Saldo total considera TODAS as chaves de saldo (inclusive contas não cadastradas/inativas
+  // que possuem lançamentos pagos), garantindo que o caixa feche com os lançamentos.
+  const saldoTotal = useMemo(
+    () => Object.values(saldosContas).reduce((acc, v) => acc + v, 0),
+    [saldosContas]
+  );
 
   // Função helper para obter IDs de categorias filhas quando uma categoria mãe é selecionada
   const getCategoriasFilhasIds = useMemo(
