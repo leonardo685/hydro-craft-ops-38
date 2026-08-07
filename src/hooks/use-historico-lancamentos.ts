@@ -15,6 +15,8 @@ export interface HistoricoLancamento {
     conta_bancaria: string | null;
     tipo: string | null;
     descricao: string | null;
+    data_esperada: string | null;
+    data_realizada: string | null;
   } | null;
 }
 
@@ -37,7 +39,13 @@ export function useHistoricoLancamentos() {
 
       const lancamentosMap = new Map<
         string,
-        { conta_bancaria: string | null; tipo: string | null; descricao: string | null }
+        {
+          conta_bancaria: string | null;
+          tipo: string | null;
+          descricao: string | null;
+          data_esperada: string | null;
+          data_realizada: string | null;
+        }
       >();
 
       // Busca em lotes para evitar URLs muito longas
@@ -45,7 +53,7 @@ export function useHistoricoLancamentos() {
         const lote = ids.slice(i, i + 200);
         const { data: lancamentos, error: erroLanc } = await supabase
           .from("lancamentos_financeiros")
-          .select("id, conta_bancaria, tipo, descricao")
+          .select("id, conta_bancaria, tipo, descricao, data_esperada, data_realizada")
           .in("id", lote);
 
         if (erroLanc) continue;
@@ -54,6 +62,8 @@ export function useHistoricoLancamentos() {
             conta_bancaria: l.conta_bancaria ?? null,
             tipo: l.tipo ?? null,
             descricao: l.descricao ?? null,
+            data_esperada: l.data_esperada ?? null,
+            data_realizada: l.data_realizada ?? null,
           });
         });
       }
