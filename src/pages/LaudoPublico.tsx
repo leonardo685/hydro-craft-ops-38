@@ -32,6 +32,7 @@ import { ptBR, enUS } from "date-fns/locale";
 import { HistoricoManutencaoPublicoModal } from "@/components/HistoricoManutencaoPublicoModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageSelectorDropdown } from "@/components/LanguageSelectorDropdown";
+import { translateTerm } from "@/i18n/dynamicTerms";
 
 interface OrdemServico {
   id: string;
@@ -151,6 +152,8 @@ export default function LaudoPublico() {
   const ordemIdParam = searchParams.get('ordemId');
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
+  /** Traduz conteúdo dinâmico (peças, serviços, usinagem) mantendo números e códigos */
+  const tr = (v: string | null | undefined) => translateTerm(v, language);
   const dateLocale = language === 'pt-BR' ? ptBR : enUS;
   const [loading, setLoading] = useState(true);
   const [ordemServico, setOrdemServico] = useState<OrdemServico | null>(null);
@@ -543,7 +546,7 @@ export default function LaudoPublico() {
         // Observações
         const observacao = teste.observacoes_teste || teste.observacao;
         if (observacao) {
-          criarTabela(t('laudoPublico.observations'), [{ label: '', value: observacao }], [128, 128, 128]);
+          criarTabela(t('laudoPublico.observations'), [{ label: '', value: tr(observacao) }], [128, 128, 128]);
         }
       }
       
@@ -557,8 +560,8 @@ export default function LaudoPublico() {
         if (dadosDimensionais.conexao_b) dimensoes.push({ label: `${t('laudoPublico.connectionB')}:`, value: dadosDimensionais.conexao_b });
         if (dadosDimensionais.pressao_trabalho) dimensoes.push({ label: `${t('laudoPublico.workPressure')}:`, value: dadosDimensionais.pressao_trabalho });
         if (dadosDimensionais.temperatura_trabalho) dimensoes.push({ label: `${t('laudoPublico.workTemperature')}:`, value: dadosDimensionais.temperatura_trabalho });
-        if (dadosDimensionais.fluido_trabalho) dimensoes.push({ label: `${t('laudoPublico.workFluid')}:`, value: dadosDimensionais.fluido_trabalho });
-        if (dadosDimensionais.ambiente_trabalho) dimensoes.push({ label: `${t('laudoPublico.workEnvironment')}:`, value: dadosDimensionais.ambiente_trabalho });
+        if (dadosDimensionais.fluido_trabalho) dimensoes.push({ label: `${t('laudoPublico.workFluid')}:`, value: tr(dadosDimensionais.fluido_trabalho) });
+        if (dadosDimensionais.ambiente_trabalho) dimensoes.push({ label: `${t('laudoPublico.workEnvironment')}:`, value: tr(dadosDimensionais.ambiente_trabalho) });
         if (dadosDimensionais.potencia) dimensoes.push({ label: `${t('laudoPublico.power')}:`, value: dadosDimensionais.potencia });
         
         if (dimensoes.length > 0) {
@@ -570,7 +573,7 @@ export default function LaudoPublico() {
       const pecas = Array.isArray(ordemServico.pecas_necessarias) ? ordemServico.pecas_necessarias : [];
       if (pecas.length > 0) {
         const dadosPecas = pecas.map((item: any) => ({
-          label: item.peca || item.descricao || item.nome || t('laudoPublico.partsUsed'),
+          label: tr(item.peca || item.descricao || item.nome) || t('laudoPublico.partsUsed'),
           value: `${t('laudoPublico.qty')}: ${item.quantidade || 1}${item.codigo ? ` | ${t('laudoPublico.code')}: ${item.codigo}` : ''}`
         }));
         criarTabela(t('laudoPublico.partsUsed'), dadosPecas, [128, 128, 128]);
@@ -580,8 +583,8 @@ export default function LaudoPublico() {
       const servicos = Array.isArray(ordemServico.servicos_necessarios) ? ordemServico.servicos_necessarios : [];
       if (servicos.length > 0) {
         const dadosServicos = servicos.map((servico: any) => ({
-          label: servico.descricao || servico.nome || t('laudoPublico.servicesPerformed'),
-          value: servico.detalhes || servico.observacao || '-'
+          label: tr(servico.descricao || servico.nome) || t('laudoPublico.servicesPerformed'),
+          value: tr(servico.detalhes || servico.observacao) || '-'
         }));
         criarTabela(t('laudoPublico.servicesPerformed'), dadosServicos, [128, 128, 128]);
       }
@@ -590,8 +593,8 @@ export default function LaudoPublico() {
       const usinagem = Array.isArray(ordemServico.usinagem_necessaria) ? ordemServico.usinagem_necessaria : [];
       if (usinagem.length > 0) {
         const dadosUsinagem = usinagem.map((item: any) => ({
-          label: item.descricao || item.nome || t('laudoPublico.machining'),
-          value: item.detalhes || item.observacao || '-'
+          label: tr(item.descricao || item.nome) || t('laudoPublico.machining'),
+          value: tr(item.detalhes || item.observacao) || '-'
         }));
         criarTabela(t('laudoPublico.machining'), dadosUsinagem, [128, 128, 128]);
       }
@@ -769,7 +772,7 @@ export default function LaudoPublico() {
                 <Wrench className="w-5 h-5 text-muted-foreground mt-0.5" />
                 <div>
                   <p className="text-sm text-muted-foreground">{t('laudoPublico.equipment')}</p>
-                  <p className="font-semibold">{ordemServico.equipamento}</p>
+                  <p className="font-semibold">{tr(ordemServico.equipamento)}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -815,8 +818,8 @@ export default function LaudoPublico() {
                   if (translationMap[motivo]) return translationMap[motivo][language] || motivo;
                   // Try matching by Portuguese label
                   const byLabel = Object.values(translationMap).find(t => t['pt-BR']?.toLowerCase() === motivo.toLowerCase());
-                  if (byLabel) return byLabel[language] || motivo;
-                  return motivo;
+                  if (byLabel) return byLabel[language] || tr(motivo);
+                  return tr(motivo);
                 })()}
               </p>
             </CardContent>
@@ -840,7 +843,7 @@ export default function LaudoPublico() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">{t('laudoPublico.testType')}</p>
-                  <p className="font-semibold capitalize">{teste.tipo_teste}</p>
+                  <p className="font-semibold capitalize">{tr(teste.tipo_teste)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">{t('laudoPublico.testDate')}</p>
@@ -990,7 +993,7 @@ export default function LaudoPublico() {
                   <div>
                     <p className="font-semibold mb-2">{t('laudoPublico.observations')}</p>
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                      {teste.observacoes_teste || teste.observacao}
+                      {tr(teste.observacoes_teste || teste.observacao)}
                     </p>
                   </div>
                 </>
@@ -1055,13 +1058,13 @@ export default function LaudoPublico() {
                 {dadosDimensionais.fluido_trabalho && (
                   <div>
                     <p className="text-sm text-muted-foreground">{t('laudoPublico.workFluid')}</p>
-                    <p className="font-semibold">{dadosDimensionais.fluido_trabalho}</p>
+                    <p className="font-semibold">{tr(dadosDimensionais.fluido_trabalho)}</p>
                   </div>
                 )}
                 {dadosDimensionais.ambiente_trabalho && (
                   <div>
                     <p className="text-sm text-muted-foreground">{t('laudoPublico.workEnvironment')}</p>
-                    <p className="font-semibold">{dadosDimensionais.ambiente_trabalho}</p>
+                    <p className="font-semibold">{tr(dadosDimensionais.ambiente_trabalho)}</p>
                   </div>
                 )}
                 {dadosDimensionais.potencia && (
@@ -1088,7 +1091,7 @@ export default function LaudoPublico() {
               <div className="space-y-2">
                 {ordemServico.pecas_necessarias.map((item: any, index: number) => (
                   <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded">
-                    <span className="font-medium">{item.peca || item.descricao || item.nome || 'Peça'}</span>
+                    <span className="font-medium">{tr(item.peca || item.descricao || item.nome) || t('laudoPublico.partsUsed')}</span>
                     <span className="text-sm text-muted-foreground">
                       {t('laudoPublico.qty')}: {item.quantidade || 1}
                       {item.codigo && ` | ${t('laudoPublico.code')}: ${item.codigo}`}
@@ -1113,9 +1116,9 @@ export default function LaudoPublico() {
               <div className="space-y-2">
                 {ordemServico.servicos_necessarios.map((servico: any, index: number) => (
                   <div key={index} className="p-2 bg-muted/50 rounded">
-                    <p className="font-medium">{servico.descricao || servico.nome || 'Serviço'}</p>
+                    <p className="font-medium">{tr(servico.descricao || servico.nome) || t('laudoPublico.servicesPerformed')}</p>
                     {(servico.detalhes || servico.observacao) && (
-                      <p className="text-sm text-muted-foreground mt-1">{servico.detalhes || servico.observacao}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{tr(servico.detalhes || servico.observacao)}</p>
                     )}
                   </div>
                 ))}
@@ -1137,9 +1140,9 @@ export default function LaudoPublico() {
               <div className="space-y-2">
                 {ordemServico.usinagem_necessaria.map((item: any, index: number) => (
                   <div key={index} className="p-2 bg-muted/50 rounded">
-                    <p className="font-medium">{item.descricao || item.nome || 'Usinagem'}</p>
+                    <p className="font-medium">{tr(item.descricao || item.nome) || t('laudoPublico.machining')}</p>
                     {(item.detalhes || item.observacao) && (
-                      <p className="text-sm text-muted-foreground mt-1">{item.detalhes || item.observacao}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{tr(item.detalhes || item.observacao)}</p>
                     )}
                   </div>
                 ))}

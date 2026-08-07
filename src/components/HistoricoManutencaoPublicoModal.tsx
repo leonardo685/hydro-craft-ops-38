@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ptBR, enUS } from "date-fns/locale";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { translateTerm } from "@/i18n/dynamicTerms";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 
 // Mapeamento das chaves de motivo de falha para tradução
@@ -72,6 +73,7 @@ interface ManutencaoHistorico {
 
 export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrdem, ordemId }: HistoricoManutencaoPublicoModalProps) {
   const { t, language } = useLanguage();
+  const tr = (v: string | null | undefined) => translateTerm(v, language);
   const dateLocale = language === 'pt-BR' ? ptBR : enUS;
   const [loading, setLoading] = useState(false);
   const [historico, setHistorico] = useState<ManutencaoHistorico[]>([]);
@@ -560,7 +562,7 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
                           {item.motivo_falha && (
                             <div className="mt-2 p-2 bg-amber-100 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800">
                               <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">{t('historicoManutencao.failureReason')}:</span>
-                              <p className="text-sm text-foreground">{item.motivo_falha}</p>
+                              <p className="text-sm text-foreground">{tr(item.motivo_falha)}</p>
                             </div>
                           )}
                         </div>
