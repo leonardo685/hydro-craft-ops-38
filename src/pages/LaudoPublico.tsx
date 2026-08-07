@@ -152,6 +152,8 @@ export default function LaudoPublico() {
   const ordemIdParam = searchParams.get('ordemId');
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
+  /** Traduz conteúdo dinâmico (peças, serviços, usinagem) mantendo números e códigos */
+  const tr = (v: string | null | undefined) => translateTerm(v, language);
   const dateLocale = language === 'pt-BR' ? ptBR : enUS;
   const [loading, setLoading] = useState(true);
   const [ordemServico, setOrdemServico] = useState<OrdemServico | null>(null);
