@@ -229,6 +229,10 @@ const DICT: Array<[string, { en: string; es: string }]> = [
   ["na", { en: "in the", es: "en la" }],
   ["no", { en: "in the", es: "en el" }],
   ["e", { en: "and", es: "y" }],
+  ["os", { en: "the", es: "los" }],
+  ["as", { en: "the", es: "las" }],
+  ["o", { en: "the", es: "el" }],
+  ["a", { en: "the", es: "la" }],
 ];
 
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
