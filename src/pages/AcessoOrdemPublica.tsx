@@ -71,6 +71,7 @@ type DadosData = z.infer<typeof dadosSchema>;
 
 export default function AcessoOrdemPublica() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
+  setOrdemPublica(numeroOrdem);
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
   const [loading, setLoading] = useState(false);

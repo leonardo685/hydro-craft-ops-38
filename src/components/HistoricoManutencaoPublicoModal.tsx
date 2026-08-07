@@ -87,6 +87,7 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
   const buscarHistorico = async () => {
     if (!numeroOrdem) return;
 
+    setOrdemPublica(numeroOrdem);
     setLoading(true);
 
     try {

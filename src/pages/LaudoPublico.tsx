@@ -148,6 +148,7 @@ const encontrarOrdemCorreta = async (
 
 export default function LaudoPublico() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
+  setOrdemPublica(numeroOrdem);
   const [searchParams] = useSearchParams();
   const ordemIdParam = searchParams.get('ordemId');
   const navigate = useNavigate();

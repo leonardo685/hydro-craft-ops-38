@@ -56,6 +56,7 @@ const encontrarOrdemCorreta = async (
 
 export default function OrdemPorQRCode() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
+  setOrdemPublica(numeroOrdem);
   const navigate = useNavigate();
 
   useEffect(() => {
