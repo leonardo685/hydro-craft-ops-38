@@ -19,10 +19,10 @@ export function setOrdemPublica(numeroOrdem: string | undefined | null) {
 export const supabasePublico = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
   global: {
-    fetch: (input, init = {}) => {
-      const headers = new Headers(init.headers);
+    fetch: (input: any, init: RequestInit = {}) => {
+      const headers = new Headers(init.headers as HeadersInit | undefined);
       if (numeroOrdemAtual) headers.set('x-ordem-numero', numeroOrdemAtual);
-      return fetch(input as any, { ...init, headers });
+      return fetch(input, { ...init, headers });
     },
   },
 });
