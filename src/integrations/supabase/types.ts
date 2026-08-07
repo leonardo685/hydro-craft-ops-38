@@ -2545,6 +2545,8 @@ export type Database = {
         Returns: boolean
       }
       limpar_itens_duplicados: { Args: never; Returns: number }
+      ordem_publica_equipamento: { Args: never; Returns: string }
+      ordem_publica_numero: { Args: never; Returns: string }
       registrar_acesso_publico: {
         Args: {
           p_empresa?: string
