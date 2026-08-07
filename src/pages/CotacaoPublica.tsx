@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { createCotacaoPublicaClient } from "@/integrations/supabase/cotacaoPublicaClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,9 @@ export default function CotacaoPublica() {
   >({});
   const [obsGeral, setObsGeral] = useState("");
   const [empresa, setEmpresa] = useState<any>(null);
+
+  // Cliente que envia o token no header — necessário para as políticas de RLS
+  const supabase = useMemo(() => createCotacaoPublicaClient(token || ""), [token]);
 
   useEffect(() => {
     if (!token) return;
