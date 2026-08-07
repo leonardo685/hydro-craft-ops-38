@@ -19,6 +19,8 @@ export default function HistoricoLancamentos() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('desc');
   const [filtroDataInicio, setFiltroDataInicio] = useState("");
   const [filtroDataFim, setFiltroDataFim] = useState("");
+  const [filtroContabilInicio, setFiltroContabilInicio] = useState("");
+  const [filtroContabilFim, setFiltroContabilFim] = useState("");
   const [filtroAcao, setFiltroAcao] = useState("todos");
   const [filtroDescricao, setFiltroDescricao] = useState("");
   const [filtroBanco, setFiltroBanco] = useState("todos");
@@ -161,6 +163,29 @@ export default function HistoricoLancamentos() {
   const getDescricao = (item: any) =>
     item.metadados?.descricao || item.lancamentos_financeiros?.descricao || "-";
 
+  // Data contábil = data esperada do lançamento (fallback: metadados / valor do histórico)
+  const getDataContabil = (item: any): string | null => {
+    if (item.campo_alterado === "data_esperada") {
+      const v = item.valor_novo && item.valor_novo !== "null" ? item.valor_novo : item.valor_anterior;
+      if (v && v !== "null") return v;
+    }
+    return (
+      item.lancamentos_financeiros?.data_esperada ||
+      item.metadados?.data_esperada ||
+      null
+    );
+  };
+
+  const formatDataContabil = (item: any) => {
+    const v = getDataContabil(item);
+    if (!v) return "-";
+    try {
+      return format(new Date(v), "dd/MM/yyyy", { locale: ptBR });
+    } catch {
+      return String(v);
+    }
+  };
+
   const bancosDisponiveis = useMemo(() => {
     const set = new Set<string>();
     (historico || []).forEach((item) => {
@@ -188,6 +213,8 @@ export default function HistoricoLancamentos() {
     setSearchTerm("");
     setFiltroDataInicio("");
     setFiltroDataFim("");
+    setFiltroContabilInicio("");
+    setFiltroContabilFim("");
     setFiltroAcao("todos");
     setFiltroDescricao("");
     setFiltroBanco("todos");
@@ -223,6 +250,13 @@ export default function HistoricoLancamentos() {
       if (filtroDataFim && new Date(item.created_at) > new Date(`${filtroDataFim}T23:59:59`)) {
         return false;
       }
+      if (filtroContabilInicio || filtroContabilFim) {
+        const dc = getDataContabil(item);
+        if (!dc) return false;
+        const d = new Date(dc);
+        if (filtroContabilInicio && d < new Date(`${filtroContabilInicio}T00:00:00`)) return false;
+        if (filtroContabilFim && d > new Date(`${filtroContabilFim}T23:59:59`)) return false;
+      }
       if (filtroAcao !== "todos" && item.tipo_acao !== filtroAcao) return false;
       if (filtroDescricao && !descricao.includes(filtroDescricao.toLowerCase())) return false;
       if (filtroBanco !== "todos" && banco !== filtroBanco) return false;
@@ -237,6 +271,8 @@ export default function HistoricoLancamentos() {
     searchTerm,
     filtroDataInicio,
     filtroDataFim,
+    filtroContabilInicio,
+    filtroContabilFim,
     filtroAcao,
     filtroDescricao,
     filtroBanco,
@@ -297,6 +333,22 @@ export default function HistoricoLancamentos() {
                     type="date"
                     value={filtroDataFim}
                     onChange={(e) => setFiltroDataFim(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Data contábil inicial</label>
+                  <Input
+                    type="date"
+                    value={filtroContabilInicio}
+                    onChange={(e) => setFiltroContabilInicio(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Data contábil final</label>
+                  <Input
+                    type="date"
+                    value={filtroContabilFim}
+                    onChange={(e) => setFiltroContabilFim(e.target.value)}
                   />
                 </div>
                 <div className="space-y-1">
@@ -370,7 +422,8 @@ export default function HistoricoLancamentos() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <SortableTableHead column="created_at">Data/Hora</SortableTableHead>
+                    <SortableTableHead column="created_at">Alterado no sistema</SortableTableHead>
+                    <TableHead>Data contábil</TableHead>
                     <SortableTableHead column="tipo_acao">Ação</SortableTableHead>
                     <TableHead>Descrição</TableHead>
                     <TableHead>Banco</TableHead>
@@ -382,13 +435,13 @@ export default function HistoricoLancamentos() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         Carregando histórico...
                       </TableCell>
                     </TableRow>
                   ) : historicoFiltrado.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         Nenhum registro encontrado
                       </TableCell>
                     </TableRow>
@@ -397,6 +450,9 @@ export default function HistoricoLancamentos() {
                       <TableRow key={item.id}>
                         <TableCell className="whitespace-nowrap">
                           {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {formatDataContabil(item)}
                         </TableCell>
                         <TableCell>{getTipoAcaoBadge(item.tipo_acao)}</TableCell>
                         <TableCell className="max-w-[260px] whitespace-normal break-words">
