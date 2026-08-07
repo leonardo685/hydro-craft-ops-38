@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEmpresaId } from "@/hooks/use-empresa-id";
 
 export interface HistoricoLancamento {
   id: string;
@@ -21,16 +22,25 @@ export interface HistoricoLancamento {
 }
 
 export function useHistoricoLancamentos() {
+  const { empresaId } = useEmpresaId();
+
   return useQuery({
-    queryKey: ["historico-lancamentos"],
+    queryKey: ["historico-lancamentos", empresaId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("historico_lancamentos")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(2000);
+        .limit(5000);
 
-      if (error) throw error;
+      if (empresaId) query = query.eq("empresa_id", empresaId);
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("[HistoricoLancamentos] erro ao buscar histórico:", error);
+        throw error;
+      }
 
       const registros = (data || []) as unknown as HistoricoLancamento[];
       const ids = Array.from(
