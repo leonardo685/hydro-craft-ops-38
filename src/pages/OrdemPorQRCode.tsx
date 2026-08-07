@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabasePublico as supabase, setOrdemPublica } from "@/integrations/supabase/ordemPublicaClient";
 import { toast } from "sonner";
 
 // Função para verificar se uma ordem está finalizada (tem laudo, fotos ou nota de retorno)
@@ -56,6 +56,7 @@ const encontrarOrdemCorreta = async (
 
 export default function OrdemPorQRCode() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
+  setOrdemPublica(numeroOrdem);
   const navigate = useNavigate();
 
   useEffect(() => {

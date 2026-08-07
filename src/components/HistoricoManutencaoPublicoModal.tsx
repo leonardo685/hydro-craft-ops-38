@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Minus, Wrench, AlertTriangle } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabasePublico as supabase, setOrdemPublica } from "@/integrations/supabase/ordemPublicaClient";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, RadarChart, PolarAngleAxis, PolarGrid, Radar } from "recharts";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ptBR, enUS } from "date-fns/locale";
@@ -87,6 +87,7 @@ export function HistoricoManutencaoPublicoModal({ open, onOpenChange, numeroOrde
   const buscarHistorico = async () => {
     if (!numeroOrdem) return;
 
+    setOrdemPublica(numeroOrdem);
     setLoading(true);
 
     try {

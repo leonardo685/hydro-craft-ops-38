@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabasePublico as supabase, setOrdemPublica } from "@/integrations/supabase/ordemPublicaClient";
 import { toast } from "sonner";
 import jsPDF from 'jspdf';
 import defaultLogo from "@/assets/mec-hidro-logo-atualizado.jpg";
@@ -148,6 +148,7 @@ const encontrarOrdemCorreta = async (
 
 export default function LaudoPublico() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
+  setOrdemPublica(numeroOrdem);
   const [searchParams] = useSearchParams();
   const ordemIdParam = searchParams.get('ordemId');
   const navigate = useNavigate();

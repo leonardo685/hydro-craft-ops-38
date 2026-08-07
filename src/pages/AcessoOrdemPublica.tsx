@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
+import { supabasePublico as supabase, setOrdemPublica } from "@/integrations/supabase/ordemPublicaClient";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +71,7 @@ type DadosData = z.infer<typeof dadosSchema>;
 
 export default function AcessoOrdemPublica() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
+  setOrdemPublica(numeroOrdem);
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
   const [loading, setLoading] = useState(false);
