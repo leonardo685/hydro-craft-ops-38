@@ -148,14 +148,17 @@ export default function DRE() {
     const getCategoriaById = (id: string) => categorias.find(c => c.id === id);
 
     // Função para calcular valor de uma categoria
-    const calcularValorCategoria = (categoriaId: string): number => {
+    // O sinal segue o TIPO do lançamento (entrada/saída), não a categoria,
+    // evitando que um lançamento alterado de entrada para saída continue somando no sentido antigo.
+    const calcularValorCategoria = (categoriaId: string, natureza: 'entrada' | 'saida'): number => {
       return lancamentosFiltrados
         .filter(l => l.categoriaId === categoriaId)
-        .reduce((acc, l) => acc + l.valor, 0);
+        .reduce((acc, l) => acc + (l.tipo === natureza ? l.valor : -l.valor), 0);
     };
 
     // Função auxiliar para adicionar categoria mãe por código (SEMPRE adiciona, mesmo com valor zero)
     const adicionarCategoriaPorCodigo = (codigo: string): number => {
+      const natureza: 'entrada' | 'saida' = codigo === '1' || codigo === '5' ? 'entrada' : 'saida';
       const categoriaMae = categorias.find(c => c.tipo === 'mae' && c.codigo === codigo);
       if (!categoriaMae) return 0;
 
@@ -163,7 +166,7 @@ export default function DRE() {
       let totalMae = 0;
 
       // Calcular valor dos lançamentos diretos na categoria mãe
-      const valorDiretoMae = calcularValorCategoria(categoriaMae.id);
+      const valorDiretoMae = calcularValorCategoria(categoriaMae.id, natureza);
       totalMae += valorDiretoMae;
 
       // Sempre adicionar a categoria mãe primeiro
@@ -180,7 +183,7 @@ export default function DRE() {
 
       // Adicionar todas as filhas (mesmo com valor zero)
       categoriasFilhas.forEach(filha => {
-        const valorFilha = calcularValorCategoria(filha.id);
+        const valorFilha = calcularValorCategoria(filha.id, natureza);
         totalMae += valorFilha;
         
         resultado.push({
