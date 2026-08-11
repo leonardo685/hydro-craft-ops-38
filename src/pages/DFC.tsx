@@ -2573,14 +2573,26 @@ export default function DFC() {
                       const fornecedor = fornecedoresClientes.find(f => f.id === item.fornecedor || f.nome === item.fornecedor);
                       return <TableRow key={item.id}>
                             {colunasVisiveis.tipo && <TableCell>
-                                <Badge className="gap-1" style={{
+                                {editandoLancamento === item.id ? <Select value={lancamentoEditado?.tipo || item.tipo} onValueChange={value => setLancamentoEditado({
+                            ...lancamentoEditado,
+                            tipo: value
+                          })}>
+                                    <SelectTrigger className="w-[150px]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="entrada">Entrada</SelectItem>
+                                      <SelectItem value="saida">Saída</SelectItem>
+                                      <SelectItem value="transferencia">Transferência</SelectItem>
+                                    </SelectContent>
+                                  </Select> : <Badge className="gap-1" style={{
                             backgroundColor: item.tipo === 'transferencia' ? 'hsl(217 91% 60%)' : item.tipo === 'entrada' ? 'hsl(142 76% 36%)' : 'hsl(0 84% 60%)',
                             color: 'white',
                             borderColor: item.tipo === 'transferencia' ? 'hsl(217 91% 60%)' : item.tipo === 'entrada' ? 'hsl(142 76% 36%)' : 'hsl(0 84% 60%)'
                           }}>
                                   {item.tipo === 'transferencia' ? <ArrowRightLeft className="h-3 w-3" /> : item.tipo === 'entrada' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
                                   {item.tipo === 'transferencia' ? 'Transferência' : item.tipo === 'entrada' ? 'Entrada' : 'Saída'}
-                                </Badge>
+                                </Badge>}
                               </TableCell>}
                             {colunasVisiveis.descricao && <TableCell>
                                 {editandoLancamento === item.id ? <Input value={lancamentoEditado?.descricao || ''} onChange={e => setLancamentoEditado({
