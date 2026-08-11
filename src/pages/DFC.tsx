@@ -1051,12 +1051,19 @@ export default function DFC() {
     const totalReceitas = lancamentosFiltrados.filter(l => l.tipo === 'entrada').reduce((acc, l) => acc + l.valor, 0);
 
     // 3. Função auxiliar para calcular valor de categoria
-    const calcularValorCategoria = (categoriaId: string): number => {
-      return lancamentosFiltrados.filter(l => l.categoriaId === categoriaId).reduce((acc, l) => acc + l.valor, 0);
+    // IMPORTANTE: o sinal segue o TIPO do lançamento (entrada/saída), não a categoria.
+    // Assim, se um lançamento for cadastrado como entrada e depois alterado para saída
+    // (ou vice-versa), o valor deixa de ser contado no sentido antigo.
+    const calcularValorCategoria = (categoriaId: string, natureza: 'entrada' | 'saida'): number => {
+      return lancamentosFiltrados
+        .filter(l => l.categoriaId === categoriaId)
+        .reduce((acc, l) => acc + (l.tipo === natureza ? l.valor : -l.valor), 0);
     };
 
     // 4. Função auxiliar para adicionar categoria mãe por código
     const adicionarCategoriaPorCodigo = (codigo: string): number => {
+      // Códigos 1 e 5 são grupos de entradas; os demais são grupos de saídas
+      const natureza: 'entrada' | 'saida' = codigo === '1' || codigo === '5' ? 'entrada' : 'saida';
       const categoriaMae = categorias.find(c => c.tipo === 'mae' && c.codigo === codigo);
       if (!categoriaMae) return 0;
       const categoriasFilhas = categorias.filter(c => c.tipo === 'filha' && c.categoriaMaeId === categoriaMae.id);
@@ -1076,7 +1083,7 @@ export default function DFC() {
 
       // Adicionar todas as filhas (mesmo com valor zero)
       categoriasFilhas.forEach(filha => {
-        const valorFilha = calcularValorCategoria(filha.id);
+        const valorFilha = calcularValorCategoria(filha.id, natureza);
         totalMae += valorFilha;
         
         resultado.push({
@@ -1093,7 +1100,7 @@ export default function DFC() {
 
       // Lançamentos registrados DIRETAMENTE na categoria mãe (sem subcategoria)
       // precisam entrar no total, senão o DFC não fecha com o caixa.
-      const valorDireto = calcularValorCategoria(categoriaMae.id);
+      const valorDireto = calcularValorCategoria(categoriaMae.id, natureza);
       if (valorDireto !== 0) {
         totalMae += valorDireto;
         resultado.push({
