@@ -83,6 +83,69 @@ export default function Aprovados() {
     }
   }, [empresaAtual?.id]);
 
+  // Normaliza o que o usuário digita (ex: "0129", "MH-129-26", "129")
+  const extrairNumeroBase = (valor: string): string | null => {
+    const limpo = valor.trim().toUpperCase().replace(/^MH-?/, '');
+    const partes = limpo.split('-').filter(Boolean);
+    const digitos = (partes[0] || '').replace(/\D/g, '');
+    if (!digitos) return null;
+    return String(parseInt(digitos, 10));
+  };
+
+  const buscarOrdemPorNumero = async (valor: string) => {
+    const base = extrairNumeroBase(valor);
+    if (!base) return null;
+    const padded = base.padStart(4, '0');
+    const filtros = [base, padded, base.padStart(3, '0')]
+      .filter((v, i, arr) => arr.indexOf(v) === i)
+      .flatMap((n) => [`numero_ordem.ilike.%MH-${n}-%`, `numero_ordem.ilike.%MH-${n}`])
+      .join(',');
+
+    const { data } = await supabase
+      .from('ordens_servico')
+      .select(`
+        id,
+        numero_ordem,
+        cliente_nome,
+        equipamento,
+        recebimento_id,
+        recebimentos (numero_ordem, cliente_nome, tipo_equipamento)
+      `)
+      .eq('empresa_id', empresaAtual?.id)
+      .or(filtros)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (data && data.length > 0) return data[0];
+
+    // Fallback: buscar pelo recebimento
+    const { data: recData } = await supabase
+      .from('recebimentos')
+      .select('id')
+      .eq('empresa_id', empresaAtual?.id)
+      .or(filtros)
+      .limit(1);
+
+    if (recData && recData.length > 0) {
+      const { data: ordemByRec } = await supabase
+        .from('ordens_servico')
+        .select(`
+          id,
+          numero_ordem,
+          cliente_nome,
+          equipamento,
+          recebimento_id,
+          recebimentos (numero_ordem, cliente_nome, tipo_equipamento)
+        `)
+        .eq('empresa_id', empresaAtual?.id)
+        .eq('recebimento_id', recData[0].id)
+        .limit(1);
+      if (ordemByRec && ordemByRec.length > 0) return ordemByRec[0];
+    }
+
+    return null;
+  };
+
   // Função para buscar laudo por número da ordem
   const buscarLaudo = async () => {
     if (!buscaNumeroOrdem.trim()) {
@@ -93,69 +156,13 @@ export default function Aprovados() {
     setBuscandoLaudo(true);
     setErroLaudo(null);
 
-    // Montar número completo com prefixo MH-
-    const numeroCompleto = `MH-${buscaNumeroOrdem.trim()}`;
-
     try {
-      // Buscar ordem pelo número - FILTRAR POR EMPRESA
-      const { data: ordemData, error: ordemError } = await supabase
-        .from('ordens_servico')
-        .select(`
-          id,
-          numero_ordem,
-          cliente_nome,
-          equipamento,
-          recebimentos (numero_ordem, cliente_nome, tipo_equipamento)
-        `)
-        .eq('empresa_id', empresaAtual?.id)
-        .or(`numero_ordem.ilike.%${numeroCompleto}%`)
-        .limit(1)
-        .single();
-
-      if (ordemError || !ordemData) {
-        // Tentar buscar pelo número do recebimento - FILTRAR POR EMPRESA
-        const { data: recData, error: recError } = await supabase
-          .from('recebimentos')
-          .select('id')
-          .eq('empresa_id', empresaAtual?.id)
-          .ilike('numero_ordem', `%${numeroCompleto}%`)
-          .limit(1)
-          .single();
-
-        if (recError || !recData) {
-          setErroLaudo("Ordem não encontrada. Verifique o número digitado.");
-          setBuscandoLaudo(false);
-          return;
-        }
-
-        // Buscar ordem pelo recebimento_id - FILTRAR POR EMPRESA
-        const { data: ordemByRec, error: ordemByRecError } = await supabase
-          .from('ordens_servico')
-          .select(`
-            id,
-            numero_ordem,
-            cliente_nome,
-            equipamento,
-            recebimentos (numero_ordem, cliente_nome, tipo_equipamento)
-          `)
-          .eq('empresa_id', empresaAtual?.id)
-          .eq('recebimento_id', recData.id)
-          .limit(1)
-          .single();
-
-        if (ordemByRecError || !ordemByRec) {
-          setErroLaudo("Ordem não encontrada para este recebimento.");
-          setBuscandoLaudo(false);
-          return;
-        }
-
-        // Verificar se tem laudo
-        await verificarEAbrirLaudo(ordemByRec);
+      const ordem = await buscarOrdemPorNumero(buscaNumeroOrdem);
+      if (!ordem) {
+        setErroLaudo("Ordem não encontrada. Verifique o número digitado.");
         return;
       }
-
-      // Verificar se tem laudo
-      await verificarEAbrirLaudo(ordemData);
+      await verificarEAbrirLaudo(ordem);
     } catch (error) {
       console.error('Erro ao buscar laudo:', error);
       setErroLaudo("Erro ao buscar ordem. Tente novamente.");
@@ -207,22 +214,19 @@ export default function Aprovados() {
     setErroLaudo(null);
 
     try {
-      const { data: ordemData } = await supabase
-        .from('ordens_servico')
-        .select('id, numero_ordem, recebimentos (numero_ordem)')
-        .eq('empresa_id', empresaAtual?.id)
-        .or(`numero_ordem.ilike.%${numeroOrdem}%`)
-        .limit(1)
-        .single();
+      const ordemData: any = await buscarOrdemPorNumero(numeroOrdem);
 
       if (ordemData) {
         const numOrdem = ordemData.recebimentos?.numero_ordem || ordemData.numero_ordem;
         window.open(`/laudo-publico/${encodeURIComponent(numOrdem)}?ordemId=${ordemData.id}`, '_blank');
         setLaudoModalOpen(false);
         setBuscaNumeroOrdem("");
+      } else {
+        setErroLaudo("Ordem não encontrada. Verifique o número digitado.");
       }
     } catch (error) {
       console.error('Erro ao abrir laudo do histórico:', error);
+      setErroLaudo("Erro ao buscar ordem. Tente novamente.");
     } finally {
       setBuscandoLaudo(false);
     }
