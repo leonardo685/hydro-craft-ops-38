@@ -21,6 +21,7 @@ import DashboardFaturamento from "@/pages/DashboardFaturamento";
 import Cadastros from "@/pages/Cadastros";
 import Financeiro from "@/pages/Financeiro";
 import Dashboard from "@/pages/Dashboard";
+import DashboardServicos from "@/pages/DashboardServicos";
 import DRE from "@/pages/DRE";
 import DFC from "@/pages/DFC";
 import MetaGastos from "@/pages/MetaGastos";
@@ -38,6 +39,7 @@ export function AuthenticatedApp() {
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/dashboard-servicos" element={<ProtectedRoute requiredPermission="aprovados"><DashboardServicos /></ProtectedRoute>} />
           <Route path="/recebimentos" element={<ProtectedRoute requiredPermission="recebimentos"><Recebimentos /></ProtectedRoute>} />
           <Route path="/recebimentos/novo" element={<ProtectedRoute requiredPermission="recebimentos"><NovoRecebimento /></ProtectedRoute>} />
           <Route path="/recebimentos/:id" element={<ProtectedRoute requiredPermission="recebimentos"><DetalhesRecebimento /></ProtectedRoute>} />
