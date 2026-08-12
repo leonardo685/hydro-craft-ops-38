@@ -324,11 +324,6 @@ export default function DashboardServicos() {
   const fabricados = useMemo(() => reformados.filter(isFabricacao).length, [reformados]);
   const percentualFabricados = reformados.length > 0 ? (fabricados / reformados.length) * 100 : 0;
 
-  const _testesAprovadosUnused = useMemo(
-    () => testes.filter((t) => (t.resultado_teste || "").toLowerCase().includes("aprov")).length,
-    [testes]
-  );
-
   const ordensComTeste = useMemo(() => {
     const ids = new Set(testes.map((t) => t.ordem_servico_id));
     return reformados.filter((o) => ids.has(o.id)).length;
