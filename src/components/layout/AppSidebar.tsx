@@ -63,6 +63,12 @@ export function AppSidebar() {
 
   const menuItems = [
     {
+      title: "Dashboard",
+      url: "/dashboard-servicos",
+      icon: ChartBar,
+      permission: "aprovados",
+    },
+    {
       title: t('menu.recebimentos'),
       url: "/recebimentos",
       icon: ClipboardList,

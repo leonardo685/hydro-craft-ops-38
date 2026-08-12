@@ -46,6 +46,13 @@ All colors MUST be HSL.
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
+    /* Chart palette */
+    --chart-1: 20 100% 55%;
+    --chart-2: 140 70% 40%;
+    --chart-3: 210 85% 50%;
+    --chart-4: 265 65% 58%;
+    --chart-5: 35 85% 50%;
+
     /* Borders and Inputs */
     --border: 0 0% 90%;
     --input: 0 0% 96%;
@@ -116,6 +123,13 @@ All colors MUST be HSL.
     --border: 0 0% 15%;
     --input: 0 0% 10%;
     --ring: 20 100% 55%;
+
+    /* Chart palette Dark */
+    --chart-1: 20 100% 60%;
+    --chart-2: 140 60% 50%;
+    --chart-3: 210 85% 62%;
+    --chart-4: 265 70% 68%;
+    --chart-5: 35 90% 60%;
 
     /* Dark Mode Shadows */
     --shadow-soft: 0 4px 12px hsla(0, 0%, 0%, 0.4);
