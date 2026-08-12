@@ -1,13 +1,16 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wrench, ShieldCheck, ClipboardCheck, Factory, Users, Gauge, RotateCcw, TrendingUp, Hammer } from "lucide-react";
+import { Wrench, ShieldCheck, ClipboardCheck, Factory, Users, Gauge, RotateCcw, TrendingUp, Hammer, Download } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
+import jsPDF from "jspdf";
+import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LineChart, Line,
