@@ -375,6 +375,129 @@ export default function DashboardServicos() {
     { name: L.retornosFatia, value: totalRetornos },
   ];
 
+  const periodoTexto = () =>
+    periodo === "3" ? L.p3 : periodo === "6" ? L.p6 : periodo === "12" ? L.p12 : periodo === "24" ? L.p24 : L.pall;
+
+  const exportarPDF = async () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 15;
+    let y = 12;
+
+    await addLogoToPDF(doc, empresaAtual?.logo_url, pageWidth - 50, 8, 35, 20);
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(empresaAtual?.razao_social || empresaAtual?.nome || "", margin, y + 5);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${L.periodoRotulo}: ${periodoTexto()}`, margin, y + 12);
+    doc.text(`${L.geradoEm}: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, margin, y + 17);
+
+    doc.setDrawColor(220, 38, 38);
+    doc.setLineWidth(1);
+    doc.line(margin, y + 22, pageWidth - margin, y + 22);
+
+    y += 34;
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(220, 38, 38);
+    doc.text(L.relatorioTitulo.toUpperCase(), pageWidth / 2, y, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+    y += 10;
+
+    const secao = (titulo: string) => {
+      if (y > pageHeight - 40) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFillColor(128, 128, 128);
+      doc.rect(margin, y, pageWidth - margin * 2, 9, "F");
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(255, 255, 255);
+      doc.text(titulo.toUpperCase(), pageWidth / 2, y + 6.3, { align: "center" });
+      doc.setTextColor(0, 0, 0);
+      y += 13;
+    };
+
+    const tabela = (colunas: [string, string], linhas: [string, string][]) => {
+      const w = pageWidth - margin * 2;
+      const c1 = w * 0.68;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(235, 235, 235);
+      doc.rect(margin, y, w, 8, "F");
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(margin, y, w, 8);
+      doc.text(colunas[0], margin + 2, y + 5.5);
+      doc.text(colunas[1], margin + c1 + 2, y + 5.5);
+      y += 8;
+      doc.setFont("helvetica", "normal");
+      linhas.forEach((linha, i) => {
+        if (y > pageHeight - 25) {
+          doc.addPage();
+          y = 20;
+        }
+        if (i % 2 === 0) {
+          doc.setFillColor(248, 248, 248);
+          doc.rect(margin, y, w, 7, "F");
+        }
+        doc.setDrawColor(220, 220, 220);
+        doc.rect(margin, y, w, 7);
+        doc.text(String(linha[0]).slice(0, 60), margin + 2, y + 5);
+        doc.text(String(linha[1]), margin + c1 + 2, y + 5);
+        y += 7;
+      });
+      y += 8;
+    };
+
+    secao(L.indicadores);
+    tabela([L.indicadores, L.total], [
+      [L.reformados, String(reformados.length)],
+      [L.fabricados, `${fabricados} (${percentualFabricados.toFixed(0)}%)`],
+      [L.indiceGarantia, `${indiceSemGarantia.toFixed(1)}%`],
+      [L.taxaRetorno, `${indiceGarantia.toFixed(1)}%`],
+      [L.retornosRegistrados, String(totalRetornos)],
+      [L.laudos, `${testes.length} (${testesAprovados} / ${coberturaTestes.toFixed(0)}%)`],
+      [L.tempoMedio, `${tempoMedioDias.toFixed(1)} ${L.diasEntre}`],
+    ]);
+
+    secao(L.tipos);
+    tabela(
+      [L.categoria, L.quantidade],
+      distribuicao.length > 0
+        ? distribuicao.map((d) => [d.name, String(d.value)] as [string, string])
+        : [[L.semDados, "-"]]
+    );
+
+    secao(L.volume);
+    tabela(
+      [L.mes, `${L.recebidos} / ${L.entregues}`],
+      porMes.map((m) => [m.mes, `${m.entradas} / ${m.entregas}`] as [string, string])
+    );
+
+    secao(L.clientes);
+    tabela(
+      [L.cliente, L.equipamentos],
+      topClientes.length > 0
+        ? topClientes.map((c) => [c.cliente, String(c.total)] as [string, string])
+        : [[L.semDados, "-"]]
+    );
+
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      doc.text(`${L.pagina} ${i}/${totalPages}`, margin, pageHeight - 10);
+      doc.text(`${L.geradoEm}: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, pageWidth - margin, pageHeight - 10, { align: "right" });
+    }
+
+    doc.save(`${L.relatorioTitulo.replace(/\s+/g, "_")}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6 p-4 md:p-6">
@@ -385,18 +508,24 @@ export default function DashboardServicos() {
               {L.subtitle}
             </p>
           </div>
-          <Select value={periodo} onValueChange={setPeriodo}>
-            <SelectTrigger className="w-full md:w-56">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="3">{L.p3}</SelectItem>
-              <SelectItem value="6">{L.p6}</SelectItem>
-              <SelectItem value="12">{L.p12}</SelectItem>
-              <SelectItem value="24">{L.p24}</SelectItem>
-              <SelectItem value="all">{L.pall}</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Select value={periodo} onValueChange={setPeriodo}>
+              <SelectTrigger className="w-full md:w-56">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3">{L.p3}</SelectItem>
+                <SelectItem value="6">{L.p6}</SelectItem>
+                <SelectItem value="12">{L.p12}</SelectItem>
+                <SelectItem value="24">{L.p24}</SelectItem>
+                <SelectItem value="all">{L.pall}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={exportarPDF} variant="outline" className="gap-2" disabled={loading}>
+              <Download className="h-4 w-4" />
+              {L.exportarPdf}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
