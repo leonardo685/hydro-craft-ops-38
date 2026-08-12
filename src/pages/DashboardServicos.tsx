@@ -13,7 +13,8 @@ import {
   PieChart, Pie, Cell, Legend, LineChart, Line,
 } from "recharts";
 import { format, parseISO, subMonths, startOfMonth } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR, es, enUS } from "date-fns/locale";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type Ordem = {
   id: string;
@@ -46,6 +47,103 @@ const CHART_COLORS = [
   "hsl(var(--muted-foreground))",
 ];
 
+
+const DICT = {
+  "pt-BR": {
+    title: "Dashboard de Serviços",
+    subtitle: "Panorama dos equipamentos reformados, tipos atendidos e desempenho de garantia",
+    p3: "Últimos 3 meses", p6: "Últimos 6 meses", p12: "Últimos 12 meses", p24: "Últimos 24 meses", pall: "Todo o período",
+    reformados: "Equipamentos reformados", deOrdens: (a: number) => `de ${a} ordens no período`,
+    indiceGarantia: "Índice de garantia", semAcionamento: (n: number) => `sem acionamento de garantia (${n} retornos)`,
+    laudos: "Laudos de teste", laudosSub: (a: number, b: string) => `${a} aprovados · ${b}% de cobertura`,
+    tempoMedio: "Tempo médio de reforma", diasEntre: "dias entre entrada e entrega",
+    tipos: "Tipos de equipamento atendidos", tiposSub: "Distribuição dos equipamentos reformados por família",
+    semDados: "Sem dados no período",
+    confiabilidade: "Confiabilidade e garantia", confiabilidadeSub: "Equipamentos que não retornaram por garantia após a reforma",
+    taxaRetorno: "Taxa de retorno em garantia", retornosRegistrados: "Retornos registrados",
+    volume: "Volume de serviços por mês", volumeSub: "Equipamentos recebidos e entregues",
+    recebidos: "Recebidos", entregues: "Entregues",
+    clientes: "Principais clientes atendidos", clientesSub: "Quantidade de equipamentos reformados por cliente",
+    equipamentos: "Equipamentos", carregando: "Carregando indicadores...",
+    resumo: "Resumo para apresentação ao cliente",
+    resumoReformados: (n: number) => `${n} equipamentos reformados`,
+    resumoGarantia: (p: string) => `${p}% sem garantia acionada`,
+    resumoLaudos: (n: number) => `${n} laudos de teste emitidos`,
+    naoInformado: "Não informado",
+    semGarantiaFatia: "Sem acionamento de garantia", retornosFatia: "Retornos em garantia",
+    cat: {
+      "Cilindros Hidráulicos": "Cilindros Hidráulicos",
+      "Cilindros Pneumáticos": "Cilindros Pneumáticos",
+      "Unidades Hidráulicas": "Unidades Hidráulicas",
+      "Bombas e Motores": "Bombas e Motores",
+      "Válvulas e Comandos": "Válvulas e Comandos",
+      "Outros Equipamentos": "Outros Equipamentos",
+    } as Record<string, string>,
+  },
+  en: {
+    title: "Service Dashboard",
+    subtitle: "Overview of refurbished equipment, served types and warranty performance",
+    p3: "Last 3 months", p6: "Last 6 months", p12: "Last 12 months", p24: "Last 24 months", pall: "All time",
+    reformados: "Refurbished equipment", deOrdens: (a: number) => `of ${a} orders in the period`,
+    indiceGarantia: "Warranty index", semAcionamento: (n: number) => `without warranty claims (${n} returns)`,
+    laudos: "Test reports", laudosSub: (a: number, b: string) => `${a} approved · ${b}% coverage`,
+    tempoMedio: "Average turnaround", diasEntre: "days between intake and delivery",
+    tipos: "Equipment types served", tiposSub: "Distribution of refurbished equipment by family",
+    semDados: "No data in the period",
+    confiabilidade: "Reliability and warranty", confiabilidadeSub: "Equipment that did not return under warranty after refurbishing",
+    taxaRetorno: "Warranty return rate", retornosRegistrados: "Registered returns",
+    volume: "Monthly service volume", volumeSub: "Equipment received and delivered",
+    recebidos: "Received", entregues: "Delivered",
+    clientes: "Top clients served", clientesSub: "Number of refurbished units per client",
+    equipamentos: "Equipment", carregando: "Loading indicators...",
+    resumo: "Summary for client presentation",
+    resumoReformados: (n: number) => `${n} refurbished units`,
+    resumoGarantia: (p: string) => `${p}% with no warranty claims`,
+    resumoLaudos: (n: number) => `${n} test reports issued`,
+    naoInformado: "Not informed",
+    semGarantiaFatia: "No warranty claim", retornosFatia: "Warranty returns",
+    cat: {
+      "Cilindros Hidráulicos": "Hydraulic Cylinders",
+      "Cilindros Pneumáticos": "Pneumatic Cylinders",
+      "Unidades Hidráulicas": "Hydraulic Power Units",
+      "Bombas e Motores": "Pumps and Motors",
+      "Válvulas e Comandos": "Valves and Controls",
+      "Outros Equipamentos": "Other Equipment",
+    } as Record<string, string>,
+  },
+  es: {
+    title: "Panel de Servicios",
+    subtitle: "Panorama de los equipos reacondicionados, tipos atendidos y desempeño de garantía",
+    p3: "Últimos 3 meses", p6: "Últimos 6 meses", p12: "Últimos 12 meses", p24: "Últimos 24 meses", pall: "Todo el período",
+    reformados: "Equipos reacondicionados", deOrdens: (a: number) => `de ${a} órdenes en el período`,
+    indiceGarantia: "Índice de garantía", semAcionamento: (n: number) => `sin reclamos de garantía (${n} retornos)`,
+    laudos: "Informes de prueba", laudosSub: (a: number, b: string) => `${a} aprobados · ${b}% de cobertura`,
+    tempoMedio: "Tiempo medio de reacondicionamiento", diasEntre: "días entre ingreso y entrega",
+    tipos: "Tipos de equipos atendidos", tiposSub: "Distribución de los equipos reacondicionados por familia",
+    semDados: "Sin datos en el período",
+    confiabilidade: "Confiabilidad y garantía", confiabilidadeSub: "Equipos que no retornaron por garantía después del servicio",
+    taxaRetorno: "Tasa de retorno por garantía", retornosRegistrados: "Retornos registrados",
+    volume: "Volumen de servicios por mes", volumeSub: "Equipos recibidos y entregados",
+    recebidos: "Recibidos", entregues: "Entregados",
+    clientes: "Principales clientes atendidos", clientesSub: "Cantidad de equipos reacondicionados por cliente",
+    equipamentos: "Equipos", carregando: "Cargando indicadores...",
+    resumo: "Resumen para presentación al cliente",
+    resumoReformados: (n: number) => `${n} equipos reacondicionados`,
+    resumoGarantia: (p: string) => `${p}% sin garantía reclamada`,
+    resumoLaudos: (n: number) => `${n} informes de prueba emitidos`,
+    naoInformado: "No informado",
+    semGarantiaFatia: "Sin reclamo de garantía", retornosFatia: "Retornos por garantía",
+    cat: {
+      "Cilindros Hidráulicos": "Cilindros Hidráulicos",
+      "Cilindros Pneumáticos": "Cilindros Neumáticos",
+      "Unidades Hidráulicas": "Unidades Hidráulicas",
+      "Bombas e Motores": "Bombas y Motores",
+      "Válvulas e Comandos": "Válvulas y Mandos",
+      "Outros Equipamentos": "Otros Equipos",
+    } as Record<string, string>,
+  },
+} as const;
+
 function classificar(ordem: Ordem): string {
   const texto = `${ordem.categoria_equipamento || ""} ${ordem.equipamento || ""}`
     .toUpperCase()
@@ -68,6 +166,10 @@ const STATUS_CONCLUIDO = ["finalizada", "faturado", "aguardando_retorno"];
 
 export default function DashboardServicos() {
   const { empresaAtual } = useEmpresa();
+  const { language } = useLanguage();
+  const L = DICT[(language as keyof typeof DICT)] ?? DICT["pt-BR"];
+  const dateLocale = language === "en" ? enUS : language === "es" ? es : ptBR;
+  const tCat = (c: string) => L.cat[c] ?? c;
   const [ordens, setOrdens] = useState<Ordem[]>([]);
   const [retornos, setRetornos] = useState<{ ordem_anterior: string | null; created_at: string }[]>([]);
   const [testes, setTestes] = useState<{ ordem_servico_id: string; resultado_teste: string | null }[]>([]);
@@ -142,15 +244,15 @@ export default function DashboardServicos() {
       mapa.set(cat, (mapa.get(cat) || 0) + 1);
     });
     return Array.from(mapa.entries())
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ name: tCat(name), value }))
       .filter((d) => d.value > 0);
-  }, [reformados]);
+  }, [reformados, language]);
 
   const porMes = useMemo(() => {
     const meses = periodo === "all" ? 12 : parseInt(periodo, 10);
     const base = Array.from({ length: meses }, (_, i) => {
       const d = startOfMonth(subMonths(new Date(), meses - 1 - i));
-      return { chave: format(d, "yyyy-MM"), mes: format(d, "MMM/yy", { locale: ptBR }), entradas: 0, entregas: 0 };
+      return { chave: format(d, "yyyy-MM"), mes: format(d, "MMM/yy", { locale: dateLocale }), entradas: 0, entregas: 0 };
     });
     const idx = new Map(base.map((b) => [b.chave, b]));
 
@@ -169,12 +271,12 @@ export default function DashboardServicos() {
     });
 
     return base;
-  }, [ordens, periodo]);
+  }, [ordens, periodo, dateLocale]);
 
   const topClientes = useMemo(() => {
     const mapa = new Map<string, number>();
     reformados.forEach((o) => {
-      const nome = (o.cliente_nome || "Não informado").trim();
+      const nome = (o.cliente_nome || L.naoInformado).trim();
       mapa.set(nome, (mapa.get(nome) || 0) + 1);
     });
     return Array.from(mapa.entries())
@@ -212,8 +314,8 @@ export default function DashboardServicos() {
   const indiceSemGarantia = 100 - indiceGarantia;
 
   const garantiaChart = [
-    { name: "Sem acionamento de garantia", value: Math.max(reformados.length - totalRetornos, 0) },
-    { name: "Retornos em garantia", value: totalRetornos },
+    { name: L.semGarantiaFatia, value: Math.max(reformados.length - totalRetornos, 0) },
+    { name: L.retornosFatia, value: totalRetornos },
   ];
 
   return (
@@ -221,9 +323,9 @@ export default function DashboardServicos() {
       <div className="space-y-6 p-4 md:p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground md:text-3xl">Dashboard de Serviços</h1>
+            <h1 className="text-2xl font-bold text-foreground md:text-3xl">{L.title}</h1>
             <p className="text-sm text-muted-foreground">
-              Panorama dos equipamentos reformados, tipos atendidos e desempenho de garantia
+              {L.subtitle}
             </p>
           </div>
           <Select value={periodo} onValueChange={setPeriodo}>
@@ -231,11 +333,11 @@ export default function DashboardServicos() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="3">Últimos 3 meses</SelectItem>
-              <SelectItem value="6">Últimos 6 meses</SelectItem>
-              <SelectItem value="12">Últimos 12 meses</SelectItem>
-              <SelectItem value="24">Últimos 24 meses</SelectItem>
-              <SelectItem value="all">Todo o período</SelectItem>
+              <SelectItem value="3">{L.p3}</SelectItem>
+              <SelectItem value="6">{L.p6}</SelectItem>
+              <SelectItem value="12">{L.p12}</SelectItem>
+              <SelectItem value="24">{L.p24}</SelectItem>
+              <SelectItem value="all">{L.pall}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -243,26 +345,26 @@ export default function DashboardServicos() {
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Equipamentos reformados</CardTitle>
+              <CardTitle className="text-sm font-medium">{L.reformados}</CardTitle>
               <Wrench className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{reformados.length}</div>
               <p className="text-xs text-muted-foreground">
-                de {ordensFiltradas.length} ordens no período
+                {L.deOrdens(ordensFiltradas.length)}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Índice de garantia</CardTitle>
+              <CardTitle className="text-sm font-medium">{L.indiceGarantia}</CardTitle>
               <ShieldCheck className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{indiceSemGarantia.toFixed(1)}%</div>
               <p className="text-xs text-muted-foreground">
-                sem acionamento de garantia ({totalRetornos} retornos)
+                {L.semAcionamento(totalRetornos)}
               </p>
               <Progress value={indiceSemGarantia} className="mt-2" />
             </CardContent>
@@ -270,25 +372,25 @@ export default function DashboardServicos() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Laudos de teste</CardTitle>
+              <CardTitle className="text-sm font-medium">{L.laudos}</CardTitle>
               <ClipboardCheck className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{testes.length}</div>
               <p className="text-xs text-muted-foreground">
-                {testesAprovados} aprovados · {coberturaTestes.toFixed(0)}% de cobertura
+                {L.laudosSub(testesAprovados, coberturaTestes.toFixed(0))}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tempo médio de reforma</CardTitle>
+              <CardTitle className="text-sm font-medium">{L.tempoMedio}</CardTitle>
               <Gauge className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{tempoMedioDias.toFixed(1)}</div>
-              <p className="text-xs text-muted-foreground">dias entre entrada e entrega</p>
+              <p className="text-xs text-muted-foreground">{L.diasEntre}</p>
             </CardContent>
           </Card>
         </div>
@@ -298,13 +400,13 @@ export default function DashboardServicos() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Factory className="h-5 w-5 text-primary" />
-                Tipos de equipamento atendidos
+                {L.tipos}
               </CardTitle>
-              <CardDescription>Distribuição dos equipamentos reformados por família</CardDescription>
+              <CardDescription>{L.tiposSub}</CardDescription>
             </CardHeader>
             <CardContent>
               {distribuicao.length === 0 ? (
-                <p className="py-12 text-center text-sm text-muted-foreground">Sem dados no período</p>
+                <p className="py-12 text-center text-sm text-muted-foreground">{L.semDados}</p>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
@@ -322,21 +424,20 @@ export default function DashboardServicos() {
                       ))}
                     </Pie>
                     <Tooltip />
-                    <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               )}
               <div className="mt-4 space-y-2">
                 {distribuicao.map((d, i) => (
-                  <div key={d.name} className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
+                  <div key={d.name} className="flex items-start justify-between gap-3 text-sm">
+                    <span className="flex min-w-0 items-start gap-2">
                       <span
-                        className="h-3 w-3 rounded-full"
+                        className="mt-1 h-3 w-3 shrink-0 rounded-full"
                         style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
                       />
-                      {d.name}
+                      <span className="break-words">{d.name}</span>
                     </span>
-                    <span className="font-medium">
+                    <span className="shrink-0 font-medium">
                       {d.value}{" "}
                       <span className="text-muted-foreground">
                         ({reformados.length ? ((d.value / reformados.length) * 100).toFixed(1) : "0"}%)
@@ -352,10 +453,10 @@ export default function DashboardServicos() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-primary" />
-                Confiabilidade e garantia
+                {L.confiabilidade}
               </CardTitle>
               <CardDescription>
-                Equipamentos que não retornaram por garantia após a reforma
+                {L.confiabilidadeSub}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -374,16 +475,29 @@ export default function DashboardServicos() {
                     <Cell fill="hsl(var(--destructive))" />
                   </Pie>
                   <Tooltip />
-                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="mt-2 grid grid-cols-2 gap-4">
+              <div className="mt-2 space-y-2">
+                {garantiaChart.map((g, i) => (
+                  <div key={g.name} className="flex items-start justify-between gap-3 text-sm">
+                    <span className="flex min-w-0 items-start gap-2">
+                      <span
+                        className="mt-1 h-3 w-3 shrink-0 rounded-full"
+                        style={{ backgroundColor: i === 0 ? "hsl(var(--chart-2))" : "hsl(var(--destructive))" }}
+                      />
+                      <span className="break-words">{g.name}</span>
+                    </span>
+                    <span className="shrink-0 font-medium">{g.value}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="rounded-lg border border-border p-3">
-                  <p className="text-xs text-muted-foreground">Taxa de retorno em garantia</p>
+                  <p className="text-xs text-muted-foreground">{L.taxaRetorno}</p>
                   <p className="text-2xl font-bold">{indiceGarantia.toFixed(1)}%</p>
                 </div>
                 <div className="rounded-lg border border-border p-3">
-                  <p className="text-xs text-muted-foreground">Retornos registrados</p>
+                  <p className="text-xs text-muted-foreground">{L.retornosRegistrados}</p>
                   <p className="text-2xl font-bold flex items-center gap-2">
                     <RotateCcw className="h-5 w-5 text-muted-foreground" />
                     {totalRetornos}
@@ -398,9 +512,9 @@ export default function DashboardServicos() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              Volume de serviços por mês
+              {L.volume}
             </CardTitle>
-            <CardDescription>Equipamentos recebidos e entregues</CardDescription>
+            <CardDescription>{L.volumeSub}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -410,8 +524,8 @@ export default function DashboardServicos() {
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} allowDecimals={false} />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="entradas" name="Recebidos" stroke="hsl(var(--chart-1))" strokeWidth={2} />
-                <Line type="monotone" dataKey="entregas" name="Entregues" stroke="hsl(var(--chart-2))" strokeWidth={2} />
+                <Line type="monotone" dataKey="entradas" name={L.recebidos} stroke="hsl(var(--chart-1))" strokeWidth={2} />
+                <Line type="monotone" dataKey="entregas" name={L.entregues} stroke="hsl(var(--chart-2))" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -421,13 +535,13 @@ export default function DashboardServicos() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              Principais clientes atendidos
+              {L.clientes}
             </CardTitle>
-            <CardDescription>Quantidade de equipamentos reformados por cliente</CardDescription>
+            <CardDescription>{L.clientesSub}</CardDescription>
           </CardHeader>
           <CardContent>
             {topClientes.length === 0 ? (
-              <p className="py-12 text-center text-sm text-muted-foreground">Sem dados no período</p>
+              <p className="py-12 text-center text-sm text-muted-foreground">{L.semDados}</p>
             ) : (
               <ResponsiveContainer width="100%" height={Math.max(240, topClientes.length * 40)}>
                 <BarChart data={topClientes} layout="vertical" margin={{ left: 10, right: 20 }}>
@@ -435,7 +549,7 @@ export default function DashboardServicos() {
                   <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} allowDecimals={false} />
                   <YAxis type="category" dataKey="cliente" width={160} stroke="hsl(var(--muted-foreground))" fontSize={11} />
                   <Tooltip />
-                  <Bar dataKey="total" name="Equipamentos" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="total" name={L.equipamentos} fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -443,22 +557,22 @@ export default function DashboardServicos() {
         </Card>
 
         {loading && (
-          <div className="text-center text-sm text-muted-foreground">Carregando indicadores...</div>
+          <div className="text-center text-sm text-muted-foreground">{L.carregando}</div>
         )}
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Resumo para apresentação ao cliente</CardTitle>
+            <CardTitle className="text-base">{L.resumo}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
-            <Badge variant="secondary">{reformados.length} equipamentos reformados</Badge>
+            <Badge variant="secondary">{L.resumoReformados(reformados.length)}</Badge>
             {distribuicao.map((d) => (
               <Badge key={d.name} variant="outline">
                 {d.name}: {d.value}
               </Badge>
             ))}
-            <Badge variant="secondary">{indiceSemGarantia.toFixed(1)}% sem garantia acionada</Badge>
-            <Badge variant="secondary">{testes.length} laudos de teste emitidos</Badge>
+            <Badge variant="secondary">{L.resumoGarantia(indiceSemGarantia.toFixed(1))}</Badge>
+            <Badge variant="secondary">{L.resumoLaudos(testes.length)}</Badge>
           </CardContent>
         </Card>
       </div>
