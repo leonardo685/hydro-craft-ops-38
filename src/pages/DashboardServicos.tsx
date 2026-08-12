@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wrench, ShieldCheck, ClipboardCheck, Factory, Users, Gauge, RotateCcw, TrendingUp } from "lucide-react";
+import { Wrench, ShieldCheck, ClipboardCheck, Factory, Users, Gauge, RotateCcw, TrendingUp, Hammer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresa } from "@/contexts/EmpresaContext";
@@ -27,6 +27,9 @@ type Ordem = {
   data_finalizacao: string | null;
   updated_at: string | null;
   recebimento_id: number | null;
+  observacoes_tecnicas: string | null;
+  descricao_problema: string | null;
+  tipo_problema: string | null;
 };
 
 const CATEGORIAS = [
@@ -54,6 +57,7 @@ const DICT = {
     subtitle: "Panorama dos equipamentos reformados, tipos atendidos e desempenho de garantia",
     p3: "Últimos 3 meses", p6: "Últimos 6 meses", p12: "Últimos 12 meses", p24: "Últimos 24 meses", pall: "Todo o período",
     reformados: "Equipamentos reformados", deOrdens: (a: number) => `de ${a} ordens no período`,
+    fabricados: "Cilindros fabricados", fabricadosSub: (p: string) => `${p}% das ordens concluídas no período`,
     indiceGarantia: "Índice de garantia", semAcionamento: (n: number) => `sem acionamento de garantia (${n} retornos)`,
     laudos: "Laudos de teste", laudosSub: (a: number, b: string) => `${a} aprovados · ${b}% de cobertura`,
     tempoMedio: "Tempo médio de reforma", diasEntre: "dias entre entrada e entrega",
@@ -85,6 +89,7 @@ const DICT = {
     subtitle: "Overview of refurbished equipment, served types and warranty performance",
     p3: "Last 3 months", p6: "Last 6 months", p12: "Last 12 months", p24: "Last 24 months", pall: "All time",
     reformados: "Refurbished equipment", deOrdens: (a: number) => `of ${a} orders in the period`,
+    fabricados: "Manufactured cylinders", fabricadosSub: (p: string) => `${p}% of completed orders in the period`,
     indiceGarantia: "Warranty index", semAcionamento: (n: number) => `without warranty claims (${n} returns)`,
     laudos: "Test reports", laudosSub: (a: number, b: string) => `${a} approved · ${b}% coverage`,
     tempoMedio: "Average turnaround", diasEntre: "days between intake and delivery",
@@ -116,6 +121,7 @@ const DICT = {
     subtitle: "Panorama de los equipos reacondicionados, tipos atendidos y desempeño de garantía",
     p3: "Últimos 3 meses", p6: "Últimos 6 meses", p12: "Últimos 12 meses", p24: "Últimos 24 meses", pall: "Todo el período",
     reformados: "Equipos reacondicionados", deOrdens: (a: number) => `de ${a} órdenes en el período`,
+    fabricados: "Cilindros fabricados", fabricadosSub: (p: string) => `${p}% de las órdenes concluidas en el período`,
     indiceGarantia: "Índice de garantía", semAcionamento: (n: number) => `sin reclamos de garantía (${n} retornos)`,
     laudos: "Informes de prueba", laudosSub: (a: number, b: string) => `${a} aprobados · ${b}% de cobertura`,
     tempoMedio: "Tiempo medio de reacondicionamiento", diasEntre: "días entre ingreso y entrega",
@@ -164,6 +170,18 @@ function classificar(ordem: Ordem): string {
 
 const STATUS_CONCLUIDO = ["finalizada", "faturado", "aguardando_retorno"];
 
+const normalizar = (v: string) =>
+  v.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+// Detecta fabricação (cilindro novo) pelo texto do equipamento/observações
+function isFabricacao(ordem: Ordem): boolean {
+  const texto = normalizar(
+    `${ordem.categoria_equipamento || ""} ${ordem.equipamento || ""} ${ordem.tipo_problema || ""} ${ordem.descricao_problema || ""} ${ordem.observacoes_tecnicas || ""}`
+  );
+  if (!/CILINDRO/.test(texto)) return false;
+  return /(FABRICA|CONFECC|CILINDRO NOVO|NOVO CILINDRO|MONTAGEM NOVA|EQUIPAMENTO NOVO)/.test(texto);
+}
+
 export default function DashboardServicos() {
   const { empresaAtual } = useEmpresa();
   const { language } = useLanguage();
@@ -183,7 +201,7 @@ export default function DashboardServicos() {
       const [{ data: os }, { data: recs }, { data: tst }] = await Promise.all([
         supabase
           .from("ordens_servico")
-          .select("id, numero_ordem, cliente_nome, equipamento, categoria_equipamento, status, data_entrada, data_finalizacao, updated_at, recebimento_id")
+          .select("id, numero_ordem, cliente_nome, equipamento, categoria_equipamento, status, data_entrada, data_finalizacao, updated_at, recebimento_id, observacoes_tecnicas, descricao_problema, tipo_problema")
           .eq("empresa_id", empresaAtual.id)
           .order("data_entrada", { ascending: false })
           .limit(1000),
@@ -303,6 +321,14 @@ export default function DashboardServicos() {
     [testes]
   );
 
+  const fabricados = useMemo(() => reformados.filter(isFabricacao).length, [reformados]);
+  const percentualFabricados = reformados.length > 0 ? (fabricados / reformados.length) * 100 : 0;
+
+  const _testesAprovadosUnused = useMemo(
+    () => testes.filter((t) => (t.resultado_teste || "").toLowerCase().includes("aprov")).length,
+    [testes]
+  );
+
   const ordensComTeste = useMemo(() => {
     const ids = new Set(testes.map((t) => t.ordem_servico_id));
     return reformados.filter((o) => ids.has(o.id)).length;
@@ -342,7 +368,7 @@ export default function DashboardServicos() {
           </Select>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{L.reformados}</CardTitle>
@@ -352,6 +378,19 @@ export default function DashboardServicos() {
               <div className="text-3xl font-bold">{reformados.length}</div>
               <p className="text-xs text-muted-foreground">
                 {L.deOrdens(ordensFiltradas.length)}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{L.fabricados}</CardTitle>
+              <Hammer className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{fabricados}</div>
+              <p className="text-xs text-muted-foreground">
+                {L.fabricadosSub(percentualFabricados.toFixed(0))}
               </p>
             </CardContent>
           </Card>
