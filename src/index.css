@@ -124,6 +124,13 @@ All colors MUST be HSL.
     --input: 0 0% 10%;
     --ring: 20 100% 55%;
 
+    /* Chart palette Dark */
+    --chart-1: 20 100% 60%;
+    --chart-2: 140 60% 50%;
+    --chart-3: 210 85% 62%;
+    --chart-4: 265 70% 68%;
+    --chart-5: 35 90% 60%;
+
     /* Dark Mode Shadows */
     --shadow-soft: 0 4px 12px hsla(0, 0%, 0%, 0.4);
     --shadow-medium: 0 8px 24px hsla(0, 0%, 0%, 0.6);
