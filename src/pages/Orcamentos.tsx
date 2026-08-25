@@ -1156,7 +1156,14 @@ export default function Orcamentos() {
           if (dadosTecnicos.localInstalacao) camposTecnicos.push({ label: language === 'en' ? 'Installation Location' : 'Local Instalação', valor: dadosTecnicos.localInstalacao });
           if (dadosTecnicos.potencia) camposTecnicos.push({ label: language === 'en' ? 'Power' : 'Potência', valor: dadosTecnicos.potencia });
           if (dadosTecnicos.ambienteTrabalho) camposTecnicos.push({ label: language === 'en' ? 'Work Environment' : 'Ambiente Trabalho', valor: dadosTecnicos.ambienteTrabalho });
-          
+
+          // Traduzir os VALORES dos dados técnicos (ex.: "outros" -> "others", "comum" -> "common")
+          if (language !== 'pt-BR') {
+            camposTecnicos.forEach(campo => {
+              campo.valor = translateTerm(campo.valor, language);
+            });
+          }
+
           // Renderizar em grid de 3 colunas
           const col3Width = (pageWidth - 40) / 3;
           doc.setFontSize(9);
