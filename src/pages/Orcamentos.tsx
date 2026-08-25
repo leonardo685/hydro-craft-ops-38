@@ -869,7 +869,8 @@ export default function Orcamentos() {
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(220, 38, 38);
-      doc.text(pdfT.commercialProposal, pageWidth / 2, yPosition, { align: "center" });
+      const isInvoiceDoc = String(orcamento.observacoes || '').includes('Documento: invoice');
+      doc.text(isInvoiceDoc ? (pdfT.invoice || 'INVOICE') : pdfT.commercialProposal, pageWidth / 2, yPosition, { align: "center" });
       
       // Adicionar indicação de revisão no título (se houver)
       if (orcamento.numero_revisao) {
