@@ -25,6 +25,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations, Language } from "@/i18n/translations";
+import { translateTerm } from "@/i18n/dynamicTerms";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 
@@ -869,7 +870,8 @@ export default function Orcamentos() {
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(220, 38, 38);
-      doc.text(pdfT.commercialProposal, pageWidth / 2, yPosition, { align: "center" });
+      const isInvoiceDoc = String(orcamento.observacoes || '').includes('Documento: invoice');
+      doc.text(isInvoiceDoc ? (pdfT.invoice || 'INVOICE') : pdfT.commercialProposal, pageWidth / 2, yPosition, { align: "center" });
       
       // Adicionar indicação de revisão no título (se houver)
       if (orcamento.numero_revisao) {
@@ -1155,7 +1157,14 @@ export default function Orcamentos() {
           if (dadosTecnicos.localInstalacao) camposTecnicos.push({ label: language === 'en' ? 'Installation Location' : 'Local Instalação', valor: dadosTecnicos.localInstalacao });
           if (dadosTecnicos.potencia) camposTecnicos.push({ label: language === 'en' ? 'Power' : 'Potência', valor: dadosTecnicos.potencia });
           if (dadosTecnicos.ambienteTrabalho) camposTecnicos.push({ label: language === 'en' ? 'Work Environment' : 'Ambiente Trabalho', valor: dadosTecnicos.ambienteTrabalho });
-          
+
+          // Traduzir os VALORES dos dados técnicos (ex.: "outros" -> "others", "comum" -> "common")
+          if (language !== 'pt-BR') {
+            camposTecnicos.forEach(campo => {
+              campo.valor = translateTerm(campo.valor, language);
+            });
+          }
+
           // Renderizar em grid de 3 colunas
           const col3Width = (pageWidth - 40) / 3;
           doc.setFontSize(9);

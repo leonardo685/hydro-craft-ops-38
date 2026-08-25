@@ -23,6 +23,7 @@ import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations } from "@/i18n/translations";
+import { translateTerm } from "@/i18n/dynamicTerms";
 interface ItemOrcamento {
   id: string;
   tipo: 'peca' | 'servico' | 'usinagem';
@@ -391,8 +392,14 @@ export default function NovoOrcamento() {
           tag: orcamentoEdicao.equipamento || '',
           solicitante: orcamentoEdicao.observacoes?.split('|')[1]?.replace('Solicitante:', '')?.trim() || '',
           dataAbertura: orcamentoEdicao.data_criacao ? new Date(orcamentoEdicao.data_criacao).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          numeroNota: orcamentoEdicao.numero_nota_entrada || orcamentoEdicao.observacoes?.split('|')[2]?.replace('Nota:', '')?.trim() || '',
-          numeroSerie: orcamentoEdicao.ordem_referencia || orcamentoEdicao.observacoes?.split('|')[3]?.replace('Ordem Ref:', '')?.trim() || orcamentoEdicao.observacoes?.split('|')[3]?.replace('Série:', '')?.trim() || '',
+          numeroNota: orcamentoEdicao.numero_nota_entrada || (() => {
+            const parte = orcamentoEdicao.observacoes?.split('|')?.find((p: string) => p.trim().startsWith('Nota:'));
+            return parte ? parte.replace('Nota:', '').trim() : '';
+          })(),
+          numeroSerie: orcamentoEdicao.ordem_referencia || (() => {
+            const parte = orcamentoEdicao.observacoes?.split('|')?.find((p: string) => p.trim().startsWith('Ordem Ref:') || p.trim().startsWith('Série:'));
+            return parte ? parte.replace('Ordem Ref:', '').replace('Série:', '').trim() : '';
+          })(),
           observacoes: orcamentoEdicao.descricao || '',
           status: orcamentoEdicao.status || 'pendente'
         });
@@ -2669,7 +2676,14 @@ export default function NovoOrcamento() {
         if (dadosTecnicos.categoriaEquipamento) {
           camposTecnicos.push({ label: language === 'en' ? 'Equipment Category' : 'Categoria do Equipamento', valor: dadosTecnicos.categoriaEquipamento });
         }
-        
+
+        // Traduzir os VALORES dos dados técnicos conforme idioma
+        if (language !== 'pt-BR') {
+          camposTecnicos.forEach(campo => {
+            campo.valor = translateTerm(campo.valor, language as any);
+          });
+        }
+
         // Renderizar em grid de 3 colunas
         const col3Width = (pageWidth - 40) / 3;
         
