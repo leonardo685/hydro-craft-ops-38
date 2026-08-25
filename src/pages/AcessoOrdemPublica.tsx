@@ -48,12 +48,42 @@ const encontrarOrdemCorreta = async (
   return ordens[0];
 };
 
+// DDDs válidos no Brasil (para diferenciar de números dos EUA com 10 dígitos)
+const DDDS_BR = new Set([
+  11,12,13,14,15,16,17,18,19,
+  21,22,24,27,28,
+  31,32,33,34,35,37,38,
+  41,42,43,44,45,46,47,48,49,
+  51,53,54,55,
+  61,62,63,64,65,66,67,68,69,
+  71,73,74,75,77,79,
+  81,82,83,84,85,86,87,88,89,
+  91,92,93,94,95,96,97,98,99,
+]);
+
+// Detecta se o número informado é dos EUA (+1 / 10 dígitos NANP)
+const isTelefoneUS = (telefone: string): boolean => {
+  const raw = telefone.trim();
+  let numeros = raw.replace(/\D/g, '');
+  if (raw.startsWith('+55') || numeros.startsWith('55') && numeros.length >= 12) return false;
+  if (raw.startsWith('+1') && numeros.length >= 11) return true;
+  if (numeros.length === 11 && numeros.startsWith('1')) return true;
+  if (numeros.length === 10) {
+    // 10 dígitos: BR só é válido se o DDD existir; caso contrário tratamos como EUA
+    return !DDDS_BR.has(Number(numeros.slice(0, 2)));
+  }
+  return false;
+};
+
 const telefoneSchema = z.object({
   telefone: z.string()
     .trim()
-    .regex(/^(\+55\s?)?(\(?\d{2}\)?[\s-]?)?9?\d{4}[\s-]?\d{4}$/, 
-      "Telefone inválido. Use formato: (19) 99999-9999 ou 19999999999")
+    .refine((val) => {
+      const numeros = val.replace(/\D/g, '');
+      return numeros.length >= 10 && numeros.length <= 15;
+    }, "Telefone inválido. Use (19) 99999-9999, 19999999999 ou +1 (254) 733-0842")
 });
+
 
 const dadosSchema = z.object({
   nome: z.string()
@@ -86,9 +116,17 @@ export default function AcessoOrdemPublica() {
     resolver: zodResolver(dadosSchema),
   });
 
-  // Função para normalizar telefone - extrai apenas os 11 dígitos finais (DDD + número)
+  // Normaliza telefone: BR -> 11 dígitos finais (DDD + número); EUA -> 10 dígitos (area code + número)
   const normalizarTelefone = (telefone: string): string => {
     let numeros = telefone.replace(/\D/g, '');
+
+    if (isTelefoneUS(telefone)) {
+      if (numeros.length === 11 && numeros.startsWith('1')) {
+        numeros = numeros.slice(1);
+      }
+      return numeros.slice(-10);
+    }
+
     if (numeros.startsWith('55') && numeros.length > 11) {
       numeros = numeros.slice(2);
     }
@@ -100,8 +138,10 @@ export default function AcessoOrdemPublica() {
 
   // Função para formatar telefone para salvar no banco
   const formatarTelefoneParaSalvar = (telefone: string): string => {
-    return `+55${normalizarTelefone(telefone)}`;
+    const ddi = isTelefoneUS(telefone) ? '+1' : '+55';
+    return `${ddi}${normalizarTelefone(telefone)}`;
   };
+
 
   // Função para obter IP
   const obterIP = async () => {
