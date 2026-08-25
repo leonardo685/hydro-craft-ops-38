@@ -2669,7 +2669,14 @@ export default function NovoOrcamento() {
         if (dadosTecnicos.categoriaEquipamento) {
           camposTecnicos.push({ label: language === 'en' ? 'Equipment Category' : 'Categoria do Equipamento', valor: dadosTecnicos.categoriaEquipamento });
         }
-        
+
+        // Traduzir os VALORES dos dados técnicos conforme idioma
+        if (language !== 'pt-BR') {
+          camposTecnicos.forEach(campo => {
+            campo.valor = translateTerm(campo.valor, language as any);
+          });
+        }
+
         // Renderizar em grid de 3 colunas
         const col3Width = (pageWidth - 40) / 3;
         
