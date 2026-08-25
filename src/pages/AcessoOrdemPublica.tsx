@@ -116,9 +116,17 @@ export default function AcessoOrdemPublica() {
     resolver: zodResolver(dadosSchema),
   });
 
-  // Função para normalizar telefone - extrai apenas os 11 dígitos finais (DDD + número)
+  // Normaliza telefone: BR -> 11 dígitos finais (DDD + número); EUA -> 10 dígitos (area code + número)
   const normalizarTelefone = (telefone: string): string => {
     let numeros = telefone.replace(/\D/g, '');
+
+    if (isTelefoneUS(telefone)) {
+      if (numeros.length === 11 && numeros.startsWith('1')) {
+        numeros = numeros.slice(1);
+      }
+      return numeros.slice(-10);
+    }
+
     if (numeros.startsWith('55') && numeros.length > 11) {
       numeros = numeros.slice(2);
     }
@@ -130,8 +138,10 @@ export default function AcessoOrdemPublica() {
 
   // Função para formatar telefone para salvar no banco
   const formatarTelefoneParaSalvar = (telefone: string): string => {
-    return `+55${normalizarTelefone(telefone)}`;
+    const ddi = isTelefoneUS(telefone) ? '+1' : '+55';
+    return `${ddi}${normalizarTelefone(telefone)}`;
   };
+
 
   // Função para obter IP
   const obterIP = async () => {
