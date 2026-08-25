@@ -25,6 +25,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations, Language } from "@/i18n/translations";
+import { translateTerm } from "@/i18n/dynamicTerms";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 
