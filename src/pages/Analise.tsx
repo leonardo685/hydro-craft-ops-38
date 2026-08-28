@@ -286,6 +286,48 @@ export default function OrdensServico() {
   const handleExportPDF = async (ordem: any) => {
     try {
       const { default: jsPDF } = await import('jspdf');
+      const { translateTerm } = await import('@/i18n/dynamicTerms');
+      const tr = (v: any) => translateTerm(v == null ? '' : String(v), language);
+      const L = {
+        'pt-BR': {
+          titulo: 'ORDEM DE SERVIÇO', tel: 'Tel', email: 'Email',
+          infoBasicas: 'Informações Básicas', cliente: 'Cliente', doc: 'CNPJ/CPF',
+          equipamento: 'Equipamento', dataEntrada: 'Data de Entrada', tecnico: 'Técnico',
+          prioridade: 'Prioridade', peritagem: 'Peritagem', camisa: 'Ø Camisa',
+          haste: 'Ø Haste x Comprimento', curso: 'Curso', conexaoA: 'Conexão A',
+          conexaoB: 'Conexão B', pressao: 'Pressão de Trabalho',
+          problemas: 'Problemas Identificados', descricao: 'Descrição',
+          servicos: 'Serviços Realizados', usinagem: 'Usinagem', pecas: 'Peças Utilizadas',
+          qtd: 'Qtd.', fotos: 'Fotos da Análise', continuacao: '(continuação)',
+          pagina: 'Página', de: 'de', geradoEm: 'Gerado em',
+        },
+        en: {
+          titulo: 'SERVICE ORDER', tel: 'Phone', email: 'Email',
+          infoBasicas: 'Basic Information', cliente: 'Client', doc: 'Tax ID',
+          equipamento: 'Equipment', dataEntrada: 'Entry Date', tecnico: 'Technician',
+          prioridade: 'Priority', peritagem: 'Inspection', camisa: 'Ø Barrel',
+          haste: 'Ø Rod x Length', curso: 'Stroke', conexaoA: 'Connection A',
+          conexaoB: 'Connection B', pressao: 'Working Pressure',
+          problemas: 'Identified Issues', descricao: 'Description',
+          servicos: 'Services Performed', usinagem: 'Machining', pecas: 'Parts Used',
+          qtd: 'Qty.', fotos: 'Analysis Photos', continuacao: '(continued)',
+          pagina: 'Page', de: 'of', geradoEm: 'Generated on',
+        },
+        es: {
+          titulo: 'ORDEN DE SERVICIO', tel: 'Tel', email: 'Email',
+          infoBasicas: 'Información Básica', cliente: 'Cliente', doc: 'ID Fiscal',
+          equipamento: 'Equipo', dataEntrada: 'Fecha de Entrada', tecnico: 'Técnico',
+          prioridade: 'Prioridad', peritagem: 'Peritaje', camisa: 'Ø Camisa',
+          haste: 'Ø Vástago x Longitud', curso: 'Carrera', conexaoA: 'Conexión A',
+          conexaoB: 'Conexión B', pressao: 'Presión de Trabajo',
+          problemas: 'Problemas Identificados', descricao: 'Descripción',
+          servicos: 'Servicios Realizados', usinagem: 'Mecanizado', pecas: 'Piezas Utilizadas',
+          qtd: 'Cant.', fotos: 'Fotos del Análisis', continuacao: '(continuación)',
+          pagina: 'Página', de: 'de', geradoEm: 'Generado el',
+        },
+      }[language] || {} as any;
+      const locale = language === 'en' ? 'en-US' : language === 'es' ? 'es-ES' : 'pt-BR';
+
       
       // Buscar dados completos da ordem e recebimento
       const { data: recebimentoData } = await supabase
@@ -326,8 +368,8 @@ export default function OrdensServico() {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.text(`${EMPRESA_INFO.labelIdentificacao}: ${EMPRESA_INFO.cnpj}`, 20, yPosition + 12);
-      doc.text(`Tel: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
-      doc.text(`Email: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
+      doc.text(`${L.tel}: ${EMPRESA_INFO.telefone}`, 20, yPosition + 17);
+      doc.text(`${L.email}: ${EMPRESA_INFO.email}`, 20, yPosition + 22);
       
       // Linha separadora
       doc.setDrawColor(220, 38, 38);
@@ -340,7 +382,7 @@ export default function OrdensServico() {
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(220, 38, 38);
-      doc.text("ORDEM DE SERVIÇO", pageWidth / 2, yPosition, { align: "center" });
+      doc.text(L.titulo, pageWidth / 2, yPosition, { align: "center" });
       doc.setTextColor(0, 0, 0);
       
       yPosition = 65;
@@ -473,7 +515,7 @@ export default function OrdensServico() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(12);
             doc.setTextColor(220, 38, 38);
-            doc.text(titulo + ' (continuação)', 20, yPosition);
+            doc.text(titulo + ' ' + L.continuacao, 20, yPosition);
             doc.setTextColor(0, 0, 0);
             yPosition += 10;
           }
@@ -527,34 +569,34 @@ export default function OrdensServico() {
       
       // Informações Básicas
       const dadosBasicos = [
-        { label: 'Cliente:', value: ordem.recebimentos?.cliente_nome || ordem.cliente_nome },
-        { label: 'CNPJ/CPF:', value: ordem.recebimentos?.cliente_cnpj || recebimentoData?.cliente_cnpj || '-' },
-        { label: 'Equipamento:', value: ordem.recebimentos?.tipo_equipamento || ordem.equipamento },
-        { label: 'Data de Entrada:', value: new Date(ordem.data_entrada).toLocaleDateString('pt-BR') },
-        { label: 'Técnico:', value: ordem.tecnico || '' },
-        { label: 'Prioridade:', value: ordem.prioridade || '' }
+        { label: `${L.cliente}:`, value: ordem.recebimentos?.cliente_nome || ordem.cliente_nome },
+        { label: `${L.doc}:`, value: ordem.recebimentos?.cliente_cnpj || recebimentoData?.cliente_cnpj || '-' },
+        { label: `${L.equipamento}:`, value: tr(ordem.recebimentos?.tipo_equipamento || ordem.equipamento) },
+        { label: `${L.dataEntrada}:`, value: new Date(ordem.data_entrada).toLocaleDateString(locale) },
+        { label: `${L.tecnico}:`, value: tr(ordem.tecnico || '') },
+        { label: `${L.prioridade}:`, value: tr(ordem.prioridade || '') }
       ];
-      criarTabela('Informações Básicas', dadosBasicos);
+      criarTabela(L.infoBasicas, dadosBasicos);
       
       // Peritagem (dados técnicos do recebimento)
       if (recebimentoData) {
         const dadosPeritagem = [];
-        if (recebimentoData.camisa) dadosPeritagem.push({ label: 'Ø Camisa:', value: recebimentoData.camisa });
-        if (recebimentoData.haste_comprimento) dadosPeritagem.push({ label: 'Ø Haste x Comprimento:', value: recebimentoData.haste_comprimento });
-        if (recebimentoData.curso) dadosPeritagem.push({ label: 'Curso:', value: recebimentoData.curso });
-        if (recebimentoData.conexao_a) dadosPeritagem.push({ label: 'Conexão A:', value: recebimentoData.conexao_a });
-        if (recebimentoData.conexao_b) dadosPeritagem.push({ label: 'Conexão B:', value: recebimentoData.conexao_b });
-        if (recebimentoData.pressao_trabalho) dadosPeritagem.push({ label: 'Pressão de Trabalho:', value: recebimentoData.pressao_trabalho });
+        if (recebimentoData.camisa) dadosPeritagem.push({ label: `${L.camisa}:`, value: tr(recebimentoData.camisa) });
+        if (recebimentoData.haste_comprimento) dadosPeritagem.push({ label: `${L.haste}:`, value: tr(recebimentoData.haste_comprimento) });
+        if (recebimentoData.curso) dadosPeritagem.push({ label: `${L.curso}:`, value: tr(recebimentoData.curso) });
+        if (recebimentoData.conexao_a) dadosPeritagem.push({ label: `${L.conexaoA}:`, value: tr(recebimentoData.conexao_a) });
+        if (recebimentoData.conexao_b) dadosPeritagem.push({ label: `${L.conexaoB}:`, value: tr(recebimentoData.conexao_b) });
+        if (recebimentoData.pressao_trabalho) dadosPeritagem.push({ label: `${L.pressao}:`, value: tr(recebimentoData.pressao_trabalho) });
         
         if (dadosPeritagem.length > 0) {
-          criarTabela('Peritagem', dadosPeritagem);
+          criarTabela(L.peritagem, dadosPeritagem);
         }
       }
       
       // Problemas Identificados
       if (ordem.descricao_problema) {
-        criarTabela('Problemas Identificados', [
-          { label: 'Descrição:', value: ordem.descricao_problema }
+        criarTabela(L.problemas, [
+          { label: `${L.descricao}:`, value: tr(ordem.descricao_problema) }
         ]);
       }
       
@@ -562,33 +604,33 @@ export default function OrdensServico() {
       if (ordem.servicos_necessarios && Array.isArray(ordem.servicos_necessarios) && ordem.servicos_necessarios.length > 0) {
         const servicosData = ordem.servicos_necessarios.map((s: any) => [
           s.quantidade?.toString() || '1',
-          s.nome || s.servico || ''
+          tr(s.nome || s.servico || '')
         ]);
-        criarTabelaColunas('Serviços Realizados', ['Qtd.', 'Descrição'], servicosData);
+        criarTabelaColunas(L.servicos, [L.qtd, L.descricao], servicosData);
       }
       
       // Usinagem
       if (ordem.usinagem_necessaria && Array.isArray(ordem.usinagem_necessaria) && ordem.usinagem_necessaria.length > 0) {
         const usinagemData = ordem.usinagem_necessaria.map((u: any) => [
           u.quantidade?.toString() || '1',
-          u.nome || u.descricao || ''
+          tr(u.nome || u.descricao || '')
         ]);
-        criarTabelaColunas('Usinagem', ['Qtd.', 'Descrição'], usinagemData);
+        criarTabelaColunas(L.usinagem, [L.qtd, L.descricao], usinagemData);
       }
       
       // Peças Utilizadas
       if (ordem.pecas_necessarias && Array.isArray(ordem.pecas_necessarias) && ordem.pecas_necessarias.length > 0) {
         const pecasData = ordem.pecas_necessarias.map((p: any) => [
           p.quantidade?.toString() || '1',
-          p.peca || p.nome || ''
+          tr(p.peca || p.nome || '')
         ]);
-        criarTabelaColunas('Peças Utilizadas', ['Qtd.', 'Descrição'], pecasData);
+        criarTabelaColunas(L.pecas, [L.qtd, L.descricao], pecasData);
       }
 
       // Adicionar fotos do equipamento
       if (fotosData && fotosData.length > 0) {
         const fotosUrls = fotosData.map(foto => foto.arquivo_url);
-        await adicionarFotosGrade(fotosUrls, 'Fotos da Análise');
+        await adicionarFotosGrade(fotosUrls, L.fotos);
       }
 
       // Rodapé
@@ -597,8 +639,8 @@ export default function OrdensServico() {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
-        doc.text(`Página ${i} de ${totalPages}`, 20, 287);
-        doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy, HH:mm:ss')}`, pageWidth - 20, 287, { align: 'right' });
+        doc.text(`${L.pagina} ${i} ${L.de} ${totalPages}`, 20, 287);
+        doc.text(`${L.geradoEm}: ${new Date().toLocaleString(locale)}`, pageWidth - 20, 287, { align: 'right' });
       }
       
       doc.save(`analise-tecnica-${ordem.recebimentos?.cliente_nome || ordem.cliente_nome}_${ordem.numero_ordem}.pdf`);
