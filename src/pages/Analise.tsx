@@ -286,6 +286,48 @@ export default function OrdensServico() {
   const handleExportPDF = async (ordem: any) => {
     try {
       const { default: jsPDF } = await import('jspdf');
+      const { translateTerm } = await import('@/i18n/dynamicTerms');
+      const tr = (v: any) => translateTerm(v == null ? '' : String(v), language);
+      const L = {
+        'pt-BR': {
+          titulo: 'ORDEM DE SERVIÇO', tel: 'Tel', email: 'Email',
+          infoBasicas: 'Informações Básicas', cliente: 'Cliente', doc: 'CNPJ/CPF',
+          equipamento: 'Equipamento', dataEntrada: 'Data de Entrada', tecnico: 'Técnico',
+          prioridade: 'Prioridade', peritagem: 'Peritagem', camisa: 'Ø Camisa',
+          haste: 'Ø Haste x Comprimento', curso: 'Curso', conexaoA: 'Conexão A',
+          conexaoB: 'Conexão B', pressao: 'Pressão de Trabalho',
+          problemas: 'Problemas Identificados', descricao: 'Descrição',
+          servicos: 'Serviços Realizados', usinagem: 'Usinagem', pecas: 'Peças Utilizadas',
+          qtd: 'Qtd.', fotos: 'Fotos da Análise', continuacao: '(continuação)',
+          pagina: 'Página', de: 'de', geradoEm: 'Gerado em',
+        },
+        en: {
+          titulo: 'SERVICE ORDER', tel: 'Phone', email: 'Email',
+          infoBasicas: 'Basic Information', cliente: 'Client', doc: 'Tax ID',
+          equipamento: 'Equipment', dataEntrada: 'Entry Date', tecnico: 'Technician',
+          prioridade: 'Priority', peritagem: 'Inspection', camisa: 'Ø Barrel',
+          haste: 'Ø Rod x Length', curso: 'Stroke', conexaoA: 'Connection A',
+          conexaoB: 'Connection B', pressao: 'Working Pressure',
+          problemas: 'Identified Issues', descricao: 'Description',
+          servicos: 'Services Performed', usinagem: 'Machining', pecas: 'Parts Used',
+          qtd: 'Qty.', fotos: 'Analysis Photos', continuacao: '(continued)',
+          pagina: 'Page', de: 'of', geradoEm: 'Generated on',
+        },
+        es: {
+          titulo: 'ORDEN DE SERVICIO', tel: 'Tel', email: 'Email',
+          infoBasicas: 'Información Básica', cliente: 'Cliente', doc: 'ID Fiscal',
+          equipamento: 'Equipo', dataEntrada: 'Fecha de Entrada', tecnico: 'Técnico',
+          prioridade: 'Prioridad', peritagem: 'Peritaje', camisa: 'Ø Camisa',
+          haste: 'Ø Vástago x Longitud', curso: 'Carrera', conexaoA: 'Conexión A',
+          conexaoB: 'Conexión B', pressao: 'Presión de Trabajo',
+          problemas: 'Problemas Identificados', descricao: 'Descripción',
+          servicos: 'Servicios Realizados', usinagem: 'Mecanizado', pecas: 'Piezas Utilizadas',
+          qtd: 'Cant.', fotos: 'Fotos del Análisis', continuacao: '(continuación)',
+          pagina: 'Página', de: 'de', geradoEm: 'Generado el',
+        },
+      }[language] || {} as any;
+      const locale = language === 'en' ? 'en-US' : language === 'es' ? 'es-ES' : 'pt-BR';
+
       
       // Buscar dados completos da ordem e recebimento
       const { data: recebimentoData } = await supabase
