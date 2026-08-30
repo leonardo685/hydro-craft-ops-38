@@ -70,7 +70,7 @@ export async function gerarAnaliseTecnicaPDF({
   empresa,
   language,
 }: GerarAnaliseTecnicaParams) {
-  const tr = (v: any) => translateTerm(v == null ? "" : String(v), language);
+  const tr = (v: any) => translateTerm(v == null ? "" : String(v), language as any);
   const L = DICT[language] || DICT["pt-BR"];
   const locale = language === "en" ? "en-US" : language === "es" ? "es-ES" : "pt-BR";
 
