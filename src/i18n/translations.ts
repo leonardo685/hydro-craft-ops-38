@@ -2250,6 +2250,32 @@ export const translations = {
       companyMinLength: 'Company name must be at least 2 characters',
       companyTooLong: 'Company name too long',
     },
+    // Tracking page
+    rastreamento: {
+      title: 'Service Tracking',
+      subtitle: 'Follow the status of your equipment',
+      order: 'Order',
+      client: 'Client',
+      equipment: 'Equipment',
+      entryDate: 'Entry date',
+      currentStage: 'Current stage',
+      concluded: 'Completed',
+      inProgress: 'In progress',
+      pending: 'Pending',
+      stage1: 'Equipment received',
+      stage1Desc: 'Your equipment arrived at our facility and was registered.',
+      stage2: 'Equipment assessed',
+      stage2Desc: 'We performed the technical analysis and assessment.',
+      stage3: 'Awaiting approval',
+      stage3Desc: 'Quote issued, waiting for your approval.',
+      stage4: 'Equipment in production',
+      stage4Desc: 'Your equipment is being refurbished in production.',
+      notFound: 'Order not found',
+      loading: 'Loading tracking...',
+      questions: 'Questions about your service? Contact us.',
+      reportReady: 'Service completed! View the technical report',
+    },
+
   },
   'es': {
     // Menu/Sidebar
