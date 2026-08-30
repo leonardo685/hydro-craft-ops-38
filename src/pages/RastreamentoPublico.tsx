@@ -449,9 +449,17 @@ export default function RastreamentoPublico() {
 
             <Separator />
 
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">{t("rastreamento.currentStage")}</p>
-              <Badge className="text-sm py-1 px-3">{etapas[etapaAtualIndex].titulo}</Badge>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">{t("rastreamento.currentStage")}</p>
+                <Badge className="text-sm py-1 px-3">{etapas[etapaAtualIndex].titulo}</Badge>
+              </div>
+              {dados.temOrdem && (
+                <Button variant="outline" size="sm" onClick={handleDownloadOrdem} disabled={gerandoPdf}>
+                  {gerandoPdf ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                  {t("rastreamento.downloadOrder")}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
