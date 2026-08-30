@@ -1124,6 +1124,32 @@ export const translations = {
       companyMinLength: 'Nome da empresa deve ter pelo menos 2 caracteres',
       companyTooLong: 'Nome da empresa muito longo',
     },
+    // Rastreamento público
+    rastreamento: {
+      title: 'Acompanhamento do Serviço',
+      subtitle: 'Acompanhe a situação do seu equipamento',
+      order: 'Ordem',
+      client: 'Cliente',
+      equipment: 'Equipamento',
+      entryDate: 'Data de entrada',
+      currentStage: 'Etapa atual',
+      concluded: 'Concluído',
+      inProgress: 'Em andamento',
+      pending: 'Pendente',
+      stage1: 'Equipamento recebido',
+      stage1Desc: 'Seu equipamento chegou à nossa planta e foi registrado.',
+      stage2: 'Equipamento dimensionado',
+      stage2Desc: 'Realizamos a análise técnica e o dimensionamento.',
+      stage3: 'Aguardando aprovação',
+      stage3Desc: 'Orçamento emitido, aguardando sua aprovação.',
+      stage4: 'Equipamento em produção',
+      stage4Desc: 'Seu equipamento está sendo reformado na produção.',
+      notFound: 'Ordem não encontrada',
+      loading: 'Carregando acompanhamento...',
+      questions: 'Dúvidas sobre seu serviço? Fale com a gente.',
+      reportReady: 'Serviço finalizado! Ver o laudo técnico',
+    },
+
   },
   'en': {
     // Menu/Sidebar
