@@ -4,7 +4,11 @@ import { supabasePublico as supabase, setOrdemPublica } from "@/integrations/sup
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, Circle, Loader2, PackageCheck, Ruler, ClipboardCheck, Wrench } from "lucide-react";
+import { CheckCircle2, Circle, Loader2, PackageCheck, Ruler, ClipboardCheck, Wrench, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import jsPDF from "jspdf";
+import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { format } from "date-fns";
 import { ptBR, enUS, es } from "date-fns/locale";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -29,9 +33,11 @@ interface DadosRastreio {
   temOrdem: boolean;
   temOrcamento: boolean;
   statusOrdem: string | null;
+  ordem: any | null;
 }
 
-const STATUS_PRODUCAO = ["aprovada", "aprovado", "em_andamento", "em_producao", "aguardando_retorno", "finalizada", "faturado"];
+// Somente ordens que já estão em "Aprovados" contam como produção
+const STATUS_PRODUCAO = ["aprovada", "aprovado", "em_producao", "em_teste", "aguardando_retorno", "finalizada", "faturado"];
 
 export default function RastreamentoPublico() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
@@ -45,6 +51,7 @@ export default function RastreamentoPublico() {
   const [loading, setLoading] = useState(true);
   const [dados, setDados] = useState<DadosRastreio | null>(null);
   const [empresa, setEmpresa] = useState<EmpresaData | null>(null);
+  const [gerandoPdf, setGerandoPdf] = useState(false);
 
   const dateLocale = language === "en" ? enUS : language === "es" ? es : ptBR;
 
@@ -78,7 +85,7 @@ export default function RastreamentoPublico() {
 
         let ordensQuery = supabase
           .from("ordens_servico")
-          .select("id, numero_ordem, cliente_nome, equipamento, data_entrada, data_analise, status, orcamento_id, empresa_id, recebimento_id, created_at")
+          .select("id, numero_ordem, cliente_nome, equipamento, data_entrada, data_analise, status, orcamento_id, empresa_id, recebimento_id, created_at, tecnico, tipo_problema, descricao_problema, solucao_proposta, categoria_equipamento, numero_serie, camisa, haste_comprimento, curso, conexao_a, conexao_b, pressao_trabalho, temperatura_trabalho, fluido_trabalho, ambiente_trabalho, potencia, local_instalacao")
           .eq("numero_ordem", numeroOrdem);
         if (empresaIdParam) ordensQuery = ordensQuery.eq("empresa_id", empresaIdParam);
         const { data: ordens } = await ordensQuery.order("created_at", { ascending: false });
@@ -128,6 +135,7 @@ export default function RastreamentoPublico() {
           temOrdem: !!ordem,
           temOrcamento: !!ordem?.orcamento_id,
           statusOrdem: ordem?.status || null,
+          ordem: ordem || null,
         });
       } catch (error) {
         console.error("Erro ao carregar rastreamento:", error);
@@ -164,7 +172,7 @@ export default function RastreamentoPublico() {
   }
 
   const emProducao = !!dados.statusOrdem && STATUS_PRODUCAO.includes(dados.statusOrdem);
-  const aguardandoAprovacao = !emProducao && (dados.temOrcamento || dados.statusOrdem === "pendente");
+  const aguardandoAprovacao = !emProducao && dados.temOrcamento;
 
   const etapas = [
     {
