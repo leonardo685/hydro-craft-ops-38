@@ -137,6 +137,7 @@ export default function RastreamentoPublico() {
           temOrcamento: !!ordem?.orcamento_id,
           statusOrdem: ordem?.status || null,
           ordem: ordem || null,
+          recebimento: recebimento || null,
         });
       } catch (error) {
         console.error("Erro ao carregar rastreamento:", error);
