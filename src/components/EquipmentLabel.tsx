@@ -49,6 +49,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
 
   useEffect(() => {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.src = engrenagemLogo;
     img.onload = () => {
       const canvas = document.createElement('canvas');
