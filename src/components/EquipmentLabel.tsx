@@ -78,9 +78,11 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
       const logoImg = new Image();
       logoImg.src = engrenagemLogo;
       logoImg.onload = () => {
+        ctx.filter = 'grayscale(100%) brightness(0)';
         ctx.drawImage(logoImg, 10, 25, 30, 30);
+        ctx.filter = 'none';
 
-        ctx.fillStyle = '#dc2626';
+        ctx.fillStyle = '#000000';
         ctx.font = 'bold 16px Arial';
         ctx.fillText('MEC HYDRO', 50, 40);
 
