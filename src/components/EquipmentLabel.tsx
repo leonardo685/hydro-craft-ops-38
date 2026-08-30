@@ -78,9 +78,11 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
       const logoImg = new Image();
       logoImg.src = engrenagemLogo;
       logoImg.onload = () => {
+        ctx.filter = 'grayscale(100%) brightness(0)';
         ctx.drawImage(logoImg, 10, 25, 30, 30);
+        ctx.filter = 'none';
 
-        ctx.fillStyle = '#dc2626';
+        ctx.fillStyle = '#000000';
         ctx.font = 'bold 16px Arial';
         ctx.fillText('MEC HYDRO', 50, 40);
 
@@ -210,6 +212,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
                 width: 32px;
                 height: 32px;
                 margin-right: 8px;
+                filter: grayscale(100%) brightness(0);
               }
               .header {
                 display: flex;
@@ -222,7 +225,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
               .logo {
                 font-weight: bold;
                 font-size: 16px;
-                color: #dc2626;
+                color: #000;
                 margin-bottom: 5px;
               }
               .order {
@@ -280,9 +283,11 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     const logoImg = new Image();
     logoImg.src = engrenagemLogo;
     logoImg.onload = () => {
+      ctx.filter = 'grayscale(100%) brightness(0)';
       ctx.drawImage(logoImg, 10, 25, 30, 30);
+      ctx.filter = 'none';
       
-      ctx.fillStyle = '#dc2626';
+      ctx.fillStyle = '#000000';
       ctx.font = 'bold 16px Arial';
       ctx.fillText('MEC HYDRO', 50, 40);
       
@@ -372,9 +377,9 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
           <div className="border-2 border-border rounded-lg p-4 bg-background">
             <div className="flex items-center justify-between h-20">
               <div className="flex items-center gap-2">
-                <img src={engrenagemLogo} alt="Logo" className="w-10 h-10" />
+                <img src={engrenagemLogo} alt="Logo" className="w-10 h-10 grayscale brightness-0" />
                 <div className="flex flex-col justify-center">
-                  <div className="text-red-600 font-bold text-sm mb-1">MEC HYDRO</div>
+                  <div className="text-black font-bold text-sm mb-1">MEC HYDRO</div>
                   <div className="text-xl font-bold text-foreground">{equipment.numeroOrdem}</div>
                 </div>
               </div>
