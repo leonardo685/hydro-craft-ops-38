@@ -103,6 +103,8 @@ export default function AcessoOrdemPublica() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
   setOrdemPublica(numeroOrdem);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
   const { t, language, setLanguage } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [etapa, setEtapa] = useState<'telefone' | 'dados'>('telefone');
