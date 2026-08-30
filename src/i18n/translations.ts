@@ -1148,6 +1148,9 @@ export const translations = {
       loading: 'Carregando acompanhamento...',
       questions: 'Dúvidas sobre seu serviço? Fale com a gente.',
       reportReady: 'Serviço finalizado! Ver o laudo técnico',
+      downloadOrder: 'Baixar ordem de serviço (PDF)',
+      pdfGenerating: 'Gerando PDF...',
+      pdfError: 'Erro ao gerar o PDF',
     },
 
   },
@@ -2300,6 +2303,9 @@ export const translations = {
       loading: 'Loading tracking...',
       questions: 'Questions about your service? Contact us.',
       reportReady: 'Service completed! View the technical report',
+      downloadOrder: 'Download service order (PDF)',
+      pdfGenerating: 'Generating PDF...',
+      pdfError: 'Error generating PDF',
     },
 
   },
@@ -3137,6 +3143,9 @@ export const translations = {
       loading: 'Cargando seguimiento...',
       questions: 'Dudas sobre su servicio? Contáctenos.',
       reportReady: 'Servicio finalizado! Ver el informe técnico',
+      downloadOrder: 'Descargar orden de servicio (PDF)',
+      pdfGenerating: 'Generando PDF...',
+      pdfError: 'Error al generar el PDF',
     },
 
   },
