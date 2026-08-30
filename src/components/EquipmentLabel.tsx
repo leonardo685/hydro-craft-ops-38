@@ -212,6 +212,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
                 width: 32px;
                 height: 32px;
                 margin-right: 8px;
+                filter: grayscale(100%) brightness(0);
               }
               .header {
                 display: flex;
@@ -224,7 +225,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
               .logo {
                 font-weight: bold;
                 font-size: 16px;
-                color: #dc2626;
+                color: #000;
                 margin-bottom: 5px;
               }
               .order {
