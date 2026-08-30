@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabasePublico as supabase, setOrdemPublica } from "@/integrations/supabase/ordemPublicaClient";
 import { toast } from "sonner";
 
@@ -58,6 +58,9 @@ export default function OrdemPorQRCode() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
   setOrdemPublica(numeroOrdem);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Empresa do QR Code: o mesmo número de ordem pode existir em empresas diferentes
+  const empresaId = searchParams.get("e");
 
   useEffect(() => {
     const buscarOrdem = async () => {
@@ -67,13 +70,19 @@ export default function OrdemPorQRCode() {
         return;
       }
 
+      const sufixoEmpresa = empresaId ? `&e=${empresaId}` : "";
+      const queryEmpresa = empresaId ? `?e=${empresaId}` : "";
+
       try {
         // Buscar TODAS as ordens de serviço com este número (pode haver duplicatas)
-        console.log("🔍 Buscando ordens com numero_ordem:", numeroOrdem);
-        const { data: ordensServico, error: ordemError } = await supabase
+        console.log("🔍 Buscando ordens com numero_ordem:", numeroOrdem, "empresa:", empresaId);
+        let ordensQuery = supabase
           .from("ordens_servico")
           .select("id, status, recebimento_id")
           .eq("numero_ordem", numeroOrdem);
+        if (empresaId) ordensQuery = ordensQuery.eq("empresa_id", empresaId);
+
+        const { data: ordensServico, error: ordemError } = await ordensQuery;
 
         if (ordemError) {
           console.error("❌ Erro na query:", ordemError);
@@ -87,15 +96,16 @@ export default function OrdemPorQRCode() {
 
         // Sem ordem de serviço: pode existir apenas o recebimento -> rastreamento
         if (!ordemServico) {
-          const { data: recebimento } = await supabase
+          let recebimentoQuery = supabase
             .from("recebimentos")
             .select("id")
-            .eq("numero_ordem", numeroOrdem)
-            .limit(1)
-            .maybeSingle();
+            .eq("numero_ordem", numeroOrdem);
+          if (empresaId) recebimentoQuery = recebimentoQuery.eq("empresa_id", empresaId);
+
+          const { data: recebimento } = await recebimentoQuery.limit(1).maybeSingle();
 
           if (recebimento) {
-            navigate(`/acesso-ordem/${numeroOrdem}?destino=rastreamento`);
+            navigate(`/acesso-ordem/${numeroOrdem}?destino=rastreamento${sufixoEmpresa}`);
             return;
           }
 
@@ -114,9 +124,9 @@ export default function OrdemPorQRCode() {
 
         // Finalizada -> laudo; caso contrário -> rastreamento do serviço
         if (ordemFinalizada) {
-          navigate(`/acesso-ordem/${numeroOrdem}`);
+          navigate(`/acesso-ordem/${numeroOrdem}${queryEmpresa}`);
         } else {
-          navigate(`/acesso-ordem/${numeroOrdem}?destino=rastreamento`);
+          navigate(`/acesso-ordem/${numeroOrdem}?destino=rastreamento${sufixoEmpresa}`);
         }
 
       } catch (error) {
@@ -127,7 +137,7 @@ export default function OrdemPorQRCode() {
     };
 
     buscarOrdem();
-  }, [numeroOrdem, navigate]);
+  }, [numeroOrdem, navigate, empresaId]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
