@@ -308,14 +308,7 @@ export default function RastreamentoPublico() {
             <p className="font-medium">{empresa?.razao_social || empresa?.nome}</p>
             {empresa?.telefone && <p className="text-sm">{empresa.telefone}</p>}
             {empresa?.email && <p className="text-sm">{empresa.email}</p>}
-            <Button
-              variant="outline"
-              className="mt-2"
-              onClick={() => navigate(`/laudo-publico/${encodeURIComponent(dados.numeroOrdem)}`)}
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              {t("rastreamento.reportReady")}
-            </Button>
+
           </CardContent>
         </Card>
       </div>
