@@ -274,7 +274,7 @@ export default function AcessoOrdemPublica() {
     try {
       const { data: ordensServico, error: ordemError } = await supabase
         .from("ordens_servico")
-        .select("id")
+        .select("id, recebimento_id")
         .eq("numero_ordem", numeroOrdem);
 
       if (ordemError) throw ordemError;
@@ -282,10 +282,28 @@ export default function AcessoOrdemPublica() {
       const ordemServico = await encontrarOrdemCorreta(ordensServico || []);
 
       if (!ordemServico) {
-        toast.error(t('acessoOrdem.orderNotFound'));
-        navigate("/");
+        const { data: recebimento } = await supabase
+          .from("recebimentos")
+          .select("id")
+          .eq("numero_ordem", numeroOrdem)
+          .limit(1)
+          .maybeSingle();
+
+        if (!recebimento) {
+          toast.error(t('acessoOrdem.orderNotFound'));
+          navigate("/");
+          return;
+        }
+
+        toast.success(t('acessoOrdem.dataSuccess'));
+        navigate(`/rastreamento/${numeroOrdem}`);
         return;
       }
+
+      const ordemFinalizada = await verificarOrdemFinalizada(
+        ordemServico.id,
+        ordemServico.recebimento_id ?? null
+      );
 
       const ipAcesso = await obterIP();
       const userAgent = navigator.userAgent;
@@ -302,7 +320,8 @@ export default function AcessoOrdemPublica() {
       if (insertError) throw insertError;
 
       toast.success(t('acessoOrdem.dataSuccess'));
-      navigate(`/laudo-publico/${numeroOrdem}`);
+      navigate(ordemFinalizada ? `/laudo-publico/${numeroOrdem}` : `/rastreamento/${numeroOrdem}`);
+
     } catch (error) {
       console.error("Erro ao registrar dados:", error);
       toast.error(t('acessoOrdem.dataError'));
