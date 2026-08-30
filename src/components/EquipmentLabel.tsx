@@ -5,7 +5,7 @@ import { Printer, Download, FileCode, Send } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 import { DxfWriter, point3d } from "@tarikjabiri/dxf";
-import engrenagemLogo from "@/assets/engrenagem-logo.jpg";
+const engrenagemLogo = "/__l5e/assets-v1/4ff2084a-2b38-48ea-8e13-9ef8fc063921/engrenagem-logo-preto.png";
 
 interface EquipmentLabelProps {
   equipment: {
@@ -49,6 +49,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
 
   useEffect(() => {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.src = engrenagemLogo;
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -62,47 +63,67 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     };
   }, []);
 
-  // ─── Gerar PNG como Blob (reutiliza lógica do handleDownload) ───
-  const generatePNGBlob = (): Promise<Blob | null> => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return resolve(null);
+  // ─── Renderiza a etiqueta em alta resolução (escala configurável) ───
+  const SCALE = 8; // 302x113 @8x => 2416x904 px (~600 DPI para gravação)
 
-      canvas.width = 302;
-      canvas.height = 113;
+  const renderLabelCanvas = async (scale = SCALE): Promise<HTMLCanvasElement | null> => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
 
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    canvas.width = 302 * scale;
+    canvas.height = 113 * scale;
 
-      const logoImg = new Image();
-      logoImg.src = engrenagemLogo;
-      logoImg.onload = () => {
-        ctx.filter = 'grayscale(100%) brightness(0)';
-        ctx.drawImage(logoImg, 10, 25, 30, 30);
-        ctx.filter = 'none';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(scale, scale);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
-        ctx.fillStyle = '#000000';
-        ctx.font = 'bold 16px Arial';
-        ctx.fillText('MEC HYDRO', 50, 40);
+    const loadImg = (src: string) =>
+      new Promise<HTMLImageElement | null>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
 
-        ctx.fillStyle = '#000000';
-        ctx.font = 'bold 24px Arial';
-        ctx.fillText(equipment.numeroOrdem, 50, 70);
-
-        if (qrDataUrl) {
-          const qrImg = new Image();
-          qrImg.onload = () => {
-            ctx.drawImage(qrImg, 200, 20, 80, 80);
-            canvas.toBlob((blob) => resolve(blob), 'image/png');
-          };
-          qrImg.src = qrDataUrl;
-        } else {
-          canvas.toBlob((blob) => resolve(blob), 'image/png');
-        }
-      };
+    // QR em alta resolução
+    const baseUrl = window.location.origin;
+    const qrHighRes = await QRCode.toDataURL(`${baseUrl}/ordem/${equipment.numeroOrdem}`, {
+      width: 80 * scale,
+      margin: 1,
+      color: { dark: '#000000', light: '#FFFFFF' },
     });
+
+    const [logoImg, qrImg] = await Promise.all([loadImg(engrenagemLogo), loadImg(qrHighRes)]);
+
+    if (logoImg) {
+      const ratio = logoImg.width / logoImg.height || 1;
+      const h = 30;
+      const w = h * ratio;
+      ctx.drawImage(logoImg, 10, 25, w, h);
+    }
+
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 16px Arial';
+    ctx.fillText('MEC HYDRO', 60, 40);
+
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText(equipment.numeroOrdem, 60, 70);
+
+    if (qrImg) ctx.drawImage(qrImg, 200, 20, 80, 80);
+
+    return canvas;
   };
+
+  const generatePNGBlob = async (): Promise<Blob | null> => {
+    const canvas = await renderLabelCanvas();
+    if (!canvas) return null;
+    return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), 'image/png'));
+  };
+
 
   // ─── Gerar DXF como Blob (reutiliza lógica do handleDownloadDXF) ───
   const generateDXFBlob = async (): Promise<Blob | null> => {
@@ -212,8 +233,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
                 width: 32px;
                 height: 32px;
                 margin-right: 8px;
-                filter: grayscale(100%) brightness(0);
-              }
+                              }
               .header {
                 display: flex;
                 align-items: center;
@@ -269,46 +289,19 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     }
   };
 
-  const handleDownload = () => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.width = 302;
-    canvas.height = 113;
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const logoImg = new Image();
-    logoImg.src = engrenagemLogo;
-    logoImg.onload = () => {
-      ctx.filter = 'grayscale(100%) brightness(0)';
-      ctx.drawImage(logoImg, 10, 25, 30, 30);
-      ctx.filter = 'none';
-      
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 16px Arial';
-      ctx.fillText('MEC HYDRO', 50, 40);
-      
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 24px Arial';
-      ctx.fillText(equipment.numeroOrdem, 50, 70);
-      
-      if (qrDataUrl) {
-        const qrImg = new Image();
-        qrImg.onload = () => {
-          ctx.drawImage(qrImg, 200, 20, 80, 80);
-          
-          const link = document.createElement('a');
-          link.download = `etiqueta-${equipment.numeroOrdem}.png`;
-          link.href = canvas.toDataURL();
-          link.click();
-        };
-        qrImg.src = qrDataUrl;
-      }
-    };
+  const handleDownload = async () => {
+    const blob = await generatePNGBlob();
+    if (!blob) {
+      toast.error('Erro ao gerar PNG da etiqueta');
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `etiqueta-${equipment.numeroOrdem}.png`;
+    link.click();
+    URL.revokeObjectURL(link.href);
   };
+
 
   const handleDownloadDXF = async () => {
     const dxf = new DxfWriter();
@@ -377,7 +370,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
           <div className="border-2 border-border rounded-lg p-4 bg-background">
             <div className="flex items-center justify-between h-20">
               <div className="flex items-center gap-2">
-                <img src={engrenagemLogo} alt="Logo" className="w-10 h-10 grayscale brightness-0" />
+                <img src={engrenagemLogo} alt="Logo" className="w-10 h-10 object-contain" />
                 <div className="flex flex-col justify-center">
                   <div className="text-black font-bold text-sm mb-1">MEC HYDRO</div>
                   <div className="text-xl font-bold text-foreground">{equipment.numeroOrdem}</div>
