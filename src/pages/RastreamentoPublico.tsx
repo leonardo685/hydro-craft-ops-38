@@ -34,6 +34,7 @@ interface DadosRastreio {
   temOrcamento: boolean;
   statusOrdem: string | null;
   ordem: any | null;
+  recebimento: any | null;
 }
 
 // Somente ordens que já estão em "Aprovados" contam como produção
