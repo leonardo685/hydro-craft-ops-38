@@ -104,6 +104,9 @@ export default function AcessoOrdemPublica() {
   setOrdemPublica(numeroOrdem);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  // Empresa do QR Code: o mesmo número de ordem pode existir em empresas diferentes
+  const empresaId = searchParams.get('e');
+  const queryEmpresa = empresaId ? `?e=${empresaId}` : '';
 
   const { t, language, setLanguage } = useLanguage();
   const [loading, setLoading] = useState(false);
@@ -195,10 +198,12 @@ export default function AcessoOrdemPublica() {
     try {
       const telefoneFormatado = formatarTelefoneParaSalvar(data.telefone);
 
-      const { data: ordensServico, error: ordemError } = await supabase
+      let ordensQuery = supabase
         .from("ordens_servico")
         .select("id, status, recebimento_id")
         .eq("numero_ordem", numeroOrdem);
+      if (empresaId) ordensQuery = ordensQuery.eq("empresa_id", empresaId);
+      const { data: ordensServico, error: ordemError } = await ordensQuery;
 
       if (ordemError) throw ordemError;
 
@@ -206,12 +211,12 @@ export default function AcessoOrdemPublica() {
 
       if (!ordemServico) {
         // Pode existir apenas o recebimento (equipamento acabou de chegar)
-        const { data: recebimento } = await supabase
+        let recebimentoQuery = supabase
           .from("recebimentos")
           .select("id")
-          .eq("numero_ordem", numeroOrdem)
-          .limit(1)
-          .maybeSingle();
+          .eq("numero_ordem", numeroOrdem);
+        if (empresaId) recebimentoQuery = recebimentoQuery.eq("empresa_id", empresaId);
+        const { data: recebimento } = await recebimentoQuery.limit(1).maybeSingle();
 
         if (!recebimento) {
           toast.error(t('acessoOrdem.orderNotFound'));
@@ -219,7 +224,7 @@ export default function AcessoOrdemPublica() {
           return;
         }
 
-        navigate(`/rastreamento/${numeroOrdem}`);
+        navigate(`/rastreamento/${numeroOrdem}${queryEmpresa}`);
         return;
       }
 
@@ -229,8 +234,8 @@ export default function AcessoOrdemPublica() {
       );
 
       const destinoFinal = ordemFinalizada
-        ? `/laudo-publico/${numeroOrdem}`
-        : `/rastreamento/${numeroOrdem}`;
+        ? `/laudo-publico/${numeroOrdem}${queryEmpresa}`
+        : `/rastreamento/${numeroOrdem}${queryEmpresa}`;
 
       const telefoneNormalizado = normalizarTelefone(data.telefone);
       const { data: clienteExistente } = await supabase
@@ -274,22 +279,24 @@ export default function AcessoOrdemPublica() {
     setLoading(true);
 
     try {
-      const { data: ordensServico, error: ordemError } = await supabase
+      let ordensQuery = supabase
         .from("ordens_servico")
         .select("id, recebimento_id")
         .eq("numero_ordem", numeroOrdem);
+      if (empresaId) ordensQuery = ordensQuery.eq("empresa_id", empresaId);
+      const { data: ordensServico, error: ordemError } = await ordensQuery;
 
       if (ordemError) throw ordemError;
 
       const ordemServico = await encontrarOrdemCorreta(ordensServico || []);
 
       if (!ordemServico) {
-        const { data: recebimento } = await supabase
+        let recebimentoQuery = supabase
           .from("recebimentos")
           .select("id")
-          .eq("numero_ordem", numeroOrdem)
-          .limit(1)
-          .maybeSingle();
+          .eq("numero_ordem", numeroOrdem);
+        if (empresaId) recebimentoQuery = recebimentoQuery.eq("empresa_id", empresaId);
+        const { data: recebimento } = await recebimentoQuery.limit(1).maybeSingle();
 
         if (!recebimento) {
           toast.error(t('acessoOrdem.orderNotFound'));
@@ -298,7 +305,7 @@ export default function AcessoOrdemPublica() {
         }
 
         toast.success(t('acessoOrdem.dataSuccess'));
-        navigate(`/rastreamento/${numeroOrdem}`);
+        navigate(`/rastreamento/${numeroOrdem}${queryEmpresa}`);
         return;
       }
 
@@ -322,7 +329,7 @@ export default function AcessoOrdemPublica() {
       if (insertError) throw insertError;
 
       toast.success(t('acessoOrdem.dataSuccess'));
-      navigate(ordemFinalizada ? `/laudo-publico/${numeroOrdem}` : `/rastreamento/${numeroOrdem}`);
+      navigate(ordemFinalizada ? `/laudo-publico/${numeroOrdem}${queryEmpresa}` : `/rastreamento/${numeroOrdem}${queryEmpresa}`);
 
     } catch (error) {
       console.error("Erro ao registrar dados:", error);

@@ -151,6 +151,8 @@ export default function LaudoPublico() {
   setOrdemPublica(numeroOrdem);
   const [searchParams] = useSearchParams();
   const ordemIdParam = searchParams.get('ordemId');
+  // Empresa do QR Code: o mesmo número de ordem pode existir em empresas diferentes
+  const empresaIdParam = searchParams.get('e');
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
   /** Traduz conteúdo dinâmico (peças, serviços, usinagem) mantendo números e códigos */
@@ -192,13 +194,16 @@ export default function LaudoPublico() {
           ordem = ordemById;
         } else {
           // Acesso externo (QR code/link público): buscar por numero_ordem
-          const { data: ordensServico, error: ordemError } = await supabase
+          let ordensQuery = supabase
             .from("ordens_servico")
             .select(`
               *,
               recebimentos(numero_ordem)
             `)
             .eq("numero_ordem", numeroOrdem);
+          if (empresaIdParam) ordensQuery = ordensQuery.eq("empresa_id", empresaIdParam);
+
+          const { data: ordensServico, error: ordemError } = await ordensQuery;
 
           if (ordemError) throw ordemError;
 

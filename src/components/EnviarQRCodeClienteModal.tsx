@@ -35,7 +35,9 @@ export function EnviarQRCodeClienteModal({
   const [enviando, setEnviando] = useState(false);
   const [copiado, setCopiado] = useState(false);
 
-  const link = `${window.location.origin}/ordem/${encodeURIComponent(numeroOrdem)}`;
+  const link =
+    `${window.location.origin}/ordem/${encodeURIComponent(numeroOrdem)}` +
+    (empresaAtual?.id ? `?e=${empresaAtual.id}` : "");
 
   const clienteEncontrado = useMemo(
     () => clientes.find((c) => c.nome === clienteNome) || null,

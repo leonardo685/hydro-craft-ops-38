@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabasePublico as supabase, setOrdemPublica } from "@/integrations/supabase/ordemPublicaClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,10 @@ export default function RastreamentoPublico() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
   setOrdemPublica(numeroOrdem);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Empresa do QR Code: o mesmo número de ordem pode existir em empresas diferentes
+  const empresaIdParam = searchParams.get("e");
+  const queryEmpresa = empresaIdParam ? `?e=${empresaIdParam}` : "";
   const { t, language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [dados, setDados] = useState<DadosRastreio | null>(null);
@@ -62,19 +66,22 @@ export default function RastreamentoPublico() {
       setOrdemPublica(numeroOrdem);
 
       try {
-        const { data: recebimento } = await supabase
+        let recebimentoQuery = supabase
           .from("recebimentos")
           .select("id, numero_ordem, cliente_nome, tipo_equipamento, descricao_nfe, data_entrada, data_analise, empresa_id, pdf_nota_retorno")
-          .eq("numero_ordem", numeroOrdem)
+          .eq("numero_ordem", numeroOrdem);
+        if (empresaIdParam) recebimentoQuery = recebimentoQuery.eq("empresa_id", empresaIdParam);
+        const { data: recebimento } = await recebimentoQuery
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        const { data: ordens } = await supabase
+        let ordensQuery = supabase
           .from("ordens_servico")
           .select("id, numero_ordem, cliente_nome, equipamento, data_entrada, data_analise, status, orcamento_id, empresa_id, recebimento_id, created_at")
-          .eq("numero_ordem", numeroOrdem)
-          .order("created_at", { ascending: false });
+          .eq("numero_ordem", numeroOrdem);
+        if (empresaIdParam) ordensQuery = ordensQuery.eq("empresa_id", empresaIdParam);
+        const { data: ordens } = await ordensQuery.order("created_at", { ascending: false });
 
         const ordem = ordens && ordens.length > 0 ? ordens[0] : null;
 
@@ -95,7 +102,7 @@ export default function RastreamentoPublico() {
             !!recebimento?.pdf_nota_retorno;
 
           if (finalizada) {
-            navigate(`/laudo-publico/${encodeURIComponent(numeroOrdem)}`, { replace: true });
+            navigate(`/laudo-publico/${encodeURIComponent(numeroOrdem)}${queryEmpresa}`, { replace: true });
             return;
           }
         }
@@ -130,7 +137,7 @@ export default function RastreamentoPublico() {
     };
 
     carregar();
-  }, [numeroOrdem, navigate]);
+  }, [numeroOrdem, navigate, empresaIdParam, queryEmpresa]);
 
   if (loading) {
     return (
