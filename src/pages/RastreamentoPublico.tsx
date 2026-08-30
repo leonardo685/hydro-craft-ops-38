@@ -76,7 +76,7 @@ export default function RastreamentoPublico() {
       try {
         let recebimentoQuery = supabase
           .from("recebimentos")
-          .select("id, numero_ordem, cliente_nome, tipo_equipamento, descricao_nfe, data_entrada, data_analise, empresa_id, pdf_nota_retorno")
+          .select("*")
           .eq("numero_ordem", numeroOrdem);
         if (empresaIdParam) recebimentoQuery = recebimentoQuery.eq("empresa_id", empresaIdParam);
         const { data: recebimento } = await recebimentoQuery
@@ -86,7 +86,7 @@ export default function RastreamentoPublico() {
 
         let ordensQuery = supabase
           .from("ordens_servico")
-          .select("id, numero_ordem, cliente_nome, equipamento, data_entrada, data_analise, status, orcamento_id, empresa_id, recebimento_id, created_at, tecnico, tipo_problema, descricao_problema, solucao_proposta, categoria_equipamento, numero_serie, camisa, haste_comprimento, curso, conexao_a, conexao_b, pressao_trabalho, temperatura_trabalho, fluido_trabalho, ambiente_trabalho, potencia, local_instalacao")
+          .select("*")
           .eq("numero_ordem", numeroOrdem);
         if (empresaIdParam) ordensQuery = ordensQuery.eq("empresa_id", empresaIdParam);
         const { data: ordens } = await ordensQuery.order("created_at", { ascending: false });
