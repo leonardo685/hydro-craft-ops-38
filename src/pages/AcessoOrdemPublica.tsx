@@ -203,8 +203,21 @@ export default function AcessoOrdemPublica() {
       const ordemServico = await encontrarOrdemCorreta(ordensServico || []);
 
       if (!ordemServico) {
-        toast.error(t('acessoOrdem.orderNotFound'));
-        navigate("/");
+        // Pode existir apenas o recebimento (equipamento acabou de chegar)
+        const { data: recebimento } = await supabase
+          .from("recebimentos")
+          .select("id")
+          .eq("numero_ordem", numeroOrdem)
+          .limit(1)
+          .maybeSingle();
+
+        if (!recebimento) {
+          toast.error(t('acessoOrdem.orderNotFound'));
+          navigate("/");
+          return;
+        }
+
+        navigate(`/rastreamento/${numeroOrdem}`);
         return;
       }
 
@@ -213,11 +226,9 @@ export default function AcessoOrdemPublica() {
         ordemServico.recebimento_id
       );
 
-      if (!ordemFinalizada) {
-        toast.error(t('acessoOrdem.orderNotFinished'));
-        navigate("/");
-        return;
-      }
+      const destinoFinal = ordemFinalizada
+        ? `/laudo-publico/${numeroOrdem}`
+        : `/rastreamento/${numeroOrdem}`;
 
       const telefoneNormalizado = normalizarTelefone(data.telefone);
       const { data: clienteExistente } = await supabase
@@ -238,11 +249,12 @@ export default function AcessoOrdemPublica() {
         });
 
         toast.success(`${t('acessoOrdem.welcomeBack')} ${clienteExistente.nome}!`);
-        navigate(`/laudo-publico/${numeroOrdem}`);
+        navigate(destinoFinal);
       } else {
         setTelefoneVerificado(telefoneFormatado);
         setEtapa('dados');
       }
+
     } catch (error) {
       console.error("Erro ao verificar telefone:", error);
       toast.error(t('acessoOrdem.phoneError'));
