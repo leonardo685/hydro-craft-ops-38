@@ -288,44 +288,19 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     }
   };
 
-  const handleDownload = () => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.width = 302;
-    canvas.height = 113;
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const logoImg = new Image();
-    logoImg.src = engrenagemLogo;
-    logoImg.onload = () => {
-      ctx.drawImage(logoImg, 10, 25, 30, 30);
-      
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 16px Arial';
-      ctx.fillText('MEC HYDRO', 50, 40);
-      
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 24px Arial';
-      ctx.fillText(equipment.numeroOrdem, 50, 70);
-      
-      if (qrDataUrl) {
-        const qrImg = new Image();
-        qrImg.onload = () => {
-          ctx.drawImage(qrImg, 200, 20, 80, 80);
-          
-          const link = document.createElement('a');
-          link.download = `etiqueta-${equipment.numeroOrdem}.png`;
-          link.href = canvas.toDataURL();
-          link.click();
-        };
-        qrImg.src = qrDataUrl;
-      }
-    };
+  const handleDownload = async () => {
+    const blob = await generatePNGBlob();
+    if (!blob) {
+      toast.error('Erro ao gerar PNG da etiqueta');
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `etiqueta-${equipment.numeroOrdem}.png`;
+    link.click();
+    URL.revokeObjectURL(link.href);
   };
+
 
   const handleDownloadDXF = async () => {
     const dxf = new DxfWriter();
