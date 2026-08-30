@@ -75,10 +75,6 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
-
       const logoImg = new Image();
       logoImg.src = engrenagemLogo;
       logoImg.onload = () => {
