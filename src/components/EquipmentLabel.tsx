@@ -376,9 +376,9 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
           <div className="border-2 border-border rounded-lg p-4 bg-background">
             <div className="flex items-center justify-between h-20">
               <div className="flex items-center gap-2">
-                <img src={engrenagemLogo} alt="Logo" className="w-10 h-10" />
+                <img src={engrenagemLogo} alt="Logo" className="w-10 h-10 grayscale brightness-0" />
                 <div className="flex flex-col justify-center">
-                  <div className="text-red-600 font-bold text-sm mb-1">MEC HYDRO</div>
+                  <div className="text-black font-bold text-sm mb-1">MEC HYDRO</div>
                   <div className="text-xl font-bold text-foreground">{equipment.numeroOrdem}</div>
                 </div>
               </div>
