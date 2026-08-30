@@ -345,7 +345,10 @@ export default function AcessoOrdemPublica() {
             <LanguageSelectorDropdown />
           </div>
 
-          <CardTitle className="text-2xl">{t('acessoOrdem.title')}</CardTitle>
+          <CardTitle className="text-2xl">
+            {searchParams.get('destino') === 'rastreamento' ? t('rastreamento.title') : t('acessoOrdem.title')}
+          </CardTitle>
+
           <CardDescription className="text-base">
             {etapa === 'telefone' ? (
               <>
