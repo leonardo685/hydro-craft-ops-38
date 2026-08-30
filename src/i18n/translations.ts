@@ -3061,6 +3061,32 @@ export const translations = {
       companyMinLength: 'El nombre de la empresa debe tener al menos 2 caracteres',
       companyTooLong: 'Nombre de la empresa demasiado largo',
     },
+    // Tracking page
+    rastreamento: {
+      title: 'Seguimiento del Servicio',
+      subtitle: 'Acompañe el estado de su equipo',
+      order: 'Orden',
+      client: 'Cliente',
+      equipment: 'Equipo',
+      entryDate: 'Fecha de entrada',
+      currentStage: 'Etapa actual',
+      concluded: 'Concluido',
+      inProgress: 'En progreso',
+      pending: 'Pendiente',
+      stage1: 'Equipo recibido',
+      stage1Desc: 'Su equipo llegó a nuestra planta y fue registrado.',
+      stage2: 'Equipo dimensionado',
+      stage2Desc: 'Realizamos el análisis técnico y el dimensionamiento.',
+      stage3: 'Esperando aprobación',
+      stage3Desc: 'Presupuesto emitido, esperando su aprobación.',
+      stage4: 'Equipo en producción',
+      stage4Desc: 'Su equipo está siendo reformado en producción.',
+      notFound: 'Orden no encontrada',
+      loading: 'Cargando seguimiento...',
+      questions: 'Dudas sobre su servicio? Contáctenos.',
+      reportReady: 'Servicio finalizado! Ver el informe técnico',
+    },
+
   },
 } as const;
 
