@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, Download, FileCode, Send } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
+import { useEmpresa } from "@/contexts/EmpresaContext";
 import { DxfWriter, point3d } from "@tarikjabiri/dxf";
 const engrenagemLogo = "/__l5e/assets-v1/4ff2084a-2b38-48ea-8e13-9ef8fc063921/engrenagem-logo-preto.png";
 
@@ -20,14 +21,18 @@ interface EquipmentLabelProps {
 const GRAVACAO_WEBHOOK_URL = import.meta.env.VITE_N8N_GRAVACAO_WEBHOOK_URL || '';
 
 export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
+  const { empresaAtual } = useEmpresa();
+  // Inclui a empresa no link do QR: o mesmo número de ordem pode existir em empresas diferentes
+  const buildQrUrl = () =>
+    `${window.location.origin}/ordem/${encodeURIComponent(equipment.numeroOrdem)}` +
+    (empresaAtual?.id ? `?e=${empresaAtual.id}` : "");
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [logoDataUrl, setLogoDataUrl] = useState<string>("");
   const [sendingToLaser, setSendingToLaser] = useState(false);
 
   useEffect(() => {
     const generateQRCode = async () => {
-      const baseUrl = window.location.origin;
-      const qrData = `${baseUrl}/ordem/${equipment.numeroOrdem}`;
+      const qrData = buildQrUrl();
       
       try {
         const dataUrl = await QRCode.toDataURL(qrData, {
@@ -90,8 +95,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
       });
 
     // QR em alta resolução
-    const baseUrl = window.location.origin;
-    const qrHighRes = await QRCode.toDataURL(`${baseUrl}/ordem/${equipment.numeroOrdem}`, {
+    const qrHighRes = await QRCode.toDataURL(buildQrUrl(), {
       width: 80 * scale,
       margin: 1,
       color: { dark: '#000000', light: '#FFFFFF' },
@@ -334,8 +338,7 @@ export function EquipmentLabel({ equipment, onClose }: EquipmentLabelProps) {
     startY: number, 
     size: number
   ) => {
-    const baseUrl = window.location.origin;
-    const qrData = `${baseUrl}/ordem/${equipment.numeroOrdem}`;
+    const qrData = buildQrUrl();
     
     const qr = QRCode.create(qrData, { errorCorrectionLevel: 'M' });
     const modules = qr.modules.data;
