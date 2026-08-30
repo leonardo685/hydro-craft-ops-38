@@ -650,6 +650,18 @@ export default function Recebimentos() {
                                 <QrCode className="h-4 w-4 mr-2" />
                                 QR Code
                               </DropdownMenuItem>
+
+                              <DropdownMenuItem
+                                onClick={() => setQrEnvio({
+                                  numeroOrdem: item.numero_ordem,
+                                  cliente: item.clientes?.nome || item.cliente_nome || '',
+                                })}
+                              >
+                                <Send className="h-4 w-4 mr-2" />
+                                Enviar QR ao cliente
+                              </DropdownMenuItem>
+                              
+
                               
                               {item.pdf_nota_retorno && (
                                 <DropdownMenuItem onClick={async () => {
