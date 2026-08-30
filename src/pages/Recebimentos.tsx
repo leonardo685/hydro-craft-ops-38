@@ -6,10 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText, ChevronDown, Settings, FileCheck, Printer, Link2 } from "lucide-react";
+import { Plus, QrCode, Search, Filter, CalendarIcon, Play, FileText, ChevronDown, Settings, FileCheck, Printer, Link2, Send } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
+import { EnviarQRCodeClienteModal } from "@/components/EnviarQRCodeClienteModal";
 import { ChaveAcessoModal } from "@/components/ChaveAcessoModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ItensNFeModal } from "@/components/ItensNFeModal";
@@ -40,6 +41,7 @@ export default function Recebimentos() {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
+  const [qrEnvio, setQrEnvio] = useState<{ numeroOrdem: string; cliente: string } | null>(null);
   const [modalChaveAcesso, setModalChaveAcesso] = useState(false);
   const [notaFiscalSelecionada, setNotaFiscalSelecionada] = useState<any>(null);
   const [modalCriarOrdem, setModalCriarOrdem] = useState<any>(null);
@@ -650,6 +652,18 @@ export default function Recebimentos() {
                                 <QrCode className="h-4 w-4 mr-2" />
                                 QR Code
                               </DropdownMenuItem>
+
+                              <DropdownMenuItem
+                                onClick={() => setQrEnvio({
+                                  numeroOrdem: item.numero_ordem,
+                                  cliente: item.clientes?.nome || item.cliente_nome || '',
+                                })}
+                              >
+                                <Send className="h-4 w-4 mr-2" />
+                                Enviar QR ao cliente
+                              </DropdownMenuItem>
+                              
+
                               
                               {item.pdf_nota_retorno && (
                                 <DropdownMenuItem onClick={async () => {
@@ -907,6 +921,15 @@ export default function Recebimentos() {
           <EquipmentLabel
             equipment={selectedEquipment}
             onClose={() => setSelectedEquipment(null)}
+          />
+        )}
+
+        {qrEnvio && (
+          <EnviarQRCodeClienteModal
+            open={!!qrEnvio}
+            onOpenChange={(open) => !open && setQrEnvio(null)}
+            numeroOrdem={qrEnvio.numeroOrdem}
+            clienteNome={qrEnvio.cliente}
           />
         )}
 

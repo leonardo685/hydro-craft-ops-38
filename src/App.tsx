@@ -15,6 +15,8 @@ import LaudoPublico from "./pages/LaudoPublico";
 import Convite from "./pages/Convite";
 import ResetPassword from "./pages/ResetPassword";
 import CotacaoPublica from "./pages/CotacaoPublica";
+import RastreamentoPublico from "./pages/RastreamentoPublico";
+
 
 const queryClient = new QueryClient();
 
@@ -49,6 +51,8 @@ const App = () => (
             <Route path="/convite/:token" element={<Convite />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/cotacao/:token" element={<CotacaoPublica />} />
+            <Route path="/rastreamento/:numeroOrdem" element={<RastreamentoPublico />} />
+
             
             {/* All other routes - with AuthProvider */}
             <Route path="/*" element={<AuthenticatedApp />} />

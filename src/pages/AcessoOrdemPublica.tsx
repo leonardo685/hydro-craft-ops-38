@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -103,6 +103,8 @@ export default function AcessoOrdemPublica() {
   const { numeroOrdem } = useParams<{ numeroOrdem: string }>();
   setOrdemPublica(numeroOrdem);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
   const { t, language, setLanguage } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [etapa, setEtapa] = useState<'telefone' | 'dados'>('telefone');
@@ -203,8 +205,21 @@ export default function AcessoOrdemPublica() {
       const ordemServico = await encontrarOrdemCorreta(ordensServico || []);
 
       if (!ordemServico) {
-        toast.error(t('acessoOrdem.orderNotFound'));
-        navigate("/");
+        // Pode existir apenas o recebimento (equipamento acabou de chegar)
+        const { data: recebimento } = await supabase
+          .from("recebimentos")
+          .select("id")
+          .eq("numero_ordem", numeroOrdem)
+          .limit(1)
+          .maybeSingle();
+
+        if (!recebimento) {
+          toast.error(t('acessoOrdem.orderNotFound'));
+          navigate("/");
+          return;
+        }
+
+        navigate(`/rastreamento/${numeroOrdem}`);
         return;
       }
 
@@ -213,11 +228,9 @@ export default function AcessoOrdemPublica() {
         ordemServico.recebimento_id
       );
 
-      if (!ordemFinalizada) {
-        toast.error(t('acessoOrdem.orderNotFinished'));
-        navigate("/");
-        return;
-      }
+      const destinoFinal = ordemFinalizada
+        ? `/laudo-publico/${numeroOrdem}`
+        : `/rastreamento/${numeroOrdem}`;
 
       const telefoneNormalizado = normalizarTelefone(data.telefone);
       const { data: clienteExistente } = await supabase
@@ -238,11 +251,12 @@ export default function AcessoOrdemPublica() {
         });
 
         toast.success(`${t('acessoOrdem.welcomeBack')} ${clienteExistente.nome}!`);
-        navigate(`/laudo-publico/${numeroOrdem}`);
+        navigate(destinoFinal);
       } else {
         setTelefoneVerificado(telefoneFormatado);
         setEtapa('dados');
       }
+
     } catch (error) {
       console.error("Erro ao verificar telefone:", error);
       toast.error(t('acessoOrdem.phoneError'));
@@ -262,7 +276,7 @@ export default function AcessoOrdemPublica() {
     try {
       const { data: ordensServico, error: ordemError } = await supabase
         .from("ordens_servico")
-        .select("id")
+        .select("id, recebimento_id")
         .eq("numero_ordem", numeroOrdem);
 
       if (ordemError) throw ordemError;
@@ -270,10 +284,28 @@ export default function AcessoOrdemPublica() {
       const ordemServico = await encontrarOrdemCorreta(ordensServico || []);
 
       if (!ordemServico) {
-        toast.error(t('acessoOrdem.orderNotFound'));
-        navigate("/");
+        const { data: recebimento } = await supabase
+          .from("recebimentos")
+          .select("id")
+          .eq("numero_ordem", numeroOrdem)
+          .limit(1)
+          .maybeSingle();
+
+        if (!recebimento) {
+          toast.error(t('acessoOrdem.orderNotFound'));
+          navigate("/");
+          return;
+        }
+
+        toast.success(t('acessoOrdem.dataSuccess'));
+        navigate(`/rastreamento/${numeroOrdem}`);
         return;
       }
+
+      const ordemFinalizada = await verificarOrdemFinalizada(
+        ordemServico.id,
+        ordemServico.recebimento_id ?? null
+      );
 
       const ipAcesso = await obterIP();
       const userAgent = navigator.userAgent;
@@ -290,7 +322,8 @@ export default function AcessoOrdemPublica() {
       if (insertError) throw insertError;
 
       toast.success(t('acessoOrdem.dataSuccess'));
-      navigate(`/laudo-publico/${numeroOrdem}`);
+      navigate(ordemFinalizada ? `/laudo-publico/${numeroOrdem}` : `/rastreamento/${numeroOrdem}`);
+
     } catch (error) {
       console.error("Erro ao registrar dados:", error);
       toast.error(t('acessoOrdem.dataError'));
@@ -314,7 +347,10 @@ export default function AcessoOrdemPublica() {
             <LanguageSelectorDropdown />
           </div>
 
-          <CardTitle className="text-2xl">{t('acessoOrdem.title')}</CardTitle>
+          <CardTitle className="text-2xl">
+            {searchParams.get('destino') === 'rastreamento' ? t('rastreamento.title') : t('acessoOrdem.title')}
+          </CardTitle>
+
           <CardDescription className="text-base">
             {etapa === 'telefone' ? (
               <>

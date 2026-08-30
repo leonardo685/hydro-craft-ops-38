@@ -84,8 +84,21 @@ export default function OrdemPorQRCode() {
 
         // Encontrar a ordem correta (prioriza a que está finalizada)
         const ordemServico = await encontrarOrdemCorreta(ordensServico || []);
-        
+
+        // Sem ordem de serviço: pode existir apenas o recebimento -> rastreamento
         if (!ordemServico) {
+          const { data: recebimento } = await supabase
+            .from("recebimentos")
+            .select("id")
+            .eq("numero_ordem", numeroOrdem)
+            .limit(1)
+            .maybeSingle();
+
+          if (recebimento) {
+            navigate(`/acesso-ordem/${numeroOrdem}?destino=rastreamento`);
+            return;
+          }
+
           toast.error("Ordem não encontrada");
           navigate("/");
           return;
@@ -99,13 +112,13 @@ export default function OrdemPorQRCode() {
           ordemServico.recebimento_id
         );
 
-        // Se a ordem está finalizada, permite acesso público
+        // Finalizada -> laudo; caso contrário -> rastreamento do serviço
         if (ordemFinalizada) {
           navigate(`/acesso-ordem/${numeroOrdem}`);
         } else {
-          toast.error("Esta ordem ainda não possui laudo disponível");
-          navigate("/");
+          navigate(`/acesso-ordem/${numeroOrdem}?destino=rastreamento`);
         }
+
       } catch (error) {
         console.error("Erro ao buscar ordem:", error);
         toast.error("Erro ao buscar ordem de serviço");
