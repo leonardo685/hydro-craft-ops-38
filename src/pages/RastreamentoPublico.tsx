@@ -214,90 +214,6 @@ export default function RastreamentoPublico() {
 
   const logo = empresa?.logo_url || defaultLogo;
 
-  const L = {
-    "pt-BR": {
-      titulo: "ORDEM DE SERVIÇO",
-      ordem: "Ordem",
-      cliente: "Cliente",
-      equipamento: "Equipamento",
-      entrada: "Data de entrada",
-      analise: "Data de análise",
-      tecnico: "Técnico",
-      dadosTecnicos: "DADOS TÉCNICOS",
-      problema: "PROBLEMA APRESENTADO",
-      solucao: "SOLUÇÃO PROPOSTA",
-      tipoProblema: "Tipo de problema",
-      categoria: "Categoria",
-      serie: "Nº de série",
-      camisa: "Camisa",
-      haste: "Haste",
-      curso: "Curso",
-      conexaoA: "Conexão A",
-      conexaoB: "Conexão B",
-      pressao: "Pressão de trabalho",
-      temperatura: "Temperatura",
-      fluido: "Fluido",
-      ambiente: "Ambiente",
-      potencia: "Potência",
-      local: "Local de instalação",
-      geradoEm: "Gerado em",
-    },
-    en: {
-      titulo: "SERVICE ORDER",
-      ordem: "Order",
-      cliente: "Client",
-      equipamento: "Equipment",
-      entrada: "Entry date",
-      analise: "Assessment date",
-      tecnico: "Technician",
-      dadosTecnicos: "TECHNICAL DATA",
-      problema: "REPORTED PROBLEM",
-      solucao: "PROPOSED SOLUTION",
-      tipoProblema: "Problem type",
-      categoria: "Category",
-      serie: "Serial number",
-      camisa: "Bore",
-      haste: "Rod",
-      curso: "Stroke",
-      conexaoA: "Connection A",
-      conexaoB: "Connection B",
-      pressao: "Working pressure",
-      temperatura: "Temperature",
-      fluido: "Fluid",
-      ambiente: "Environment",
-      potencia: "Power",
-      local: "Installation site",
-      geradoEm: "Generated on",
-    },
-    es: {
-      titulo: "ORDEN DE SERVICIO",
-      ordem: "Orden",
-      cliente: "Cliente",
-      equipamento: "Equipo",
-      entrada: "Fecha de entrada",
-      analise: "Fecha de análisis",
-      tecnico: "Técnico",
-      dadosTecnicos: "DATOS TÉCNICOS",
-      problema: "PROBLEMA PRESENTADO",
-      solucao: "SOLUCIÓN PROPUESTA",
-      tipoProblema: "Tipo de problema",
-      categoria: "Categoría",
-      serie: "Nº de serie",
-      camisa: "Camisa",
-      haste: "Vástago",
-      curso: "Carrera",
-      conexaoA: "Conexión A",
-      conexaoB: "Conexión B",
-      pressao: "Presión de trabajo",
-      temperatura: "Temperatura",
-      fluido: "Fluido",
-      ambiente: "Ambiente",
-      potencia: "Potencia",
-      local: "Lugar de instalación",
-      geradoEm: "Generado el",
-    },
-  }[language];
-
   const handleDownloadOrdem = async () => {
     const ordem = dados.ordem;
     if (!ordem) return;
@@ -305,107 +221,24 @@ export default function RastreamentoPublico() {
       setGerandoPdf(true);
       toast.loading(t("rastreamento.pdfGenerating"), { id: "pdf-ordem" });
 
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      let y = 15;
-
-      await addLogoToPDF(doc, empresa?.logo_url, pageWidth - 50, 8, 35, 20);
-
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text(empresa?.razao_social || empresa?.nome || "", 15, y);
-      y += 6;
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      if (empresa?.telefone) { doc.text(empresa.telefone, 15, y); y += 5; }
-      if (empresa?.email) { doc.text(empresa.email, 15, y); y += 5; }
-
-      y += 8;
-      doc.setFontSize(15);
-      doc.setFont("helvetica", "bold");
-      doc.text(`${L.titulo} ${dados.numeroOrdem}`, 15, y);
-      y += 4;
-      doc.setDrawColor(200);
-      doc.line(15, y, pageWidth - 15, y);
-      y += 8;
-
-      const linha = (label: string, valor?: string | null) => {
-        if (!valor) return;
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${label}:`, 15, y);
-        doc.setFont("helvetica", "normal");
-        const texto = doc.splitTextToSize(String(valor), pageWidth - 75);
-        doc.text(texto, 60, y);
-        y += texto.length * 5;
-        if (y > 270) { doc.addPage(); y = 20; }
-      };
-
-      const secao = (titulo: string) => {
-        y += 4;
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.text(titulo, 15, y);
-        y += 6;
-      };
-
-      linha(L.ordem, dados.numeroOrdem);
-      linha(L.cliente, dados.clienteNome);
-      linha(L.equipamento, translateTerm(dados.equipamento, language));
-      linha(L.entrada, formatarData(dados.dataEntrada));
-      linha(L.analise, formatarData(dados.dataAnalise));
-      linha(L.tecnico, ordem.tecnico);
-
-      const tecnicos: Array<[string, string | null]> = [
-        [L.categoria, ordem.categoria_equipamento ? translateTerm(ordem.categoria_equipamento, language) : null],
-        [L.serie, ordem.numero_serie],
-        [L.camisa, ordem.camisa],
-        [L.haste, ordem.haste_comprimento],
-        [L.curso, ordem.curso],
-        [L.conexaoA, ordem.conexao_a],
-        [L.conexaoB, ordem.conexao_b],
-        [L.pressao, ordem.pressao_trabalho],
-        [L.temperatura, ordem.temperatura_trabalho],
-        [L.fluido, ordem.fluido_trabalho ? translateTerm(ordem.fluido_trabalho, language) : null],
-        [L.ambiente, ordem.ambiente_trabalho ? translateTerm(ordem.ambiente_trabalho, language) : null],
-        [L.potencia, ordem.potencia],
-        [L.local, ordem.local_instalacao ? translateTerm(ordem.local_instalacao, language) : null],
-      ];
-      if (tecnicos.some(([, v]) => !!v)) {
-        secao(L.dadosTecnicos);
-        tecnicos.forEach(([label, valor]) => linha(label, valor));
+      let fotos: string[] = [];
+      if (ordem.recebimento_id) {
+        const { data: fotosData } = await supabase
+          .from("fotos_equipamentos")
+          .select("arquivo_url")
+          .eq("recebimento_id", ordem.recebimento_id)
+          .order("created_at", { ascending: true });
+        fotos = (fotosData || []).map((f: any) => f.arquivo_url).filter(Boolean);
       }
 
-      if (ordem.tipo_problema || ordem.descricao_problema) {
-        secao(L.problema);
-        linha(L.tipoProblema, ordem.tipo_problema ? translateTerm(ordem.tipo_problema, language) : null);
-        if (ordem.descricao_problema) {
-          doc.setFontSize(9);
-          doc.setFont("helvetica", "normal");
-          const texto = doc.splitTextToSize(translateTerm(ordem.descricao_problema, language), pageWidth - 30);
-          doc.text(texto, 15, y);
-          y += texto.length * 5;
-        }
-      }
+      await gerarAnaliseTecnicaPDF({
+        ordem,
+        recebimento: dados.recebimento,
+        fotos,
+        empresa: empresa as any,
+        language,
+      });
 
-      if (ordem.solucao_proposta) {
-        secao(L.solucao);
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        const texto = doc.splitTextToSize(translateTerm(ordem.solucao_proposta, language), pageWidth - 30);
-        doc.text(texto, 15, y);
-        y += texto.length * 5;
-      }
-
-      doc.setFontSize(8);
-      doc.setTextColor(130);
-      doc.text(
-        `${L.geradoEm}: ${format(new Date(), language === "pt-BR" ? "dd/MM/yyyy HH:mm" : "MM/dd/yyyy HH:mm", { locale: dateLocale })}`,
-        15,
-        doc.internal.pageSize.getHeight() - 10
-      );
-
-      doc.save(`${dados.numeroOrdem}.pdf`);
       toast.dismiss("pdf-ordem");
     } catch (error) {
       console.error("Erro ao gerar PDF da ordem:", error);
