@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import QRCode from "qrcode";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { DxfWriter, point3d } from "@tarikjabiri/dxf";
-const engrenagemLogo = "/__l5e/assets-v1/4ff2084a-2b38-48ea-8e13-9ef8fc063921/engrenagem-logo-preto.png";
+import engrenagemLogo from "@/assets/engrenagem-logo-preto.png";
 
 interface EquipmentLabelProps {
   equipment: {
