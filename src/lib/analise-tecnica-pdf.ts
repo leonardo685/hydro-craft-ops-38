@@ -347,5 +347,5 @@ export async function gerarAnaliseTecnicaPDF({
     doc.text(`${L.geradoEm}: ${new Date().toLocaleString(locale)}`, pageWidth - 20, 287, { align: "right" });
   }
 
-  doc.save(`analise-tecnica-${clienteNome}_${ordem.numero_ordem}.pdf`);
+  doc.save(`${ordem.numero_ordem || "ordem"}.pdf`);
 }
