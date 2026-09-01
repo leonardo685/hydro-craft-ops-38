@@ -21,8 +21,12 @@ import {
   type CustoVariavel,
   type ItemCilindro,
   calcularTotalCilindros,
+  type PrecificacaoLucroReal,
+  LUCRO_REAL_PADRAO,
 } from "@/lib/precificacao-utils";
 import { CustosCilindrosForm } from "@/components/CustosCilindrosForm";
+import { PrecificacaoLucroRealForm } from "@/components/PrecificacaoLucroRealForm";
+
 
 interface PrecificacaoModalProps {
   open: boolean;
