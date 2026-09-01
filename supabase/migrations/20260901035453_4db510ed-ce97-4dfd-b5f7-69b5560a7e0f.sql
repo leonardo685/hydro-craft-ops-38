@@ -1,0 +1,1 @@
+ALTER TABLE public.orcamentos ADD COLUMN IF NOT EXISTS precificacao_lucro_real jsonb NOT NULL DEFAULT '{}'::jsonb;
