@@ -19,7 +19,7 @@ import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 import { VincularOrdensModal } from "@/components/VincularOrdensModal";
 import jsPDF from "jspdf";
-import { applyMinimalPdfStyle } from "@/lib/pdf-minimal";
+import { applyMinimalPdfStyle, setPdfGridMode } from "@/lib/pdf-minimal";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -971,6 +971,7 @@ export default function Orcamentos() {
       yPosition += 8;
 
       // === CONDIÇÕES COMERCIAIS ===
+      setPdfGridMode(doc, true);
       yPosition += 10;
       
       // Verificar se precisa de nova página
@@ -1065,6 +1066,7 @@ export default function Orcamentos() {
         desenharCelulaComQuebraLinha('', 20 + col3Width * 2, yPosition, col3Width, 8)
       );
       yPosition += alturaLinha4;
+      setPdfGridMode(doc, false);
 
       // === OBSERVAÇÕES ===
       if (orcamento.descricao && orcamento.descricao.trim()) {

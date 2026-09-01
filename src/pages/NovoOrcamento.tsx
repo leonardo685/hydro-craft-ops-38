@@ -19,7 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FotoEquipamento } from "@/hooks/use-recebimentos";
 import jsPDF from "jspdf";
-import { applyMinimalPdfStyle } from "@/lib/pdf-minimal";
+import { applyMinimalPdfStyle, setPdfGridMode } from "@/lib/pdf-minimal";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -1879,6 +1879,7 @@ export default function NovoOrcamento() {
       yPosition += 10;
 
       // Condições Comerciais
+      setPdfGridMode(doc, true);
       const valorComDesconto = Number(revisao.valor) * (1 - (Number(revisao.desconto_percentual || 0) / 100));
       
       doc.setFillColor(220, 220, 220);
@@ -1958,6 +1959,8 @@ export default function NovoOrcamento() {
         yPosition += 8;
         yPosition += 10;
       }
+
+      setPdfGridMode(doc, false);
 
       // Tabela de Peças
       if (itensRevisaoOrganizados.pecas.length > 0) {
@@ -2516,6 +2519,7 @@ export default function NovoOrcamento() {
     yPosition += 10;
 
     // === CONDIÇÕES COMERCIAIS ===
+    setPdfGridMode(doc, true);
     const valorComDesconto = calcularValorComDesconto();
     const valorTotal = calcularTotalGeral();
     const dataValidade = new Date();
@@ -2612,6 +2616,7 @@ export default function NovoOrcamento() {
       doc.text(`${pdfT.freight}: ${frete}`, 22 + col3Width, yPosition + 5.5);
       yPosition += 8;
     }
+    setPdfGridMode(doc, false);
     yPosition += 7;
 
     // === DADOS TÉCNICOS DO EQUIPAMENTO ===
