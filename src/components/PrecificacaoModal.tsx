@@ -404,7 +404,31 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Seletor de regime tributário */}
+          <div className="flex gap-2">
+            <Button
+              variant={regime === "simples" ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => setRegime("simples")}
+            >
+              Simples Nacional
+            </Button>
+            <Button
+              variant={regime === "lucro_real" ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => setRegime("lucro_real")}
+            >
+              Lucro Real
+            </Button>
+          </div>
+
+          {regime === "lucro_real" && (
+            <PrecificacaoLucroRealForm dados={lucroReal} onChange={setLucroReal} />
+          )}
+
+          {regime === "simples" && (<>
           {/* Preço Desejado e Margem */}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="bg-primary/5 border-primary">
               <CardHeader className="pb-3">
