@@ -105,7 +105,7 @@ export function PrecificacaoLucroRealForm({ dados, onChange }: Props) {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold">R$</span>
+              <span className="text-xl font-bold">$</span>
               <Input
                 type="number"
                 step="0.01"
@@ -137,7 +137,7 @@ export function PrecificacaoLucroRealForm({ dados, onChange }: Props) {
         </Card>
       </div>
 
-      {renderLinhas("horas", "⏱️ Custos por hora", "R$/hora", r.totalHoras)}
+      {renderLinhas("horas", "⏱️ Custos por hora", "$/hora", r.totalHoras)}
 
       <Card>
         <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
@@ -188,8 +188,8 @@ export function PrecificacaoLucroRealForm({ dados, onChange }: Props) {
         </CardContent>
       </Card>
 
-      {renderLinhas("outrosCustos", "🔧 Outros custos", "R$ unit.", r.totalOutros)}
-      {renderLinhas("composicao", "🧾 Composição de preço", "R$ venda", r.precoAtual)}
+      {renderLinhas("outrosCustos", "🔧 Outros custos", "$ unit.", r.totalOutros)}
+      {renderLinhas("composicao", "🧾 Composição de preço", "$ venda", r.precoAtual)}
 
       <Card>
         <CardHeader className="pb-3">

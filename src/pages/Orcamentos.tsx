@@ -2304,7 +2304,7 @@ export default function Orcamentos() {
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
-                          <p><span className="font-medium">{t('orcamentos.value')}:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -2405,7 +2405,7 @@ export default function Orcamentos() {
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
-                          <p><span className="font-medium">{t('orcamentos.value')}:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -2492,7 +2492,7 @@ export default function Orcamentos() {
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
-                          <p><span className="font-medium">{t('orcamentos.value')}:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                           {extrairNumeroPedido(item.descricao) && (
                             <p><span className="font-medium">Nº Pedido:</span> {extrairNumeroPedido(item.descricao)}</p>
                           )}
@@ -2576,7 +2576,7 @@ export default function Orcamentos() {
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
-                          <p><span className="font-medium">{t('orcamentos.value')}:</span> R$ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">

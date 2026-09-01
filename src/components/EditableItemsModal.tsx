@@ -338,7 +338,7 @@ export function EditableItemsModal({ title, type, ordemId, onUpdate, children, c
         doc.text(`Peça: ${item.peca || 'N/A'}`, 35, yPosition + 7);
         doc.setFont("helvetica", "normal");
         doc.text(`Quantidade: ${item.quantidade || 'N/A'}`, 35, yPosition + 14);
-        doc.text(`Valor: R$ ${item.valor?.toFixed(2) || '0,00'}`, 35, yPosition + 21);
+        doc.text(`Valor: $ ${item.valor?.toFixed(2) || '0,00'}`, 35, yPosition + 21);
       } else {
         doc.text(`Operação: ${item.trabalho || 'N/A'}`, 35, yPosition + 7);
         doc.setFont("helvetica", "normal");
@@ -384,7 +384,7 @@ export function EditableItemsModal({ title, type, ordemId, onUpdate, children, c
                     />
                   </div>
                   <div>
-                    <Label>Valor (R$)</Label>
+                    <Label>Valor ($)</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -440,7 +440,7 @@ export function EditableItemsModal({ title, type, ordemId, onUpdate, children, c
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Quantidade: {item.quantidade}
-                    {type === 'pecas' && item.valor && ` • Valor: R$ ${item.valor.toFixed(2)}`}
+                    {type === 'pecas' && item.valor && ` • Valor: $ ${item.valor.toFixed(2)}`}
                   </div>
                   {compraStatus === 'cotando' && (
                     <div className="flex items-center gap-2 mt-2">
@@ -526,7 +526,7 @@ export function EditableItemsModal({ title, type, ordemId, onUpdate, children, c
                         />
                       </div>
                       <div>
-                        <Label>Valor (R$)</Label>
+                        <Label>Valor ($)</Label>
                         <Input
                           type="number"
                           step="0.01"

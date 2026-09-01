@@ -625,7 +625,7 @@ export function CompararCotacaoModal({ cotacaoId, open, onOpenChange }: Props) {
                                  step="0.01"
                                  key={`manual-${venc.valor_total_manual ?? ""}`}
                                  defaultValue={venc.valor_total_manual ?? ""}
-                                 placeholder="R$"
+                                 placeholder="$"
                                  className="h-8 text-right w-28"
                                  onBlur={(e) => {
                                    const cur = venc.valor_total_manual != null ? String(venc.valor_total_manual) : "";

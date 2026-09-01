@@ -454,7 +454,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold">R$</span>
+                  <span className="text-xl font-bold">$</span>
                   <Input
                     type="number"
                     value={precoDesejado}

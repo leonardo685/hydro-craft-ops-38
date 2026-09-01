@@ -73,7 +73,7 @@ export function CustosCilindrosForm({ itens, onChange }: Props) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {numInput("Ø Externo (mm)", "diametroExterno")}
             {numInput("Comprimento (mm)", "comprimento")}
-            {numInput("Valor/KG (R$)", "valorKg")}
+            {numInput("Valor/KG ($)", "valorKg")}
           </div>
         );
       case "tubo_brunido":
@@ -83,7 +83,7 @@ export function CustosCilindrosForm({ itens, onChange }: Props) {
             {numInput("Ø Externo (mm)", "diametroExterno")}
             {numInput("Ø Interno (mm)", "diametroInterno")}
             {numInput("Comprimento (mm)", "comprimento")}
-            {numInput("Valor/KG (R$)", "valorKg")}
+            {numInput("Valor/KG ($)", "valorKg")}
           </div>
         );
       case "sae1020_chapa":
@@ -92,7 +92,7 @@ export function CustosCilindrosForm({ itens, onChange }: Props) {
             {numInput("Espessura (mm)", "espessura")}
             {numInput("Largura (mm)", "largura")}
             {numInput("Comprimento (mm)", "comprimento")}
-            {numInput("Valor/KG (R$)", "valorKg")}
+            {numInput("Valor/KG ($)", "valorKg")}
           </div>
         );
       case "servico_cromo":
@@ -100,14 +100,14 @@ export function CustosCilindrosForm({ itens, onChange }: Props) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {numInput("Ø Haste (mm)", "diametroExterno")}
             {numInput("Comprimento (mm)", "comprimento")}
-            {numInput("Valor/Decímetro (R$)", "valorDecimetro")}
+            {numInput("Valor/Decímetro ($)", "valorDecimetro")}
           </div>
         );
       case "servico_brunimento":
         return (
           <div className="grid grid-cols-2 gap-2">
             {numInput("Horas", "horas")}
-            {numInput("Valor/Hora (R$)", "valorHora")}
+            {numInput("Valor/Hora ($)", "valorHora")}
           </div>
         );
     }

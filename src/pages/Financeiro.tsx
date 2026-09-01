@@ -389,7 +389,7 @@ export default function Financeiro() {
   const dashboardCards = [
     {
       title: "Faturamento Total",
-      value: "R$ 85.000,00",
+      value: "$ 85.000,00",
       change: "+12.3%",
       changeValue: 12.3,
       icon: DollarSign
@@ -403,7 +403,7 @@ export default function Financeiro() {
     },
     {
       title: "Lucro Líquido",
-      value: "R$ 5.200,00",
+      value: "$ 5.200,00",
       change: "+8.5%",
       changeValue: 8.5,
       icon: TrendingUp
@@ -1528,7 +1528,7 @@ export default function Financeiro() {
                 <ResponsiveContainer width="100%" height={400}>
                   <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <XAxis dataKey="mes" />
-                    <YAxis tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`} />
+                    <YAxis tickFormatter={(value) => `$ ${(value / 1000).toFixed(0)}k`} />
                     <Tooltip 
                       formatter={(value: number, name: string) => [
                         formatCurrency(value), 
@@ -1593,7 +1593,7 @@ export default function Financeiro() {
                 <ResponsiveContainer width="100%" height={400}>
                   <LineChart data={cashFlowData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <XAxis dataKey="mes" />
-                    <YAxis tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`} />
+                    <YAxis tickFormatter={(value) => `$ ${(value / 1000).toFixed(0)}k`} />
                     <Tooltip 
                       formatter={(value: number) => [formatCurrency(value), 'Geração Total']}
                       labelStyle={{ color: 'hsl(var(--foreground))' }}
@@ -2301,7 +2301,7 @@ export default function Financeiro() {
                                               Parcela {index + 1}/{lancamentoForm.numeroParcelas}
                                             </span>
                                             <span className="text-primary font-semibold whitespace-nowrap">
-                                              R$ {valorParcela.toFixed(2)}
+                                              $ {valorParcela.toFixed(2)}
                                             </span>
                                             <Popover>
                                               <PopoverTrigger asChild>
@@ -2723,7 +2723,7 @@ export default function Financeiro() {
                             <div className="flex-1">
                               <Label className="text-xs">Valor Mín.</Label>
                               <Input
-                                placeholder="R$ 0,00"
+                                placeholder="$ 0,00"
                                 type="number"
                                 step="0.01"
                                 className="h-8 text-xs"
@@ -2734,7 +2734,7 @@ export default function Financeiro() {
                             <div className="flex-1">
                               <Label className="text-xs">Valor Máx.</Label>
                               <Input
-                                placeholder="R$ 0,00"
+                                placeholder="$ 0,00"
                                 type="number"
                                 step="0.01"
                                 className="h-8 text-xs"
