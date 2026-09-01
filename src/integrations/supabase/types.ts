@@ -1845,6 +1845,7 @@ export type Database = {
           percentual_margem: number | null
           prazo_entrega: string | null
           prazo_pagamento: number | null
+          precificacao_lucro_real: Json
           preco_desejado: number | null
           status: string
           status_negociacao: string | null
@@ -1894,6 +1895,7 @@ export type Database = {
           percentual_margem?: number | null
           prazo_entrega?: string | null
           prazo_pagamento?: number | null
+          precificacao_lucro_real?: Json
           preco_desejado?: number | null
           status?: string
           status_negociacao?: string | null
@@ -1943,6 +1945,7 @@ export type Database = {
           percentual_margem?: number | null
           prazo_entrega?: string | null
           prazo_pagamento?: number | null
+          precificacao_lucro_real?: Json
           preco_desejado?: number | null
           status?: string
           status_negociacao?: string | null

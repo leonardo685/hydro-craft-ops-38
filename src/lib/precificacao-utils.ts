@@ -338,3 +338,92 @@ export const gerarPDFPrecificacao = async (orcamento: any) => {
     return false;
   }
 };
+
+// ============ Precificação Lucro Real ============
+
+export interface LinhaQtdValor {
+  descricao: string;
+  quantidade: number;
+  valorUnitario: number;
+}
+
+export interface LinhaPercentual {
+  descricao: string;
+  percentual: number;
+}
+
+export interface PrecificacaoLucroReal {
+  regime?: "simples" | "lucro_real";
+  precoBase: number;
+  horas: LinhaQtdValor[];
+  percentuais: LinhaPercentual[];
+  outrosCustos: LinhaQtdValor[];
+  composicao: LinhaQtdValor[];
+  impostoLucroPercentual: number;
+}
+
+export const LUCRO_REAL_PADRAO: PrecificacaoLucroReal = {
+  precoBase: 0,
+  horas: [
+    { descricao: "Hora torno", quantidade: 0, valorUnitario: 40 },
+    { descricao: "Hora shop", quantidade: 0, valorUnitario: 20 },
+  ],
+  percentuais: [
+    { descricao: "Fixas", percentual: 12 },
+    { descricao: "Insumos", percentual: 2 },
+  ],
+  outrosCustos: [
+    { descricao: "Depreciação torno", quantidade: 0, valorUnitario: 2 },
+    { descricao: "Vedações", quantidade: 0, valorUnitario: 150 },
+  ],
+  composicao: [
+    { descricao: "Torno", quantidade: 0, valorUnitario: 300 },
+    { descricao: "Shop", quantidade: 0, valorUnitario: 150 },
+    { descricao: "Vedações", quantidade: 0, valorUnitario: 150 },
+  ],
+  impostoLucroPercentual: 27,
+};
+
+export const totalLinhas = (linhas: LinhaQtdValor[] = []): number =>
+  linhas.reduce((acc, l) => acc + (Number(l.quantidade) || 0) * (Number(l.valorUnitario) || 0), 0);
+
+export interface ResultadoLucroReal {
+  totalHoras: number;
+  totalPercentuais: number;
+  totalOutros: number;
+  custoTotal: number;
+  precoAtual: number;
+  lucro: number;
+  imposto: number;
+  lucroReal: number;
+  percentualLucroReal: number;
+}
+
+export const calcularLucroReal = (dados: PrecificacaoLucroReal): ResultadoLucroReal => {
+  const precoBase = Number(dados.precoBase) || 0;
+  const totalHoras = totalLinhas(dados.horas);
+  const totalPercentuais = (dados.percentuais || []).reduce(
+    (acc, p) => acc + (precoBase * (Number(p.percentual) || 0)) / 100,
+    0,
+  );
+  const totalOutros = totalLinhas(dados.outrosCustos);
+  const custoTotal = totalHoras + totalPercentuais + totalOutros;
+  const composicao = totalLinhas(dados.composicao);
+  const precoAtual = composicao > 0 ? composicao : precoBase;
+  const lucro = precoBase - custoTotal;
+  const imposto = (lucro * (Number(dados.impostoLucroPercentual) || 0)) / 100;
+  const lucroReal = lucro - imposto;
+  const percentualLucroReal = precoBase > 0 ? (lucroReal / precoBase) * 100 : 0;
+
+  return {
+    totalHoras,
+    totalPercentuais,
+    totalOutros,
+    custoTotal,
+    precoAtual,
+    lucro,
+    imposto,
+    lucroReal,
+    percentualLucroReal,
+  };
+};
