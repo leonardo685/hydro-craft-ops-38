@@ -19,6 +19,7 @@ import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 import { VincularOrdensModal } from "@/components/VincularOrdensModal";
 import jsPDF from "jspdf";
+import { applyMinimalPdfStyle } from "@/lib/pdf-minimal";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -674,6 +675,8 @@ export default function Orcamentos() {
       const usinagem = itensData?.filter(i => i.tipo === 'usinagem') || [];
 
       const doc = new jsPDF();
+
+      applyMinimalPdfStyle(doc);
       const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
       let yPosition = 10;

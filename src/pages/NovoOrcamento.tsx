@@ -19,6 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FotoEquipamento } from "@/hooks/use-recebimentos";
 import jsPDF from "jspdf";
+import { applyMinimalPdfStyle } from "@/lib/pdf-minimal";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -1756,6 +1757,8 @@ export default function NovoOrcamento() {
       };
 
       const doc = new jsPDF();
+
+      applyMinimalPdfStyle(doc);
       const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
       let yPosition = 10;
@@ -2302,6 +2305,8 @@ export default function NovoOrcamento() {
     };
 
     const doc = new jsPDF();
+
+    applyMinimalPdfStyle(doc);
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     let yPosition = 10;
