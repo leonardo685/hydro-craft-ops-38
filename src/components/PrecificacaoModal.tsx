@@ -44,6 +44,9 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
   const [percentuaisCustomizados, setPercentuaisCustomizados] = useState<CustoVariavel[]>([]);
   const [custosVariaveis, setCustosVariaveis] = useState<CustoVariavel[]>([]);
   const [custosCilindros, setCustosCilindros] = useState<ItemCilindro[]>([]);
+  const [regime, setRegime] = useState<"simples" | "lucro_real">("simples");
+  const [lucroReal, setLucroReal] = useState<PrecificacaoLucroReal>(LUCRO_REAL_PADRAO);
+
   const [salvando, setSalvando] = useState(false);
   const [historicoPrecificacao, setHistoricoPrecificacao] = useState<any[]>([]);
   const [carregandoHistorico, setCarregandoHistorico] = useState(false);
