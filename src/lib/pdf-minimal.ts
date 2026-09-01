@@ -64,3 +64,12 @@ export function applyMinimalPdfStyle(doc: jsPDF) {
 
   return doc;
 }
+
+/**
+ * Liga/desliga o modo grade: enquanto ligado, retângulos sem preenchimento
+ * voltam a ser desenhados com todas as bordas da célula (usado nas
+ * Condições Comerciais, onde a grade ajuda na leitura).
+ */
+export function setPdfGridMode(doc: jsPDF, enabled: boolean) {
+  (doc as any).__gridMode = enabled;
+}
