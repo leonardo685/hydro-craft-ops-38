@@ -10,10 +10,20 @@ export function installCurrencySymbolNormalization() {
   if (anyGlobal.__currencySymbolPatched) return;
   anyGlobal.__currencySymbolPatched = true;
 
-  const originalFormat = Intl.NumberFormat.prototype.format;
-  Intl.NumberFormat.prototype.format = function (value: number) {
-    return stripR(originalFormat.call(this, value));
-  };
+  // `Intl.NumberFormat.prototype.format` é um getter que devolve uma função
+  // vinculada à instância — precisa ser envolvido pelo próprio getter.
+  const descriptor = Object.getOwnPropertyDescriptor(Intl.NumberFormat.prototype, "format");
+  if (descriptor?.get) {
+    const originalGetter = descriptor.get;
+    Object.defineProperty(Intl.NumberFormat.prototype, "format", {
+      ...descriptor,
+      get() {
+        const bound = originalGetter.call(this) as (value: number) => string;
+        return (value: number) => stripR(bound(value));
+      },
+    });
+  }
+
 
   const originalToLocaleString = Number.prototype.toLocaleString;
   Number.prototype.toLocaleString = function (...args: any[]) {
