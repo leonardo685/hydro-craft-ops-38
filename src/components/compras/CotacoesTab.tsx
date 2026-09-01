@@ -163,15 +163,15 @@ export function CotacoesTab() {
           const preco = p?.preco_unitario != null ? Number(p.preco_unitario) : null;
           const total = preco != null ? preco * Number(it.quantidade) : null;
           if (total != null) totalForn += total;
-          doc.text(preco != null ? `R$ ${preco.toFixed(2)}` : "—", 110, y, { align: "right" });
+          doc.text(preco != null ? `$ ${preco.toFixed(2)}` : "—", 110, y, { align: "right" });
           doc.text(p?.prazo_entrega_dias != null ? `${p.prazo_entrega_dias}d` : "—", 140, y, { align: "right" });
-          doc.text(total != null ? `R$ ${total.toFixed(2)}` : "—", pageWidth - 16, y, { align: "right" });
+          doc.text(total != null ? `$ ${total.toFixed(2)}` : "—", pageWidth - 16, y, { align: "right" });
           y += Math.max(desc.length * 4, 5) + 1;
         });
         doc.setFont("helvetica", "bold");
         doc.line(14, y, pageWidth - 14, y);
         y += 4;
-        doc.text(`Total: R$ ${totalForn.toFixed(2)}`, pageWidth - 16, y, { align: "right" });
+        doc.text(`Total: $ ${totalForn.toFixed(2)}`, pageWidth - 16, y, { align: "right" });
         y += 6;
         if (f.observacao_resposta) {
           doc.setFont("helvetica", "italic");

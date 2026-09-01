@@ -1675,14 +1675,14 @@ export default function DFC() {
                           <YAxis 
                             yAxisId="left"
                             tick={{ fontSize: 12 }}
-                            tickFormatter={(value) => formatCurrency(value).replace('R$', '').trim()}
+                            tickFormatter={(value) => formatCurrency(value).replace('$', '').trim()}
                             className="text-muted-foreground"
                           />
                           <YAxis 
                             yAxisId="right"
                             orientation="right"
                             tick={{ fontSize: 12 }}
-                            tickFormatter={(value) => formatCurrency(value).replace('R$', '').trim()}
+                            tickFormatter={(value) => formatCurrency(value).replace('$', '').trim()}
                             className="text-muted-foreground"
                           />
                           <Tooltip 
@@ -2042,7 +2042,7 @@ export default function DFC() {
                                             Parcela {index + 1}/{lancamentoForm.numeroParcelas}
                                           </span>
                                           <span className="text-primary font-semibold whitespace-nowrap">
-                                            R$ {valorParcela.toFixed(2)}
+                                            $ {valorParcela.toFixed(2)}
                                           </span>
                                           <Popover>
                                             <PopoverTrigger asChild>
@@ -2305,7 +2305,7 @@ export default function DFC() {
 
                       <div className="space-y-2">
                         <Label className="text-xs">Valor Mínimo</Label>
-                        <Input type="number" placeholder="R$ 0,00" value={filtrosExtrato.valorMinimo} onChange={e => setFiltrosExtrato(prev => ({
+                        <Input type="number" placeholder="$ 0,00" value={filtrosExtrato.valorMinimo} onChange={e => setFiltrosExtrato(prev => ({
                       ...prev,
                       valorMinimo: e.target.value
                     }))} className="h-9" />
@@ -2313,7 +2313,7 @@ export default function DFC() {
 
                       <div className="space-y-2">
                         <Label className="text-xs">Valor Máximo</Label>
-                        <Input type="number" placeholder="R$ 0,00" value={filtrosExtrato.valorMaximo} onChange={e => setFiltrosExtrato(prev => ({
+                        <Input type="number" placeholder="$ 0,00" value={filtrosExtrato.valorMaximo} onChange={e => setFiltrosExtrato(prev => ({
                       ...prev,
                       valorMaximo: e.target.value
                     }))} className="h-9" />

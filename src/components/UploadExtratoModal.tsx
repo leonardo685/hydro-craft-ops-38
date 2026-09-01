@@ -1270,7 +1270,7 @@ export function UploadExtratoModal({
                           </span>
                         </TableCell>
                         <TableCell className="font-medium">
-                          R$ {transacao.valor.toFixed(2)}
+                          $ {transacao.valor.toFixed(2)}
                         </TableCell>
                         <TableCell>
                           <Select 
@@ -1345,11 +1345,11 @@ export function UploadExtratoModal({
               <div className="flex gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">Entradas:</span>
-                  <span className="font-medium text-green-600">R$ {totalEntradas.toFixed(2)}</span>
+                  <span className="font-medium text-green-600">$ {totalEntradas.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">Saídas:</span>
-                  <span className="font-medium text-red-600">R$ {totalSaidas.toFixed(2)}</span>
+                  <span className="font-medium text-red-600">$ {totalSaidas.toFixed(2)}</span>
                 </div>
               </div>
             </div>

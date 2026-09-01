@@ -250,7 +250,7 @@ export default function DashboardFaturamento() {
                       <XAxis dataKey="mes" className="text-xs fill-muted-foreground" />
                       <YAxis
                         className="text-xs fill-muted-foreground"
-                        tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+                        tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
                       />
                       <Tooltip
                         formatter={(value: number) => [formatCurrency(value), "Faturado"]}

@@ -210,7 +210,7 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
         doc.text(`Peça: ${item.peca || item.descricao || 'N/A'}`, 35, yPosition + 7);
         doc.setFont("helvetica", "normal");
         doc.text(`Quantidade: ${item.quantidade || 'N/A'}`, 35, yPosition + 14);
-        doc.text(`Valor: R$ ${item.valor?.toFixed(2) || '0,00'}`, 35, yPosition + 21);
+        doc.text(`Valor: $ ${item.valor?.toFixed(2) || '0,00'}`, 35, yPosition + 21);
       } else if (type === 'usinagem') {
         doc.text(`Operação: ${item.trabalho || item.operacao || item.descricao || 'N/A'}`, 35, yPosition + 7);
         doc.setFont("helvetica", "normal");
@@ -260,7 +260,7 @@ export function ItemSelectionModal({ title, items, type, children, ordemId }: It
             <>
               <p className="font-medium">{item.peca || item.descricao || t('modals.itemNotSpecified')}</p>
               <p className="text-sm text-muted-foreground">
-                {t('modals.quantity')}: {item.quantidade || 'N/A'} | {t('common.value')}: R$ {item.valor?.toFixed(2) || '0,00'}
+                {t('modals.quantity')}: {item.quantidade || 'N/A'} | {t('common.value')}: $ {item.valor?.toFixed(2) || '0,00'}
               </p>
             </>
           )}

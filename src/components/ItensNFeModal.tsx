@@ -186,10 +186,10 @@ export function ItensNFeModal({
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        R$ {item.valorUnitario.toFixed(2)}
+                        $ {item.valorUnitario.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        R$ {item.valorTotal.toFixed(2)}
+                        $ {item.valorTotal.toFixed(2)}
                       </TableCell>
                       <TableCell>
                         {temOrdem ? (

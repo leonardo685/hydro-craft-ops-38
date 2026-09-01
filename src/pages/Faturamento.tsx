@@ -685,7 +685,7 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                           <div>
                             <p className="text-sm text-muted-foreground">Valor do Orçamento</p>
                             <p className="text-xl font-bold text-primary">
-                              R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              $ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </p>
                           </div>
                           <div>

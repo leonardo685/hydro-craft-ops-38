@@ -1099,7 +1099,7 @@ III - Faturamento ${dadosAprovacao.prazoPagamento}.`;
                                     />
                                   </PopoverContent>
                                 </Popover>
-                                <span className="font-semibold text-green-600 min-w-[90px] text-right">R$ {parcela.valor.toFixed(2)}</span>
+                                <span className="font-semibold text-green-600 min-w-[90px] text-right">$ {parcela.valor.toFixed(2)}</span>
                               </div>
                             ))}
                           </div>

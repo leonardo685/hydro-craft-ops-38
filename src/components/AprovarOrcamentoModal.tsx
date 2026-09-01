@@ -219,7 +219,7 @@ export const AprovarOrcamentoModal = ({
           prazo_pagamento: formData.prazoPagamento,
           data_vencimento: formData.dataVencimento,
           numero_pedido: formData.numeroPedido,
-          descricao: `${orcamento.descricao || ''}\n\nDetalhes da Aprovação:\n- Valor Original: R$ ${formData.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Desconto: ${formData.descontoPercentual}%\n- Valor Final: R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Prazo de Pagamento: ${formData.prazoPagamento} dias\n- Data de Vencimento: ${new Date(formData.dataVencimento).toLocaleDateString('pt-BR')}\n- Número do Pedido: ${formData.numeroPedido}${anexoUrl ? `\n- Anexo do Pedido: ${anexoUrl}` : ''}${formData.observacoes ? `\n- Observações: ${formData.observacoes}` : ''}`.trim()
+          descricao: `${orcamento.descricao || ''}\n\nDetalhes da Aprovação:\n- Valor Original: $ ${formData.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Desconto: ${formData.descontoPercentual}%\n- Valor Final: $ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Prazo de Pagamento: ${formData.prazoPagamento} dias\n- Data de Vencimento: ${new Date(formData.dataVencimento).toLocaleDateString('pt-BR')}\n- Número do Pedido: ${formData.numeroPedido}${anexoUrl ? `\n- Anexo do Pedido: ${anexoUrl}` : ''}${formData.observacoes ? `\n- Observações: ${formData.observacoes}` : ''}`.trim()
         })
         .eq('id', orcamento.id);
 
@@ -320,7 +320,7 @@ export const AprovarOrcamentoModal = ({
         tipo: 'orcamento_aprovado',
         numero: orcamento.numero,
         cliente: orcamento.cliente_nome,
-        valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        valor: `$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
         numeroPedido: formData.numeroPedido,
         data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
         ordem_servico_aprovada: orcamento.ordem_servico_id ? true : false,
@@ -347,7 +347,7 @@ export const AprovarOrcamentoModal = ({
           numero_ordem: ordemServicoNumero,
           cliente: orcamento.cliente_nome,
           equipamento: tipoEquipamento || orcamento.equipamento || 'Equipamento não especificado',
-          valor: `R$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          valor: `$ ${formData.valorComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
           orcamento_numero: orcamento.numero,
           empresa: empresaAtual?.nome || 'N/A'
@@ -405,7 +405,7 @@ export const AprovarOrcamentoModal = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="valor">Valor Original (R$) *</Label>
+              <Label htmlFor="valor">Valor Original ($) *</Label>
               <Input
                 id="valor"
                 type="number"
@@ -431,7 +431,7 @@ export const AprovarOrcamentoModal = ({
           </div>
 
           <div>
-            <Label htmlFor="valorFinal">Valor Final (R$)</Label>
+            <Label htmlFor="valorFinal">Valor Final ($)</Label>
             <Input
               id="valorFinal"
               type="number"

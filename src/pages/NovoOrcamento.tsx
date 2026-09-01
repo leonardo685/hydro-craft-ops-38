@@ -1891,7 +1891,7 @@ export default function NovoOrcamento() {
       doc.text("Condições Comerciais", pageWidth / 2, yPosition + 7, { align: "center" });
       yPosition += 10;
       
-      const valorTotalFormatado = `R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+      const valorTotalFormatado = `$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
       const condicaoPagamento = revisao.condicao_pagamento || 'A combinar';
       const assunto = revisao.assunto_proposta || revisao.equipamento || 'REFORMA/MANUTENÇÃO';
       const prazoEntrega = revisao.prazo_entrega || '5 dias úteis';
@@ -1930,8 +1930,8 @@ export default function NovoOrcamento() {
         const saleTaxRate = 0.085;
         const saleTaxValue = valorComDesconto * saleTaxRate;
         const totalWithTax = valorComDesconto + saleTaxValue;
-        const saleTaxFormatado = `R$ ${saleTaxValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-        const totalWithTaxFormatado = `R$ ${totalWithTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+        const saleTaxFormatado = `$ ${saleTaxValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+        const totalWithTaxFormatado = `$ ${totalWithTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
         
         doc.rect(20, yPosition, col3Width, 8);
         doc.rect(20 + col3Width, yPosition, col3Width, 8);
@@ -2015,9 +2015,9 @@ export default function NovoOrcamento() {
           doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
           doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
           
-          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
+          const valorUnit = item.valorUnitario > 0 ? `$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
           doc.text(valorUnit, colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
-          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
+          const valorTot = item.valorTotal > 0 ? `$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
           doc.text(valorTot, colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
           totalPecas += item.valorTotal;
 
@@ -2037,7 +2037,7 @@ export default function NovoOrcamento() {
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
-        const totalPecasTexto = totalPecas > 0 ? `R$ ${totalPecas.toFixed(2).replace('.', ',')}` : '';
+        const totalPecasTexto = totalPecas > 0 ? `$ ${totalPecas.toFixed(2).replace('.', ',')}` : '';
         doc.text(totalPecasTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
         yPosition += 15;
@@ -2099,9 +2099,9 @@ export default function NovoOrcamento() {
           doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
           doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
           
-          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
+          const valorUnit = item.valorUnitario > 0 ? `$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
           doc.text(valorUnit, colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
-          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
+          const valorTot = item.valorTotal > 0 ? `$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
           doc.text(valorTot, colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
           totalServicos += item.valorTotal;
 
@@ -2121,7 +2121,7 @@ export default function NovoOrcamento() {
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
-        const totalServicosTexto = totalServicos > 0 ? `R$ ${totalServicos.toFixed(2).replace('.', ',')}` : '';
+        const totalServicosTexto = totalServicos > 0 ? `$ ${totalServicos.toFixed(2).replace('.', ',')}` : '';
         doc.text(totalServicosTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
         yPosition += 15;
@@ -2183,9 +2183,9 @@ export default function NovoOrcamento() {
           doc.text(item.quantidade.toString(), colQtd + (colQtdWidth / 2), yPosition + 5.5, { align: 'center' });
           doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
           
-          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
+          const valorUnit = item.valorUnitario > 0 ? `$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
           doc.text(valorUnit, colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
-          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
+          const valorTot = item.valorTotal > 0 ? `$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
           doc.text(valorTot, colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
           totalUsinagem += item.valorTotal;
 
@@ -2205,7 +2205,7 @@ export default function NovoOrcamento() {
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
-        const totalUsinagemTexto = totalUsinagem > 0 ? `R$ ${totalUsinagem.toFixed(2)}` : '';
+        const totalUsinagemTexto = totalUsinagem > 0 ? `$ ${totalUsinagem.toFixed(2)}` : '';
         doc.text(totalUsinagemTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
         
         yPosition += 15;
@@ -2543,7 +2543,7 @@ export default function NovoOrcamento() {
     doc.text(pdfT.commercialConditions, pageWidth / 2, yPosition + 7, { align: "center" });
     yPosition += 10;
     
-    const valorTotalFormatado = `R$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+    const valorTotalFormatado = `$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
     const condicaoPagamento = informacoesComerciais.condicaoPagamento || 'A combinar';
     const dataGeracao = new Date().toLocaleDateString('pt-BR');
     const validadeProposta = informacoesComerciais.validadeProposta 
@@ -2587,8 +2587,8 @@ export default function NovoOrcamento() {
       const saleTaxRate = 0.085;
       const saleTaxValue = valorComDesconto * saleTaxRate;
       const totalWithTax = valorComDesconto + saleTaxValue;
-      const saleTaxFormatado = `R$ ${saleTaxValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-      const totalWithTaxFormatado = `R$ ${totalWithTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+      const saleTaxFormatado = `$ ${saleTaxValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+      const totalWithTaxFormatado = `$ ${totalWithTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
       
       doc.rect(20, yPosition, col3Width, 8);
       doc.rect(20 + col3Width, yPosition, col3Width, 8);
@@ -2795,9 +2795,9 @@ export default function NovoOrcamento() {
         doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
         
         if (informacoesComerciais.mostrarValores !== false) {
-          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
+          const valorUnit = item.valorUnitario > 0 ? `$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
           doc.text(valorUnit, colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
-          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
+          const valorTot = item.valorTotal > 0 ? `$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
           doc.text(valorTot, colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
           totalPecas += item.valorTotal;
         }
@@ -2820,7 +2820,7 @@ export default function NovoOrcamento() {
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
-        const totalPecasTexto = totalPecas > 0 ? `R$ ${totalPecas.toFixed(2).replace('.', ',')}` : '';
+        const totalPecasTexto = totalPecas > 0 ? `$ ${totalPecas.toFixed(2).replace('.', ',')}` : '';
         doc.text(totalPecasTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
       }
       
@@ -2890,9 +2890,9 @@ export default function NovoOrcamento() {
         doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
         
         if (informacoesComerciais.mostrarValores !== false) {
-          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
+          const valorUnit = item.valorUnitario > 0 ? `$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
           doc.text(valorUnit, colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
-          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
+          const valorTot = item.valorTotal > 0 ? `$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
           doc.text(valorTot, colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
           totalServicos += item.valorTotal;
         }
@@ -2915,7 +2915,7 @@ export default function NovoOrcamento() {
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
-        const totalServicosTexto = totalServicos > 0 ? `R$ ${totalServicos.toFixed(2).replace('.', ',')}` : '';
+        const totalServicosTexto = totalServicos > 0 ? `$ ${totalServicos.toFixed(2).replace('.', ',')}` : '';
         doc.text(totalServicosTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
       }
       
@@ -2985,9 +2985,9 @@ export default function NovoOrcamento() {
         doc.text(item.codigo || '-', colCodigo + (colCodigoWidth / 2), yPosition + 5.5, { align: 'center' });
         
         if (informacoesComerciais.mostrarValores !== false) {
-          const valorUnit = item.valorUnitario > 0 ? `R$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
+          const valorUnit = item.valorUnitario > 0 ? `$ ${item.valorUnitario.toFixed(2).replace('.', ',')}` : '';
           doc.text(valorUnit, colValorUnit + colValorUnitWidth - 2, yPosition + 5.5, { align: 'right' });
-          const valorTot = item.valorTotal > 0 ? `R$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
+          const valorTot = item.valorTotal > 0 ? `$ ${item.valorTotal.toFixed(2).replace('.', ',')}` : '';
           doc.text(valorTot, colTotal + colTotalWidth - 2, yPosition + 5.5, { align: 'right' });
           totalUsinagem += item.valorTotal;
         }
@@ -3010,7 +3010,7 @@ export default function NovoOrcamento() {
         
         const valorBoxX = boxX + boxWidth;
         doc.rect(valorBoxX, yPosition, 25, boxHeight);
-        const totalUsinagemTexto = totalUsinagem > 0 ? `R$ ${totalUsinagem.toFixed(2)}` : '';
+        const totalUsinagemTexto = totalUsinagem > 0 ? `$ ${totalUsinagem.toFixed(2)}` : '';
         doc.text(totalUsinagemTexto, valorBoxX + 23, yPosition + 5.5, { align: 'right' });
       }
       
@@ -3669,7 +3669,7 @@ export default function NovoOrcamento() {
                           <Input type="number" step="0.01" min="0" value={peca.valorUnitario} onChange={e => atualizarValorItem('pecas', peca.id, parseFloat(e.target.value) || 0)} className="w-24 text-right" />
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          R$ {peca.valorTotal.toLocaleString('pt-BR', {
+                          $ {peca.valorTotal.toLocaleString('pt-BR', {
                       minimumFractionDigits: 2
                     })}
                         </TableCell>
@@ -3684,7 +3684,7 @@ export default function NovoOrcamento() {
                 {itensAnalise.pecas.length > 0 && (
                   <div className="mt-4 pt-4 border-t flex justify-end">
                     <div className="text-lg font-bold">
-                      {t('novoOrcamento.partsTotal')}: R$ {itensAnalise.pecas.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {t('novoOrcamento.partsTotal')}: $ {itensAnalise.pecas.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                 )}
@@ -3761,7 +3761,7 @@ export default function NovoOrcamento() {
                           <Input type="number" step="0.01" min="0" value={servico.valorUnitario} onChange={e => atualizarValorItem('servicos', servico.id, parseFloat(e.target.value) || 0)} className="w-24 text-right" />
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          R$ {servico.valorTotal.toLocaleString('pt-BR', {
+                          $ {servico.valorTotal.toLocaleString('pt-BR', {
                       minimumFractionDigits: 2
                     })}
                         </TableCell>
@@ -3776,7 +3776,7 @@ export default function NovoOrcamento() {
                 {itensAnalise.servicos.length > 0 && (
                   <div className="mt-4 pt-4 border-t flex justify-end">
                     <div className="text-lg font-bold">
-                      {t('novoOrcamento.servicesTotal')}: R$ {itensAnalise.servicos.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {t('novoOrcamento.servicesTotal')}: $ {itensAnalise.servicos.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                 )}
@@ -3853,7 +3853,7 @@ export default function NovoOrcamento() {
                           <Input type="number" step="0.01" min="0" value={usinagem.valorUnitario} onChange={e => atualizarValorItem('usinagem', usinagem.id, parseFloat(e.target.value) || 0)} className="w-24 text-right" />
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          R$ {usinagem.valorTotal.toLocaleString('pt-BR', {
+                          $ {usinagem.valorTotal.toLocaleString('pt-BR', {
                       minimumFractionDigits: 2
                     })}
                         </TableCell>
@@ -3868,7 +3868,7 @@ export default function NovoOrcamento() {
                 {itensAnalise.usinagem.length > 0 && (
                   <div className="mt-4 pt-4 border-t flex justify-end">
                     <div className="text-lg font-bold">
-                      {t('novoOrcamento.machiningTotal')}: R$ {itensAnalise.usinagem.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {t('novoOrcamento.machiningTotal')}: $ {itensAnalise.usinagem.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                 )}
@@ -3928,7 +3928,7 @@ export default function NovoOrcamento() {
                       }));
                       toast({
                         title: t('novoOrcamento.valueRecalculated'),
-                        description: `${t('novoOrcamento.valueUpdatedTo')} R$ ${totalCalculado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                        description: `${t('novoOrcamento.valueUpdatedTo')} $ ${totalCalculado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                       });
                     }}
                     className="whitespace-nowrap"
@@ -3946,7 +3946,7 @@ export default function NovoOrcamento() {
               </div>
               <div>
                 <Label htmlFor="valorComDesconto">{t('novoOrcamento.valueWithDiscount')}</Label>
-                <Input id="valorComDesconto" value={`R$ ${calcularValorComDesconto().toLocaleString('pt-BR', {
+                <Input id="valorComDesconto" value={`$ ${calcularValorComDesconto().toLocaleString('pt-BR', {
                 minimumFractionDigits: 2
               })}`} disabled className="bg-muted font-medium" />
               </div>

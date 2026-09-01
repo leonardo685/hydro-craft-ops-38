@@ -128,7 +128,7 @@ export function VincularOrdensModal({
   const enviarWebhookOrdemAprovada = async (ordem: any) => {
     const numeroOrdem = ordem.recebimentos?.numero_ordem || ordem.numero_ordem;
     const tipoEquipamento = ordem.recebimentos?.tipo_equipamento || ordem.equipamento || 'Equipamento não especificado';
-    const valorFormatado = `R$ ${(orcamento.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const valorFormatado = `$ ${(orcamento.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     const payload = {
       tipo: 'ordem_aprovada',

@@ -123,7 +123,7 @@ export default function ProcessoInterno() {
           list.push({
             area: "Orçamento",
             status: o.status,
-            detalhes: `Nº ${o.numero} • R$ ${Number(o.valor || 0).toFixed(2)}`,
+            detalhes: `Nº ${o.numero} • $ ${Number(o.valor || 0).toFixed(2)}`,
             link: `/orcamentos`,
             icon: FileText,
             variant: o.status === "aprovado" ? "default" : "secondary",

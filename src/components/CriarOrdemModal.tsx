@@ -257,10 +257,10 @@ export function CriarOrdemModal({ open, onClose, notaFiscal }: CriarOrdemModalPr
                             <TableCell className="text-sm max-w-[200px] truncate">{item.descricao}</TableCell>
                             <TableCell className="text-center">{item.quantidade}</TableCell>
                             <TableCell className="text-right">
-                              R$ {(item.valor_unitario || 0).toFixed(2)}
+                              $ {(item.valor_unitario || 0).toFixed(2)}
                             </TableCell>
                             <TableCell className="text-right font-medium">
-                              R$ {(item.valor_total || 0).toFixed(2)}
+                              $ {(item.valor_total || 0).toFixed(2)}
                             </TableCell>
                             <TableCell>
                               {todasCriadas ? (
