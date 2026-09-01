@@ -334,6 +334,8 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
           total_custos_cilindros: totalCustosCilindros,
           margem_contribuicao: margemContribuicao,
           percentual_margem: percentualMargem,
+          precificacao_lucro_real: { ...lucroReal, regime },
+
         } as any)
         .eq("id", orcamento.id);
 
