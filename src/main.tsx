@@ -2,6 +2,10 @@ import { createRoot } from 'react-dom/client'
 import { ThemeProvider } from "next-themes"
 import App from './App.tsx'
 import './index.css'
+import { installCurrencySymbolNormalization } from './lib/currency-symbol'
+
+installCurrencySymbolNormalization();
+
 
 const isLovablePreview =
   window.location.hostname.includes('lovableproject.com') ||
