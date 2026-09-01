@@ -82,7 +82,18 @@ const DICT: Array<[string, { en: string; es: string }]> = [
   ["calço de teflon", { en: "teflon shim", es: "calce de teflón" }],
   ["ambiente comum", { en: "standard environment", es: "ambiente común" }],
   ["ambiente agressivo", { en: "aggressive environment", es: "ambiente agresivo" }],
+  ["ambiente quente", { en: "high temperature", es: "alta temperatura" }],
+  ["temperatura elevada", { en: "high temperature", es: "alta temperatura" }],
+  ["alta temperatura", { en: "high temperature", es: "alta temperatura" }],
+  ["baixa temperatura", { en: "low temperature", es: "baja temperatura" }],
+  ["muito quente", { en: "very high temperature", es: "muy caliente" }],
   ["muito agressivo", { en: "very aggressive", es: "muy agresivo" }],
+  ["quente", { en: "high temperature", es: "alta temperatura" }],
+  ["frio", { en: "low temperature", es: "baja temperatura" }],
+  ["úmido", { en: "humid", es: "húmedo" }],
+  ["umido", { en: "humid", es: "húmedo" }],
+  ["seco", { en: "dry", es: "seco" }],
+
 
   // ─── Palavras isoladas ───
   ["hidráulico", { en: "hydraulic", es: "hidráulico" }],
