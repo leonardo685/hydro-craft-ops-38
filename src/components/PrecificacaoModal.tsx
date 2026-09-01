@@ -105,7 +105,16 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
       setPercentuaisCustomizados(orcamento.percentuais_customizados || []);
       setCustosVariaveis(orcamento.custos_variaveis || []);
       setCustosCilindros(orcamento.custos_cilindros || []);
+      const lr = (orcamento as any).precificacao_lucro_real;
+      if (lr && typeof lr === "object" && Object.keys(lr).length > 0) {
+        setLucroReal({ ...LUCRO_REAL_PADRAO, ...lr });
+        setRegime(lr.regime === "lucro_real" ? "lucro_real" : "simples");
+      } else {
+        setLucroReal({ ...LUCRO_REAL_PADRAO, precoBase: orcamento.preco_desejado || 0 });
+        setRegime("simples");
+      }
     }
+
   }, [orcamento]);
 
   useEffect(() => {
