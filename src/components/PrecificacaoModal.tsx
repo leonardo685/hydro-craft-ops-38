@@ -793,8 +793,9 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
               </CardContent>
             </Card>
           )}
-
+          </>)}
         </div>
+
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose}>
