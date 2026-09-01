@@ -38,6 +38,12 @@ export function applyMinimalPdfStyle(doc: jsPDF) {
 
   anyDoc.rect = (x: number, y: number, w: number, h: number, style?: string) => {
     if (!style) {
+      if (anyDoc.__gridMode) {
+        // Modo grade: mantém as bordas completas da célula (sutis)
+        doc.setDrawColor(205, 205, 205);
+        doc.setLineWidth(0.2);
+        return originalRect(x, y, w, h, "S");
+      }
       // Sem preenchimento = era só grade: desenha apenas divisória inferior
       doc.setDrawColor(228, 228, 228);
       doc.setLineWidth(0.2);
@@ -45,6 +51,7 @@ export function applyMinimalPdfStyle(doc: jsPDF) {
       return doc;
     }
     if (style === "F" && lastFill && lastFill.every((v) => v === 247)) {
+
       // Faixa de título clara: fundo suave + régua inferior
       originalRect(x, y, w, h, "F");
       doc.setDrawColor(210, 210, 210);
