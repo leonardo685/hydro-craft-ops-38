@@ -16,6 +16,7 @@ import Convite from "./pages/Convite";
 import ResetPassword from "./pages/ResetPassword";
 import CotacaoPublica from "./pages/CotacaoPublica";
 import RastreamentoPublico from "./pages/RastreamentoPublico";
+import PagamentoStatus from "./pages/PagamentoStatus";
 
 
 const queryClient = new QueryClient();
@@ -52,6 +53,8 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/cotacao/:token" element={<CotacaoPublica />} />
             <Route path="/rastreamento/:numeroOrdem" element={<RastreamentoPublico />} />
+            <Route path="/pagamento-sucesso" element={<PagamentoStatus sucesso />} />
+            <Route path="/pagamento-cancelado" element={<PagamentoStatus sucesso={false} />} />
 
             
             {/* All other routes - with AuthProvider */}

@@ -11,13 +11,14 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2, AlertTriangle } from "lucide-react";
+import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2, AlertTriangle, CreditCard } from "lucide-react";
 import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 import { VincularOrdensModal } from "@/components/VincularOrdensModal";
+import { PagamentoStripeModal } from "@/components/PagamentoStripeModal";
 import jsPDF from "jspdf";
 import { applyMinimalPdfStyle, setPdfGridMode } from "@/lib/pdf-minimal";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
@@ -292,6 +293,14 @@ export default function Orcamentos() {
   const [orcamentoParaPrecificar, setOrcamentoParaPrecificar] = useState<any>(null);
   const [showVincularModal, setShowVincularModal] = useState(false);
   const [orcamentoParaVincular, setOrcamentoParaVincular] = useState<any>(null);
+  const [showPagamentoModal, setShowPagamentoModal] = useState(false);
+  const [orcamentoParaPagamento, setOrcamentoParaPagamento] = useState<any>(null);
+
+  const abrirPagamento = (orcamento: any) => {
+    setOrcamentoParaPagamento(orcamento);
+    setShowPagamentoModal(true);
+  };
+
 
   const handleVincularOrdens = (orcamento: any) => {
     setOrcamentoParaVincular(orcamento);
@@ -2443,6 +2452,14 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => abrirPagamento(item)}
+                          title="Pagamento online"
+                        >
+                          <CreditCard className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => gerarPDFOrcamento(item, language)}
                         >
                           <Download className="h-4 w-4" />
@@ -2651,6 +2668,12 @@ export default function Orcamentos() {
         onOpenChange={setShowVincularModal}
         orcamento={orcamentoParaVincular}
         onSuccess={carregarOrcamentos}
+      />
+
+      <PagamentoStripeModal
+        open={showPagamentoModal}
+        onOpenChange={setShowPagamentoModal}
+        orcamento={orcamentoParaPagamento}
       />
     </AppLayout>
   );

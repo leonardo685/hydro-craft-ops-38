@@ -28,3 +28,9 @@ verify_jwt = false
 
 [functions.retry-webhook]
 verify_jwt = false
+
+[functions.criar-checkout-stripe]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
