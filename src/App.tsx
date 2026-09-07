@@ -16,6 +16,7 @@ import Convite from "./pages/Convite";
 import ResetPassword from "./pages/ResetPassword";
 import CotacaoPublica from "./pages/CotacaoPublica";
 import RastreamentoPublico from "./pages/RastreamentoPublico";
+import PagamentoStatus from "./pages/PagamentoStatus";
 
 
 const queryClient = new QueryClient();
