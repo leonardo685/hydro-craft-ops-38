@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 import { VincularOrdensModal } from "@/components/VincularOrdensModal";
+import { PagamentoStripeModal } from "@/components/PagamentoStripeModal";
 import jsPDF from "jspdf";
 import { applyMinimalPdfStyle, setPdfGridMode } from "@/lib/pdf-minimal";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
