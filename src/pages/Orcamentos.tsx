@@ -2669,6 +2669,12 @@ export default function Orcamentos() {
         orcamento={orcamentoParaVincular}
         onSuccess={carregarOrcamentos}
       />
+
+      <PagamentoStripeModal
+        open={showPagamentoModal}
+        onOpenChange={setShowPagamentoModal}
+        orcamento={orcamentoParaPagamento}
+      />
     </AppLayout>
   );
 }
