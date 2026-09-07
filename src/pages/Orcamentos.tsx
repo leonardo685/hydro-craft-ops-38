@@ -293,6 +293,14 @@ export default function Orcamentos() {
   const [orcamentoParaPrecificar, setOrcamentoParaPrecificar] = useState<any>(null);
   const [showVincularModal, setShowVincularModal] = useState(false);
   const [orcamentoParaVincular, setOrcamentoParaVincular] = useState<any>(null);
+  const [showPagamentoModal, setShowPagamentoModal] = useState(false);
+  const [orcamentoParaPagamento, setOrcamentoParaPagamento] = useState<any>(null);
+
+  const abrirPagamento = (orcamento: any) => {
+    setOrcamentoParaPagamento(orcamento);
+    setShowPagamentoModal(true);
+  };
+
 
   const handleVincularOrdens = (orcamento: any) => {
     setOrcamentoParaVincular(orcamento);
