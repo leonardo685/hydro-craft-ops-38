@@ -1820,6 +1820,7 @@ export type Database = {
           data_aprovacao_gestor: string | null
           data_criacao: string
           data_negociacao: string | null
+          data_pagamento: string | null
           data_vencimento: string | null
           desconto_percentual: number | null
           descricao: string | null
@@ -1831,6 +1832,7 @@ export type Database = {
           id: string
           impostos_percentual: number | null
           impostos_valor: number | null
+          link_pagamento: string | null
           margem_contribuicao: number | null
           numero: string
           numero_nf: string | null
@@ -1870,6 +1872,7 @@ export type Database = {
           data_aprovacao_gestor?: string | null
           data_criacao?: string
           data_negociacao?: string | null
+          data_pagamento?: string | null
           data_vencimento?: string | null
           desconto_percentual?: number | null
           descricao?: string | null
@@ -1881,6 +1884,7 @@ export type Database = {
           id?: string
           impostos_percentual?: number | null
           impostos_valor?: number | null
+          link_pagamento?: string | null
           margem_contribuicao?: number | null
           numero: string
           numero_nf?: string | null
@@ -1920,6 +1924,7 @@ export type Database = {
           data_aprovacao_gestor?: string | null
           data_criacao?: string
           data_negociacao?: string | null
+          data_pagamento?: string | null
           data_vencimento?: string | null
           desconto_percentual?: number | null
           descricao?: string | null
@@ -1931,6 +1936,7 @@ export type Database = {
           id?: string
           impostos_percentual?: number | null
           impostos_valor?: number | null
+          link_pagamento?: string | null
           margem_contribuicao?: number | null
           numero?: string
           numero_nf?: string | null
@@ -2126,6 +2132,82 @@ export type Database = {
             columns: ["recebimento_id"]
             isOneToOne: false
             referencedRelation: "recebimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pagamentos_stripe: {
+        Row: {
+          checkout_url: string | null
+          cliente_email: string | null
+          created_at: string
+          empresa_id: string
+          id: string
+          lancamento_id: string | null
+          metodo: string | null
+          moeda: string
+          orcamento_id: string
+          paid_at: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          checkout_url?: string | null
+          cliente_email?: string | null
+          created_at?: string
+          empresa_id: string
+          id?: string
+          lancamento_id?: string | null
+          metodo?: string | null
+          moeda?: string
+          orcamento_id: string
+          paid_at?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          checkout_url?: string | null
+          cliente_email?: string | null
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          lancamento_id?: string | null
+          metodo?: string | null
+          moeda?: string
+          orcamento_id?: string
+          paid_at?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_stripe_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_stripe_lancamento_id_fkey"
+            columns: ["lancamento_id"]
+            isOneToOne: false
+            referencedRelation: "lancamentos_financeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_stripe_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
             referencedColumns: ["id"]
           },
         ]
@@ -2593,12 +2675,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2622,11 +2704,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2647,11 +2729,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2672,11 +2754,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2689,11 +2771,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
