@@ -358,9 +358,7 @@ const Cadastros = () => {
       loadClientes();
     } catch (error: any) {
       console.error('Erro ao salvar cliente:', error);
-      if (error?.code === '23505' || error?.code === '23P01' || error?.code === '23505') {
-        toast.error('Já existe um cliente com este CNPJ/CPF nesta empresa');
-      } else if (error?.code === '23505' || error?.message?.includes('duplicate key')) {
+      if (error?.code === '23505' || error?.message?.includes('duplicate key')) {
         toast.error('Já existe um cliente com este CNPJ/CPF nesta empresa');
       } else {
         toast.error(`Erro ao salvar cliente: ${error?.message || 'erro desconhecido'}`);
