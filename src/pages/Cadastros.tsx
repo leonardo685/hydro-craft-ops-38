@@ -315,10 +315,26 @@ const Cadastros = () => {
       return;
     }
 
+    if (!empresaAtual?.id) {
+      toast.error('Selecione uma empresa antes de salvar o cliente');
+      return;
+    }
+
     try {
       const dataToSave = {
-        ...clienteForm,
-        tipo_identificacao: clienteTipoId
+        nome: clienteForm.nome.trim(),
+        email: clienteForm.email?.trim() || null,
+        telefone: clienteForm.telefone?.trim() || null,
+        endereco: clienteForm.endereco?.trim() || null,
+        cidade: clienteForm.cidade?.trim() || null,
+        estado: clienteForm.estado?.trim() || null,
+        cep: clienteForm.cep?.trim() || null,
+        cnpj_cpf: clienteForm.cnpj_cpf?.trim() || null,
+        inscricao_estadual: clienteForm.inscricao_estadual?.trim() || null,
+        inscricao_municipal: clienteForm.inscricao_municipal?.trim() || null,
+        observacoes: clienteForm.observacoes?.trim() || null,
+        condicoes_pagamento: clienteForm.condicoes_pagamento?.trim() || null,
+        tipo_identificacao: clienteTipoId,
       };
 
       if (editingCliente) {
@@ -332,7 +348,7 @@ const Cadastros = () => {
       } else {
         const { error } = await supabase
           .from('clientes')
-          .insert([{ ...dataToSave, empresa_id: empresaAtual?.id } as any]);
+          .insert([{ ...dataToSave, empresa_id: empresaAtual.id } as any]);
         
         if (error) throw error;
         toast.success('Cliente cadastrado com sucesso');
@@ -340,9 +356,13 @@ const Cadastros = () => {
       
       resetClienteForm();
       loadClientes();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar cliente:', error);
-      toast.error('Erro ao salvar cliente');
+      if (error?.code === '23505' || error?.message?.includes('duplicate key')) {
+        toast.error('Já existe um cliente com este CNPJ/CPF nesta empresa');
+      } else {
+        toast.error(`Erro ao salvar cliente: ${error?.message || 'erro desconhecido'}`);
+      }
     }
   };
 
