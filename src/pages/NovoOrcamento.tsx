@@ -175,6 +175,7 @@ export default function NovoOrcamento() {
     usinagem: []
   });
   const [analiseData, setAnaliseData] = useState<any>(null);
+  const [laudoTecnicoOrdem, setLaudoTecnicoOrdem] = useState<{ pt: string; en: string }>({ pt: '', en: '' });
   const [fotos, setFotos] = useState<Array<FotoEquipamento & { apresentar_orcamento?: boolean; legenda?: string }>>([]);
   const [uploadingFoto, setUploadingFoto] = useState(false);
   const [dadosTecnicos, setDadosTecnicos] = useState<{
@@ -496,6 +497,10 @@ export default function NovoOrcamento() {
           if (osData) {
             // Carregar dados técnicos - priorizar recebimento, fallback para ordem de serviço
             const rec = osData.recebimentos;
+            setLaudoTecnicoOrdem({
+              pt: (osData as any).laudo_tecnico || '',
+              en: (osData as any).laudo_tecnico_en || ''
+            });
             const dadosTecnicosCarregados = {
               pressaoTrabalho: rec?.pressao_trabalho || osData.pressao_trabalho || '',
               temperaturaTrabalho: rec?.temperatura_trabalho || osData.temperatura_trabalho || '',
@@ -562,6 +567,10 @@ export default function NovoOrcamento() {
           if (osData) {
             // Carregar dados técnicos - priorizar recebimento, fallback para ordem de serviço
             const rec = osData.recebimentos;
+            setLaudoTecnicoOrdem({
+              pt: (osData as any).laudo_tecnico || '',
+              en: (osData as any).laudo_tecnico_en || ''
+            });
             const dadosTecnicosCarregados = {
               pressaoTrabalho: rec?.pressao_trabalho || osData.pressao_trabalho || '',
               temperaturaTrabalho: rec?.temperatura_trabalho || osData.temperatura_trabalho || '',
@@ -873,6 +882,10 @@ export default function NovoOrcamento() {
 
             // Carregar dados técnicos - priorizar recebimento, fallback para ordem de serviço
             const rec = ordemServico.recebimentos;
+            setLaudoTecnicoOrdem({
+              pt: (ordemServico as any).laudo_tecnico || '',
+              en: (ordemServico as any).laudo_tecnico_en || ''
+            });
             const dadosTecnicosCarregados = {
               pressaoTrabalho: rec?.pressao_trabalho || ordemServico.pressao_trabalho || '',
               temperaturaTrabalho: rec?.temperatura_trabalho || ordemServico.temperatura_trabalho || '',
@@ -2618,6 +2631,53 @@ export default function NovoOrcamento() {
     }
     setPdfGridMode(doc, false);
     yPosition += 7;
+
+    // === LAUDO TÉCNICO / OBSERVAÇÕES ===
+    const laudoTexto = (language === 'pt-BR'
+      ? laudoTecnicoOrdem.pt || laudoTecnicoOrdem.en
+      : laudoTecnicoOrdem.en || laudoTecnicoOrdem.pt) || dadosOrcamento.observacoes || '';
+
+    if (laudoTexto.trim()) {
+      yPosition += 5;
+
+      if (yPosition + 30 > pageHeight - 30) {
+        adicionarRodape();
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(220, 38, 38);
+      doc.text(language === 'pt-BR' ? 'Laudo Técnico' : language === 'es' ? 'Informe Técnico' : 'Technical Report', 20, yPosition);
+      doc.setTextColor(0, 0, 0);
+      yPosition += 5;
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      const laudoLines = doc.splitTextToSize(laudoTexto.trim(), pageWidth - 44);
+      const lineHeightLaudo = 5;
+      const paddingLaudo = 5;
+      const boxHeightLaudo = (laudoLines.length * lineHeightLaudo) + (paddingLaudo * 2);
+
+      if (yPosition + boxHeightLaudo > pageHeight - 30) {
+        adicionarRodape();
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      doc.setDrawColor(200, 200, 200);
+      doc.setFillColor(250, 250, 250);
+      doc.rect(20, yPosition, pageWidth - 40, boxHeightLaudo, 'FD');
+
+      let textYLaudo = yPosition + paddingLaudo + 4;
+      laudoLines.forEach((line: string) => {
+        doc.text(line, 22, textYLaudo);
+        textYLaudo += lineHeightLaudo;
+      });
+
+      yPosition += boxHeightLaudo + 2;
+    }
 
     // === DADOS TÉCNICOS DO EQUIPAMENTO ===
     if (dadosTecnicos) {
