@@ -62,6 +62,8 @@ const NovaOrdemServico = () => {
     laudoTecnicoEn: ""
   });
 
+  const laudoTecnicoField: 'laudoTecnico' | 'laudoTecnicoEn' = language === 'pt-BR' ? 'laudoTecnico' : 'laudoTecnicoEn';
+
 
   const [dadosTecnicos, setDadosTecnicos] = useState({
     tipoEquipamento: "",
@@ -2186,23 +2188,12 @@ const NovaOrdemServico = () => {
               )}
 
               <div>
-                <Label htmlFor="laudoTecnico">Laudo Técnico (Português)</Label>
+                <Label htmlFor="laudoTecnico">{t('novaAnalise.technicalReport')}</Label>
                 <Textarea
                   id="laudoTecnico"
-                  value={formData.laudoTecnico}
-                  onChange={(e) => setFormData({ ...formData, laudoTecnico: e.target.value })}
-                  placeholder="Descreva os achados da peritagem: avarias, desgastes, erros encontrados no equipamento..."
-                  rows={5}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="laudoTecnicoEn">Technical Report (English)</Label>
-                <Textarea
-                  id="laudoTecnicoEn"
-                  value={formData.laudoTecnicoEn}
-                  onChange={(e) => setFormData({ ...formData, laudoTecnicoEn: e.target.value })}
-                  placeholder="Describe the inspection findings: damages, wear, failures found on the equipment..."
+                  value={formData[laudoTecnicoField]}
+                  onChange={(e) => setFormData({ ...formData, [laudoTecnicoField]: e.target.value })}
+                  placeholder={t('novaAnalise.technicalReportPlaceholder')}
                   rows={5}
                 />
               </div>

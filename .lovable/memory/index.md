@@ -7,4 +7,4 @@
 
 ## Memories
 - [Tradução laudo público](mem://funcionalidades/traducao-conteudo-dinamico-laudo) — Tradução de peças/serviços/usinagem do laudo QR via dicionário técnico
-- [Laudo técnico bilíngue](mem://funcionalidades/laudo-tecnico-bilingue) — Campo de laudo PT/EN na peritagem e uso nos PDFs de ordem e orçamento
+- [Laudo técnico por idioma](mem://funcionalidades/laudo-tecnico-bilingue) — Campo único de laudo na peritagem, salvo/exibido conforme o idioma e usado nos PDFs

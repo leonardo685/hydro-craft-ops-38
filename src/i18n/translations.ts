@@ -196,6 +196,8 @@ export const translations = {
       others: 'Outros',
       describeFailureReason: 'Descreva o motivo da falha',
       failureReasonPlaceholder: 'Descreva a causa raiz da falha do equipamento...',
+      technicalReport: 'Laudo Técnico',
+      technicalReportPlaceholder: 'Descreva os achados da peritagem: avarias, desgastes e falhas encontradas no equipamento...',
       // Expertise photos section
       expertisePhotos: 'Fotos da Peritagem',
       expertisePhotosDesc: 'Fotos capturadas durante a análise técnica do equipamento',
@@ -1351,6 +1353,8 @@ export const translations = {
       others: 'Others',
       describeFailureReason: 'Describe the failure reason',
       failureReasonPlaceholder: 'Describe the root cause of the equipment failure...',
+      technicalReport: 'Technical Report',
+      technicalReportPlaceholder: 'Describe the inspection findings: damage, wear and failures found on the equipment...',
       // Expertise photos section
       expertisePhotos: 'Expertise Photos',
       expertisePhotosDesc: 'Photos captured during technical analysis of the equipment',
@@ -2494,6 +2498,8 @@ export const translations = {
       others: 'Otros',
       describeFailureReason: 'Describa el motivo de la falla',
       failureReasonPlaceholder: 'Describa la causa raíz de la falla del equipo...',
+      technicalReport: 'Informe Técnico',
+      technicalReportPlaceholder: 'Describa los hallazgos del peritaje: averías, desgastes y fallas encontradas en el equipo...',
       expertisePhotos: 'Fotos del Peritaje',
       expertisePhotosDesc: 'Fotos capturadas durante el análisis técnico del equipo',
       upload: 'Subir',
