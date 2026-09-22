@@ -963,9 +963,11 @@ const NovaOrdemServico = () => {
               prioridade: ordem.prioridade === 'alta' ? 'Alta' : 
                          ordem.prioridade === 'baixa' ? 'Baixa' : 'Média',
               observacoes: ordem.observacoes_tecnicas || "",
-              motivoFalha: ordem.motivo_falha || "",
-              motivoFalhaOutro: ""
+              ...parseMotivoFalha(ordem.motivo_falha),
+              laudoTecnico: (ordem as any).laudo_tecnico || "",
+              laudoTecnicoEn: (ordem as any).laudo_tecnico_en || ""
             });
+
 
             // Dados técnicos - carregar da ordem se disponíveis (para ordens diretas)
             console.log('📊 Carregando dados técnicos da ordem direta:', ordem);
