@@ -62,7 +62,7 @@ const NovaOrdemServico = () => {
     laudoTecnicoEn: ""
   });
 
-  const laudoTecnicoField = language === 'pt-BR' ? 'laudoTecnico' : 'laudoTecnicoEn';
+  const laudoTecnicoField: 'laudoTecnico' | 'laudoTecnicoEn' = language === 'pt-BR' ? 'laudoTecnico' : 'laudoTecnicoEn';
 
 
   const [dadosTecnicos, setDadosTecnicos] = useState({
