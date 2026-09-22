@@ -2184,6 +2184,29 @@ const NovaOrdemServico = () => {
                   />
                 </div>
               )}
+
+              <div>
+                <Label htmlFor="laudoTecnico">Laudo Técnico (Português)</Label>
+                <Textarea
+                  id="laudoTecnico"
+                  value={formData.laudoTecnico}
+                  onChange={(e) => setFormData({ ...formData, laudoTecnico: e.target.value })}
+                  placeholder="Descreva os achados da peritagem: avarias, desgastes, erros encontrados no equipamento..."
+                  rows={5}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="laudoTecnicoEn">Technical Report (English)</Label>
+                <Textarea
+                  id="laudoTecnicoEn"
+                  value={formData.laudoTecnicoEn}
+                  onChange={(e) => setFormData({ ...formData, laudoTecnicoEn: e.target.value })}
+                  placeholder="Describe the inspection findings: damages, wear, failures found on the equipment..."
+                  rows={5}
+                />
+              </div>
+
             </CardContent>
           </Card>
 
