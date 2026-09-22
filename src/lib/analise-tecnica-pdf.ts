@@ -54,7 +54,7 @@ const DICT: Record<string, any> = {
     prioridade: "Prioridad", peritagem: "Peritaje", camisa: "Ø Camisa",
     haste: "Ø Vástago x Longitud", curso: "Carrera", conexaoA: "Conexión A",
     conexaoB: "Conexión B", pressao: "Presión de Trabajo",
-    problemas: "Problemas Identificados", descripcionDummy: "",
+    problemas: "Problemas Identificados",
     laudo: "Informe Técnico", descricao: "Descripción",
     servicos: "Servicios Realizados", usinagem: "Mecanizado", pecas: "Piezas Utilizadas",
     qtd: "Cant.", fotos: "Fotos del Análisis", continuacao: "(continuación)",
