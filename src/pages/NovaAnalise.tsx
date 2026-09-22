@@ -37,8 +37,11 @@ const NovaOrdemServico = () => {
     prioridade: "Média",
     observacoes: "",
     motivoFalha: "",
-    motivoFalhaOutro: ""
+    motivoFalhaOutro: "",
+    laudoTecnico: "",
+    laudoTecnicoEn: ""
   });
+
 
   const [dadosTecnicos, setDadosTecnicos] = useState({
     tipoEquipamento: "",
