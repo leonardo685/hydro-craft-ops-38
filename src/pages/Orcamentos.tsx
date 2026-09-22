@@ -613,6 +613,7 @@ export default function Orcamentos() {
 
       // Buscar dados técnicos do equipamento
       let dadosTecnicos: any = null;
+      let laudoTecnicoOrdem = '';
 
       if (orcamento.ordem_servico_id) {
         const { data: osData } = await supabase
@@ -630,6 +631,9 @@ export default function Orcamentos() {
 
         if (osData) {
           const rec = osData.recebimentos;
+          laudoTecnicoOrdem = (language === 'pt-BR'
+            ? (osData as any).laudo_tecnico || (osData as any).laudo_tecnico_en
+            : (osData as any).laudo_tecnico_en || (osData as any).laudo_tecnico) || '';
           dadosTecnicos = {
             pressaoTrabalho: rec?.pressao_trabalho || osData.pressao_trabalho || '',
             temperaturaTrabalho: rec?.temperatura_trabalho || osData.temperatura_trabalho || '',
@@ -661,6 +665,9 @@ export default function Orcamentos() {
 
         if (osData) {
           const rec = osData.recebimentos;
+          laudoTecnicoOrdem = (language === 'pt-BR'
+            ? (osData as any).laudo_tecnico || (osData as any).laudo_tecnico_en
+            : (osData as any).laudo_tecnico_en || (osData as any).laudo_tecnico) || '';
           dadosTecnicos = {
             pressaoTrabalho: rec?.pressao_trabalho || osData.pressao_trabalho || '',
             temperaturaTrabalho: rec?.temperatura_trabalho || osData.temperatura_trabalho || '',
@@ -1078,7 +1085,10 @@ export default function Orcamentos() {
       setPdfGridMode(doc, false);
 
       // === OBSERVAÇÕES ===
-      if (orcamento.descricao && orcamento.descricao.trim()) {
+      const textoObservacoes = (laudoTecnicoOrdem && laudoTecnicoOrdem.trim())
+        ? laudoTecnicoOrdem.trim()
+        : (orcamento.descricao || '').trim();
+      if (textoObservacoes) {
         yPosition += 10;
         
         // Verificar se precisa de nova página
@@ -1102,7 +1112,7 @@ export default function Orcamentos() {
         doc.setFont("helvetica", "normal");
         
         const maxWidth = pageWidth - 44; // 20 margem esquerda + 20 margem direita + 4 padding
-        const observacoesText = orcamento.descricao.trim();
+        const observacoesText = textoObservacoes;
         const observacoesLines = doc.splitTextToSize(observacoesText, maxWidth);
         
         const lineHeight = 5;
