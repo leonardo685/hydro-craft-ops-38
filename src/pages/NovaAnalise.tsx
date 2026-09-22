@@ -1361,6 +1361,9 @@ const NovaOrdemServico = () => {
             tempo_estimado: formData.prazoEstimado,
             observacoes_tecnicas: formData.observacoes,
             motivo_falha: formData.motivoFalha === 'outros' ? formData.motivoFalhaOutro : (formData.motivoFalha === 'revisao_completa' ? 'Revisão Completa' : formData.motivoFalha === 'haste_quebrada' ? 'Haste Quebrada' : formData.motivoFalha === 'vazamento_vedacoes' ? 'Vazamento nas Vedações' : formData.motivoFalha) || null,
+            laudo_tecnico: formData.laudoTecnico || null,
+            laudo_tecnico_en: formData.laudoTecnicoEn || null,
+
             prioridade: formData.prioridade.toLowerCase(),
             data_analise: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -1542,6 +1545,9 @@ const NovaOrdemServico = () => {
                 tempo_estimado: formData.prazoEstimado,
                 observacoes_tecnicas: formData.observacoes,
                 motivo_falha: formData.motivoFalha === 'outros' ? formData.motivoFalhaOutro : (formData.motivoFalha === 'revisao_completa' ? 'Revisão Completa' : formData.motivoFalha === 'haste_quebrada' ? 'Haste Quebrada' : formData.motivoFalha === 'vazamento_vedacoes' ? 'Vazamento nas Vedações' : formData.motivoFalha) || null,
+                laudo_tecnico: formData.laudoTecnico || null,
+                laudo_tecnico_en: formData.laudoTecnicoEn || null,
+
                 empresa_id: empresaAtual?.id || null,
                 // Salvar dados técnicos na ordem também
                 camisa: dadosTecnicos.camisa || null,
