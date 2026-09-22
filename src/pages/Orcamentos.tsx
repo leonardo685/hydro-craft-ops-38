@@ -1084,7 +1084,7 @@ export default function Orcamentos() {
       yPosition += alturaLinha4;
       setPdfGridMode(doc, false);
 
-      // === OBSERVAÇÕES ===
+      // === LAUDO TÉCNICO ===
       const textoObservacoes = (laudoTecnicoOrdem && laudoTecnicoOrdem.trim())
         ? laudoTecnicoOrdem.trim()
         : (orcamento.descricao || '').trim();
@@ -1099,11 +1099,11 @@ export default function Orcamentos() {
           yPosition = 20;
         }
         
-        // Título "Observações"
+        // Título do laudo técnico no idioma do orçamento
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(220, 38, 38);
-        doc.text(pdfT.observations, 20, yPosition);
+        doc.text(language === 'pt-BR' ? 'LAUDO TÉCNICO' : language === 'es' ? 'INFORME TÉCNICO' : 'TECHNICAL REPORT', 20, yPosition);
         doc.setTextColor(0, 0, 0);
         yPosition += 5;
         
