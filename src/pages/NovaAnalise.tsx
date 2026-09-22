@@ -17,6 +17,26 @@ import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+// Motivos de falha: mapeia o texto salvo no banco de volta para a chave do seletor
+const MOTIVOS_FALHA_MAP: Record<string, string> = {
+  "revisao completa": "revisao_completa",
+  "revisão completa": "revisao_completa",
+  "haste quebrada": "haste_quebrada",
+  "vazamento nas vedacoes": "vazamento_vedacoes",
+  "vazamento nas vedações": "vazamento_vedacoes",
+};
+
+const parseMotivoFalha = (valor?: string | null) => {
+  const bruto = (valor || "").trim();
+  if (!bruto) return { motivoFalha: "", motivoFalhaOutro: "" };
+  const chave = MOTIVOS_FALHA_MAP[bruto.toLowerCase()];
+  if (chave) return { motivoFalha: chave, motivoFalhaOutro: "" };
+  if (["revisao_completa", "haste_quebrada", "vazamento_vedacoes", "outros"].includes(bruto)) {
+    return { motivoFalha: bruto, motivoFalhaOutro: "" };
+  }
+  return { motivoFalha: "outros", motivoFalhaOutro: bruto };
+};
+
 const NovaOrdemServico = () => {
   const navigate = useNavigate();
   const { id } = useParams();
