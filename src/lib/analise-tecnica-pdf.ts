@@ -29,6 +29,7 @@ const DICT: Record<string, any> = {
     haste: "Ø Haste x Comprimento", curso: "Curso", conexaoA: "Conexão A",
     conexaoB: "Conexão B", pressao: "Pressão de Trabalho",
     problemas: "Problemas Identificados", descricao: "Descrição",
+    laudo: "Laudo Técnico",
     servicos: "Serviços Realizados", usinagem: "Usinagem", pecas: "Peças Utilizadas",
     qtd: "Qtd.", fotos: "Fotos da Análise", continuacao: "(continuação)",
     pagina: "Página", de: "de", geradoEm: "Gerado em",
@@ -41,6 +42,7 @@ const DICT: Record<string, any> = {
     haste: "Ø Rod x Length", curso: "Stroke", conexaoA: "Connection A",
     conexaoB: "Connection B", pressao: "Working Pressure",
     problemas: "Identified Issues", descricao: "Description",
+    laudo: "Technical Report",
     servicos: "Services Performed", usinagem: "Machining", pecas: "Parts Used",
     qtd: "Qty.", fotos: "Analysis Photos", continuacao: "(continued)",
     pagina: "Page", de: "of", geradoEm: "Generated on",
@@ -52,7 +54,8 @@ const DICT: Record<string, any> = {
     prioridade: "Prioridad", peritagem: "Peritaje", camisa: "Ø Camisa",
     haste: "Ø Vástago x Longitud", curso: "Carrera", conexaoA: "Conexión A",
     conexaoB: "Conexión B", pressao: "Presión de Trabajo",
-    problemas: "Problemas Identificados", descricao: "Descripción",
+    problemas: "Problemas Identificados",
+    laudo: "Informe Técnico", descricao: "Descripción",
     servicos: "Servicios Realizados", usinagem: "Mecanizado", pecas: "Piezas Utilizadas",
     qtd: "Cant.", fotos: "Fotos del Análisis", continuacao: "(continuación)",
     pagina: "Página", de: "de", geradoEm: "Generado el",
@@ -147,6 +150,34 @@ export async function gerarAnaliseTecnicaPDF({
       yPosition += 10;
     });
 
+    yPosition += 10;
+  };
+
+  const criarTabelaTexto = (titulo: string, texto: string) => {
+    if (yPosition > 210) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255);
+    doc.setFillColor(128, 128, 128);
+    doc.rect(20, yPosition, pageWidth - 40, 10, "F");
+    doc.text(titulo.toUpperCase(), pageWidth / 2, yPosition + 7, { align: "center" });
+    yPosition += 10;
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    const linhas = doc.splitTextToSize(texto, pageWidth - 50);
+    linhas.forEach((linha: string) => {
+      if (yPosition > 270) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      doc.text(linha, 25, yPosition + 6);
+      yPosition += 6;
+    });
     yPosition += 10;
   };
 
@@ -308,6 +339,14 @@ export async function gerarAnaliseTecnicaPDF({
 
   if (ordem.descricao_problema) {
     criarTabela(L.problemas, [{ label: `${L.descricao}:`, value: tr(ordem.descricao_problema) }]);
+  }
+
+  const laudoTexto =
+    language === "pt-BR"
+      ? ordem.laudo_tecnico || ordem.laudo_tecnico_en
+      : ordem.laudo_tecnico_en || ordem.laudo_tecnico;
+  if (laudoTexto && String(laudoTexto).trim()) {
+    criarTabelaTexto(L.laudo, String(laudoTexto).trim());
   }
 
   if (Array.isArray(ordem.servicos_necessarios) && ordem.servicos_necessarios.length > 0) {

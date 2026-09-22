@@ -2004,6 +2004,8 @@ export type Database = {
           fluido_trabalho: string | null
           haste_comprimento: string | null
           id: string
+          laudo_tecnico: string | null
+          laudo_tecnico_en: string | null
           local_instalacao: string | null
           motivo_falha: string | null
           numero_ordem: string
@@ -2046,6 +2048,8 @@ export type Database = {
           fluido_trabalho?: string | null
           haste_comprimento?: string | null
           id?: string
+          laudo_tecnico?: string | null
+          laudo_tecnico_en?: string | null
           local_instalacao?: string | null
           motivo_falha?: string | null
           numero_ordem: string
@@ -2088,6 +2092,8 @@ export type Database = {
           fluido_trabalho?: string | null
           haste_comprimento?: string | null
           id?: string
+          laudo_tecnico?: string | null
+          laudo_tecnico_en?: string | null
           local_instalacao?: string | null
           motivo_falha?: string | null
           numero_ordem?: string

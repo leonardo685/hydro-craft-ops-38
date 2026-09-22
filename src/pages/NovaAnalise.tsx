@@ -17,6 +17,26 @@ import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+// Motivos de falha: mapeia o texto salvo no banco de volta para a chave do seletor
+const MOTIVOS_FALHA_MAP: Record<string, string> = {
+  "revisao completa": "revisao_completa",
+  "revisão completa": "revisao_completa",
+  "haste quebrada": "haste_quebrada",
+  "vazamento nas vedacoes": "vazamento_vedacoes",
+  "vazamento nas vedações": "vazamento_vedacoes",
+};
+
+const parseMotivoFalha = (valor?: string | null) => {
+  const bruto = (valor || "").trim();
+  if (!bruto) return { motivoFalha: "", motivoFalhaOutro: "" };
+  const chave = MOTIVOS_FALHA_MAP[bruto.toLowerCase()];
+  if (chave) return { motivoFalha: chave, motivoFalhaOutro: "" };
+  if (["revisao_completa", "haste_quebrada", "vazamento_vedacoes", "outros"].includes(bruto)) {
+    return { motivoFalha: bruto, motivoFalhaOutro: "" };
+  }
+  return { motivoFalha: "outros", motivoFalhaOutro: bruto };
+};
+
 const NovaOrdemServico = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -37,8 +57,11 @@ const NovaOrdemServico = () => {
     prioridade: "Média",
     observacoes: "",
     motivoFalha: "",
-    motivoFalhaOutro: ""
+    motivoFalhaOutro: "",
+    laudoTecnico: "",
+    laudoTecnicoEn: ""
   });
+
 
   const [dadosTecnicos, setDadosTecnicos] = useState({
     tipoEquipamento: "",
@@ -772,9 +795,11 @@ const NovaOrdemServico = () => {
             prioridade: ordem.prioridade === 'alta' ? 'Alta' : 
                        ordem.prioridade === 'baixa' ? 'Baixa' : 'Média',
             observacoes: ordem.observacoes_tecnicas || "",
-            motivoFalha: ordem.motivo_falha || "",
-            motivoFalhaOutro: ""
+            ...parseMotivoFalha(ordem.motivo_falha),
+            laudoTecnico: (ordem as any).laudo_tecnico || "",
+            laudoTecnicoEn: (ordem as any).laudo_tecnico_en || ""
           });
+
 
           // Carregar peças se existirem
           if (ordem.pecas_necessarias && Array.isArray(ordem.pecas_necessarias)) {
@@ -938,9 +963,11 @@ const NovaOrdemServico = () => {
               prioridade: ordem.prioridade === 'alta' ? 'Alta' : 
                          ordem.prioridade === 'baixa' ? 'Baixa' : 'Média',
               observacoes: ordem.observacoes_tecnicas || "",
-              motivoFalha: ordem.motivo_falha || "",
-              motivoFalhaOutro: ""
+              ...parseMotivoFalha(ordem.motivo_falha),
+              laudoTecnico: (ordem as any).laudo_tecnico || "",
+              laudoTecnicoEn: (ordem as any).laudo_tecnico_en || ""
             });
+
 
             // Dados técnicos - carregar da ordem se disponíveis (para ordens diretas)
             console.log('📊 Carregando dados técnicos da ordem direta:', ordem);
@@ -1334,6 +1361,9 @@ const NovaOrdemServico = () => {
             tempo_estimado: formData.prazoEstimado,
             observacoes_tecnicas: formData.observacoes,
             motivo_falha: formData.motivoFalha === 'outros' ? formData.motivoFalhaOutro : (formData.motivoFalha === 'revisao_completa' ? 'Revisão Completa' : formData.motivoFalha === 'haste_quebrada' ? 'Haste Quebrada' : formData.motivoFalha === 'vazamento_vedacoes' ? 'Vazamento nas Vedações' : formData.motivoFalha) || null,
+            laudo_tecnico: formData.laudoTecnico || null,
+            laudo_tecnico_en: formData.laudoTecnicoEn || null,
+
             prioridade: formData.prioridade.toLowerCase(),
             data_analise: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -1515,6 +1545,9 @@ const NovaOrdemServico = () => {
                 tempo_estimado: formData.prazoEstimado,
                 observacoes_tecnicas: formData.observacoes,
                 motivo_falha: formData.motivoFalha === 'outros' ? formData.motivoFalhaOutro : (formData.motivoFalha === 'revisao_completa' ? 'Revisão Completa' : formData.motivoFalha === 'haste_quebrada' ? 'Haste Quebrada' : formData.motivoFalha === 'vazamento_vedacoes' ? 'Vazamento nas Vedações' : formData.motivoFalha) || null,
+                laudo_tecnico: formData.laudoTecnico || null,
+                laudo_tecnico_en: formData.laudoTecnicoEn || null,
+
                 empresa_id: empresaAtual?.id || null,
                 // Salvar dados técnicos na ordem também
                 camisa: dadosTecnicos.camisa || null,
@@ -2151,6 +2184,29 @@ const NovaOrdemServico = () => {
                   />
                 </div>
               )}
+
+              <div>
+                <Label htmlFor="laudoTecnico">Laudo Técnico (Português)</Label>
+                <Textarea
+                  id="laudoTecnico"
+                  value={formData.laudoTecnico}
+                  onChange={(e) => setFormData({ ...formData, laudoTecnico: e.target.value })}
+                  placeholder="Descreva os achados da peritagem: avarias, desgastes, erros encontrados no equipamento..."
+                  rows={5}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="laudoTecnicoEn">Technical Report (English)</Label>
+                <Textarea
+                  id="laudoTecnicoEn"
+                  value={formData.laudoTecnicoEn}
+                  onChange={(e) => setFormData({ ...formData, laudoTecnicoEn: e.target.value })}
+                  placeholder="Describe the inspection findings: damages, wear, failures found on the equipment..."
+                  rows={5}
+                />
+              </div>
+
             </CardContent>
           </Card>
 
