@@ -1,5 +1,4 @@
 # Project Memory
-- [Ditado do laudo](mem://funcionalidades/ditado-voz-laudo-tecnico) — Microfone no laudo técnico com transcrição e organização em tópicos
 
 
 ## Core
