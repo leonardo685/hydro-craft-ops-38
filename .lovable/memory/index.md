@@ -1,4 +1,6 @@
 # Project Memory
+- [Ditado do laudo](mem://funcionalidades/ditado-voz-laudo-tecnico) — Microfone no laudo técnico com transcrição e organização em tópicos
+
 
 ## Core
 - Multi-tenant SaaS with RLS. All DB queries MUST filter by `empresa_id` to prevent cross-tenant data leaks.
