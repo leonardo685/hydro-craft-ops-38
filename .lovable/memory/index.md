@@ -1,10 +1,12 @@
 # Project Memory
 
+
 ## Core
 - Multi-tenant SaaS with RLS. All DB queries MUST filter by `empresa_id` to prevent cross-tenant data leaks.
 - Display order format MH-XXX-YY everywhere. NEVER show the OS-XXXXXXXXXX timestamp format to users.
 - Equipment labels and laser exports must always use 'MEC HYDRO' branding.
 
 ## Memories
+- [Ditado do laudo](mem://funcionalidades/ditado-voz-laudo-tecnico) — Microfone no laudo técnico com transcrição e organização em tópicos
 - [Tradução laudo público](mem://funcionalidades/traducao-conteudo-dinamico-laudo) — Tradução de peças/serviços/usinagem do laudo QR via dicionário técnico
 - [Laudo técnico por idioma](mem://funcionalidades/laudo-tecnico-bilingue) — Campo único de laudo na peritagem, salvo/exibido conforme o idioma e usado nos PDFs
