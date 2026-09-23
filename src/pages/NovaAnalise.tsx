@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { DitarLaudoButton } from "@/components/DitarLaudoButton";
+
 
 // Motivos de falha: mapeia o texto salvo no banco de volta para a chave do seletor
 const MOTIVOS_FALHA_MAP: Record<string, string> = {
@@ -2188,15 +2190,23 @@ const NovaOrdemServico = () => {
               )}
 
               <div>
-                <Label htmlFor="laudoTecnico">{t('novaAnalise.technicalReport')}</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="laudoTecnico">{t('novaAnalise.technicalReport')}</Label>
+                  <DitarLaudoButton
+                    currentText={formData[laudoTecnicoField]}
+                    onResult={(texto) => setFormData((prev) => ({ ...prev, [laudoTecnicoField]: texto }))}
+                  />
+                </div>
                 <Textarea
                   id="laudoTecnico"
                   value={formData[laudoTecnicoField]}
                   onChange={(e) => setFormData({ ...formData, [laudoTecnicoField]: e.target.value })}
                   placeholder={t('novaAnalise.technicalReportPlaceholder')}
                   rows={5}
+                  className="mt-2"
                 />
               </div>
+
 
             </CardContent>
           </Card>
