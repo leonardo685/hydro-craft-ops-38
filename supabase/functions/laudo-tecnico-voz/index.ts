@@ -56,16 +56,26 @@ Deno.serve(async (req) => {
     if (file.size > MAX_BYTES) {
       return json({ error: 'Áudio muito longo. Grave trechos menores.' }, 413);
     }
-    if (!file.type.startsWith('audio/')) {
+    const nome = file.name || 'recording.wav';
+    const tipoValido =
+      file.type.startsWith('audio/') ||
+      file.type === 'application/octet-stream' ||
+      /\.(wav|mp3|m4a|webm|ogg|flac)$/i.test(nome);
+    if (!tipoValido) {
       return json({ error: 'Formato de áudio não suportado.' }, 400);
     }
 
-    // 1) Transcrição
+    // 1) Transcrição — o modelo exige MIME audio/*
+    const extensao = (nome.split('.').pop() || 'wav').toLowerCase();
+    const mime = file.type.startsWith('audio/') ? file.type : `audio/${extensao === 'm4a' ? 'mp4' : extensao}`;
+    const audioFile = new File([await file.arrayBuffer()], nome, { type: mime });
+
     const upstreamForm = new FormData();
     upstreamForm.append('model', 'google/gemini-3.5-transcribe');
-    upstreamForm.append('file', file, file.name || 'recording.wav');
+    upstreamForm.append('file', audioFile, nome);
     upstreamForm.append('response_format', 'json');
     upstreamForm.append('language', idioma);
+
 
     const trRes = await fetch(`${GATEWAY}/v1/audio/transcriptions`, {
       method: 'POST',
