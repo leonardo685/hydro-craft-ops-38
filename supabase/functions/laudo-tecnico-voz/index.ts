@@ -12,12 +12,15 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 
-const instrucoes = (idioma: string) => {
-  const lang =
-    idioma === 'pt-BR' ? 'português do Brasil' : idioma === 'es' ? 'espanhol' : 'inglês';
+const instrucoes = (_idioma: string) => {
   return `Você é um engenheiro de manutenção hidráulica que redige laudos técnicos.
 Receberá a fala livre de um técnico (possivelmente com gírias, repetições e erros de transcrição).
-Reescreva como laudo técnico formal, em ${lang}, organizado em tópicos numerados por componente.
+Reescreva como laudo técnico formal, organizado em tópicos numerados por componente.
+
+Idioma de saída:
+- Se o técnico pedir explicitamente um idioma na fala (ex.: "escreve em inglês", "in Spanish", "en español"), escreva o laudo inteiro nesse idioma e não inclua o pedido no texto.
+- Caso contrário, escreva no mesmo idioma em que o técnico falou.
+- Se houver laudo já existente em outro idioma, traduza-o também para o idioma de saída.
 
 Formato obrigatório de saída (texto puro, sem markdown, sem asteriscos):
 1. Nome do Componente
@@ -74,7 +77,6 @@ Deno.serve(async (req) => {
     upstreamForm.append('model', 'google/gemini-3.5-transcribe');
     upstreamForm.append('file', audioFile, nome);
     upstreamForm.append('response_format', 'json');
-    upstreamForm.append('language', idioma);
 
 
     const trRes = await fetch(`${GATEWAY}/v1/audio/transcriptions`, {
