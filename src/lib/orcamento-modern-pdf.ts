@@ -345,3 +345,40 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const base = String(o.numero || "orcamento").replace(/\//g, "-");
   doc.save(`MEC-HYDRO_${lang === "pt-BR" ? "Orcamento" : "Quote"}_${base}${o.numero_revisao ? `_REV${o.numero_revisao}` : ""}.pdf`);
 }
+
+/** Busca todos os dados de um orçamento salvo e gera o PDF no novo layout. */
+export async function baixarOrcamentoModernoPorId(orcamentoId: string, empresa: any, language: string) {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data: orcamento } = await supabase.from("orcamentos").select("*").eq("id", orcamentoId).maybeSingle();
+  if (!orcamento) throw new Error("Orçamento não encontrado");
+  const o: any = orcamento;
+  const { data: itens } = await supabase.from("itens_orcamento").select("*").eq("orcamento_id", o.id);
+  const sel = `*, recebimentos!ordens_servico_recebimento_id_fkey (pressao_trabalho, temperatura_trabalho, fluido_trabalho, camisa, haste_comprimento, curso, conexao_a, conexao_b, local_instalacao, potencia, ambiente_trabalho, categoria_equipamento)`;
+  let os: any = null;
+  if (o.ordem_servico_id) os = (await supabase.from("ordens_servico").select(sel).eq("id", o.ordem_servico_id).maybeSingle()).data;
+  else if (o.ordem_referencia) os = (await supabase.from("ordens_servico").select(sel).eq("numero_ordem", o.ordem_referencia).maybeSingle()).data;
+  let fotos: any[] = [];
+  if (o.ordem_servico_id && os?.recebimento_id) {
+    fotos = (await supabase.from("fotos_equipamentos").select("*").eq("recebimento_id", os.recebimento_id).eq("apresentar_orcamento", true)).data || [];
+  } else if (!o.ordem_servico_id) {
+    fotos = (await supabase.from("fotos_orcamento").select("*").eq("orcamento_id", o.id).eq("apresentar_orcamento", true)).data || [];
+  }
+  let dadosTecnicos: any = null, laudo = "";
+  if (os) {
+    const r = os.recebimentos || {};
+    laudo = (language === "pt-BR" ? os.laudo_tecnico || os.laudo_tecnico_en : os.laudo_tecnico_en || os.laudo_tecnico) || "";
+    dadosTecnicos = {
+      pressaoTrabalho: r.pressao_trabalho || os.pressao_trabalho || "", temperaturaTrabalho: r.temperatura_trabalho || os.temperatura_trabalho || "",
+      fluidoTrabalho: r.fluido_trabalho || os.fluido_trabalho || "", camisa: r.camisa || os.camisa || "",
+      hasteComprimento: r.haste_comprimento || os.haste_comprimento || "", curso: r.curso || os.curso || "",
+      conexaoA: r.conexao_a || os.conexao_a || "", conexaoB: r.conexao_b || os.conexao_b || "",
+      potencia: r.potencia || os.potencia || "", categoriaEquipamento: r.categoria_equipamento || os.categoria_equipamento || "",
+    };
+  }
+  let clienteDoc = "";
+  const q = o.cliente_id
+    ? supabase.from("clientes").select("cnpj_cpf").eq("id", o.cliente_id).maybeSingle()
+    : o.cliente_nome ? supabase.from("clientes").select("cnpj_cpf").eq("nome", o.cliente_nome).maybeSingle() : null;
+  if (q) clienteDoc = ((await q).data as any)?.cnpj_cpf || "";
+  await gerarOrcamentoModernoPDF({ orcamento: o, itens: itens || [], fotos, dadosTecnicos, laudo, clienteDoc, empresa, language });
+}
