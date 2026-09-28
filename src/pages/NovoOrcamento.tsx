@@ -2309,6 +2309,16 @@ export default function NovoOrcamento() {
     }
   };
   const exportarPDF = async () => {
+    const savedId = orcamentoRef.current?.id || editId;
+    if (savedId) {
+      try {
+        const { baixarOrcamentoModernoPorId } = await import('@/lib/orcamento-modern-pdf');
+        await baixarOrcamentoModernoPorId(String(savedId), empresaAtual, language);
+        return;
+      } catch (e) {
+        console.error('Erro no PDF moderno:', e);
+      }
+    }
     const tipoIdentificacao = empresaAtual?.tipo_identificacao || 'cnpj';
     const labelIdentificacao = tipoIdentificacao === 'ein' ? 'EIN' : tipoIdentificacao === 'ssn' ? 'SSN' : 'CNPJ';
     
