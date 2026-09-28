@@ -690,6 +690,29 @@ export default function Orcamentos() {
       const servicos = itensData?.filter(i => i.tipo === 'servico') || [];
       const usinagem = itensData?.filter(i => i.tipo === 'usinagem') || [];
 
+      // === Novo layout moderno (modelo MEC HYDRO) ===
+      {
+        let docCliente = '';
+        const q = orcamento.cliente_id
+          ? supabase.from('clientes').select('cnpj_cpf').eq('id', orcamento.cliente_id).maybeSingle()
+          : orcamento.cliente_nome
+            ? supabase.from('clientes').select('cnpj_cpf').eq('nome', orcamento.cliente_nome).maybeSingle()
+            : null;
+        if (q) { const { data } = await q; docCliente = (data as any)?.cnpj_cpf || ''; }
+        await gerarOrcamentoModernoPDF({
+          orcamento,
+          itens: itensData || [],
+          fotos: fotosData,
+          dadosTecnicos,
+          laudo: laudoTecnicoOrdem,
+          clienteDoc: docCliente,
+          empresa: empresaAtual,
+          language,
+        });
+        toast.success(pdfT.pdfSuccess);
+        return;
+      }
+
       const doc = new jsPDF();
 
       applyMinimalPdfStyle(doc);
