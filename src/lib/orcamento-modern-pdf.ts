@@ -134,9 +134,9 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   };
 
   const rule = (y: number) => { doc.setDrawColor(...LINE); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); };
-  const small = (s: string, x: number, y: number, color = MUTED, bold = true, size = 6.5) => {
+  const small = (s: string, x: number, y: number, color = MUTED, bold = true, size = 6.5, right = false) => {
     doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(size); doc.setTextColor(...color);
-    doc.text(s, x, y);
+    doc.text(s, x, y, right ? { align: "right" } : undefined);
   };
 
   // ============ PÁGINA 1 ============
@@ -219,7 +219,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const section = async (label: string, right?: string) => {
     await ensure(14);
     small(label, M, y, RED, true, 7.5);
-    if (right) { small(right, W - M, y, MUTED, true, 6.5); doc.text("", 0, 0); }
+    if (right) small(right, W - M, y, MUTED, true, 6.5, true);
     y += 5;
   };
 
@@ -281,7 +281,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const lista = async (label: string, arr: any[]) => {
     if (!arr.length) return;
     await section(label);
-    small(TXT[lang].qty, W - M, y - 5, MUTED, true, 6);
+    small(T.qty, W - M, y - 5, MUTED, true, 6, true);
     // alinhar QTD à direita
     y += 0;
     for (const it of arr) {
@@ -339,7 +339,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     doc.line(M, H - 16, W - M, H - 16);
     small(`MEC-HYDRO  /  ${T.quoteUp} ${numero}`, M, H - 10, MUTED, false, 6);
     small(footers[i - 1] || "", W - M - 45, H - 10, MUTED, false, 6);
-    small(String(i).padStart(2, "0"), W - M, H - 10, RED, true, 7);
+    small(String(i).padStart(2, "0"), W - M, H - 10, RED, true, 7, true);
   }
 
   const base = String(o.numero || "orcamento").replace(/\//g, "-");

@@ -1,3 +1,4 @@
+import { gerarOrcamentoModernoPDF } from "@/lib/orcamento-modern-pdf";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
