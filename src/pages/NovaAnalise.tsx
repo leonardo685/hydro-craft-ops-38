@@ -574,6 +574,20 @@ const NovaOrdemServico = () => {
       ];
       criarTabela('Problemas Identificados', dadosProblemas, [128, 128, 128]);
     }
+
+    const laudoTecnicoPdf = language === 'pt-BR'
+      ? formData.laudoTecnico || formData.laudoTecnicoEn
+      : formData.laudoTecnicoEn || formData.laudoTecnico;
+    if (laudoTecnicoPdf?.trim()) {
+      criarTabela(
+        language === 'en' ? 'Inspection Findings' : language === 'es' ? 'Hallazgos de la Inspección' : 'Constatações da Peritagem',
+        [{
+          label: language === 'en' ? 'Findings:' : language === 'es' ? 'Hallazgos:' : 'Constatações:',
+          value: laudoTecnicoPdf.trim()
+        }],
+        [128, 128, 128]
+      );
+    }
     
     // Serviços Realizados - TABELA COM COLUNAS
     const servicosSelecionados = Object.entries(servicosPreDeterminados)

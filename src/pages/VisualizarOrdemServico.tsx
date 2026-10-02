@@ -17,7 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const VisualizarOrdemServico = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const {
     id
   } = useParams();
@@ -367,6 +367,19 @@ const VisualizarOrdemServico = () => {
         value: ordem.descricao_problema || ordem.tipo_problema || ''
       }];
       criarTabela('Problemas Identificados', dadosProblemas, [128, 128, 128]);
+    }
+    const laudoTecnicoPdf = language === 'pt-BR'
+      ? ordem.laudo_tecnico || ordem.laudo_tecnico_en
+      : ordem.laudo_tecnico_en || ordem.laudo_tecnico;
+    if (laudoTecnicoPdf && String(laudoTecnicoPdf).trim()) {
+      criarTabela(
+        language === 'en' ? 'Inspection Findings' : language === 'es' ? 'Hallazgos de la Inspección' : 'Constatações da Peritagem',
+        [{
+          label: language === 'en' ? 'Findings:' : language === 'es' ? 'Hallazgos:' : 'Constatações:',
+          value: String(laudoTecnicoPdf).trim()
+        }],
+        [128, 128, 128]
+      );
     }
     if (ordem.servicos_necessarios && ordem.servicos_necessarios.length > 0) {
       const dadosServicos = ordem.servicos_necessarios.map((s: any) => ({
