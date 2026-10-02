@@ -223,7 +223,8 @@ export async function gerarLaudoPublicoModerno({
   y += 9;
 
   const renderList = (title: string, items: any[], kind: "parts" | "service") => {
-    if (!items.length) return;
+    const visibleItems = items.filter((item) => clean(item.peca || item.descricao || item.nome || item.servico, "") !== "");
+    if (!visibleItems.length) return;
     sectionLabel(title, y);
     if (kind === "parts") {
       doc.setFontSize(6.5);
@@ -231,7 +232,7 @@ export async function gerarLaudoPublicoModerno({
       doc.text(t("laudoPublico.qty").toUpperCase(), right, y, { align: "right" });
     }
     y += 7;
-    items.forEach((item) => {
+    visibleItems.forEach((item) => {
       const name = tr(item.peca || item.descricao || item.nome || item.servico) || "-";
       const lines = doc.splitTextToSize(name, kind === "parts" ? contentWidth - 18 : contentWidth);
       const rowHeight = Math.max(7, lines.length * 4);
