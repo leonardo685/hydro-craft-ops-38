@@ -1,13 +1,13 @@
-// Normaliza número do orçamento para o formato MH-XXX-YY usado nos nomes de arquivo.
-export function numeroParaMH(numero: string | null | undefined): string {
+// Normaliza o número próprio do orçamento para nomes de arquivo, sem o prefixo de ordem de serviço "MH".
+export function numeroOrcamentoParaArquivo(numero: string | null | undefined): string {
   const raw = String(numero || "").trim();
-  if (!raw) return "MH";
-  if (/^MH[-_ ]/i.test(raw)) return raw.toUpperCase().replace(/[\/_ ]/g, "-");
-  const m = raw.match(/(\d+)\D+(\d{2,4})$/);
+  if (!raw) return "Orcamento";
+  const semPrefixo = raw.replace(/^MH[-_ ]*/i, "");
+  const m = semPrefixo.match(/(\d+)\D+(\d{2,4})$/);
   if (m) {
-    const seq = String(parseInt(m[1], 10)).padStart(3, "0");
+    const seq = m[1];
     const ano = m[2].slice(-2);
-    return `MH-${seq}-${ano}`;
+    return `${seq}-${ano}`;
   }
-  return `MH-${raw.replace(/[^a-zA-Z0-9]/g, "-")}`;
+  return semPrefixo.replace(/[^a-zA-Z0-9]/g, "-");
 }
