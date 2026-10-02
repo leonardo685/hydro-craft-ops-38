@@ -6,6 +6,26 @@ import { installCurrencySymbolNormalization } from './lib/currency-symbol'
 
 installCurrencySymbolNormalization();
 
+// Evita tela branca quando extensões (ex.: tradutor do navegador) alteram o DOM
+// gerenciado pelo React e ele tenta remover/inserir um nó que já mudou de lugar.
+if (typeof Node === 'function' && Node.prototype) {
+  const originalRemoveChild = Node.prototype.removeChild;
+  Node.prototype.removeChild = function <T extends Node>(this: Node, child: T): T {
+    if (child.parentNode !== this) {
+      if (child.parentNode) child.parentNode.removeChild(child);
+      return child;
+    }
+    return originalRemoveChild.call(this, child) as T;
+  };
+  const originalInsertBefore = Node.prototype.insertBefore;
+  Node.prototype.insertBefore = function <T extends Node>(this: Node, newNode: T, ref: Node | null): T {
+    if (ref && ref.parentNode !== this) {
+      return originalInsertBefore.call(this, newNode, null) as T;
+    }
+    return originalInsertBefore.call(this, newNode, ref) as T;
+  };
+}
+
 
 const isLovablePreview =
   window.location.hostname.includes('lovableproject.com') ||
