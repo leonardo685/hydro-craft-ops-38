@@ -1,3 +1,4 @@
+import { numeroParaMH } from "@/lib/quote-filename";
 import jsPDF from "jspdf";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { translateTerm } from "@/i18n/dynamicTerms";
