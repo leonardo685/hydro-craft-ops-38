@@ -47,6 +47,8 @@ interface OrdemServico {
   servicos_necessarios: any;
   usinagem_necessaria: any;
   motivo_falha: string | null;
+  laudo_tecnico: string | null;
+  laudo_tecnico_en: string | null;
   recebimento_id: number | null;
   recebimentos?: {
     numero_ordem: string;
@@ -547,6 +549,38 @@ export default function LaudoPublico() {
         
         if (verificacoes.length > 0) {
           criarTabela(t('laudoPublico.leakChecks'), verificacoes, [128, 128, 128]);
+        }
+        
+        // === LAUDO TÉCNICO (abaixo das verificações de vazamento) ===
+        const laudoTexto = language === 'pt-BR'
+          ? ordemServico.laudo_tecnico || ordemServico.laudo_tecnico_en
+          : ordemServico.laudo_tecnico_en || ordemServico.laudo_tecnico;
+        if (laudoTexto && String(laudoTexto).trim()) {
+          if (yPosition > 240) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.setTextColor(255, 255, 255);
+          doc.setFillColor(128, 128, 128);
+          doc.rect(20, yPosition, pageWidth - 40, 8, 'F');
+          doc.text(t('laudoPublico.technicalReport').toUpperCase(), pageWidth / 2, yPosition + 6, { align: 'center' });
+          yPosition += 8;
+          
+          doc.setTextColor(0, 0, 0);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          const linhasLaudo = doc.splitTextToSize(String(laudoTexto).trim(), pageWidth - 50);
+          linhasLaudo.forEach((linha: string) => {
+            if (yPosition > 270) {
+              doc.addPage();
+              yPosition = 20;
+            }
+            doc.text(linha, 25, yPosition + 6);
+            yPosition += 5.5;
+          });
+          yPosition += 8;
         }
         
         // Observações
