@@ -47,6 +47,8 @@ interface OrdemServico {
   servicos_necessarios: any;
   usinagem_necessaria: any;
   motivo_falha: string | null;
+  laudo_tecnico: string | null;
+  laudo_tecnico_en: string | null;
   recebimento_id: number | null;
   recebimentos?: {
     numero_ordem: string;
