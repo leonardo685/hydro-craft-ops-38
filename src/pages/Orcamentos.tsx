@@ -1591,8 +1591,8 @@ export default function Orcamentos() {
 
       // Salvar PDF com indicação de revisão no nome
       const nomeArquivo = orcamento.numero_revisao
-        ? `Orcamento_${orcamento.numero.replace(/\//g, '-')}_REV${orcamento.numero_revisao}.pdf`
-        : `Orcamento_${orcamento.numero.replace(/\//g, '-')}.pdf`;
+        ? `${language?.startsWith?.('pt') ? 'Orcamento' : 'Quote'}_${orcamento.numero.replace(/\//g, '-')}_REV${orcamento.numero_revisao}.pdf`
+        : `${language?.startsWith?.('pt') ? 'Orcamento' : 'Quote'}_${orcamento.numero.replace(/\//g, '-')}.pdf`;
       
       doc.save(nomeArquivo);
       toast.success(pdfT.pdfSuccess);

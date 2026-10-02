@@ -360,7 +360,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   }
 
   const base = String(o.numero || "orcamento").replace(/\//g, "-");
-  doc.save(`MEC-HYDRO_${lang === "pt-BR" ? "Orcamento" : "Quote"}_${base}${o.numero_revisao ? `_REV${o.numero_revisao}` : ""}.pdf`);
+  doc.save(`MEC-HYDRO_${String(lang || "").startsWith("pt") ? "Orcamento" : "Quote"}_${base}${o.numero_revisao ? `_REV${o.numero_revisao}` : ""}.pdf`);
 }
 
 /** Busca todos os dados de um orçamento salvo e gera o PDF no novo layout. */
