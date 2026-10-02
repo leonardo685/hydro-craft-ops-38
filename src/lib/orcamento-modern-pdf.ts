@@ -1,3 +1,4 @@
+import { numeroParaMH } from "@/lib/quote-filename";
 import jsPDF from "jspdf";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { translateTerm } from "@/i18n/dynamicTerms";
@@ -359,8 +360,8 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     small(String(i).padStart(2, "0"), W - M, H - 10, RED, true, 7, true);
   }
 
-  const base = String(o.numero || "orcamento").replace(/\//g, "-");
-  doc.save(`MEC-HYDRO_${String(lang || "").startsWith("pt") ? "Orcamento" : "Quote"}_${base}${o.numero_revisao ? `_REV${o.numero_revisao}` : ""}.pdf`);
+  const base = numeroParaMH(o.numero);
+  doc.save(`${String(lang || "").startsWith("pt") ? "Orcamento" : "Quote"} ${base}${o.numero_revisao ? ` REV${o.numero_revisao}` : ""}.pdf`);
 }
 
 /** Busca todos os dados de um orçamento salvo e gera o PDF no novo layout. */

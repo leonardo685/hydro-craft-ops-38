@@ -1,3 +1,4 @@
+import { numeroParaMH } from "@/lib/quote-filename";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -2293,7 +2294,7 @@ export default function NovoOrcamento() {
       adicionarRodape();
 
       // Salvar PDF
-      doc.save(`${language?.startsWith?.('pt') ? 'Orcamento' : 'Quote'}_${revisao.numero.replace(/[^a-zA-Z0-9]/g, "_")}_REV${revisao.numero_revisao}.pdf`);
+      doc.save(`${language?.startsWith?.('pt') ? 'Orcamento' : 'Quote'} ${numeroParaMH(revisao.numero)} REV${revisao.numero_revisao}.pdf`);
       
       toast({
         title: "PDF gerado com sucesso!",
@@ -3238,7 +3239,7 @@ export default function NovoOrcamento() {
 
     // Salvar PDF
     const pdfPrefix = language?.startsWith?.('pt') ? 'Orcamento' : 'Quote';
-    doc.save(`${pdfPrefix}_${dadosOrcamento.numeroOrdem.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
+    doc.save(`${pdfPrefix} ${numeroParaMH(dadosOrcamento.numeroOrdem)}.pdf`);
     toast({
       title: "Sucesso",
       description: "PDF exportado com sucesso!"

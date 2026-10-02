@@ -1,3 +1,4 @@
+import { numeroParaMH } from "@/lib/quote-filename";
 import { gerarOrcamentoModernoPDF } from "@/lib/orcamento-modern-pdf";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -1591,8 +1592,8 @@ export default function Orcamentos() {
 
       // Salvar PDF com indicação de revisão no nome
       const nomeArquivo = orcamento.numero_revisao
-        ? `${language?.startsWith?.('pt') ? 'Orcamento' : 'Quote'}_${orcamento.numero.replace(/\//g, '-')}_REV${orcamento.numero_revisao}.pdf`
-        : `${language?.startsWith?.('pt') ? 'Orcamento' : 'Quote'}_${orcamento.numero.replace(/\//g, '-')}.pdf`;
+        ? `${language?.startsWith?.('pt') ? 'Orcamento' : 'Quote'} ${numeroParaMH(orcamento.numero)} REV${orcamento.numero_revisao}.pdf`
+        : `${language?.startsWith?.('pt') ? 'Orcamento' : 'Quote'} ${numeroParaMH(orcamento.numero)}.pdf`;
       
       doc.save(nomeArquivo);
       toast.success(pdfT.pdfSuccess);
