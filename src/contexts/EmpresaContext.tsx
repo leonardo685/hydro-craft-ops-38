@@ -136,6 +136,11 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
       }
 
       setEmpresaAtual(empresaSelecionada);
+      if (empresaSelecionada) {
+        const nomeAnterior = localStorage.getItem('empresa_atual_nome');
+        localStorage.setItem('empresa_atual_nome', empresaSelecionada.nome || '');
+        if (nomeAnterior === null) window.location.reload();
+      }
 
       // Auto-set language based on company (Brazilian companies default to pt-BR)
       if (empresaSelecionada) {
@@ -178,6 +183,7 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
     console.log('[EmpresaContext] 🔄 Trocando para empresa:', empresa.nome);
     
     localStorage.setItem(EMPRESA_STORAGE_KEY, empresaId);
+    localStorage.setItem('empresa_atual_nome', empresa.nome || '');
     setEmpresaAtual(empresa);
 
     // Auto-set language based on company

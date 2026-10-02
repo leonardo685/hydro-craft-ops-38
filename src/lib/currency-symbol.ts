@@ -2,8 +2,21 @@
  * Normaliza o símbolo de moeda em todo o app: exibe apenas "$" (sem o "R").
  * Aplica-se a Intl.NumberFormat e Number#toLocaleString.
  */
-const stripR = (value: string) =>
-  typeof value === "string" ? value.replace(/R\$/g, "$").replace(/\bBRL\b/g, "$") : value;
+// Empresas brasileiras (ex.: MEC HIDRO) mantêm "R$"; só a MEC HYDRO (EUA) usa "$".
+const isEmpresaBrasil = () => {
+  try {
+    const nome = (localStorage.getItem("empresa_atual_nome") || "").toUpperCase();
+    return !nome.includes("MEC HYDRO");
+  } catch {
+    return false;
+  }
+};
+
+const stripR = (value: string) => {
+  if (typeof value !== "string") return value;
+  if (isEmpresaBrasil()) return value;
+  return value.replace(/R\$/g, "$").replace(/\bBRL\b/g, "$");
+};
 
 export function installCurrencySymbolNormalization() {
   const anyGlobal = globalThis as any;
