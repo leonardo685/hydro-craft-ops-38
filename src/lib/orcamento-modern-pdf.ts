@@ -12,7 +12,7 @@ const TXT: Record<Lang, Record<string, string>> = {
     subtotal: "Subtotal da reforma", salesTax: "Imposto sobre vendas", validity: "VALIDADE",
     warranty: "GARANTIA", freight: "FRETE", payment: "Pagamento", delivery: "Prazo de entrega",
     days: "dias", months: "meses", noWarranty: "Sem garantia", toArrange: "A combinar",
-    scope: "Escopo técnico", findings: "RELATÓRIO DE INSPEÇÃO", equipData: "DADOS DO EQUIPAMENTO",
+    scope: "Escopo técnico", findings: "RELATÓRIO DE INSPEÇÃO", identifiedProblems: "CONSTATAÇÕES", technicalReport: "LAUDO TÉCNICO", equipData: "DADOS DO EQUIPAMENTO",
     pressure: "PRESSÃO DE TRABALHO", bore: "DIÂMETRO INTERNO", stroke: "CURSO",
     rod: "HASTE: DIÂM. x COMPR.", connA: "CONEXÃO A", connB: "CONEXÃO B",
     temperature: "TEMPERATURA", fluid: "FLUIDO", power: "POTÊNCIA",
@@ -27,7 +27,7 @@ const TXT: Record<Lang, Record<string, string>> = {
     subtotal: "Repair subtotal", salesTax: "Sales tax", validity: "VALIDITY",
     warranty: "WARRANTY", freight: "FREIGHT", payment: "Payment terms", delivery: "Delivery time",
     days: "days", months: "months", noWarranty: "No warranty", toArrange: "To be arranged",
-    scope: "Technical scope", findings: "INSPECTION FINDINGS", equipData: "EQUIPMENT DATA",
+    scope: "Technical scope", findings: "INSPECTION FINDINGS", identifiedProblems: "FINDINGS", technicalReport: "TECHNICAL REPORT", equipData: "EQUIPMENT DATA",
     pressure: "WORKING PRESSURE", bore: "BORE", stroke: "STROKE",
     rod: "ROD DIA. x LENGTH", connA: "CONNECTION A", connB: "CONNECTION B",
     temperature: "TEMPERATURE", fluid: "FLUID", power: "POWER",
@@ -42,7 +42,7 @@ const TXT: Record<Lang, Record<string, string>> = {
     subtotal: "Subtotal de la reparación", salesTax: "Impuesto sobre ventas", validity: "VALIDEZ",
     warranty: "GARANTÍA", freight: "FLETE", payment: "Pago", delivery: "Plazo de entrega",
     days: "días", months: "meses", noWarranty: "Sin garantía", toArrange: "A convenir",
-    scope: "Alcance técnico", findings: "INFORME DE INSPECCIÓN", equipData: "DATOS DEL EQUIPO",
+    scope: "Alcance técnico", findings: "INFORME DE INSPECCIÓN", identifiedProblems: "HALLAZGOS", technicalReport: "INFORME TÉCNICO", equipData: "DATOS DEL EQUIPO",
     pressure: "PRESIÓN DE TRABAJO", bore: "DIÁMETRO INTERNO", stroke: "CARRERA",
     rod: "VÁSTAGO: DIÁM. x LONG.", connA: "CONEXIÓN A", connB: "CONEXIÓN B",
     temperature: "TEMPERATURA", fluid: "FLUIDO", power: "POTENCIA",
@@ -58,6 +58,7 @@ export interface ModernOrcamentoParams {
   fotos: { arquivo_url: string; legenda?: string | null }[];
   dadosTecnicos: any | null;
   laudo: string;
+  findings?: string;
   clienteDoc: string;
   empresa: any;
   language: string;
@@ -224,9 +225,25 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   };
 
   const laudo = (p.laudo || "").trim();
-  if (laudo) {
+  const findings = (p.findings || "").trim();
+  if (laudo || findings) {
     await section(T.findings);
     y += 2;
+    if (findings) {
+      if (laudo) {
+        small(T.identifiedProblems, M, y, MUTED, true, 6.5);
+        y += 4;
+      }
+      const findingLines = doc.splitTextToSize(tr(findings), CW);
+      await ensure(findingLines.length * 4 + 5);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...DARK);
+      findingLines.forEach((line: string) => { doc.text(line, M, y); y += 4; });
+      y += 2;
+    }
+    if (laudo && findings) {
+      small(T.technicalReport, M, y, MUTED, true, 6.5);
+      y += 5;
+    }
     const blocos = laudo.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
     for (const bloco of blocos) {
       const linhas = bloco.split("\n");
@@ -363,10 +380,11 @@ export async function baixarOrcamentoModernoPorId(orcamentoId: string, empresa: 
   } else if (!o.ordem_servico_id) {
     fotos = (await supabase.from("fotos_orcamento").select("*").eq("orcamento_id", o.id).eq("apresentar_orcamento", true)).data || [];
   }
-  let dadosTecnicos: any = null, laudo = "";
+  let dadosTecnicos: any = null, laudo = "", findings = "";
   if (os) {
     const r = os.recebimentos || {};
     laudo = (language === "pt-BR" ? os.laudo_tecnico || os.laudo_tecnico_en : os.laudo_tecnico_en || os.laudo_tecnico) || "";
+    findings = os.descricao_problema || os.tipo_problema || "";
     dadosTecnicos = {
       pressaoTrabalho: r.pressao_trabalho || os.pressao_trabalho || "", temperaturaTrabalho: r.temperatura_trabalho || os.temperatura_trabalho || "",
       fluidoTrabalho: r.fluido_trabalho || os.fluido_trabalho || "", camisa: r.camisa || os.camisa || "",
@@ -380,5 +398,5 @@ export async function baixarOrcamentoModernoPorId(orcamentoId: string, empresa: 
     ? supabase.from("clientes").select("cnpj_cpf").eq("id", o.cliente_id).maybeSingle()
     : o.cliente_nome ? supabase.from("clientes").select("cnpj_cpf").eq("nome", o.cliente_nome).maybeSingle() : null;
   if (q) clienteDoc = ((await q).data as any)?.cnpj_cpf || "";
-  await gerarOrcamentoModernoPDF({ orcamento: o, itens: itens || [], fotos, dadosTecnicos, laudo, clienteDoc, empresa, language });
+  await gerarOrcamentoModernoPDF({ orcamento: o, itens: itens || [], fotos, dadosTecnicos, laudo, findings, clienteDoc, empresa, language });
 }
