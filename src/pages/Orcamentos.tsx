@@ -615,6 +615,7 @@ export default function Orcamentos() {
       // Buscar dados técnicos do equipamento
       let dadosTecnicos: any = null;
       let laudoTecnicoOrdem = '';
+      let findingsOrdem = '';
 
       if (orcamento.ordem_servico_id) {
         const { data: osData } = await supabase
@@ -635,6 +636,7 @@ export default function Orcamentos() {
           laudoTecnicoOrdem = (language === 'pt-BR'
             ? (osData as any).laudo_tecnico || (osData as any).laudo_tecnico_en
             : (osData as any).laudo_tecnico_en || (osData as any).laudo_tecnico) || '';
+          findingsOrdem = (osData as any).descricao_problema || (osData as any).tipo_problema || '';
           dadosTecnicos = {
             pressaoTrabalho: rec?.pressao_trabalho || osData.pressao_trabalho || '',
             temperaturaTrabalho: rec?.temperatura_trabalho || osData.temperatura_trabalho || '',
@@ -669,6 +671,7 @@ export default function Orcamentos() {
           laudoTecnicoOrdem = (language === 'pt-BR'
             ? (osData as any).laudo_tecnico || (osData as any).laudo_tecnico_en
             : (osData as any).laudo_tecnico_en || (osData as any).laudo_tecnico) || '';
+          findingsOrdem = (osData as any).descricao_problema || (osData as any).tipo_problema || '';
           dadosTecnicos = {
             pressaoTrabalho: rec?.pressao_trabalho || osData.pressao_trabalho || '',
             temperaturaTrabalho: rec?.temperatura_trabalho || osData.temperatura_trabalho || '',
@@ -706,6 +709,7 @@ export default function Orcamentos() {
           fotos: fotosData,
           dadosTecnicos,
           laudo: laudoTecnicoOrdem,
+          findings: findingsOrdem,
           clienteDoc: docCliente,
           empresa: empresaAtual,
           language,
