@@ -148,6 +148,7 @@ export default function NovoOrcamento() {
 
   // Estados para informações comerciais
   const [informacoesComerciais, setInformacoesComerciais] = useState({
+    taxExempt: false,
     valorTotal: 0,
     desconto: 0,
     valorComDesconto: 0,
@@ -417,6 +418,7 @@ export default function NovoOrcamento() {
         // Carregar informações comerciais
         setInformacoesComerciais(prev => ({
           ...prev,
+          taxExempt: Boolean(orcamentoEdicao.tax_exempt),
           valorTotal: Number(orcamentoEdicao.valor) || 0,
           desconto: Number(orcamentoEdicao.desconto_percentual) || 0,
           condicaoPagamento: orcamentoEdicao.condicao_pagamento || '',
@@ -1337,6 +1339,7 @@ export default function NovoOrcamento() {
           const houveAlteracaoCampos = 
             orcamentoAtual.equipamento !== (dadosOrcamento.tag || 'Equipamento não especificado') ||
             orcamentoAtual.cliente_nome !== dadosOrcamento.cliente ||
+            Boolean(orcamentoAtual.tax_exempt) !== informacoesComerciais.taxExempt ||
             Number(orcamentoAtual.valor) !== Number(valorFinal) ||
             Number(orcamentoAtual.desconto_percentual || 0) !== Number(informacoesComerciais.desconto) ||
             orcamentoAtual.condicao_pagamento !== (informacoesComerciais.condicaoPagamento || null) ||
@@ -1389,6 +1392,8 @@ export default function NovoOrcamento() {
                 equipamento: orcamentoAtual.equipamento,
                 cliente_nome: orcamentoAtual.cliente_nome,
                 cliente_id: orcamentoAtual.cliente_id,
+                tax_exempt: orcamentoAtual.tax_exempt,
+                empresa_id: empresaAtual?.id,
                 valor: orcamentoAtual.valor,
                 desconto_percentual: orcamentoAtual.desconto_percentual,
                 condicao_pagamento: orcamentoAtual.condicao_pagamento,
@@ -1467,6 +1472,7 @@ export default function NovoOrcamento() {
       cliente_id: dadosOrcamento.clienteId || null,
       equipamento: dadosOrcamento.tag || 'Equipamento não especificado',
         descricao: dadosOrcamento.observacoes || '',
+        tax_exempt: informacoesComerciais.taxExempt,
         valor: valorFinal,
         desconto_percentual: informacoesComerciais.desconto,
         status: 'pendente',
@@ -1766,6 +1772,7 @@ export default function NovoOrcamento() {
             numero_revisao: revisao.numero_revisao,
             cliente_nome: revisao.cliente_nome,
             equipamento: revisao.equipamento,
+            tax_exempt: Boolean(revisao.tax_exempt),
             valor: Number(revisao.valor) || 0,
             condicao_pagamento: revisao.condicao_pagamento,
             prazo_pagamento: revisao.prazo_pagamento,
@@ -2350,16 +2357,15 @@ export default function NovoOrcamento() {
       findings = r?.descricao_problema || r?.tipo_problema || '';
     }
     let clienteDoc = '';
-    let clienteTaxExempt = false;
     if (dadosOrcamento.clienteId) {
-      const { data } = await supabase.from('clientes').select('cnpj_cpf, tax_exempt').eq('id', dadosOrcamento.clienteId).maybeSingle();
+      const { data } = await supabase.from('clientes').select('cnpj_cpf').eq('empresa_id', empresaAtual?.id || '').eq('id', dadosOrcamento.clienteId).maybeSingle();
       clienteDoc = data?.cnpj_cpf || '';
-      clienteTaxExempt = Boolean(data?.tax_exempt);
     }
     const orcamento = {
       numero: dadosOrcamento.numeroOrdem,
       cliente_nome: dadosOrcamento.cliente,
       equipamento: dadosOrcamento.tag,
+      tax_exempt: informacoesComerciais.taxExempt,
       valor: informacoesComerciais.valorTotal || 0,
       observacoes: `Documento: ${dadosOrcamento.tipoDocumento}`,
       numero_nota_entrada: dadosOrcamento.numeroNota || null,
@@ -2390,7 +2396,6 @@ export default function NovoOrcamento() {
       laudo,
       findings,
       clienteDoc,
-      clienteTaxExempt,
       empresa: empresaAtual,
       language,
     });
@@ -4111,6 +4116,22 @@ export default function NovoOrcamento() {
               })}`} disabled className="bg-muted font-medium" />
               </div>
             </div>
+
+            {empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO') && (
+              <div className="space-y-2 max-w-sm">
+                <Label htmlFor="quote-tax">Sales tax</Label>
+                <Select
+                  value={informacoesComerciais.taxExempt ? 'without' : 'with'}
+                  onValueChange={value => setInformacoesComerciais(prev => ({ ...prev, taxExempt: value === 'without' }))}
+                >
+                  <SelectTrigger id="quote-tax"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="with">{language === 'en' ? 'With tax (8.5%)' : language === 'es' ? 'Con tax (8,5%)' : 'Com tax (8,5%)'}</SelectItem>
+                    <SelectItem value="without">{language === 'en' ? 'Without tax (0%)' : language === 'es' ? 'Sin tax (0%)' : 'Sem tax (0%)'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

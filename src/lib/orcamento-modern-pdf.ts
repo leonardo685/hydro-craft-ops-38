@@ -61,7 +61,6 @@ export interface ModernOrcamentoParams {
   laudo: string;
   findings?: string;
   clienteDoc: string;
-  clienteTaxExempt?: boolean;
   empresa: any;
   language: string;
 }
@@ -167,7 +166,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   y += 9; rule(y); y += 10;
 
   const subtotal = Number(o.valor || 0);
-  const taxRate = p.clienteTaxExempt ? 0 : 8.5;
+  const taxRate = o.tax_exempt ? 0 : 8.5;
   const tax = isMec ? subtotal * (taxRate / 100) : 0;
   const total = subtotal + tax;
   small(isMec ? T.subtotal : T.total, M, y); y += 14;
@@ -369,19 +368,20 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
 /** Busca todos os dados de um orçamento salvo e gera o PDF no novo layout. */
 export async function baixarOrcamentoModernoPorId(orcamentoId: string, empresa: any, language: string) {
   const { supabase } = await import("@/integrations/supabase/client");
-  const { data: orcamento } = await supabase.from("orcamentos").select("*").eq("id", orcamentoId).maybeSingle();
+  if (!empresa?.id) throw new Error("Selecione uma empresa");
+  const { data: orcamento } = await supabase.from("orcamentos").select("*").eq("empresa_id", empresa.id).eq("id", orcamentoId).maybeSingle();
   if (!orcamento) throw new Error("Orçamento não encontrado");
   const o: any = orcamento;
-  const { data: itens } = await supabase.from("itens_orcamento").select("*").eq("orcamento_id", o.id);
+  const { data: itens } = await supabase.from("itens_orcamento").select("*").eq("empresa_id", empresa.id).eq("orcamento_id", o.id);
   const sel = `*, recebimentos!ordens_servico_recebimento_id_fkey (pressao_trabalho, temperatura_trabalho, fluido_trabalho, camisa, haste_comprimento, curso, conexao_a, conexao_b, local_instalacao, potencia, ambiente_trabalho, categoria_equipamento)`;
   let os: any = null;
-  if (o.ordem_servico_id) os = (await supabase.from("ordens_servico").select(sel).eq("id", o.ordem_servico_id).maybeSingle()).data;
-  else if (o.ordem_referencia) os = (await supabase.from("ordens_servico").select(sel).eq("numero_ordem", o.ordem_referencia).maybeSingle()).data;
+  if (o.ordem_servico_id) os = (await supabase.from("ordens_servico").select(sel).eq("empresa_id", empresa.id).eq("id", o.ordem_servico_id).maybeSingle()).data;
+  else if (o.ordem_referencia) os = (await supabase.from("ordens_servico").select(sel).eq("empresa_id", empresa.id).eq("numero_ordem", o.ordem_referencia).maybeSingle()).data;
   let fotos: any[] = [];
   if (o.ordem_servico_id && os?.recebimento_id) {
-    fotos = (await supabase.from("fotos_equipamentos").select("*").eq("recebimento_id", os.recebimento_id).eq("apresentar_orcamento", true)).data || [];
+    fotos = (await supabase.from("fotos_equipamentos").select("*").eq("empresa_id", empresa.id).eq("recebimento_id", os.recebimento_id).eq("apresentar_orcamento", true)).data || [];
   } else if (!o.ordem_servico_id) {
-    fotos = (await supabase.from("fotos_orcamento").select("*").eq("orcamento_id", o.id).eq("apresentar_orcamento", true)).data || [];
+    fotos = (await supabase.from("fotos_orcamento").select("*").eq("empresa_id", empresa.id).eq("orcamento_id", o.id).eq("apresentar_orcamento", true)).data || [];
   }
   let dadosTecnicos: any = null, laudo = "", findings = "";
   if (os) {
@@ -396,14 +396,13 @@ export async function baixarOrcamentoModernoPorId(orcamentoId: string, empresa: 
       potencia: r.potencia || os.potencia || "", categoriaEquipamento: r.categoria_equipamento || os.categoria_equipamento || "",
     };
   }
-  let clienteDoc = "", clienteTaxExempt = false;
+  let clienteDoc = "";
   const q = o.cliente_id
-    ? supabase.from("clientes").select("cnpj_cpf, tax_exempt").eq("id", o.cliente_id).maybeSingle()
-    : o.cliente_nome ? supabase.from("clientes").select("cnpj_cpf, tax_exempt").eq("nome", o.cliente_nome).maybeSingle() : null;
+    ? supabase.from("clientes").select("cnpj_cpf").eq("empresa_id", empresa.id).eq("id", o.cliente_id).maybeSingle()
+    : o.cliente_nome ? supabase.from("clientes").select("cnpj_cpf").eq("empresa_id", empresa.id).eq("nome", o.cliente_nome).maybeSingle() : null;
   if (q) {
     const cliente = (await q).data;
     clienteDoc = cliente?.cnpj_cpf || "";
-    clienteTaxExempt = Boolean(cliente?.tax_exempt);
   }
-  await gerarOrcamentoModernoPDF({ orcamento: o, itens: itens || [], fotos, dadosTecnicos, laudo, findings, clienteDoc, clienteTaxExempt, empresa, language });
+  await gerarOrcamentoModernoPDF({ orcamento: o, itens: itens || [], fotos, dadosTecnicos, laudo, findings, clienteDoc, empresa, language });
 }
