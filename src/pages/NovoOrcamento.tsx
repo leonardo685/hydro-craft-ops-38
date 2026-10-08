@@ -1758,6 +1758,32 @@ export default function NovoOrcamento() {
         .eq('orcamento_id', revisao.orcamento_id)
         .eq('apresentar_orcamento', true);
 
+      // ===== LAYOUT MODERNO =====
+      {
+        await gerarModernoDoFormulario({
+          orcamento: {
+            numero: revisao.numero,
+            numero_revisao: revisao.numero_revisao,
+            cliente_nome: revisao.cliente_nome,
+            equipamento: revisao.equipamento,
+            valor: Number(revisao.valor) || 0,
+            condicao_pagamento: revisao.condicao_pagamento,
+            prazo_pagamento: revisao.prazo_pagamento,
+            prazo_entrega: revisao.prazo_entrega,
+            assunto_proposta: revisao.assunto_proposta,
+            frete: revisao.frete || 'CIF',
+            garantia: revisao.garantia,
+            validade_proposta: revisao.validade_proposta,
+            observacoes: revisao.observacoes || `Documento: ${dadosOrcamento.tipoDocumento}`,
+            data_orcamento: revisao.data_revisao || revisao.created_at,
+          },
+          itens: itensRevisao,
+          fotos: (fotosRevisao && fotosRevisao.length) ? fotosRevisao : fotos.filter(f => f.apresentar_orcamento),
+        });
+        toast({ title: "PDF gerado com sucesso!", description: `Orçamento ${revisao.numero} REV ${revisao.numero_revisao}` });
+        return;
+      }
+
       // ===== GERAR PDF USANDO A MESMA LÓGICA DO EXPORTARPDF =====
       const tipoIdentificacao = empresaAtual?.tipo_identificacao || 'cnpj';
       const labelIdentificacao = tipoIdentificacao === 'ein' ? 'EIN' : tipoIdentificacao === 'ssn' ? 'SSN' : 'CNPJ';
