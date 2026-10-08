@@ -26,6 +26,7 @@ import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 
 export default function OrdensServico() {
   const navigate = useNavigate();
+  const [menuAberto, setMenuAberto] = useState<string | null>(null);
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const { empresaAtual } = useEmpresa();
