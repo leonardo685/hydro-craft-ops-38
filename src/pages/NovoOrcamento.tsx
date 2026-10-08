@@ -2350,9 +2350,11 @@ export default function NovoOrcamento() {
       findings = r?.descricao_problema || r?.tipo_problema || '';
     }
     let clienteDoc = '';
+    let clienteTaxExempt = false;
     if (dadosOrcamento.clienteId) {
-      const { data } = await supabase.from('clientes').select('cnpj_cpf').eq('id', dadosOrcamento.clienteId).maybeSingle();
-      clienteDoc = (data as any)?.cnpj_cpf || '';
+      const { data } = await supabase.from('clientes').select('cnpj_cpf, tax_exempt').eq('id', dadosOrcamento.clienteId).maybeSingle();
+      clienteDoc = data?.cnpj_cpf || '';
+      clienteTaxExempt = Boolean(data?.tax_exempt);
     }
     const orcamento = {
       numero: dadosOrcamento.numeroOrdem,
@@ -2388,6 +2390,7 @@ export default function NovoOrcamento() {
       laudo,
       findings,
       clienteDoc,
+      clienteTaxExempt,
       empresa: empresaAtual,
       language,
     });

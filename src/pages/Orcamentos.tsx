@@ -698,12 +698,17 @@ export default function Orcamentos() {
       // === Novo layout moderno (modelo MEC HYDRO) ===
       {
         let docCliente = '';
+        let clienteTaxExempt = false;
         const q = orcamento.cliente_id
-          ? supabase.from('clientes').select('cnpj_cpf').eq('id', orcamento.cliente_id).maybeSingle()
+          ? supabase.from('clientes').select('cnpj_cpf, tax_exempt').eq('id', orcamento.cliente_id).maybeSingle()
           : orcamento.cliente_nome
-            ? supabase.from('clientes').select('cnpj_cpf').eq('nome', orcamento.cliente_nome).maybeSingle()
+            ? supabase.from('clientes').select('cnpj_cpf, tax_exempt').eq('nome', orcamento.cliente_nome).maybeSingle()
             : null;
-        if (q) { const { data } = await q; docCliente = (data as any)?.cnpj_cpf || ''; }
+        if (q) {
+          const { data } = await q;
+          docCliente = data?.cnpj_cpf || '';
+          clienteTaxExempt = Boolean(data?.tax_exempt);
+        }
         await gerarOrcamentoModernoPDF({
           orcamento,
           itens: itensData || [],
@@ -712,6 +717,7 @@ export default function Orcamentos() {
           laudo: laudoTecnicoOrdem,
           findings: findingsOrdem,
           clienteDoc: docCliente,
+          clienteTaxExempt,
           empresa: empresaAtual,
           language,
         });
