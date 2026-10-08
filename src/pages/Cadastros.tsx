@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableRow, TableHeader } from "@/components/ui/table";
 import { Plus, Users, Building, Tag, Edit, Trash2, AlertTriangle } from "lucide-react";
 import { CategoriasFinanceiras } from "@/components/CategoriasFinanceiras";
@@ -32,6 +33,7 @@ interface Cliente {
   inscricao_municipal?: string;
   observacoes?: string;
   tipo_identificacao?: string;
+  tax_exempt?: boolean;
 }
 
 interface Fornecedor {
@@ -80,7 +82,8 @@ const Cadastros = () => {
     inscricao_estadual: "",
     inscricao_municipal: "",
     observacoes: "",
-    condicoes_pagamento: ""
+    condicoes_pagamento: "",
+    tax_exempt: false
   });
 
   // Formulário de fornecedor
@@ -163,7 +166,8 @@ const Cadastros = () => {
       inscricao_estadual: "",
       inscricao_municipal: "",
       observacoes: "",
-      condicoes_pagamento: ""
+      condicoes_pagamento: "",
+      tax_exempt: false
     });
     setClienteTipoId('cnpj');
     setEditingCliente(null);
@@ -335,6 +339,7 @@ const Cadastros = () => {
         observacoes: clienteForm.observacoes?.trim() || null,
         condicoes_pagamento: clienteForm.condicoes_pagamento?.trim() || null,
         tipo_identificacao: clienteTipoId,
+        tax_exempt: clienteTipoId === 'ein' && clienteForm.tax_exempt,
       };
 
       if (editingCliente) {
@@ -416,7 +421,8 @@ const Cadastros = () => {
       inscricao_estadual: cliente.inscricao_estadual || "",
       inscricao_municipal: cliente.inscricao_municipal || "",
       observacoes: cliente.observacoes || "",
-      condicoes_pagamento: (cliente as any).condicoes_pagamento || ""
+      condicoes_pagamento: (cliente as any).condicoes_pagamento || "",
+      tax_exempt: Boolean(cliente.tax_exempt)
     });
     setClienteTipoId((cliente.tipo_identificacao as TipoIdentificacao) || 'cnpj');
     setEditingCliente(cliente);
@@ -640,6 +646,16 @@ const Cadastros = () => {
                           />
                         </div>
                       </div>
+                      {clienteTipoId === 'ein' && (
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="tax_exempt"
+                            checked={clienteForm.tax_exempt}
+                            onCheckedChange={(checked) => setClienteForm({ ...clienteForm, tax_exempt: checked === true })}
+                          />
+                          <Label htmlFor="tax_exempt">Tax exempt (isento de sales tax)</Label>
+                        </div>
+                      )}
                       <div>
                         <Label htmlFor="condicoes_pagamento">Condições de Pagamento</Label>
                         <Textarea

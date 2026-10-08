@@ -61,6 +61,7 @@ export interface ModernOrcamentoParams {
   laudo: string;
   findings?: string;
   clienteDoc: string;
+  clienteTaxExempt?: boolean;
   empresa: any;
   language: string;
 }
@@ -166,7 +167,8 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   y += 9; rule(y); y += 10;
 
   const subtotal = Number(o.valor || 0);
-  const tax = isMec ? subtotal * 0.085 : 0;
+  const taxRate = p.clienteTaxExempt ? 0 : 8.5;
+  const tax = isMec ? subtotal * (taxRate / 100) : 0;
   const total = subtotal + tax;
   small(isMec ? T.subtotal : T.total, M, y); y += 14;
   doc.setFont("helvetica", "bold"); doc.setFontSize(26); doc.setTextColor(...RED);
@@ -175,7 +177,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   y += 12;
   if (isMec) {
     small(T.totalTax, M, y, MUTED, false, 7);
-    small(`${T.salesTax}  ${(8.5).toLocaleString(locale)}%`, W / 2, y, MUTED, false, 7);
+    small(`${T.salesTax}  ${taxRate.toLocaleString(locale)}%`, W / 2, y, MUTED, false, 7);
     y += 5;
     doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...DARK);
     doc.text(money(total), M, y); doc.text(money(tax), W / 2, y);
@@ -394,10 +396,14 @@ export async function baixarOrcamentoModernoPorId(orcamentoId: string, empresa: 
       potencia: r.potencia || os.potencia || "", categoriaEquipamento: r.categoria_equipamento || os.categoria_equipamento || "",
     };
   }
-  let clienteDoc = "";
+  let clienteDoc = "", clienteTaxExempt = false;
   const q = o.cliente_id
-    ? supabase.from("clientes").select("cnpj_cpf").eq("id", o.cliente_id).maybeSingle()
-    : o.cliente_nome ? supabase.from("clientes").select("cnpj_cpf").eq("nome", o.cliente_nome).maybeSingle() : null;
-  if (q) clienteDoc = ((await q).data as any)?.cnpj_cpf || "";
-  await gerarOrcamentoModernoPDF({ orcamento: o, itens: itens || [], fotos, dadosTecnicos, laudo, findings, clienteDoc, empresa, language });
+    ? supabase.from("clientes").select("cnpj_cpf, tax_exempt").eq("id", o.cliente_id).maybeSingle()
+    : o.cliente_nome ? supabase.from("clientes").select("cnpj_cpf, tax_exempt").eq("nome", o.cliente_nome).maybeSingle() : null;
+  if (q) {
+    const cliente = (await q).data;
+    clienteDoc = cliente?.cnpj_cpf || "";
+    clienteTaxExempt = Boolean(cliente?.tax_exempt);
+  }
+  await gerarOrcamentoModernoPDF({ orcamento: o, itens: itens || [], fotos, dadosTecnicos, laudo, findings, clienteDoc, clienteTaxExempt, empresa, language });
 }
