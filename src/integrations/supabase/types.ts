@@ -1284,6 +1284,7 @@ export type Database = {
           prazo_pagamento: number | null
           preco_desejado: number | null
           status: string
+          tax_exempt: boolean
           total_custos_variaveis: number | null
           validade_proposta: string | null
           valor: number
@@ -1319,6 +1320,7 @@ export type Database = {
           prazo_pagamento?: number | null
           preco_desejado?: number | null
           status: string
+          tax_exempt?: boolean
           total_custos_variaveis?: number | null
           validade_proposta?: string | null
           valor?: number
@@ -1354,6 +1356,7 @@ export type Database = {
           prazo_pagamento?: number | null
           preco_desejado?: number | null
           status?: string
+          tax_exempt?: boolean
           total_custos_variaveis?: number | null
           validade_proposta?: string | null
           valor?: number
@@ -1854,6 +1857,7 @@ export type Database = {
           preco_desejado: number | null
           status: string
           status_negociacao: string | null
+          tax_exempt: boolean
           total_custos_cilindros: number
           total_custos_variaveis: number | null
           updated_at: string
@@ -1906,6 +1910,7 @@ export type Database = {
           preco_desejado?: number | null
           status?: string
           status_negociacao?: string | null
+          tax_exempt?: boolean
           total_custos_cilindros?: number
           total_custos_variaveis?: number | null
           updated_at?: string
@@ -1958,6 +1963,7 @@ export type Database = {
           preco_desejado?: number | null
           status?: string
           status_negociacao?: string | null
+          tax_exempt?: boolean
           total_custos_cilindros?: number
           total_custos_variaveis?: number | null
           updated_at?: string
