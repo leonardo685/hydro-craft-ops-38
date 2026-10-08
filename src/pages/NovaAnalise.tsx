@@ -2208,7 +2208,7 @@ const NovaOrdemServico = () => {
                   <Textarea
                     id="motivoFalhaOutro"
                     value={formData.motivoFalhaOutro}
-                    onChange={(e) => setFormData({ ...formData, motivoFalhaOutro: e.target.value })}
+                    onChange={(e) => { const v = e.target.value; setFormData((prev) => ({ ...prev, motivoFalhaOutro: v })); }}
                     placeholder={t('novaAnalise.failureReasonPlaceholder')}
                     rows={3}
                   />
@@ -2226,7 +2226,7 @@ const NovaOrdemServico = () => {
                 <Textarea
                   id="laudoTecnico"
                   value={formData[laudoTecnicoField]}
-                  onChange={(e) => setFormData({ ...formData, [laudoTecnicoField]: e.target.value })}
+                  onChange={(e) => { const v = e.target.value; setFormData((prev) => ({ ...prev, [laudoTecnicoField]: v })); }}
                   placeholder={t('novaAnalise.technicalReportPlaceholder')}
                   rows={5}
                   className="mt-2"
