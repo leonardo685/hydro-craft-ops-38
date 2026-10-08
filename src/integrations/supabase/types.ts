@@ -232,6 +232,7 @@ export type Database = {
           inscricao_municipal: string | null
           nome: string
           observacoes: string | null
+          tax_exempt: boolean
           telefone: string | null
           tipo_identificacao: string | null
           updated_at: string
@@ -252,6 +253,7 @@ export type Database = {
           inscricao_municipal?: string | null
           nome: string
           observacoes?: string | null
+          tax_exempt?: boolean
           telefone?: string | null
           tipo_identificacao?: string | null
           updated_at?: string
@@ -272,6 +274,7 @@ export type Database = {
           inscricao_municipal?: string | null
           nome?: string
           observacoes?: string | null
+          tax_exempt?: boolean
           telefone?: string | null
           tipo_identificacao?: string | null
           updated_at?: string
