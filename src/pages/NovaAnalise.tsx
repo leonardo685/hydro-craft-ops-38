@@ -953,6 +953,18 @@ const NovaOrdemServico = () => {
                 setFotosAnalise(limitedFotos as any);
               }
             }
+
+            // Carregar documentos técnicos
+            const { data: documentosOrdem } = await supabase
+              .from('documentos_ordem')
+              .select('*')
+              .eq('ordem_servico_id', ordem.id);
+            if (documentosOrdem && documentosOrdem.length > 0) {
+              setDocumentosPdf(documentosOrdem);
+            }
+
+            // Ordem encontrada: não cair no modo criação (que sobrescrevia os dados carregados)
+            return true;
           } else if (ordem) {
             // Ordem criada diretamente (sem recebimento vinculado)
             console.log('Carregando ordem sem recebimento:', ordem);
@@ -2176,7 +2188,7 @@ const NovaOrdemServico = () => {
                 <Label htmlFor="motivoFalha">{t('novaAnalise.failureReason')}</Label>
                 <Select
                   value={formData.motivoFalha}
-                  onValueChange={(value) => setFormData({ ...formData, motivoFalha: value, motivoFalhaOutro: value !== 'outros' ? '' : formData.motivoFalhaOutro })}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, motivoFalha: value, motivoFalhaOutro: value !== 'outros' ? '' : prev.motivoFalhaOutro }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t('novaAnalise.selectFailureReason')} />
