@@ -26,6 +26,7 @@ import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 
 export default function OrdensServico() {
   const navigate = useNavigate();
+  const [menuAberto, setMenuAberto] = useState<string | null>(null);
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const { empresaAtual } = useEmpresa();
@@ -622,18 +623,20 @@ export default function OrdensServico() {
                            </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                  <DropdownMenu>
+                                  <DropdownMenu modal={false} open={menuAberto === ordem.id} onOpenChange={(o) => setMenuAberto(o ? ordem.id : null)}>
                                     <DropdownMenuTrigger asChild>
                                       <Button 
                                         variant="ghost" 
                                         size="sm" 
+                                        onPointerDown={(e) => e.preventDefault()}
+                                        onClick={(e) => { e.stopPropagation(); setMenuAberto(menuAberto === ordem.id ? null : ordem.id); }}
                                         className="h-8 w-8 p-0"
                                         title={t('analise.actions')}
                                       >
                                         <Settings className="h-4 w-4" />
                                       </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-48 bg-popover z-50">
+                                    <DropdownMenuContent align="end" collisionPadding={8} className="w-48 bg-popover z-50">
                                       <DropdownMenuItem onClick={() => handleOpenLabel(ordem)}>
                                         <Tag className="h-4 w-4 mr-2" />
                                         {t('analise.printLabel')}
