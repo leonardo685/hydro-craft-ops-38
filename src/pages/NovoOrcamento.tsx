@@ -2309,17 +2309,77 @@ export default function NovoOrcamento() {
       });
     }
   };
-  const exportarPDF = async () => {
-    const savedId = orcamentoRef.current?.id || editId;
-    if (savedId) {
-      try {
-        const { baixarOrcamentoModernoPorId } = await import('@/lib/orcamento-modern-pdf');
-        await baixarOrcamentoModernoPorId(String(savedId), empresaAtual, language);
-        return;
-      } catch (e) {
-        console.error('Erro no PDF moderno:', e);
-      }
+  // Gera o PDF no layout moderno usando exatamente o que está na tela (salvo ou não).
+  const gerarModernoDoFormulario = async (override?: { orcamento?: any; itens?: any[]; fotos?: any[] }) => {
+    const { gerarOrcamentoModernoPDF } = await import('@/lib/orcamento-modern-pdf');
+    const ordemRef = dadosOrcamento.numeroSerie || '';
+    let findings = '';
+    if (ordemRef) {
+      const { data } = await supabase
+        .from('ordens_servico')
+        .select('descricao_problema, tipo_problema')
+        .eq('numero_ordem', ordemRef)
+        .limit(1);
+      const r: any = data?.[0];
+      findings = r?.descricao_problema || r?.tipo_problema || '';
     }
+    let clienteDoc = '';
+    if (dadosOrcamento.clienteId) {
+      const { data } = await supabase.from('clientes').select('cnpj_cpf').eq('id', dadosOrcamento.clienteId).maybeSingle();
+      clienteDoc = (data as any)?.cnpj_cpf || '';
+    }
+    const orcamento = {
+      numero: dadosOrcamento.numeroOrdem,
+      cliente_nome: dadosOrcamento.cliente,
+      equipamento: dadosOrcamento.tag,
+      valor: informacoesComerciais.valorTotal || 0,
+      observacoes: `Documento: ${dadosOrcamento.tipoDocumento}`,
+      numero_nota_entrada: dadosOrcamento.numeroNota || null,
+      ordem_referencia: ordemRef || null,
+      condicao_pagamento: informacoesComerciais.condicaoPagamento || null,
+      prazo_entrega: informacoesComerciais.prazoEntrega || null,
+      assunto_proposta: informacoesComerciais.assuntoProposta || null,
+      frete: informacoesComerciais.frete || 'CIF',
+      garantia: informacoesComerciais.garantia || null,
+      validade_proposta: informacoesComerciais.validadeProposta || null,
+      data_orcamento: dadosOrcamento.dataAbertura,
+      ...(override?.orcamento || {}),
+    };
+    const itens = override?.itens || [
+      ...(informacoesComerciais.mostrarPecas ? itensAnalise.pecas.map(i => ({ ...i, tipo: 'peca' })) : []),
+      ...(informacoesComerciais.mostrarServicos ? itensAnalise.servicos.map(i => ({ ...i, tipo: 'servico' })) : []),
+      ...(informacoesComerciais.mostrarUsinagem ? itensAnalise.usinagem.map(i => ({ ...i, tipo: 'usinagem' })) : []),
+    ];
+    const fotosPdf = override?.fotos || fotos.filter(f => f.apresentar_orcamento);
+    const laudo = (language === 'pt-BR'
+      ? laudoTecnicoOrdem.pt || laudoTecnicoOrdem.en
+      : laudoTecnicoOrdem.en || laudoTecnicoOrdem.pt) || '';
+    await gerarOrcamentoModernoPDF({
+      orcamento,
+      itens,
+      fotos: fotosPdf as any,
+      dadosTecnicos,
+      laudo,
+      findings,
+      clienteDoc,
+      empresa: empresaAtual,
+      language,
+    });
+  };
+
+  const exportarPDF = async () => {
+    try {
+      await gerarModernoDoFormulario();
+      toast({ title: "Sucesso", description: "PDF exportado com sucesso!" });
+    } catch (e: any) {
+      console.error('Erro no PDF moderno:', e);
+      toast({ title: "Erro", description: `Erro ao gerar PDF: ${e?.message || e}`, variant: "destructive" });
+    }
+    return;
+  };
+
+  // Layout antigo (desativado — mantido apenas como referência)
+  const exportarPDFAntigo = async () => {
     const tipoIdentificacao = empresaAtual?.tipo_identificacao || 'cnpj';
     const labelIdentificacao = tipoIdentificacao === 'ein' ? 'EIN' : tipoIdentificacao === 'ssn' ? 'SSN' : 'CNPJ';
     
