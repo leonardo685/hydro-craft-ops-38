@@ -1,0 +1,2 @@
+ALTER TABLE public.orcamentos ADD COLUMN IF NOT EXISTS tax_exempt boolean NOT NULL DEFAULT false;
+ALTER TABLE public.historico_orcamentos ADD COLUMN IF NOT EXISTS tax_exempt boolean NOT NULL DEFAULT false;
