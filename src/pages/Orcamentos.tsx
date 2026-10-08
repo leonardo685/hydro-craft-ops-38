@@ -409,6 +409,7 @@ export default function Orcamentos() {
           cliente_id: orcamento.cliente_id,
           cliente_nome: orcamento.cliente_nome,
           equipamento: orcamento.equipamento,
+          tax_exempt: Boolean(orcamento.tax_exempt),
           valor: orcamento.valor,
           desconto_percentual: orcamento.desconto_percentual,
           condicao_pagamento: orcamento.condicao_pagamento,
@@ -698,16 +699,14 @@ export default function Orcamentos() {
       // === Novo layout moderno (modelo MEC HYDRO) ===
       {
         let docCliente = '';
-        let clienteTaxExempt = false;
         const q = orcamento.cliente_id
-          ? supabase.from('clientes').select('cnpj_cpf, tax_exempt').eq('id', orcamento.cliente_id).maybeSingle()
+          ? supabase.from('clientes').select('cnpj_cpf').eq('empresa_id', empresaAtual?.id || '').eq('id', orcamento.cliente_id).maybeSingle()
           : orcamento.cliente_nome
-            ? supabase.from('clientes').select('cnpj_cpf, tax_exempt').eq('nome', orcamento.cliente_nome).maybeSingle()
+            ? supabase.from('clientes').select('cnpj_cpf').eq('empresa_id', empresaAtual?.id || '').eq('nome', orcamento.cliente_nome).maybeSingle()
             : null;
         if (q) {
           const { data } = await q;
           docCliente = data?.cnpj_cpf || '';
-          clienteTaxExempt = Boolean(data?.tax_exempt);
         }
         await gerarOrcamentoModernoPDF({
           orcamento,
@@ -717,7 +716,6 @@ export default function Orcamentos() {
           laudo: laudoTecnicoOrdem,
           findings: findingsOrdem,
           clienteDoc: docCliente,
-          clienteTaxExempt,
           empresa: empresaAtual,
           language,
         });
