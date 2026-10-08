@@ -4118,18 +4118,18 @@ export default function NovoOrcamento() {
             </div>
 
             {empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO') && (
-              <div className="space-y-2 max-w-sm">
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="quote-tax"
+                  checked={!informacoesComerciais.taxExempt}
+                  onCheckedChange={checked => setInformacoesComerciais(prev => ({ ...prev, taxExempt: !checked }))}
+                />
                 <Label htmlFor="quote-tax">Sales tax</Label>
-                <Select
-                  value={informacoesComerciais.taxExempt ? 'without' : 'with'}
-                  onValueChange={value => setInformacoesComerciais(prev => ({ ...prev, taxExempt: value === 'without' }))}
-                >
-                  <SelectTrigger id="quote-tax"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="with">{language === 'en' ? 'With tax (8.5%)' : language === 'es' ? 'Con tax (8,5%)' : 'Com tax (8,5%)'}</SelectItem>
-                    <SelectItem value="without">{language === 'en' ? 'Without tax (0%)' : language === 'es' ? 'Sin tax (0%)' : 'Sem tax (0%)'}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <span className="text-sm text-muted-foreground" aria-live="polite">
+                  {informacoesComerciais.taxExempt
+                    ? (language === 'en' ? 'Off (0%)' : language === 'es' ? 'Desactivado (0%)' : 'Desligado (0%)')
+                    : (language === 'en' ? 'On (8.5%)' : language === 'es' ? 'Activado (8,5%)' : 'Ligado (8,5%)')}
+                </span>
               </div>
             )}
 
