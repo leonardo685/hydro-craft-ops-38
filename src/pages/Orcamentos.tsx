@@ -556,8 +556,18 @@ export default function Orcamentos() {
     });
   };
 
-  const gerarPDFOrcamento = async (orcamento: any, language: Language = 'pt-BR') => {
+  const gerarPDFOrcamento = async (orcamentoParam: any, language: Language = 'pt-BR') => {
+    let orcamento = orcamentoParam;
     try {
+      // Sempre usar os dados mais recentes (ex.: tipo de documento alterado após aprovação)
+      if (orcamentoParam?.id) {
+        const { data: fresh } = await supabase
+          .from('orcamentos')
+          .select('*')
+          .eq('id', orcamentoParam.id)
+          .maybeSingle();
+        if (fresh) orcamento = { ...orcamentoParam, ...fresh };
+      }
       const tipoIdentificacao = empresaAtual?.tipo_identificacao || 'cnpj';
       const labelIdentificacao = tipoIdentificacao === 'ein' ? 'EIN' : tipoIdentificacao === 'ssn' ? 'SSN' : 'CNPJ';
       
