@@ -160,17 +160,16 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(...DARK);
   const cl = doc.splitTextToSize(o.cliente_nome || "N/A", CW);
   doc.text(cl, M, y); y += cl.length * 6 + 1;
+  const numeroPedido = String(o.numero_pedido ?? "").trim();
+  if (numeroPedido) {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...DARK);
+    const pedidoLines = doc.splitTextToSize(`P.O: ${numeroPedido}`, CW);
+    doc.text(pedidoLines, M, y);
+    y += pedidoLines.length * 6;
+  }
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...DARK);
   doc.text(`${T.refOrder}  ${o.ordem_referencia || "N/A"}`, M, y); y += 6;
   small(`${T.taxId}  ${p.clienteDoc || "N/A"}    |    ${T.entryInvoice}  ${o.numero_nota_entrada || "N/A"}`, M, y, MUTED, false, 7);
-  const numeroPedido = String(o.numero_pedido ?? "").trim();
-  if (numeroPedido) {
-    y += 6;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...DARK);
-    const pedidoLines = doc.splitTextToSize(`P.O: ${numeroPedido}`, CW);
-    doc.text(pedidoLines, M, y);
-    y += (pedidoLines.length - 1) * 4;
-  }
   y += 9; rule(y); y += 10;
 
   const subtotal = Number(o.valor || 0);
