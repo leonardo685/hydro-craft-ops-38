@@ -160,7 +160,10 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(...DARK);
   const cl = doc.splitTextToSize(o.cliente_nome || "N/A", CW);
   doc.text(cl, M, y); y += cl.length * 6 + 1;
-  const numeroPedido = String(o.numero_pedido ?? "").trim();
+   const numeroPedido = String(o.numero_pedido ?? "")
+     .trim()
+     .replace(/^(?:p\s*\.?\s*o\s*\.?\s*:\s*)+/i, "")
+     .trim();
   if (numeroPedido) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...DARK);
     const pedidoLines = doc.splitTextToSize(`P.O: ${numeroPedido}`, CW);
