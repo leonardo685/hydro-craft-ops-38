@@ -2369,6 +2369,7 @@ export default function NovoOrcamento() {
       valor: informacoesComerciais.valorTotal || 0,
       observacoes: `Documento: ${dadosOrcamento.tipoDocumento}`,
       numero_nota_entrada: dadosOrcamento.numeroNota || null,
+      numero_pedido: orcamentoRef.current?.numero_pedido || null,
       ordem_referencia: ordemRef || null,
       condicao_pagamento: informacoesComerciais.condicaoPagamento || null,
       prazo_entrega: informacoesComerciais.prazoEntrega || null,
