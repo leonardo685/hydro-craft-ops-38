@@ -1500,7 +1500,7 @@ export default function NovoOrcamento() {
         // Atualizar orçamento existente
         response = await supabase
           .from('orcamentos')
-          .update(orcamentoData)
+          .update((() => { const { status: _s, ...rest } = orcamentoData as any; return rest; })())
           .eq('id', dadosOrcamento.id)
           .select()
           .single();
