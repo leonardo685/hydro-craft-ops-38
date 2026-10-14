@@ -182,11 +182,11 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const qr = await referenceOrderQR(o, p.empresa);
   let qrBottom = titleTop;
   if (qr) {
-    const size = 34;
+    const size = 21;
     const x = W - M - size;
-    doc.addImage(qr.image, "PNG", x, titleTop - 3, size, size);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...DARK);
-    doc.text(qr.number, x + size / 2, titleTop + size + 2, { align: "center" });
+    doc.addImage(qr.image, "PNG", x, titleTop - 2, size, size);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(6.5); doc.setTextColor(...DARK);
+    doc.text(qr.number, x + size / 2, titleTop + size + 3, { align: "center" });
     qrBottom = titleTop + size + 5;
   }
   small(docLabel, M, y, RED, true, 12);
