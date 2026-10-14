@@ -33,12 +33,26 @@ const isLovablePreview =
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(registrations.map((registration) => registration.unregister()));
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
 
-    if ('caches' in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((key) => caches.delete(key)));
+      let cacheKeys: string[] = [];
+      if ('caches' in window) {
+        cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+      }
+
+      // Se havia uma versão antiga guardada no navegador, recarrega uma vez
+      // para garantir que a versão mais recente do sistema seja usada.
+      const hadStaleVersion = registrations.length > 0 || cacheKeys.length > 0;
+      const flag = 'sw-cleanup-reloaded';
+      if (hadStaleVersion && !sessionStorage.getItem(flag)) {
+        sessionStorage.setItem(flag, '1');
+        window.location.reload();
+      }
+    } catch (e) {
+      console.warn('Falha ao limpar cache antigo', e);
     }
   });
 }
