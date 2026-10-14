@@ -4146,7 +4146,6 @@ export default function NovoOrcamento() {
                     : (language === 'en' ? 'On (8.5%)' : language === 'es' ? 'Activado (8,5%)' : 'Ligado (8,5%)')}
                 </span>
               </div>
-              </div>
             )}
 
             {empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO') && (
