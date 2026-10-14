@@ -177,13 +177,22 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
 
   const subtotal = Number(o.valor || 0);
   const taxRate = o.tax_exempt ? 0 : 8.5;
-  const tax = isMec ? subtotal * (taxRate / 100) : 0;
-  const total = subtotal + tax;
+  const feePct = isMec && o.urgency_fee_enabled ? Number(o.urgency_fee_percentual) || 0 : 0;
+  const fee = subtotal * (feePct / 100);
+  const tax = isMec ? (subtotal + fee) * (taxRate / 100) : 0;
+  const total = subtotal + fee + tax;
   small(isMec ? T.subtotal : T.total, M, y); y += 14;
   doc.setFont("helvetica", "bold"); doc.setFontSize(26); doc.setTextColor(...RED);
   doc.text(money(subtotal), M, y);
   small(currency, M + doc.getTextWidth(money(subtotal)) + 12, y - 1, MUTED, false, 7);
   y += 12;
+  if (isMec && feePct > 0) {
+    small(`URGENCY FEE  ${feePct.toLocaleString(locale)}%`, M, y, MUTED, false, 7);
+    y += 5;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...DARK);
+    doc.text(money(fee), M, y);
+    y += 8;
+  }
   if (isMec) {
     small(T.totalTax, M, y, MUTED, false, 7);
     small(`${T.salesTax}  ${taxRate.toLocaleString(locale)}%`, W / 2, y, MUTED, false, 7);
