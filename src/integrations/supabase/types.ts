@@ -1286,6 +1286,8 @@ export type Database = {
           status: string
           tax_exempt: boolean
           total_custos_variaveis: number | null
+          urgency_fee_enabled: boolean
+          urgency_fee_percentual: number
           validade_proposta: string | null
           valor: number
         }
@@ -1322,6 +1324,8 @@ export type Database = {
           status: string
           tax_exempt?: boolean
           total_custos_variaveis?: number | null
+          urgency_fee_enabled?: boolean
+          urgency_fee_percentual?: number
           validade_proposta?: string | null
           valor?: number
         }
@@ -1358,6 +1362,8 @@ export type Database = {
           status?: string
           tax_exempt?: boolean
           total_custos_variaveis?: number | null
+          urgency_fee_enabled?: boolean
+          urgency_fee_percentual?: number
           validade_proposta?: string | null
           valor?: number
         }
@@ -1861,6 +1867,8 @@ export type Database = {
           total_custos_cilindros: number
           total_custos_variaveis: number | null
           updated_at: string
+          urgency_fee_enabled: boolean
+          urgency_fee_percentual: number
           validade_proposta: string | null
           valor: number
         }
@@ -1914,6 +1922,8 @@ export type Database = {
           total_custos_cilindros?: number
           total_custos_variaveis?: number | null
           updated_at?: string
+          urgency_fee_enabled?: boolean
+          urgency_fee_percentual?: number
           validade_proposta?: string | null
           valor?: number
         }
@@ -1967,6 +1977,8 @@ export type Database = {
           total_custos_cilindros?: number
           total_custos_variaveis?: number | null
           updated_at?: string
+          urgency_fee_enabled?: boolean
+          urgency_fee_percentual?: number
           validade_proposta?: string | null
           valor?: number
         }
