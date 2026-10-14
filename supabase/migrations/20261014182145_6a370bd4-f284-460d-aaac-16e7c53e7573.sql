@@ -1,0 +1,2 @@
+ALTER TABLE public.orcamentos ADD COLUMN IF NOT EXISTS urgency_fee_enabled boolean NOT NULL DEFAULT false, ADD COLUMN IF NOT EXISTS urgency_fee_percentual numeric NOT NULL DEFAULT 0;
+ALTER TABLE public.historico_orcamentos ADD COLUMN IF NOT EXISTS urgency_fee_enabled boolean NOT NULL DEFAULT false, ADD COLUMN IF NOT EXISTS urgency_fee_percentual numeric NOT NULL DEFAULT 0;
