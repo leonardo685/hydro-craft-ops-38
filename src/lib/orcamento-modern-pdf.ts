@@ -101,6 +101,15 @@ async function referenceOrderQR(orcamento: any, empresa: any) {
   const number = `MH-${String(sequence).padStart(3, "0")}-${match[2]}`;
   const variants = [...new Set([reference, number, `MH-${sequence}-${match[2]}`])];
   const { supabase } = await import("@/integrations/supabase/client");
+  const budgetId = orcamento.orcamento_id || orcamento.id;
+  if (budgetId) {
+    const linked = await supabase.from("ordens_servico")
+      .select("id")
+      .eq("empresa_id", empresa.id)
+      .eq("orcamento_id", budgetId)
+      .limit(2);
+    if (linked.error || (linked.data?.length || 0) > 1) return null;
+  }
   const { data, error } = await supabase.from("ordens_servico")
     .select("id, numero_ordem")
     .eq("empresa_id", empresa.id)
