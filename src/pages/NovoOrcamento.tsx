@@ -149,6 +149,8 @@ export default function NovoOrcamento() {
   // Estados para informações comerciais
   const [informacoesComerciais, setInformacoesComerciais] = useState({
     taxExempt: false,
+    urgencyFeeEnabled: false,
+    urgencyFeePercentual: 0,
     valorTotal: 0,
     desconto: 0,
     valorComDesconto: 0,
@@ -419,6 +421,8 @@ export default function NovoOrcamento() {
         setInformacoesComerciais(prev => ({
           ...prev,
           taxExempt: Boolean(orcamentoEdicao.tax_exempt),
+          urgencyFeeEnabled: Boolean((orcamentoEdicao as any).urgency_fee_enabled),
+          urgencyFeePercentual: Number((orcamentoEdicao as any).urgency_fee_percentual) || 0,
           valorTotal: Number(orcamentoEdicao.valor) || 0,
           desconto: Number(orcamentoEdicao.desconto_percentual) || 0,
           condicaoPagamento: orcamentoEdicao.condicao_pagamento || '',
@@ -1340,6 +1344,8 @@ export default function NovoOrcamento() {
             orcamentoAtual.equipamento !== (dadosOrcamento.tag || 'Equipamento não especificado') ||
             orcamentoAtual.cliente_nome !== dadosOrcamento.cliente ||
             Boolean(orcamentoAtual.tax_exempt) !== informacoesComerciais.taxExempt ||
+            Boolean((orcamentoAtual as any).urgency_fee_enabled) !== informacoesComerciais.urgencyFeeEnabled ||
+            Number((orcamentoAtual as any).urgency_fee_percentual || 0) !== Number(informacoesComerciais.urgencyFeePercentual || 0) ||
             Number(orcamentoAtual.valor) !== Number(valorFinal) ||
             Number(orcamentoAtual.desconto_percentual || 0) !== Number(informacoesComerciais.desconto) ||
             orcamentoAtual.condicao_pagamento !== (informacoesComerciais.condicaoPagamento || null) ||
@@ -1393,6 +1399,8 @@ export default function NovoOrcamento() {
                 cliente_nome: orcamentoAtual.cliente_nome,
                 cliente_id: orcamentoAtual.cliente_id,
                 tax_exempt: orcamentoAtual.tax_exempt,
+                urgency_fee_enabled: Boolean((orcamentoAtual as any).urgency_fee_enabled),
+                urgency_fee_percentual: Number((orcamentoAtual as any).urgency_fee_percentual) || 0,
                 empresa_id: empresaAtual?.id,
                 valor: orcamentoAtual.valor,
                 desconto_percentual: orcamentoAtual.desconto_percentual,
@@ -1473,6 +1481,8 @@ export default function NovoOrcamento() {
       equipamento: dadosOrcamento.tag || 'Equipamento não especificado',
         descricao: dadosOrcamento.observacoes || '',
         tax_exempt: informacoesComerciais.taxExempt,
+        urgency_fee_enabled: informacoesComerciais.urgencyFeeEnabled,
+        urgency_fee_percentual: Number(informacoesComerciais.urgencyFeePercentual) || 0,
         valor: valorFinal,
         desconto_percentual: informacoesComerciais.desconto,
         status: 'pendente',
@@ -1773,6 +1783,8 @@ export default function NovoOrcamento() {
             cliente_nome: revisao.cliente_nome,
             equipamento: revisao.equipamento,
             tax_exempt: Boolean(revisao.tax_exempt),
+            urgency_fee_enabled: Boolean(revisao.urgency_fee_enabled),
+            urgency_fee_percentual: Number(revisao.urgency_fee_percentual) || 0,
             valor: Number(revisao.valor) || 0,
             condicao_pagamento: revisao.condicao_pagamento,
             prazo_pagamento: revisao.prazo_pagamento,
@@ -2366,6 +2378,8 @@ export default function NovoOrcamento() {
       cliente_nome: dadosOrcamento.cliente,
       equipamento: dadosOrcamento.tag,
       tax_exempt: informacoesComerciais.taxExempt,
+      urgency_fee_enabled: informacoesComerciais.urgencyFeeEnabled,
+      urgency_fee_percentual: Number(informacoesComerciais.urgencyFeePercentual) || 0,
       valor: informacoesComerciais.valorTotal || 0,
       observacoes: `Documento: ${dadosOrcamento.tipoDocumento}`,
       numero_nota_entrada: dadosOrcamento.numeroNota || null,
@@ -4131,6 +4145,31 @@ export default function NovoOrcamento() {
                     ? (language === 'en' ? 'Off (0%)' : language === 'es' ? 'Desactivado (0%)' : 'Desligado (0%)')
                     : (language === 'en' ? 'On (8.5%)' : language === 'es' ? 'Activado (8,5%)' : 'Ligado (8,5%)')}
                 </span>
+              </div>
+              </div>
+            )}
+
+            {empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO') && (
+              <div className="flex flex-wrap items-center gap-3">
+                <Switch
+                  id="quote-urgency-fee"
+                  checked={informacoesComerciais.urgencyFeeEnabled}
+                  onCheckedChange={checked => setInformacoesComerciais(prev => ({ ...prev, urgencyFeeEnabled: checked }))}
+                />
+                <Label htmlFor="quote-urgency-fee">Urgency fee</Label>
+                {informacoesComerciais.urgencyFeeEnabled ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number" min={0} step="0.1" className="w-24"
+                      aria-label="Urgency fee %"
+                      value={informacoesComerciais.urgencyFeePercentual || ''}
+                      onChange={e => setInformacoesComerciais(prev => ({ ...prev, urgencyFeePercentual: parseFloat(e.target.value) || 0 }))}
+                    />
+                    <span className="text-sm text-muted-foreground">%</span>
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">{language === 'en' ? 'Off' : language === 'es' ? 'Desactivado' : 'Desligado'}</span>
+                )}
               </div>
             )}
 
