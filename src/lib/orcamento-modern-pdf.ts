@@ -1,5 +1,6 @@
 import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { translateTerm } from "@/i18n/dynamicTerms";
 
@@ -90,6 +91,40 @@ const loadImage = (url: string) =>
     img.src = url;
   });
 
+/** Only an unambiguous, existing reference in the current company gets a QR. */
+async function referenceOrderQR(orcamento: any, empresa: any) {
+  const reference = String(orcamento.ordem_referencia || "").trim();
+  const match = reference.match(/^MH-(\d+)-(\d{2})$/i);
+  if (!match || !empresa?.id) return null;
+  const sequence = Number(match[1]);
+  if (!Number.isSafeInteger(sequence) || sequence <= 0) return null;
+  const number = `MH-${String(sequence).padStart(3, "0")}-${match[2]}`;
+  const variants = [...new Set([reference, number, `MH-${sequence}-${match[2]}`])];
+  const { supabase } = await import("@/integrations/supabase/client");
+  const budgetId = orcamento.orcamento_id || orcamento.id;
+  if (budgetId) {
+    const linked = await supabase.from("ordens_servico")
+      .select("id")
+      .eq("empresa_id", empresa.id)
+      .eq("orcamento_id", budgetId)
+      .limit(2);
+    if (linked.error || (linked.data?.length || 0) > 1) return null;
+  }
+  const { data, error } = await supabase.from("ordens_servico")
+    .select("id, numero_ordem")
+    .eq("empresa_id", empresa.id)
+    .in("numero_ordem", variants)
+    .limit(2);
+  if (error || data?.length !== 1) return null;
+  const url = new URL(`/ordem/${encodeURIComponent(data[0].numero_ordem)}`, window.location.origin);
+  url.searchParams.set("e", empresa.id);
+  url.searchParams.set("ordemId", data[0].id);
+  const image = await QRCode.toDataURL(url.toString(), {
+    width: 600, margin: 4, errorCorrectionLevel: "M",
+  });
+  return { image, number };
+}
+
 export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const lang: Lang = (["pt-BR", "en", "es"].includes(p.language) ? p.language : "pt-BR") as Lang;
   const T = TXT[lang];
@@ -143,6 +178,17 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
 
   // ============ PÁGINA 1 ============
   let y = await newPage(docLabel, true);
+  const titleTop = y;
+  const qr = await referenceOrderQR(o, p.empresa);
+  let qrBottom = titleTop;
+  if (qr) {
+    const size = 34;
+    const x = W - M - size;
+    doc.addImage(qr.image, "PNG", x, titleTop - 3, size, size);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...DARK);
+    doc.text(qr.number, x + size / 2, titleTop + size + 2, { align: "center" });
+    qrBottom = titleTop + size + 5;
+  }
   small(docLabel, M, y, RED, true, 12);
   y += 11;
   const titulo = tr(o.assunto_proposta || o.equipamento || T.defaultTitle);
@@ -154,7 +200,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     day: "numeric", month: "long", year: "numeric",
   });
   small(`${T.quote} ${numero}   /   ${data}`, M, y, MUTED, false, 7.5);
-  y += 9; rule(y); y += 9;
+  y = Math.max(y, qrBottom) + 9; rule(y); y += 9;
 
   small(T.preparedFor, M, y); y += 7;
   doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(...DARK);
