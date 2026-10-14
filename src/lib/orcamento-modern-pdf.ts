@@ -228,19 +228,20 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const tax = isMec ? (subtotal + fee) * (taxRate / 100) : 0;
   const total = subtotal + fee + tax;
   if (feePct > 0) {
-    // Com fee: total em destaque, apenas o % do fee abaixo (sem subtotal/valor do fee)
+    // Com fee: valor total (com fee, sem tax) em destaque; abaixo fee %, tax e somatória com imposto
     small(T.total, M, y); y += 14;
     doc.setFont("helvetica", "bold"); doc.setFontSize(26); doc.setTextColor(...RED);
-    doc.text(money(total), M, y);
-    small(currency, M + doc.getTextWidth(money(total)) + 12, y - 1, MUTED, false, 7);
+    doc.text(money(subtotal + fee), M, y);
+    small(currency, M + doc.getTextWidth(money(subtotal + fee)) + 12, y - 1, MUTED, false, 7);
     y += 12;
     small(`URGENCY FEE  ${feePct.toLocaleString(locale)}%`, M, y, MUTED, false, 7);
     y += 8;
     if (isMec && taxRate > 0) {
-      small(`${T.salesTax}  ${taxRate.toLocaleString(locale)}%`, M, y, MUTED, false, 7);
+      small(T.totalTax, M, y, MUTED, false, 7);
+      small(`${T.salesTax}  ${taxRate.toLocaleString(locale)}%`, W / 2, y, MUTED, false, 7);
       y += 5;
       doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...DARK);
-      doc.text(money(tax), M, y);
+      doc.text(money(total), M, y); doc.text(money(tax), W / 2, y);
       y += 8;
     }
   } else {
