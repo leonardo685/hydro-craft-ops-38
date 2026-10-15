@@ -184,6 +184,20 @@ export async function gerarLaudoPublicoModerno({
   doc.setFontSize(20);
   doc.text(labels.scope, left, 51);
   let y = 65;
+  let scopePage = 2;
+  const bottomLimit = height - 24;
+  const ensureSpace = async (needed: number) => {
+    if (y + needed <= bottomLimit) return;
+    addFooter(labels.scope, scopePage);
+    doc.addPage();
+    scopePage += 1;
+    await addHeader();
+    doc.setTextColor(...DARK);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text(labels.scope, left, 51);
+    y = 65;
+  };
   const laudo = language === "pt-BR" ? ordem.laudo_tecnico || ordem.laudo_tecnico_en : ordem.laudo_tecnico_en || ordem.laudo_tecnico;
   const findings = clean(laudo || ordem.motivo_falha, "");
   if (findings) {
@@ -192,14 +206,24 @@ export async function gerarLaudoPublicoModerno({
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.3);
     doc.setTextColor(...DARK);
-    const lines = doc.splitTextToSize(findings, contentWidth);
-    doc.text(lines, left, y);
-    y += lines.length * 4.4 + 5;
+    const lines: string[] = doc.splitTextToSize(findings, contentWidth);
+    for (const line of lines) {
+      if (y + 4.4 > bottomLimit) {
+        await ensureSpace(4.4);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.3);
+        doc.setTextColor(...DARK);
+      }
+      doc.text(line, left, y);
+      y += 4.4;
+    }
+    y += 5;
     doc.setDrawColor(...LINE);
     doc.line(left, y, right, y);
     y += 9;
   }
 
+  await ensureSpace(62);
   sectionLabel(labels.equipmentData, y);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(6.5);
@@ -222,9 +246,10 @@ export async function gerarLaudoPublicoModerno({
   doc.text(labels.source, left, y);
   y += 9;
 
-  const renderList = (title: string, items: any[], kind: "parts" | "service") => {
+  const renderList = async (title: string, items: any[], kind: "parts" | "service") => {
     const visibleItems = items.filter((item) => clean(item.peca || item.descricao || item.nome || item.servico, "") !== "");
     if (!visibleItems.length) return;
+    await ensureSpace(16);
     sectionLabel(title, y);
     if (kind === "parts") {
       doc.setFontSize(6.5);
@@ -232,10 +257,13 @@ export async function gerarLaudoPublicoModerno({
       doc.text(t("laudoPublico.qty").toUpperCase(), right, y, { align: "right" });
     }
     y += 7;
-    visibleItems.forEach((item) => {
+    for (const item of visibleItems) {
       const name = tr(item.peca || item.descricao || item.nome || item.servico) || "-";
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.2);
       const lines = doc.splitTextToSize(name, kind === "parts" ? contentWidth - 18 : contentWidth);
       const rowHeight = Math.max(7, lines.length * 4);
+      await ensureSpace(rowHeight);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.2);
       doc.setTextColor(...DARK);
@@ -244,13 +272,13 @@ export async function gerarLaudoPublicoModerno({
       doc.setDrawColor(...LINE);
       doc.line(left, y + rowHeight - 2, right, y + rowHeight - 2);
       y += rowHeight;
-    });
+    }
     y += 6;
   };
-  renderList(t("laudoPublico.partsUsed"), Array.isArray(ordem.pecas_necessarias) ? ordem.pecas_necessarias : [], "parts");
-  renderList(t("laudoPublico.servicesPerformed"), Array.isArray(ordem.servicos_necessarios) ? ordem.servicos_necessarios : [], "service");
-  renderList(t("laudoPublico.machining"), Array.isArray(ordem.usinagem_necessaria) ? ordem.usinagem_necessaria : [], "service");
-  addFooter(labels.scope, 2);
+  await renderList(t("laudoPublico.partsUsed"), Array.isArray(ordem.pecas_necessarias) ? ordem.pecas_necessarias : [], "parts");
+  await renderList(t("laudoPublico.servicesPerformed"), Array.isArray(ordem.servicos_necessarios) ? ordem.servicos_necessarios : [], "service");
+  await renderList(t("laudoPublico.machining"), Array.isArray(ordem.usinagem_necessaria) ? ordem.usinagem_necessaria : [], "service");
+  addFooter(labels.scope, scopePage);
 
   const loadPhoto = (url: string, x: number, yPos: number, boxWidth: number, boxHeight: number) => new Promise<void>((resolve) => {
     const image = new Image();
@@ -270,7 +298,7 @@ export async function gerarLaudoPublicoModerno({
     image.src = url;
   });
 
-  let pageNumber = 3;
+  let pageNumber = scopePage + 1;
   let photoIndex = 0;
   while (photoIndex < fotos.length) {
     doc.addPage();
