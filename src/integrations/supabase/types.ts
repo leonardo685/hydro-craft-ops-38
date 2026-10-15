@@ -2017,9 +2017,11 @@ export type Database = {
           created_at: string
           curso: string | null
           data_analise: string | null
+          data_documento_entrega: string | null
           data_entrada: string
           data_finalizacao: string | null
           descricao_problema: string | null
+          documento_entrega_url: string | null
           empresa_id: string | null
           equipamento: string
           fluido_trabalho: string | null
@@ -2061,9 +2063,11 @@ export type Database = {
           created_at?: string
           curso?: string | null
           data_analise?: string | null
+          data_documento_entrega?: string | null
           data_entrada: string
           data_finalizacao?: string | null
           descricao_problema?: string | null
+          documento_entrega_url?: string | null
           empresa_id?: string | null
           equipamento: string
           fluido_trabalho?: string | null
@@ -2105,9 +2109,11 @@ export type Database = {
           created_at?: string
           curso?: string | null
           data_analise?: string | null
+          data_documento_entrega?: string | null
           data_entrada?: string
           data_finalizacao?: string | null
           descricao_problema?: string | null
+          documento_entrega_url?: string | null
           empresa_id?: string | null
           equipamento?: string
           fluido_trabalho?: string | null
