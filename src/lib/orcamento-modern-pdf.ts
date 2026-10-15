@@ -198,17 +198,15 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(...RED);
   doc.text(docLabel, W / 2, y + 2, { align: "center" });
   y += 9;
-  if (isInvoice) {
-    doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.setTextColor(...RED);
-    doc.text(`P.O: ${numeroPedido}`, W / 2, y + 2, { align: "center" });
-    y += 9;
-  }
   y = Math.max(y, qrBottom) + 4;
   const titulo = tr(o.assunto_proposta || o.equipamento || T.defaultTitle);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(...DARK);
-  const tl = doc.splitTextToSize(titulo.charAt(0).toUpperCase() + titulo.slice(1), CW * 0.6);
+  const tituloFormatado = titulo.charAt(0).toUpperCase() + titulo.slice(1);
+  const linhaTitulo = isInvoice ? `P.O: ${numeroPedido} - ${tituloFormatado}` : tituloFormatado;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(...(isInvoice ? RED : DARK));
+  const tl = doc.splitTextToSize(linhaTitulo, CW * 0.6);
   doc.text(tl, M, y);
   y += tl.length * 9 + 1;
+
   const data = new Date(o.data_orcamento || o.created_at || Date.now()).toLocaleDateString(locale, {
     day: "numeric", month: "long", year: "numeric",
   });
