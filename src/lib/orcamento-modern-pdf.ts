@@ -202,7 +202,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const titulo = tr(o.assunto_proposta || o.equipamento || T.defaultTitle);
   const tituloFormatado = titulo.charAt(0).toUpperCase() + titulo.slice(1);
   const linhaTitulo = isInvoice ? `P.O: ${numeroPedido} - ${tituloFormatado}` : tituloFormatado;
-  doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(...(isInvoice ? RED : DARK));
+  doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(...DARK);
   const tl = doc.splitTextToSize(linhaTitulo, CW * 0.6);
   doc.text(tl, M, y);
   y += tl.length * 9 + 1;

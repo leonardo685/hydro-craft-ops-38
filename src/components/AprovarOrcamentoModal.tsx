@@ -405,14 +405,15 @@ export const AprovarOrcamentoModal = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="valor">Valor Original ($) *</Label>
+              <Label htmlFor="valor">Valor do Orçamento ($)</Label>
               <Input
                 id="valor"
                 type="number"
                 step="0.01"
                 value={formData.valor}
-                onChange={(e) => handleValorChange(e.target.value)}
-                placeholder="0,00"
+                readOnly
+                disabled
+                className="bg-muted"
               />
             </div>
             <div>
