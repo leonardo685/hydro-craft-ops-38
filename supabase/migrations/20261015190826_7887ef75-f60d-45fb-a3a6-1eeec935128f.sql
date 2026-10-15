@@ -1,0 +1,1 @@
+ALTER TABLE public.ordens_servico ADD COLUMN IF NOT EXISTS documento_entrega_url text, ADD COLUMN IF NOT EXISTS data_documento_entrega timestamptz;
