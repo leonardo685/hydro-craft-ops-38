@@ -142,7 +142,13 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const CW = W - M * 2;
 
   const numero = o.numero_revisao ? `${o.numero} REV${o.numero_revisao}` : o.numero || "";
-  const isInvoice = String(o.observacoes || "").includes("Documento: invoice");
+  const numeroPedido = String(o.numero_pedido ?? "")
+    .trim()
+    .replace(/^(?:p\s*\.?\s*o\s*\.?\s*:?\s*)+/i, "")
+    .trim();
+  const aprovado = ["aprovado", "faturamento", "faturado"].includes(String(o.status || "").toLowerCase());
+  // Vira invoice automaticamente quando aprovado com número de P.O.
+  const isInvoice = aprovado && !!numeroPedido;
   const docLabel = isInvoice ? T.invoice : T.proposal;
   const footers: string[] = [];
 
@@ -189,8 +195,15 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     doc.text(qr.number, x + size / 2, titleTop + size + 3, { align: "center" });
     qrBottom = titleTop + size + 5;
   }
-  small(docLabel, M, y, RED, true, 12);
-  y += 11;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(...RED);
+  doc.text(docLabel, W / 2, y + 2, { align: "center" });
+  y += 9;
+  if (isInvoice) {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.setTextColor(...RED);
+    doc.text(`P.O: ${numeroPedido}`, W / 2, y + 2, { align: "center" });
+    y += 9;
+  }
+  y = Math.max(y, qrBottom) + 4;
   const titulo = tr(o.assunto_proposta || o.equipamento || T.defaultTitle);
   doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(...DARK);
   const tl = doc.splitTextToSize(titulo.charAt(0).toUpperCase() + titulo.slice(1), CW * 0.6);
@@ -206,16 +219,6 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(...DARK);
   const cl = doc.splitTextToSize(o.cliente_nome || "N/A", CW);
   doc.text(cl, M, y); y += cl.length * 6 + 1;
-   const numeroPedido = String(o.numero_pedido ?? "")
-     .trim()
-     .replace(/^(?:p\s*\.?\s*o\s*\.?\s*:\s*)+/i, "")
-     .trim();
-  if (numeroPedido) {
-    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...DARK);
-    const pedidoLines = doc.splitTextToSize(`P.O: ${numeroPedido}`, CW);
-    doc.text(pedidoLines, M, y);
-    y += pedidoLines.length * 6;
-  }
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...DARK);
   doc.text(`${T.refOrder}  ${o.ordem_referencia || "N/A"}`, M, y); y += 6;
   small(`${T.taxId}  ${p.clienteDoc || "N/A"}    |    ${T.entryInvoice}  ${o.numero_nota_entrada || "N/A"}`, M, y, MUTED, false, 7);

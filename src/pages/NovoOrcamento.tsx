@@ -2384,6 +2384,7 @@ export default function NovoOrcamento() {
       observacoes: `Documento: ${dadosOrcamento.tipoDocumento}`,
       numero_nota_entrada: dadosOrcamento.numeroNota || null,
       numero_pedido: orcamentoRef.current?.numero_pedido || null,
+      status: orcamentoRef.current?.status || null,
       ordem_referencia: ordemRef || null,
       condicao_pagamento: informacoesComerciais.condicaoPagamento || null,
       prazo_entrega: informacoesComerciais.prazoEntrega || null,
@@ -3431,24 +3432,6 @@ export default function NovoOrcamento() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {t('novoOrcamento.operationalRevenueCategories')}
                   </p>
-                </div>
-                <div>
-                  <Label htmlFor="tipoDocumento">{t('novoOrcamento.orderType')} *</Label>
-                  <Select 
-                    value={dadosOrcamento.tipoDocumento} 
-                    onValueChange={value => setDadosOrcamento(prev => ({
-                      ...prev,
-                      tipoDocumento: value as 'proposal' | 'invoice'
-                    }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('novoOrcamento.selectPlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="proposal">{t('novoOrcamento.orderTypeProposal')}</SelectItem>
-                      <SelectItem value="invoice">{t('novoOrcamento.orderTypeInvoice')}</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
                 
               </div>
