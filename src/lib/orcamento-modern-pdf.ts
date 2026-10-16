@@ -440,7 +440,53 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   }
 
   const base = numeroOrcamentoParaArquivo(o.numero);
-  doc.save(`${String(lang || "").startsWith("pt") ? "Orcamento" : "Quote"} ${base}${o.numero_revisao ? ` REV${o.numero_revisao}` : ""}.pdf`);
+  const nomeArquivo = `${String(lang || "").startsWith("pt") ? "Orcamento" : "Quote"} ${base}${o.numero_revisao ? ` REV${o.numero_revisao}` : ""}.pdf`;
+
+  // Invoice aprovada: anexa ao final o PDF do P.O. enviado na aprovação.
+  if (isInvoice) {
+    try {
+      const poUrl = await buscarAnexoPedidoUrl(o);
+      if (poUrl) {
+        const resp = await fetch(poUrl);
+        if (resp.ok) {
+          const { PDFDocument } = await import("pdf-lib");
+          const merged = await PDFDocument.load(doc.output("arraybuffer"));
+          const poDoc = await PDFDocument.load(await resp.arrayBuffer(), { ignoreEncryption: true });
+          const pages = await merged.copyPages(poDoc, poDoc.getPageIndices());
+          pages.forEach((pg) => merged.addPage(pg));
+          const bytes = await merged.save();
+          const blob = new Blob([bytes], { type: "application/pdf" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = nomeArquivo;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error("Falha ao anexar P.O. ao invoice:", e);
+    }
+  }
+  doc.save(nomeArquivo);
+}
+
+/** Localiza o PDF do P.O. salvo na aprovação (registrado na descrição do orçamento). */
+async function buscarAnexoPedidoUrl(o: any): Promise<string | null> {
+  const extrair = (txt: any) => {
+    const m = String(txt || "").match(/Anexo do Pedido:\s*(\S+)/);
+    return m ? m[1] : null;
+  };
+  let url = extrair(o.descricao);
+  const id = o.orcamento_id || o.id;
+  if (!url && id) {
+    const { data } = await supabase.from("orcamentos").select("descricao").eq("id", id).maybeSingle();
+    url = extrair(data?.descricao);
+  }
+  return url;
 }
 
 /** Busca todos os dados de um orçamento salvo e gera o PDF no novo layout. */
