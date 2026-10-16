@@ -455,7 +455,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
           const pages = await merged.copyPages(poDoc, poDoc.getPageIndices());
           pages.forEach((pg) => merged.addPage(pg));
           const bytes = await merged.save();
-          const blob = new Blob([bytes], { type: "application/pdf" });
+          const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
@@ -483,6 +483,7 @@ async function buscarAnexoPedidoUrl(o: any): Promise<string | null> {
   let url = extrair(o.descricao);
   const id = o.orcamento_id || o.id;
   if (!url && id) {
+    const { supabase } = await import("@/integrations/supabase/client");
     const { data } = await supabase.from("orcamentos").select("descricao").eq("id", id).maybeSingle();
     url = extrair(data?.descricao);
   }
