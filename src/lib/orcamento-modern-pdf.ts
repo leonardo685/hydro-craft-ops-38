@@ -440,7 +440,11 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   }
 
   const base = numeroOrcamentoParaArquivo(o.numero);
-  const nomeArquivo = `${String(lang || "").startsWith("pt") ? "Orcamento" : "Quote"} ${base}${o.numero_revisao ? ` REV${o.numero_revisao}` : ""}.pdf`;
+  const sufixoRevisao = o.numero_revisao ? ` REV${o.numero_revisao}` : "";
+  // Invoice aprovada com P.O.: nome do arquivo começa com o número do P.O.
+  const nomeArquivo = isInvoice
+    ? `PO ${numeroPedido} - Invoice ${base}${sufixoRevisao}.pdf`
+    : `${String(lang || "").startsWith("pt") ? "Orcamento" : "Quote"} ${base}${sufixoRevisao}.pdf`;
 
   // Invoice aprovada: anexa ao final o PDF do P.O. enviado na aprovação.
   if (isInvoice) {
