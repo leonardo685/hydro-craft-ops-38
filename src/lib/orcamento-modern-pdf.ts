@@ -450,10 +450,14 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
         const resp = await fetch(poUrl);
         if (resp.ok) {
           const { PDFDocument } = await import("pdf-lib");
-          const merged = await PDFDocument.load(doc.output("arraybuffer"));
+          const invoiceDoc = await PDFDocument.load(doc.output("arraybuffer"));
           const poDoc = await PDFDocument.load(await resp.arrayBuffer(), { ignoreEncryption: true });
-          const pages = await merged.copyPages(poDoc, poDoc.getPageIndices());
-          pages.forEach((pg) => merged.addPage(pg));
+          // P.O. do cliente primeiro, invoice do Mec Hydro depois.
+          const merged = await PDFDocument.create();
+          const poPages = await merged.copyPages(poDoc, poDoc.getPageIndices());
+          poPages.forEach((pg) => merged.addPage(pg));
+          const invoicePages = await merged.copyPages(invoiceDoc, invoiceDoc.getPageIndices());
+          invoicePages.forEach((pg) => merged.addPage(pg));
           const bytes = await merged.save();
           const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
           const url = URL.createObjectURL(blob);
