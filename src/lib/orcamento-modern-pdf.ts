@@ -1,4 +1,5 @@
 import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
+import { normalizarNumeroPedido } from "@/lib/pedido-utils";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
@@ -142,10 +143,8 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const CW = W - M * 2;
 
   const numero = o.numero_revisao ? `${o.numero} REV${o.numero_revisao}` : o.numero || "";
-  const numeroPedido = String(o.numero_pedido ?? "")
-    .trim()
-    .replace(/^(?:p\s*\.?\s*o\s*\.?\s*:?\s*)+/i, "")
-    .trim();
+  // "none", "n/a" e similares significam sem pedido: não mostram o prefixo P.O.
+  const numeroPedido = normalizarNumeroPedido(o.numero_pedido);
   const aprovado = ["aprovado", "faturamento", "faturado"].includes(String(o.status || "").toLowerCase());
   // Vira invoice automaticamente quando aprovado com número de P.O.
   const isInvoice = aprovado && !!numeroPedido;
