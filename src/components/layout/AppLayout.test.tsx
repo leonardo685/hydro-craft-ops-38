@@ -25,11 +25,8 @@ vi.mock("@/components/LanguageSelectorDropdown", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/ai-input", () => ({
-  MorphPanel: () => <div data-testid="morph-panel">AI Panel</div>,
-}));
-
 vi.mock("@/components/ScanQRCodeModal", () => ({
+
   ScanQRCodeModal: () => <div data-testid="scan-modal">Scan Modal</div>,
 }));
 
