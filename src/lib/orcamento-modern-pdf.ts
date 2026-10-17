@@ -1,4 +1,5 @@
 import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
+import { normalizarNumeroPedido } from "@/lib/pedido-utils";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
@@ -142,13 +143,12 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const CW = W - M * 2;
 
   const numero = o.numero_revisao ? `${o.numero} REV${o.numero_revisao}` : o.numero || "";
-  const numeroPedido = String(o.numero_pedido ?? "")
-    .trim()
-    .replace(/^(?:p\s*\.?\s*o\s*\.?\s*:?\s*)+/i, "")
-    .trim();
+  // "none", "n/a" e similares significam sem pedido: não mostram o prefixo P.O.
+  const numeroPedido = normalizarNumeroPedido(o.numero_pedido);
   const aprovado = ["aprovado", "faturamento", "faturado"].includes(String(o.status || "").toLowerCase());
-  // Vira invoice automaticamente quando aprovado com número de P.O.
-  const isInvoice = aprovado && !!numeroPedido;
+  // Orçamento aprovado vira invoice. O prefixo "P.O:" só aparece com número real de pedido.
+  const isInvoice = aprovado;
+  const temPedido = !!numeroPedido;
   const docLabel = isInvoice ? T.invoice : T.proposal;
   const footers: string[] = [];
 
@@ -201,7 +201,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   y = Math.max(y, qrBottom) + 4;
   const titulo = tr(o.assunto_proposta || o.equipamento || T.defaultTitle);
   const tituloFormatado = titulo.charAt(0).toUpperCase() + titulo.slice(1);
-  const linhaTitulo = isInvoice ? `P.O: ${numeroPedido} - ${tituloFormatado}` : tituloFormatado;
+  const linhaTitulo = temPedido ? `P.O: ${numeroPedido} - ${tituloFormatado}` : tituloFormatado;
   doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(...DARK);
   const tl = doc.splitTextToSize(linhaTitulo, CW * 0.6);
   doc.text(tl, M, y);
@@ -442,9 +442,11 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const base = numeroOrcamentoParaArquivo(o.numero);
   const sufixoRevisao = o.numero_revisao ? ` REV${o.numero_revisao}` : "";
   // Invoice aprovada com P.O.: nome do arquivo começa com o número do P.O.
-  const nomeArquivo = isInvoice
-    ? `PO ${numeroPedido} - Invoice ${base}${sufixoRevisao}.pdf`
-    : `${String(lang || "").startsWith("pt") ? "Orcamento" : "Quote"} ${base}${sufixoRevisao}.pdf`;
+  const nomeArquivo = !isInvoice
+    ? `${String(lang || "").startsWith("pt") ? "Orcamento" : "Quote"} ${base}${sufixoRevisao}.pdf`
+    : temPedido
+      ? `PO ${numeroPedido} - Invoice ${base}${sufixoRevisao}.pdf`
+      : `Invoice ${base}${sufixoRevisao}.pdf`;
 
   // Invoice aprovada: anexa ao final o PDF do P.O. enviado na aprovação.
   if (isInvoice) {

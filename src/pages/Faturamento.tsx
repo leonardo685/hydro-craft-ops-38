@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
 import { getOrcamentosEmFaturamento, getOrcamentosFinalizados, emitirNotaFiscal, type Orcamento } from "@/lib/orcamento-utils";
 import { OrdensAguardandoRetorno } from "@/components/OrdensAguardandoRetorno";
+import { normalizarNumeroPedido } from "@/lib/pedido-utils";
 import { supabase } from "@/integrations/supabase/client";
 import EmitirNotaModal from "@/components/EmitirNotaModal";
 import { Input } from "@/components/ui/input";
@@ -859,9 +860,9 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                                 Orçamento: {nota.numero_orcamento}
                               </Badge>
                             )}
-                            {nota.numero_pedido && (
+                            {normalizarNumeroPedido(nota.numero_pedido) && (
                               <Badge variant="outline" className="text-primary border-primary/30">
-                                Pedido: {nota.numero_pedido}
+                                Pedido: {normalizarNumeroPedido(nota.numero_pedido)}
                               </Badge>
                             )}
                           </div>
@@ -972,9 +973,9 @@ export default function Faturamento({ defaultTab = "faturamento" }: { defaultTab
                                 Orçamento: {nota.numero_orcamento}
                               </Badge>
                             )}
-                            {(nota as any).numero_pedido && (
+                            {normalizarNumeroPedido((nota as any).numero_pedido) && (
                               <Badge variant="outline" className="text-primary border-primary/30">
-                                Pedido: {(nota as any).numero_pedido}
+                                Pedido: {normalizarNumeroPedido((nota as any).numero_pedido)}
                               </Badge>
                             )}
                           </div>
