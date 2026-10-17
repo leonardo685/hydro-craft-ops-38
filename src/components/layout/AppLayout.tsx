@@ -4,7 +4,6 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelectorDropdown } from "@/components/LanguageSelectorDropdown";
 import { ReactNode, useState } from "react";
 import fixzysLogo from "@/assets/fixzys-logo.png";
-import { MorphPanel } from "@/components/ui/ai-input";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { QrCode } from "lucide-react";
@@ -63,8 +62,8 @@ export function AppLayout({ children }: AppLayoutProps) {
             {children}
           </div>
         </main>
-        <MorphPanel />
       </div>
+
       <ScanQRCodeModal open={scanOpen} onOpenChange={setScanOpen} />
     </SidebarProvider>
   );
