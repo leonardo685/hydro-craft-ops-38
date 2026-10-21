@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X, Minus } from "lucide-react";
+import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X, Minus, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useClientes } from "@/hooks/use-clientes";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
@@ -167,7 +167,8 @@ export default function NovoOrcamento() {
     mostrarPecas: true,
     mostrarServicos: true,
     mostrarUsinagem: true,
-    mostrarValores: true
+    mostrarValores: true,
+    mostrarValoresPecas: false
   });
   const [itensAnalise, setItensAnalise] = useState<{
     pecas: ItemOrcamento[];
@@ -430,7 +431,8 @@ export default function NovoOrcamento() {
           assuntoProposta: orcamentoEdicao.assunto_proposta || '',
           frete: orcamentoEdicao.frete || 'CIF',
           garantia: orcamentoEdicao.garantia || '12',
-          validadeProposta: orcamentoEdicao.validade_proposta || '30'
+          validadeProposta: orcamentoEdicao.validade_proposta || '30',
+          mostrarValoresPecas: Boolean(orcamentoEdicao.mostrar_valores_pecas)
         }));
 
         // Carregar itens do orçamento
@@ -1496,6 +1498,7 @@ export default function NovoOrcamento() {
         frete: informacoesComerciais.frete || 'CIF',
         garantia: informacoesComerciais.garantia || null,
         validade_proposta: informacoesComerciais.validadeProposta || null,
+        mostrar_valores_pecas: informacoesComerciais.mostrarValoresPecas,
         empresa_id: empresaAtual?.id || null
       };
 
@@ -2392,6 +2395,7 @@ export default function NovoOrcamento() {
       frete: informacoesComerciais.frete || 'CIF',
       garantia: informacoesComerciais.garantia || null,
       validade_proposta: informacoesComerciais.validadeProposta || null,
+      mostrar_valores_pecas: informacoesComerciais.mostrarValoresPecas,
       data_orcamento: dadosOrcamento.dataAbertura,
       ...(override?.orcamento || {}),
     };
