@@ -381,28 +381,46 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const lista = async (label: string, arr: any[], showValues = false) => {
     if (!arr.length) return;
     await section(label);
-    small(showValues ? `${T.qty} x ${T.unitValue}` : T.qty, W - M, y - 5, MUTED, true, 6, true);
-    y += 0;
     let sectionTotal = 0;
-    for (const it of arr) {
-      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5);
-      const lines = doc.splitTextToSize(tr(it.descricao || ""), showValues ? CW - 74 : CW - 20);
-      await ensure(lines.length * 4 + 4);
-      doc.setTextColor(...DARK);
-      doc.text(lines, M, y + 1);
-      const qty = Number(it.quantidade ?? 1) || 0;
-      const unit = Number(it.valorUnitario ?? 0) || 0;
-      const tot = qty * unit || Number(it.valorTotal ?? 0) || 0;
-      doc.text(showValues ? `${qty} x ${money(unit)} = ${money(tot)}` : String(it.quantidade ?? 1), W - M, y + 1, { align: "right" });
-      sectionTotal += tot;
-      y += lines.length * 4 + 1.5;
-      rule(y); y += 3.5;
-    }
-    if (showValues && sectionTotal > 0) {
+    if (showValues) {
+      const xQty = W - M - 64, xUnit = W - M - 32, xTot = W - M;
+      small(T.qty, xQty, y - 4, MUTED, true, 6, true);
+      small(T.unitValue, xUnit, y - 4, MUTED, true, 6, true);
+      small(T.lineTotal, xTot, y - 4, MUTED, true, 6, true);
+      for (const it of arr) {
+        doc.setFont("helvetica", "normal"); doc.setFontSize(7.5);
+        const lines = doc.splitTextToSize(tr(it.descricao || ""), CW - 72);
+        await ensure(lines.length * 4 + 5);
+        doc.setTextColor(...DARK);
+        doc.text(lines, M, y + 1);
+        const qty = Number(it.quantidade ?? 1) || 0;
+        const unit = Number(it.valorUnitario ?? it.valor_unitario ?? 0) || 0;
+        const tot = Number(it.valorTotal ?? it.valor_total ?? 0) || qty * unit;
+        doc.text(String(qty), xQty, y + 1, { align: "right" });
+        doc.text(money(unit), xUnit, y + 1, { align: "right" });
+        doc.text(money(tot), xTot, y + 1, { align: "right" });
+        sectionTotal += tot;
+        y += lines.length * 4 + 1.5;
+        rule(y); y += 3.5;
+      }
       await ensure(10);
-      small(T.partsTotal, W - M - 50, y, DARK, true, 8);
-      small(money(sectionTotal), W - M, y, DARK, true, 8, true);
-      y += 6;
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(...DARK);
+      doc.text(T.partsTotal, M, y + 1);
+      doc.text(money(sectionTotal), xTot, y + 1, { align: "right" });
+      y += 4;
+      rule(y); y += 4;
+    } else {
+      small(T.qty, W - M, y - 4, MUTED, true, 6, true);
+      for (const it of arr) {
+        doc.setFont("helvetica", "normal"); doc.setFontSize(7.5);
+        const lines = doc.splitTextToSize(tr(it.descricao || ""), CW - 20);
+        await ensure(lines.length * 4 + 4);
+        doc.setTextColor(...DARK);
+        doc.text(lines, M, y + 1);
+        doc.text(String(it.quantidade ?? 1), W - M, y + 1, { align: "right" });
+        y += lines.length * 4 + 1.5;
+        rule(y); y += 3.5;
+      }
     }
     y += 4;
   };
