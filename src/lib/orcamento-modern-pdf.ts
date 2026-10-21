@@ -20,6 +20,7 @@ const TXT: Record<Lang, Record<string, string>> = {
     rod: "HASTE: DIÂM. x COMPR.", connA: "CONEXÃO A", connB: "CONEXÃO B",
     temperature: "TEMPERATURA", fluid: "FLUIDO", power: "POTÊNCIA",
     parts: "PEÇAS NECESSÁRIAS", services: "SERVIÇOS", machining: "USINAGEM", qty: "QTD",
+    unitValue: "VALOR UNIT.", partsTotal: "TOTAL DE PEÇAS",
     photos: "Condição do equipamento", photosSub: "Registro fotográfico do equipamento",
     photoRecord: "REGISTRO FOTOGRÁFICO", defaultTitle: "Reforma / Manutenção",
   },
@@ -35,6 +36,7 @@ const TXT: Record<Lang, Record<string, string>> = {
     rod: "ROD DIA. x LENGTH", connA: "CONNECTION A", connB: "CONNECTION B",
     temperature: "TEMPERATURE", fluid: "FLUID", power: "POWER",
     parts: "REQUIRED PARTS", services: "SERVICES", machining: "MACHINING", qty: "QTY",
+    unitValue: "UNIT VALUE", partsTotal: "PARTS TOTAL",
     photos: "Equipment condition", photosSub: "Photographic record of the equipment",
     photoRecord: "PHOTO RECORD", defaultTitle: "Repair / Maintenance",
   },
@@ -50,6 +52,7 @@ const TXT: Record<Lang, Record<string, string>> = {
     rod: "VÁSTAGO: DIÁM. x LONG.", connA: "CONEXIÓN A", connB: "CONEXIÓN B",
     temperature: "TEMPERATURA", fluid: "FLUIDO", power: "POTENCIA",
     parts: "PIEZAS NECESARIAS", services: "SERVICIOS", machining: "MECANIZADO", qty: "CANT.",
+    unitValue: "VALOR UNIT.", partsTotal: "TOTAL DE PIEZAS",
     photos: "Condición del equipo", photosSub: "Registro fotográfico del equipo",
     photoRecord: "REGISTRO FOTOGRÁFICO", defaultTitle: "Reparación / Mantenimiento",
   },
@@ -375,26 +378,36 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     }
   }
 
-  const lista = async (label: string, arr: any[]) => {
+  const lista = async (label: string, arr: any[], showValues = false) => {
     if (!arr.length) return;
     await section(label);
-    small(T.qty, W - M, y - 5, MUTED, true, 6, true);
-    // alinhar QTD à direita
+    small(showValues ? `${T.qty} x ${T.unitValue}` : T.qty, W - M, y - 5, MUTED, true, 6, true);
     y += 0;
+    let sectionTotal = 0;
     for (const it of arr) {
       doc.setFont("helvetica", "normal"); doc.setFontSize(7.5);
-      const lines = doc.splitTextToSize(tr(it.descricao || ""), CW - 20);
+      const lines = doc.splitTextToSize(tr(it.descricao || ""), showValues ? CW - 74 : CW - 20);
       await ensure(lines.length * 4 + 4);
       doc.setTextColor(...DARK);
       doc.text(lines, M, y + 1);
-      doc.text(String(it.quantidade ?? 1), W - M, y + 1, { align: "right" });
+      const qty = Number(it.quantidade ?? 1) || 0;
+      const unit = Number(it.valorUnitario ?? 0) || 0;
+      const tot = qty * unit || Number(it.valorTotal ?? 0) || 0;
+      doc.text(showValues ? `${qty} x ${money(unit)} = ${money(tot)}` : String(it.quantidade ?? 1), W - M, y + 1, { align: "right" });
+      sectionTotal += tot;
       y += lines.length * 4 + 1.5;
       rule(y); y += 3.5;
+    }
+    if (showValues && sectionTotal > 0) {
+      await ensure(10);
+      small(T.partsTotal, W - M - 50, y, DARK, true, 8);
+      small(money(sectionTotal), W - M, y, DARK, true, 8, true);
+      y += 6;
     }
     y += 4;
   };
   const itens = p.itens || [];
-  await lista(T.parts, itens.filter((i) => i.tipo === "peca"));
+  await lista(T.parts, itens.filter((i) => i.tipo === "peca"), Boolean(o.mostrar_valores_pecas));
   await lista(T.services, itens.filter((i) => i.tipo === "servico"));
   await lista(T.machining, itens.filter((i) => i.tipo === "usinagem"));
 

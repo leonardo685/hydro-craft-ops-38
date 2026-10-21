@@ -1846,6 +1846,7 @@ export type Database = {
           impostos_valor: number | null
           link_pagamento: string | null
           margem_contribuicao: number | null
+          mostrar_valores_pecas: boolean
           numero: string
           numero_nf: string | null
           numero_nota_entrada: string | null
@@ -1901,6 +1902,7 @@ export type Database = {
           impostos_valor?: number | null
           link_pagamento?: string | null
           margem_contribuicao?: number | null
+          mostrar_valores_pecas?: boolean
           numero: string
           numero_nf?: string | null
           numero_nota_entrada?: string | null
@@ -1956,6 +1958,7 @@ export type Database = {
           impostos_valor?: number | null
           link_pagamento?: string | null
           margem_contribuicao?: number | null
+          mostrar_valores_pecas?: boolean
           numero?: string
           numero_nf?: string | null
           numero_nota_entrada?: string | null
