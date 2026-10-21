@@ -1,0 +1,1 @@
+ALTER TABLE public.orcamentos ADD COLUMN IF NOT EXISTS mostrar_valores_pecas boolean NOT NULL DEFAULT false;
