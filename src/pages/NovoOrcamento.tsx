@@ -3782,6 +3782,16 @@ export default function NovoOrcamento() {
                 {t('novoOrcamento.parts')}
               </CardTitle>
               <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={informacoesComerciais.mostrarValoresPecas ? "default" : "outline"}
+                  className="gap-1"
+                  onClick={() => setInformacoesComerciais(prev => ({ ...prev, mostrarValoresPecas: !prev.mostrarValoresPecas }))}
+                >
+                  {informacoesComerciais.mostrarValoresPecas ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {informacoesComerciais.mostrarValoresPecas ? "Ocultar valor" : "Mostrar valor"}
+                </Button>
                 <Label htmlFor="toggle-pecas" className="text-sm text-muted-foreground cursor-pointer">
                   Mostrar no orçamento
                 </Label>
@@ -3803,9 +3813,11 @@ export default function NovoOrcamento() {
                       <TableRow>
                       <TableHead>{t('novoOrcamento.part')}</TableHead>
                       <TableHead>{t('novoOrcamento.code')}</TableHead>
+                      {informacoesComerciais.mostrarValoresPecas && <>
                       <TableHead className="text-center">{t('novoOrcamento.qty')}</TableHead>
                       <TableHead className="text-right">{t('novoOrcamento.unitValue')}</TableHead>
                       <TableHead className="text-right">{t('novoOrcamento.total')}</TableHead>
+                      </>}
                       <TableHead className="text-center">{t('novoOrcamento.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -3829,6 +3841,7 @@ export default function NovoOrcamento() {
                             className="min-w-[100px]" 
                           />
                         </TableCell>
+                        {informacoesComerciais.mostrarValoresPecas && <>
                         <TableCell className="text-center">
                           <Input type="number" min="1" value={peca.quantidade === 0 ? '' : peca.quantidade} onChange={e => atualizarQuantidadeItem('pecas', peca.id, e.target.value === '' ? 0 : (parseInt(e.target.value) || 0))} onBlur={e => { if (!e.target.value || parseInt(e.target.value) < 1) atualizarQuantidadeItem('pecas', peca.id, 1); }} className="w-16 text-center" />
                         </TableCell>
@@ -3840,6 +3853,7 @@ export default function NovoOrcamento() {
                       minimumFractionDigits: 2
                     })}
                         </TableCell>
+                        </>}
                         <TableCell className="text-center">
                           <Button variant="ghost" size="sm" onClick={() => removerItem('pecas', peca.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
                             <Trash2 className="h-4 w-4" />
@@ -3848,7 +3862,7 @@ export default function NovoOrcamento() {
                       </TableRow>)}
                   </TableBody>
                 </Table>
-                {itensAnalise.pecas.length > 0 && (
+                {informacoesComerciais.mostrarValoresPecas && itensAnalise.pecas.length > 0 && (
                   <div className="mt-4 pt-4 border-t flex justify-end">
                     <div className="text-lg font-bold">
                       {t('novoOrcamento.partsTotal')}: $ {itensAnalise.pecas.reduce((acc, item) => acc + item.valorTotal, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
