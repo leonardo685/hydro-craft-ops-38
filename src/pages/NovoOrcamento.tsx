@@ -4178,6 +4178,24 @@ export default function NovoOrcamento() {
               </div>
             )}
 
+            {empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO') && (
+              <div className="flex flex-wrap items-center gap-3">
+                <Label htmlFor="quote-tech-fee">{language === 'en' ? 'Techs value' : language === 'es' ? 'Valor técnicos' : 'Valor técnicos'}</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">$</span>
+                  <Input
+                    id="quote-tech-fee"
+                    type="number" min={0} step="0.01" className="w-32"
+                    value={informacoesComerciais.techFee || ''}
+                    onChange={e => setInformacoesComerciais(prev => ({ ...prev, techFee: parseFloat(e.target.value) || 0 }))}
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {language === 'en' ? 'Amount allocated to technicians (not shown on PDF)' : 'Valor destinado aos técnicos (não aparece no PDF)'}
+                </span>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="assuntoProposta">{t('novoOrcamento.proposalSubject')}</Label>
