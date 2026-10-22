@@ -2368,7 +2368,17 @@ export default function Orcamentos() {
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
-                          <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          {(() => {
+                            const base = Number(item.valor) || 0;
+                            const urg = item.urgency_fee_enabled ? base * (Number(item.urgency_fee_percentual) || 0) / 100 : 0;
+                            const tech = Number(item.tech_fee) || 0;
+                            return (
+                              <>
+                                <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {(base + urg).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{urg > 0 && <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">(+{Number(item.urgency_fee_percentual)}% urg.)</span>}</p>
+                                {tech > 0 && <p><span className="font-medium">Techs:</span> $ {tech.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -2469,7 +2479,17 @@ export default function Orcamentos() {
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
-                          <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          {(() => {
+                            const base = Number(item.valor) || 0;
+                            const urg = item.urgency_fee_enabled ? base * (Number(item.urgency_fee_percentual) || 0) / 100 : 0;
+                            const tech = Number(item.tech_fee) || 0;
+                            return (
+                              <>
+                                <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {(base + urg).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{urg > 0 && <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">(+{Number(item.urgency_fee_percentual)}% urg.)</span>}</p>
+                                {tech > 0 && <p><span className="font-medium">Techs:</span> $ {tech.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -2564,7 +2584,17 @@ export default function Orcamentos() {
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
-                          <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          {(() => {
+                            const base = Number(item.valor) || 0;
+                            const urg = item.urgency_fee_enabled ? base * (Number(item.urgency_fee_percentual) || 0) / 100 : 0;
+                            const tech = Number(item.tech_fee) || 0;
+                            return (
+                              <>
+                                <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {(base + urg).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{urg > 0 && <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">(+{Number(item.urgency_fee_percentual)}% urg.)</span>}</p>
+                                {tech > 0 && <p><span className="font-medium">Techs:</span> $ {tech.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
+                              </>
+                            );
+                          })()}
                           {extrairNumeroPedido(item.descricao) && (
                             <p><span className="font-medium">Nº Pedido:</span> {extrairNumeroPedido(item.descricao)}</p>
                           )}
@@ -2648,7 +2678,17 @@ export default function Orcamentos() {
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
-                          <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          {(() => {
+                            const base = Number(item.valor) || 0;
+                            const urg = item.urgency_fee_enabled ? base * (Number(item.urgency_fee_percentual) || 0) / 100 : 0;
+                            const tech = Number(item.tech_fee) || 0;
+                            return (
+                              <>
+                                <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {(base + urg).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{urg > 0 && <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">(+{Number(item.urgency_fee_percentual)}% urg.)</span>}</p>
+                                {tech > 0 && <p><span className="font-medium">Techs:</span> $ {tech.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
