@@ -148,7 +148,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const numero = o.numero_revisao ? `${o.numero} REV${o.numero_revisao}` : o.numero || "";
   // "none", "n/a" e similares significam sem pedido: não mostram o prefixo P.O.
   const numeroPedido = normalizarNumeroPedido(o.numero_pedido);
-  const aprovado = ["aprovado", "faturamento", "faturado"].includes(String(o.status || "").toLowerCase());
+  const aprovado = ["aprovado", "faturamento", "faturado", "finalizado", "finalizada", "concluido", "concluído"].includes(String(o.status || "").toLowerCase());
   // Orçamento aprovado vira invoice. O prefixo "P.O:" só aparece com número real de pedido.
   const isInvoice = aprovado;
   const temPedido = !!numeroPedido;
