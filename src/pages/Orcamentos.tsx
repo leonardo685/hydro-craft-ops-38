@@ -412,6 +412,7 @@ export default function Orcamentos() {
           tax_exempt: Boolean(orcamento.tax_exempt),
           urgency_fee_enabled: Boolean(orcamento.urgency_fee_enabled),
           urgency_fee_percentual: Number(orcamento.urgency_fee_percentual) || 0,
+          tech_fee: Number((orcamento as any).tech_fee) || 0,
           valor: orcamento.valor,
           desconto_percentual: orcamento.desconto_percentual,
           condicao_pagamento: orcamento.condicao_pagamento,
