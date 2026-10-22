@@ -85,6 +85,65 @@ export const AprovarOrcamentoModal = ({
   };
   const [anexoPedido, setAnexoPedido] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [maisCotacoes, setMaisCotacoes] = useState<boolean | null>(null);
+  const [pendentes, setPendentes] = useState<any[]>([]);
+  const [selecionados, setSelecionados] = useState<string[]>([]);
+
+  React.useEffect(() => {
+    setMaisCotacoes(null);
+    setSelecionados([]);
+    setPendentes([]);
+    if (!open || !orcamento || !empresaAtual?.id) return;
+    supabase
+      .from('orcamentos')
+      .select('id, numero, cliente_nome, cliente_id, equipamento, valor, descricao, ordem_servico_id')
+      .eq('empresa_id', empresaAtual.id)
+      .eq('status', 'pendente')
+      .neq('id', orcamento.id)
+      .order('numero', { ascending: false })
+      .then(({ data }) => {
+        const lista = (data || []).sort((a: any, b: any) => {
+          const sa = a.cliente_id && a.cliente_id === orcamento.cliente_id ? 0 : 1;
+          const sb = b.cliente_id && b.cliente_id === orcamento.cliente_id ? 0 : 1;
+          return sa - sb;
+        });
+        setPendentes(lista);
+      });
+  }, [open, orcamento, empresaAtual?.id]);
+
+  const aprovarAdicional = async (orc: any, anexoUrl: string | null) => {
+    const valorFinal = Number(orc.valor) || 0;
+    const { error } = await supabase
+      .from('orcamentos')
+      .update({
+        status: 'aprovado',
+        data_aprovacao: new Date().toISOString(),
+        prazo_pagamento: formData.prazoPagamento,
+        data_vencimento: formData.dataVencimento,
+        numero_pedido: formData.numeroPedido,
+        descricao: `${orc.descricao || ''}\n\nDetalhes da Aprovação:\n- Valor Final: $ ${valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Prazo de Pagamento: ${formData.prazoPagamento} dias\n- Data de Vencimento: ${new Date(formData.dataVencimento).toLocaleDateString('pt-BR')}\n- Número do Pedido: ${formData.numeroPedido}${anexoUrl ? `\n- Anexo do Pedido: ${anexoUrl}` : ''}\n- Aprovado junto com o orçamento ${orcamento.numero}${formData.observacoes ? `\n- Observações: ${formData.observacoes}` : ''}`.trim()
+      })
+      .eq('id', orc.id)
+      .eq('empresa_id', empresaAtual?.id);
+    if (error) throw error;
+    if (orc.ordem_servico_id) {
+      await supabase
+        .from('ordens_servico')
+        .update({ status: 'aprovada', orcamento_id: orc.id, valor_estimado: valorFinal })
+        .eq('id', orc.ordem_servico_id);
+    }
+    await enviarWebhook(empresaAtual?.id || null, {
+      tipo: 'orcamento_aprovado',
+      numero: orc.numero,
+      cliente: orc.cliente_nome,
+      valor: `$ ${valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      numeroPedido: formData.numeroPedido,
+      data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
+      ordem_servico_aprovada: !!orc.ordem_servico_id,
+      numero_ordem: null,
+      empresa: empresaAtual?.nome || 'N/A'
+    });
+  };
 
   const calcularValorComDesconto = (valor: number, desconto: number) => {
     return valor - (valor * desconto / 100);
@@ -356,9 +415,26 @@ export const AprovarOrcamentoModal = ({
         await enviarWebhook(empresaAtual?.id || null, payloadOrdem);
       }
 
+      let extrasOk = 0;
+      if (maisCotacoes) {
+        for (const id of selecionados) {
+          const orc = pendentes.find((p) => p.id === id);
+          if (!orc) continue;
+          try {
+            await aprovarAdicional(orc, anexoUrl);
+            extrasOk++;
+          } catch (e) {
+            console.error('Erro ao aprovar orçamento adicional:', e);
+            toast({ title: "Aviso", description: `Não foi possível aprovar o orçamento ${orc.numero}`, variant: "destructive" });
+          }
+        }
+      }
+
       toast({
         title: "Sucesso",
-        description: "Orçamento aprovado com sucesso!"
+        description: extrasOk > 0
+          ? `${extrasOk + 1} orçamentos aprovados no P.O. ${formData.numeroPedido}`
+          : "Orçamento aprovado com sucesso!"
       });
       onConfirm();
       onOpenChange(false);
@@ -514,6 +590,41 @@ export const AprovarOrcamentoModal = ({
               </label>
             </div>
           </div>
+
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <p className="font-medium text-sm">Este P.O. inclui mais cotações?</p>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant={maisCotacoes === true ? "default" : "outline"} onClick={() => setMaisCotacoes(true)}>Sim</Button>
+                <Button type="button" size="sm" variant={maisCotacoes === false ? "default" : "outline"} onClick={() => { setMaisCotacoes(false); setSelecionados([]); }}>Não</Button>
+              </div>
+              {maisCotacoes && (
+                pendentes.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Nenhuma outra cotação aguardando aprovação.</p>
+                ) : (
+                  <div className="max-h-56 overflow-y-auto space-y-1 border rounded-md p-2">
+                    {pendentes.map((p) => (
+                      <label key={p.id} className="flex items-center gap-2 text-sm p-1 rounded hover:bg-muted cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selecionados.includes(p.id)}
+                          onChange={(e) => setSelecionados((prev) => e.target.checked ? [...prev, p.id] : prev.filter((x) => x !== p.id))}
+                        />
+                        <span className="font-medium">{p.numero}</span>
+                        <span className="text-muted-foreground truncate flex-1">{p.cliente_nome} · {p.equipamento}</span>
+                        <span>$ {(Number(p.valor) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </label>
+                    ))}
+                  </div>
+                )
+              )}
+              {maisCotacoes && selecionados.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selecionados.length} cotação(ões) serão aprovadas com o mesmo P.O., prazo e anexo, cada uma com seu próprio valor.
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           <div>
             <Label htmlFor="observacoes">Observações</Label>
