@@ -1,4 +1,4 @@
-import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
+import { STATUS_APROVADO_INVOICE, nomeArquivoOrcamentoPDF } from "@/lib/quote-filename";
 import { normalizarNumeroPedido } from "@/lib/pedido-utils";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
@@ -148,7 +148,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const numero = o.numero_revisao ? `${o.numero} REV${o.numero_revisao}` : o.numero || "";
   // "none", "n/a" e similares significam sem pedido: não mostram o prefixo P.O.
   const numeroPedido = normalizarNumeroPedido(o.numero_pedido);
-  const aprovado = ["aprovado", "faturamento", "faturado", "finalizado", "finalizada", "concluido", "concluído"].includes(String(o.status || "").toLowerCase());
+  const aprovado = STATUS_APROVADO_INVOICE.includes(String(o.status || "").toLowerCase());
   // Orçamento aprovado vira invoice. O prefixo "P.O:" só aparece com número real de pedido.
   const isInvoice = aprovado;
   const temPedido = !!numeroPedido;
@@ -470,14 +470,8 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     small(String(i).padStart(2, "0"), W - M, H - 10, RED, true, 7, true);
   }
 
-  const base = numeroOrcamentoParaArquivo(o.numero);
-  const sufixoRevisao = o.numero_revisao ? ` REV${o.numero_revisao}` : "";
-  // Invoice aprovada com P.O.: nome do arquivo começa com o número do P.O.
-  const nomeArquivo = !isInvoice
-    ? `${String(lang || "").startsWith("pt") ? "Orcamento" : "Quote"} ${base}${sufixoRevisao}.pdf`
-    : temPedido
-      ? `PO ${numeroPedido} - Invoice ${base}${sufixoRevisao}.pdf`
-      : `Invoice ${base}${sufixoRevisao}.pdf`;
+  // Invoice aprovada com P.O.: nome do arquivo começa com o número do P.O. (mesma regra nas abas Approved e Finalized).
+  const nomeArquivo = nomeArquivoOrcamentoPDF(o, String(lang || "").startsWith("pt"));
 
   // Invoice aprovada: anexa ao final o PDF do P.O. enviado na aprovação.
   if (isInvoice) {
