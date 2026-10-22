@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useEmpresaId } from '@/hooks/use-empresa-id';
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
+import { useEmpresa } from '@/contexts/EmpresaContext';
+import { hasFiscalBilling } from '@/lib/company-features';
 export interface Recebimento {
   id: number;
   numero_ordem: string;
@@ -85,6 +87,8 @@ export const useRecebimentos = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { empresaId } = useEmpresaId();
+  const { empresaAtual } = useEmpresa();
+  const fiscalBilling = hasFiscalBilling(empresaAtual?.nome);
 
   const carregarRecebimentos = async () => {
     if (!empresaId) return;
@@ -139,6 +143,10 @@ export const useRecebimentos = () => {
 
   const carregarNotasFiscais = async () => {
     if (!empresaId) return;
+    if (!fiscalBilling) {
+      setNotasFiscais([]);
+      return;
+    }
     
     try {
       const { data, error } = await supabase
@@ -438,7 +446,7 @@ export const useRecebimentos = () => {
   const recarregarDadosCallback = useCallback(() => {
     carregarRecebimentos();
     carregarNotasFiscais();
-  }, [empresaId]);
+  }, [empresaId, fiscalBilling]);
 
   // Realtime subscription para atualizações automáticas
   useRealtimeSubscription({
@@ -458,7 +466,7 @@ export const useRecebimentos = () => {
     };
 
     carregarDados();
-  }, [empresaId]);
+  }, [empresaId, fiscalBilling]);
 
   return {
     recebimentos,

@@ -11,9 +11,13 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { useClientes } from "@/hooks/use-clientes";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
+import { useEmpresa } from "@/contexts/EmpresaContext";
+import { hasFiscalBilling } from "@/lib/company-features";
 
 export default function NovoRecebimento() {
   const navigate = useNavigate();
+  const { empresaAtual } = useEmpresa();
+  const fiscalBilling = hasFiscalBilling(empresaAtual?.nome);
   const location = useLocation();
   const { clientes } = useClientes();
   const { criarRecebimento, gerarNumeroOrdem, uploadFoto, validarOrdemExistente } = useRecebimentos();
@@ -58,7 +62,7 @@ export default function NovoRecebimento() {
 
   // Preencher formulário com dados da nota fiscal se fornecidos
   useEffect(() => {
-    const notaFiscal = location.state?.notaFiscal;
+    const notaFiscal = fiscalBilling ? location.state?.notaFiscal : null;
     const itemNFe = location.state?.itemNFe;
     
     if (notaFiscal && clientes.length > 0) {
@@ -96,7 +100,7 @@ export default function NovoRecebimento() {
         observacoesEntrada: observacoes
       }));
     }
-  }, [location.state, clientes]);
+  }, [location.state, clientes, fiscalBilling]);
 
   // Validar OS Anterior com debounce
   const validarOsAnterior = useCallback(async (valor: string) => {
@@ -161,7 +165,7 @@ export default function NovoRecebimento() {
     
     try {
       // Verificar se há nota fiscal vinculada
-      const notaFiscal = location.state?.notaFiscal;
+      const notaFiscal = fiscalBilling ? location.state?.notaFiscal : null;
       
       // Buscar nome do cliente
       const clienteSelecionado = clientes.find(c => c.id === formData.cliente);
@@ -173,7 +177,7 @@ export default function NovoRecebimento() {
         cliente_nome: clienteSelecionado?.nome || '',
         cliente_cnpj: clienteSelecionado?.cnpj_cpf || notaFiscal?.cliente_cnpj,
         data_entrada: formData.dataAbertura,
-        nota_fiscal: formData.numeroNota,
+        nota_fiscal: fiscalBilling ? formData.numeroNota : null,
         nota_fiscal_id: notaFiscal?.id || null,
         chave_acesso_nfe: notaFiscal?.chave_acesso || null,
         categoria_equipamento: formData.categoriaEquipamento,
@@ -316,14 +320,14 @@ export default function NovoRecebimento() {
                   />
                 </div>
 
-                <div className="space-y-2">
+                {fiscalBilling && <div className="space-y-2">
                   <Label htmlFor="numeroNota">Nº da Nota*</Label>
                   <Input 
                     id="numeroNota"
                     value={formData.numeroNota}
                     onChange={(e) => setFormData({...formData, numeroNota: e.target.value})}
                   />
-                </div>
+                </div>}
               </div>
 
               <div className="space-y-2">

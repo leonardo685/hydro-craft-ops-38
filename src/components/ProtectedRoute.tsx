@@ -1,5 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEmpresa } from '@/contexts/EmpresaContext';
+import { hasFiscalBilling } from '@/lib/company-features';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,8 +10,9 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteProps) {
   const { user, loading, hasPermission } = useAuth();
+  const { empresaAtual, loading: empresaLoading } = useEmpresa();
 
-  if (loading) {
+  if (loading || (requiredPermission === 'faturamento' && empresaLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -22,6 +25,10 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (requiredPermission === 'faturamento' && !hasFiscalBilling(empresaAtual?.nome)) {
+    return <Navigate to="/" replace />;
   }
 
   if (requiredPermission && !hasPermission(requiredPermission)) {

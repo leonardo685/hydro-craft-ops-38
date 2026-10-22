@@ -1,4 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { hasFiscalBilling } from "@/lib/company-features";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -179,6 +180,7 @@ export default function OrdensServico() {
   const handleApprove = async (ordemId: string) => {
     try {
       const ordem = ordensServico.find(o => o.id === ordemId);
+      if (!ordem || !empresaAtual?.id || ordem.empresa_id !== empresaAtual.id) return;
       
       const { error } = await supabase
         .from('ordens_servico')
@@ -237,9 +239,10 @@ export default function OrdensServico() {
       console.log('Reprovando ordem:', ordemId);
       
       const ordem = ordensServico.find(o => o.id === ordemId);
+      if (!ordem || !empresaAtual?.id || ordem.empresa_id !== empresaAtual.id) return;
       
       // Verificar se a ordem está vinculada a uma nota fiscal de entrada
-      const temNotaEntrada = ordem?.recebimento_id !== null;
+      const temNotaEntrada = hasFiscalBilling(empresaAtual.nome) && !!ordem.recebimento_id;
       
       // Se vinculada à NF de entrada: vai para faturamento (nota de retorno)
       // Se NÃO vinculada: vai direto para finalizadas
@@ -253,6 +256,7 @@ export default function OrdensServico() {
           updated_at: new Date().toISOString()
         })
         .eq('id', ordemId)
+        .eq('empresa_id', empresaAtual.id)
         .select();
 
       if (error) {

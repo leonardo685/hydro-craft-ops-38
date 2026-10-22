@@ -6,6 +6,8 @@ import { Separator } from "@/components/ui/separator";
 import { User, Calendar, Package, Settings, Wrench, FileText, Camera, MapPin, Thermometer, Gauge, Ruler } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useEmpresa } from "@/contexts/EmpresaContext";
+import { hasFiscalBilling } from "@/lib/company-features";
 
 interface OrdemServicoModalProps {
   ordem: any;
@@ -14,6 +16,7 @@ interface OrdemServicoModalProps {
 
 export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
   const { t } = useLanguage();
+  const { empresaAtual } = useEmpresa();
   const [open, setOpen] = useState(false);
   const [recebimento, setRecebimento] = useState<any>(null);
   const [fotos, setFotos] = useState<any[]>([]);
@@ -179,7 +182,7 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
                     <span className="font-medium">{t('recebimentos.entryDate')}:</span>
                     <span>{new Date(recebimento.data_entrada).toLocaleDateString('pt-BR')}</span>
                   </div>
-                  {recebimento.nota_fiscal && (
+                  {hasFiscalBilling(empresaAtual?.nome) && recebimento.nota_fiscal && (
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">{t('modals.entryInvoice')}:</span>

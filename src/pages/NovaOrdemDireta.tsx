@@ -18,6 +18,7 @@ import { useClientes } from "@/hooks/use-clientes";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
+import { hasFiscalBilling } from "@/lib/company-features";
 
 const NovaOrdemDireta = () => {
   const navigate = useNavigate();
@@ -997,7 +998,7 @@ const NovaOrdemDireta = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+              {hasFiscalBilling(empresaAtual?.nome) && <div className="space-y-2">
                 <Label htmlFor="numeroNota">{t('novaAnalise.invoice')}</Label>
                 <Input
                   id="numeroNota"
@@ -1005,7 +1006,7 @@ const NovaOrdemDireta = () => {
                   onChange={(e) => setFormData({...formData, numeroNota: e.target.value})}
                   placeholder="Opcional"
                 />
-              </div>
+              </div>}
               <div className="space-y-2">
                 <Label htmlFor="orcamentoVinculado">Vincular Orçamento (Opcional)</Label>
                 <Select 

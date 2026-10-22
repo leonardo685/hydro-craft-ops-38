@@ -53,6 +53,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { EmpresaSelector } from "@/components/EmpresaSelector";
+import { hasFiscalBilling } from "@/lib/company-features";
 
 export function AppSidebar() {
   const location = useLocation();
@@ -123,7 +124,7 @@ export function AppSidebar() {
     },
   ];
 
-  const filteredMenuItems = menuItems.filter(item => hasPermission(item.permission));
+  const filteredMenuItems = menuItems.filter(item => hasPermission(item.permission) && (item.permission !== 'faturamento' || hasFiscalBilling(empresaAtual?.nome)));
 
   return (
     <Sidebar className="border-r border-sidebar-border">

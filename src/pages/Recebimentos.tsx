@@ -31,6 +31,7 @@ import { useRealtimeSubscription } from "@/hooks/use-realtime-subscription";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useEmpresaId } from "@/hooks/use-empresa-id";
 import { VincularNFeModal } from "@/components/VincularNFeModal";
+import { hasFiscalBilling } from "@/lib/company-features";
 
 // Removed localStorage function since we're now using Supabase data
 
@@ -40,6 +41,8 @@ export default function Recebimentos() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
+  const { empresaAtual } = useEmpresa();
+  const fiscalBilling = hasFiscalBilling(empresaAtual?.nome);
   const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
   const [qrEnvio, setQrEnvio] = useState<{ numeroOrdem: string; cliente: string } | null>(null);
   const [modalChaveAcesso, setModalChaveAcesso] = useState(false);
@@ -95,7 +98,8 @@ export default function Recebimentos() {
       
       if (!buscandoNotaFiscal) {
         // Apenas equipamentos que ainda estão na empresa E não têm nota de retorno
-        if (!item.na_empresa || item.pdf_nota_retorno) return false;
+        if (!item.na_empresa || (fiscalBilling && item.pdf_nota_retorno)) return false;
+        if (!fiscalBilling && ordensFinalizadas.some(ordem => ordem.recebimento_id === item.id)) return false;
       }
       
       const dataItem = new Date(item.data_entrada);
@@ -111,7 +115,7 @@ export default function Recebimentos() {
       
       return matchCliente && matchNota && matchNotaFiscal;
     });
-  }, [recebimentos, dataInicio, dataFim, filtroCliente, filtroNotaEntrada, filtroNotaFiscal]);
+  }, [recebimentos, dataInicio, dataFim, filtroCliente, filtroNotaEntrada, filtroNotaFiscal, fiscalBilling, ordensFinalizadas]);
 
   // Combinar recebimentos finalizados com ordens diretas
   const todosFinalizados = useMemo(() => {
@@ -358,14 +362,14 @@ export default function Recebimentos() {
             </p>
           </div>
           <div className="flex gap-3">
-            <Button 
+            {fiscalBilling && <Button 
               onClick={() => setModalChaveAcesso(true)}
               variant="outline"
               className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth shadow-medium"
             >
               <FileText className="h-4 w-4 mr-2" />
               {t('recebimentos.newInvoice')}
-            </Button>
+            </Button>}
             <Button 
               onClick={() => navigate("/recebimentos/novo")}
               className="bg-gradient-primary hover:bg-primary-hover transition-smooth shadow-medium"
@@ -463,7 +467,7 @@ export default function Recebimentos() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          {fiscalBilling && <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Nota Fiscal</label>
               <Input
@@ -475,6 +479,7 @@ export default function Recebimentos() {
             </div>
           </div>
           
+          }
           {/* Botões de ação dos filtros */}
           <div className="flex gap-2 mt-4">
             <Button 
@@ -497,11 +502,11 @@ export default function Recebimentos() {
           </div>
         </Collapsible>
 
-        <Tabs defaultValue="ordens" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs key={empresaId} defaultValue="ordens" className="w-full">
+          <TabsList className={cn("grid w-full", fiscalBilling ? "grid-cols-3" : "grid-cols-2")}>
             <TabsTrigger value="ordens">{t('recebimentos.orders')}</TabsTrigger>
             <TabsTrigger value="finalizadas">{t('recebimentos.finished')}</TabsTrigger>
-            <TabsTrigger value="notas-fiscais">{t('recebimentos.invoices')}</TabsTrigger>
+            {fiscalBilling && <TabsTrigger value="notas-fiscais">{t('recebimentos.invoices')}</TabsTrigger>}
           </TabsList>
           
           <TabsContent value="ordens" className="mt-6">
@@ -562,7 +567,7 @@ export default function Recebimentos() {
                                 <Play className="h-4 w-4" />
                               </Button>
                             )}
-                            {!item.chave_acesso_nfe && (
+                            {fiscalBilling && !item.chave_acesso_nfe && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -603,7 +608,7 @@ export default function Recebimentos() {
                     <TableHead className="w-[150px]">Nº da Ordem</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead className="w-[150px]">Data de Entrada</TableHead>
-                    <TableHead className="w-[150px]">Data NF Retorno</TableHead>
+                    {fiscalBilling && <TableHead className="w-[150px]">Data NF Retorno</TableHead>}
                     <TableHead className="w-[140px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -625,7 +630,7 @@ export default function Recebimentos() {
                         <TableCell className="text-muted-foreground">
                           {new Date(item.data_entrada).toLocaleDateString('pt-BR')}
                         </TableCell>
-                        <TableCell>
+                        {fiscalBilling && <TableCell>
                           {item.data_nota_retorno ? (
                             <span className="text-muted-foreground">
                               {new Date(item.data_nota_retorno).toLocaleDateString('pt-BR')}
@@ -633,7 +638,7 @@ export default function Recebimentos() {
                           ) : (
                             <Badge variant="outline">Pendente</Badge>
                           )}
-                        </TableCell>
+                        </TableCell>}
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -665,7 +670,7 @@ export default function Recebimentos() {
                               
 
                               
-                              {item.pdf_nota_retorno && (
+                              {fiscalBilling && item.pdf_nota_retorno && (
                                 <DropdownMenuItem onClick={async () => {
                                   try {
                                     // Extrair o caminho do arquivo da URL
@@ -703,7 +708,7 @@ export default function Recebimentos() {
                                 </DropdownMenuItem>
                               )}
                               
-                              {item.pdf_nota_fiscal && (
+                              {fiscalBilling && item.pdf_nota_fiscal && (
                                 <DropdownMenuItem onClick={async () => {
                                   try {
                                     // Extrair o caminho do arquivo da URL
@@ -751,7 +756,7 @@ export default function Recebimentos() {
             </div>
           </TabsContent>
           
-          <TabsContent value="notas-fiscais" className="mt-6">
+          {fiscalBilling && <TabsContent value="notas-fiscais" className="mt-6">
             <div className="bg-card rounded-lg shadow-soft border border-border">
               <Table>
                 <TableHeader>
@@ -915,6 +920,7 @@ export default function Recebimentos() {
               </Table>
             </div>
           </TabsContent>
+          }
         </Tabs>
 
         {selectedEquipment && (
@@ -933,7 +939,7 @@ export default function Recebimentos() {
           />
         )}
 
-        <AlertDialog open={avisoNovaNotaFiscal} onOpenChange={setAvisoNovaNotaFiscal}>
+        <AlertDialog open={fiscalBilling && avisoNovaNotaFiscal} onOpenChange={setAvisoNovaNotaFiscal}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Funcionalidade em Desenvolvimento</AlertDialogTitle>
@@ -950,11 +956,11 @@ export default function Recebimentos() {
         </AlertDialog>
 
         <ChaveAcessoModal
-          open={modalChaveAcesso}
+          open={fiscalBilling && modalChaveAcesso}
           onClose={() => setModalChaveAcesso(false)}
         />
 
-        {modalCriarOrdem && (
+        {fiscalBilling && modalCriarOrdem && (
           <CriarOrdemModal
             open={!!modalCriarOrdem}
             onClose={() => setModalCriarOrdem(null)}
@@ -963,7 +969,7 @@ export default function Recebimentos() {
         )}
 
         {/* Modal de Visualização da Nota Fiscal */}
-        <Dialog open={!!notaFiscalSelecionada} onOpenChange={() => setNotaFiscalSelecionada(null)}>
+        <Dialog open={fiscalBilling && !!notaFiscalSelecionada} onOpenChange={() => setNotaFiscalSelecionada(null)}>
           <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -1157,13 +1163,13 @@ export default function Recebimentos() {
 
         {/* Modal de Preview DANFE */}
         <PreviewDanfeModal
-          open={!!previewDanfe}
+          open={fiscalBilling && !!previewDanfe}
           onClose={() => setPreviewDanfe(null)}
           dados={previewDanfe}
         />
 
         {/* Modal Vincular NFe */}
-        {vincularNFeModal && (
+        {fiscalBilling && vincularNFeModal && (
           <VincularNFeModal
             open={true}
             onClose={() => setVincularNFeModal(null)}

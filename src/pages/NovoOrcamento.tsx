@@ -1,4 +1,5 @@
 import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
+import { hasFiscalBilling } from "@/lib/company-features";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -3499,13 +3500,13 @@ export default function NovoOrcamento() {
                   dataAbertura: e.target.value
                 }))} />
                 </div>
-                <div>
+                {hasFiscalBilling(empresaAtual?.nome) && <div>
                   <Label htmlFor="numeroNota">{t('novoOrcamento.invoiceNumber')} *</Label>
                   <Input id="numeroNota" value={dadosOrcamento.numeroNota} onChange={e => setDadosOrcamento(prev => ({
                   ...prev,
                   numeroNota: e.target.value
                 }))} placeholder={t('novoOrcamento.invoicePlaceholder')} />
-                </div>
+                </div>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

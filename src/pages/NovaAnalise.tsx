@@ -17,6 +17,7 @@ import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DitarLaudoButton } from "@/components/DitarLaudoButton";
+import { hasFiscalBilling } from "@/lib/company-features";
 
 
 // Motivos de falha: mapeia o texto salvo no banco de volta para a chave do seletor
@@ -2016,10 +2017,10 @@ const NovaOrdemServico = () => {
                   <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.entryDate')}</Label>
                   <p className="font-medium">{recebimento.dataEntrada}</p>
                 </div>
-                <div>
+                {hasFiscalBilling(empresaAtual?.nome) && <div>
                   <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.invoice')}</Label>
                   <p className="font-medium">{recebimento.nota_fiscal || t('novaAnalise.notInformed')}</p>
-                </div>
+                </div>}
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.orderNumber')}</Label>
                   <p className="font-medium">{recebimento.numeroOrdem}</p>

@@ -7,9 +7,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { RecentActivity } from "@/components/RecentActivity";
 import { useEmpresaId } from "@/hooks/use-empresa-id";
+import { useEmpresa } from "@/contexts/EmpresaContext";
+import { hasFiscalBilling } from "@/lib/company-features";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { empresaAtual } = useEmpresa();
   const { empresaId, loading: empresaLoading } = useEmpresaId();
 
   // Buscar estatísticas reais do banco de dados - filtrado por empresa
@@ -158,7 +161,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {quickActions.map((action, index) => <Button key={index} variant="outline" className="h-auto p-4 flex flex-col items-center gap-3 hover:bg-primary-light hover:border-primary transition-smooth" onClick={() => navigate(action.path)}>
+              {quickActions.filter(action => action.path !== '/faturamento' || hasFiscalBilling(empresaAtual?.nome)).map((action, index) => <Button key={index} variant="outline" className="h-auto p-4 flex flex-col items-center gap-3 hover:bg-primary-light hover:border-primary transition-smooth" onClick={() => navigate(action.path)}>
                   <action.icon className="h-8 w-8 text-primary" />
                   <div className="text-center">
                     <p className="font-medium">{action.title}</p>
