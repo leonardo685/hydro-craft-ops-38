@@ -85,6 +85,65 @@ export const AprovarOrcamentoModal = ({
   };
   const [anexoPedido, setAnexoPedido] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [maisCotacoes, setMaisCotacoes] = useState<boolean | null>(null);
+  const [pendentes, setPendentes] = useState<any[]>([]);
+  const [selecionados, setSelecionados] = useState<string[]>([]);
+
+  React.useEffect(() => {
+    setMaisCotacoes(null);
+    setSelecionados([]);
+    setPendentes([]);
+    if (!open || !orcamento || !empresaAtual?.id) return;
+    supabase
+      .from('orcamentos')
+      .select('id, numero, cliente_nome, cliente_id, equipamento, valor, descricao, ordem_servico_id')
+      .eq('empresa_id', empresaAtual.id)
+      .eq('status', 'pendente')
+      .neq('id', orcamento.id)
+      .order('numero', { ascending: false })
+      .then(({ data }) => {
+        const lista = (data || []).sort((a: any, b: any) => {
+          const sa = a.cliente_id && a.cliente_id === orcamento.cliente_id ? 0 : 1;
+          const sb = b.cliente_id && b.cliente_id === orcamento.cliente_id ? 0 : 1;
+          return sa - sb;
+        });
+        setPendentes(lista);
+      });
+  }, [open, orcamento, empresaAtual?.id]);
+
+  const aprovarAdicional = async (orc: any, anexoUrl: string | null) => {
+    const valorFinal = Number(orc.valor) || 0;
+    const { error } = await supabase
+      .from('orcamentos')
+      .update({
+        status: 'aprovado',
+        data_aprovacao: new Date().toISOString(),
+        prazo_pagamento: formData.prazoPagamento,
+        data_vencimento: formData.dataVencimento,
+        numero_pedido: formData.numeroPedido,
+        descricao: `${orc.descricao || ''}\n\nDetalhes da Aprovação:\n- Valor Final: $ ${valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Prazo de Pagamento: ${formData.prazoPagamento} dias\n- Data de Vencimento: ${new Date(formData.dataVencimento).toLocaleDateString('pt-BR')}\n- Número do Pedido: ${formData.numeroPedido}${anexoUrl ? `\n- Anexo do Pedido: ${anexoUrl}` : ''}\n- Aprovado junto com o orçamento ${orcamento.numero}${formData.observacoes ? `\n- Observações: ${formData.observacoes}` : ''}`.trim()
+      })
+      .eq('id', orc.id)
+      .eq('empresa_id', empresaAtual?.id);
+    if (error) throw error;
+    if (orc.ordem_servico_id) {
+      await supabase
+        .from('ordens_servico')
+        .update({ status: 'aprovada', orcamento_id: orc.id, valor_estimado: valorFinal })
+        .eq('id', orc.ordem_servico_id);
+    }
+    await enviarWebhook(empresaAtual?.id || null, {
+      tipo: 'orcamento_aprovado',
+      numero: orc.numero,
+      cliente: orc.cliente_nome,
+      valor: `$ ${valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      numeroPedido: formData.numeroPedido,
+      data_aprovacao: format(new Date(), 'dd-MM-yyyy'),
+      ordem_servico_aprovada: !!orc.ordem_servico_id,
+      numero_ordem: null,
+      empresa: empresaAtual?.nome || 'N/A'
+    });
+  };
 
   const calcularValorComDesconto = (valor: number, desconto: number) => {
     return valor - (valor * desconto / 100);
