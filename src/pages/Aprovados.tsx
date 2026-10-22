@@ -257,7 +257,7 @@ export default function Aprovados() {
           )
         `)
         .eq('empresa_id', empresaAtual.id)
-        .in('status', ['aprovada', 'em_producao', 'em_teste'])
+        .in('status', hasFiscalBilling(empresaAtual.nome) ? ['aprovada', 'em_producao', 'em_teste'] : ['aprovada', 'em_producao', 'em_teste', 'aguardando_retorno', 'aguardando_faturamento_sem_retorno'])
         .order('created_at', { ascending: false });
       if (error) throw error;
       setOrdensServico(data || []);
@@ -514,6 +514,14 @@ export default function Aprovados() {
                                 {t('aprovados.finalize')}
                               </Button>
                             </>
+                          ) : !hasFiscalBilling(empresaAtual?.nome) && ['aguardando_retorno', 'aguardando_faturamento_sem_retorno'].includes(ordem.status) ? (
+                            <Button variant="outline" size="sm" onClick={() => {
+                              setOrdemSelecionada(ordem);
+                              setUploadModalOpen(true);
+                            }}>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              {t('aprovados.finalize')}
+                            </Button>
                           ) : null}
                         
                         <ItemSelectionModal title={t('compras.partsNeeded')} items={ordem.pecas_necessarias || []} type="pecas" ordemId={ordem.id}>

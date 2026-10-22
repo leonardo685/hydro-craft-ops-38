@@ -239,6 +239,7 @@ export default function OrdensServico() {
       console.log('Reprovando ordem:', ordemId);
       
       const ordem = ordensServico.find(o => o.id === ordemId);
+      if (!ordem || !empresaAtual?.id || ordem.empresa_id !== empresaAtual.id) return;
       
       // Verificar se a ordem está vinculada a uma nota fiscal de entrada
       const temNotaEntrada = hasFiscalBilling(empresaAtual.nome) && !!ordem.recebimento_id;

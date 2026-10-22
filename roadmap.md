@@ -1,8 +1,8 @@
 # Tax por orçamento
 
 ## US fiscal workflow removal
-- [ ] Remove US fiscal billing navigation, entry/return/fiscal invoice controls, and return-invoice completion dependency; retain Brazil and existing records.
-- [ ] Run isolation tests and verify accessible UI; report authenticated testing limits.
+- [x] Remove US fiscal billing navigation, entry/return/fiscal invoice controls, and return-invoice completion dependency; retain Brazil and existing records.
+- [x] Run isolation and layout tests; compilation OK. Authenticated end-to-end verification unavailable with external Supabase.
 
 ## QR no PDF do orçamento
 - [x] Adicionar QR sem logo e número abaixo ao lado do título somente para referência única existente da empresa.
