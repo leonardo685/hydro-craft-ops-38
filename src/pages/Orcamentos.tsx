@@ -1885,7 +1885,32 @@ export default function Orcamentos() {
         </div>
 
         {/* Cards de Métricas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Total destinado aos técnicos */}
+          <div
+            className="group rounded-2xl border border-border/50
+                       bg-card/40 p-5 shadow-lg
+                       transition-all duration-300 ease-in-out
+                       hover:border-border hover:bg-card/60
+                       hover:-translate-y-1 cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground">Techs</h3>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="mt-4">
+              <p className="text-2xl font-bold tracking-tighter text-primary">
+                {useMemo(() => {
+                  const total = orcamentos.reduce((acc, o) => acc + (Number((o as any).tech_fee) || 0), 0);
+                  return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                }, [orcamentos])}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {useMemo(() => orcamentos.filter(o => (Number((o as any).tech_fee) || 0) > 0).length, [orcamentos])} {t('orcamentos.quotes')}
+              </p>
+            </div>
+          </div>
+
           {/* Valor Total Aguardando Aprovação */}
           <div
             className="group rounded-2xl border border-border/50
