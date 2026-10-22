@@ -591,6 +591,41 @@ export const AprovarOrcamentoModal = ({
             </div>
           </div>
 
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <p className="font-medium text-sm">Este P.O. inclui mais cotações?</p>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant={maisCotacoes === true ? "default" : "outline"} onClick={() => setMaisCotacoes(true)}>Sim</Button>
+                <Button type="button" size="sm" variant={maisCotacoes === false ? "default" : "outline"} onClick={() => { setMaisCotacoes(false); setSelecionados([]); }}>Não</Button>
+              </div>
+              {maisCotacoes && (
+                pendentes.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Nenhuma outra cotação aguardando aprovação.</p>
+                ) : (
+                  <div className="max-h-56 overflow-y-auto space-y-1 border rounded-md p-2">
+                    {pendentes.map((p) => (
+                      <label key={p.id} className="flex items-center gap-2 text-sm p-1 rounded hover:bg-muted cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selecionados.includes(p.id)}
+                          onChange={(e) => setSelecionados((prev) => e.target.checked ? [...prev, p.id] : prev.filter((x) => x !== p.id))}
+                        />
+                        <span className="font-medium">{p.numero}</span>
+                        <span className="text-muted-foreground truncate flex-1">{p.cliente_nome} · {p.equipamento}</span>
+                        <span>$ {(Number(p.valor) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </label>
+                    ))}
+                  </div>
+                )
+              )}
+              {maisCotacoes && selecionados.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selecionados.length} cotação(ões) serão aprovadas com o mesmo P.O., prazo e anexo, cada uma com seu próprio valor.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           <div>
             <Label htmlFor="observacoes">Observações</Label>
             <Textarea
