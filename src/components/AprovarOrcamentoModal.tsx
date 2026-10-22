@@ -109,11 +109,11 @@ export const AprovarOrcamentoModal = ({
         });
         setPendentes(lista);
       });
-  }, [open, orcamento, empresaAtual?.id]);
+  }, [open, orcamento?.id, empresaAtual?.id]);
 
   const aprovarAdicional = async (orc: any, anexoUrl: string | null) => {
     const valorFinal = Number(orc.valor) || 0;
-    const { error } = await supabase
+    const { data: atualizados, error } = await supabase
       .from('orcamentos')
       .update({
         status: 'aprovado',
@@ -124,13 +124,51 @@ export const AprovarOrcamentoModal = ({
         descricao: `${orc.descricao || ''}\n\nDetalhes da Aprovação:\n- Valor Final: $ ${valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n- Prazo de Pagamento: ${formData.prazoPagamento} dias\n- Data de Vencimento: ${new Date(formData.dataVencimento).toLocaleDateString('pt-BR')}\n- Número do Pedido: ${formData.numeroPedido}${anexoUrl ? `\n- Anexo do Pedido: ${anexoUrl}` : ''}\n- Aprovado junto com o orçamento ${orcamento.numero}${formData.observacoes ? `\n- Observações: ${formData.observacoes}` : ''}`.trim()
       })
       .eq('id', orc.id)
-      .eq('empresa_id', empresaAtual?.id);
+      .eq('empresa_id', empresaAtual?.id)
+      .eq('status', 'pendente')
+      .select('id');
     if (error) throw error;
+    if (!atualizados || atualizados.length === 0) {
+      throw new Error('Orçamento não está mais pendente ou não pertence à empresa');
+    }
+    let ordemSnapshot: any = null;
     if (orc.ordem_servico_id) {
-      await supabase
+      const { data: osPrev } = await supabase
+        .from('ordens_servico')
+        .select('id, status, valor_estimado, orcamento_id, numero_ordem')
+        .eq('id', orc.ordem_servico_id)
+        .eq('empresa_id', empresaAtual?.id)
+        .maybeSingle();
+      ordemSnapshot = osPrev ?? null;
+      const { error: osErr } = await supabase
         .from('ordens_servico')
         .update({ status: 'aprovada', orcamento_id: orc.id, valor_estimado: valorFinal })
-        .eq('id', orc.ordem_servico_id);
+        .eq('id', orc.ordem_servico_id)
+        .eq('empresa_id', empresaAtual?.id);
+      if (osErr) console.error('Erro ao atualizar OS do orçamento adicional:', osErr);
+    }
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const u = userRes?.user;
+      await supabase.from('acoes_reversiveis').insert({
+        empresa_id: empresaAtual?.id ?? null,
+        user_id: u?.id ?? null,
+        user_email: u?.email ?? null,
+        tipo: 'orcamento_aprovado',
+        descricao: `Aprovou orçamento ${orc.numero}${orc.cliente_nome ? ` (${orc.cliente_nome})` : ''} no mesmo P.O. de ${orcamento.numero}`,
+        entidade_principal_tipo: 'orcamento',
+        entidade_principal_id: orc.id,
+        estado_anterior: {
+          orcamento: { status: 'pendente', data_aprovacao: null, valor: orc.valor ?? null, prazo_pagamento: null, data_vencimento: null, numero_pedido: null, descricao: orc.descricao ?? null },
+          ordem_servico: ordemSnapshot,
+        },
+        estado_novo: {
+          orcamento: { status: 'aprovado', numero_pedido: formData.numeroPedido },
+          ordem_servico: ordemSnapshot ? { id: ordemSnapshot.id, status: 'aprovada' } : null,
+        },
+      });
+    } catch (histErr) {
+      console.warn('Falha ao registrar ação reversível:', histErr);
     }
     await enviarWebhook(empresaAtual?.id || null, {
       tipo: 'orcamento_aprovado',
