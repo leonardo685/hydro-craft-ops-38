@@ -415,9 +415,26 @@ export const AprovarOrcamentoModal = ({
         await enviarWebhook(empresaAtual?.id || null, payloadOrdem);
       }
 
+      let extrasOk = 0;
+      if (maisCotacoes) {
+        for (const id of selecionados) {
+          const orc = pendentes.find((p) => p.id === id);
+          if (!orc) continue;
+          try {
+            await aprovarAdicional(orc, anexoUrl);
+            extrasOk++;
+          } catch (e) {
+            console.error('Erro ao aprovar orçamento adicional:', e);
+            toast({ title: "Aviso", description: `Não foi possível aprovar o orçamento ${orc.numero}`, variant: "destructive" });
+          }
+        }
+      }
+
       toast({
         title: "Sucesso",
-        description: "Orçamento aprovado com sucesso!"
+        description: extrasOk > 0
+          ? `${extrasOk + 1} orçamentos aprovados no P.O. ${formData.numeroPedido}`
+          : "Orçamento aprovado com sucesso!"
       });
       onConfirm();
       onOpenChange(false);
