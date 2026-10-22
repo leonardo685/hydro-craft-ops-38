@@ -1,4 +1,4 @@
-import { numeroOrcamentoParaArquivo, STATUS_APROVADO_INVOICE, nomeArquivoOrcamentoPDF } from "@/lib/quote-filename";
+import { STATUS_APROVADO_INVOICE, nomeArquivoOrcamentoPDF } from "@/lib/quote-filename";
 import { normalizarNumeroPedido } from "@/lib/pedido-utils";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
