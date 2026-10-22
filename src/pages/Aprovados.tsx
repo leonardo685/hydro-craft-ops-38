@@ -24,6 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { VincularNFeModal } from "@/components/VincularNFeModal";
+import { completionStatus, hasFiscalBilling } from "@/lib/company-features";
 
 interface HistoricoBuscaLaudo {
   numeroOrdem: string;
@@ -545,7 +546,7 @@ export default function Aprovados() {
                           Etiqueta
                         </Button>
 
-                        {ordem.recebimento_id && !ordem.recebimentos?.chave_acesso_nfe && (
+                        {hasFiscalBilling(empresaAtual?.nome) && ordem.recebimento_id && !ordem.recebimentos?.chave_acesso_nfe && (
                           <Button variant="outline" size="sm" onClick={() => setVincularNFeModal({
                             recebimentoId: ordem.recebimento_id,
                             numeroOrdem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem || '',
@@ -578,32 +579,21 @@ export default function Aprovados() {
         {/* Modal de Upload do Produto Pronto */}
         {ordemSelecionada && <UploadProdutoProntoModal open={uploadModalOpen} onOpenChange={setUploadModalOpen} ordem={ordemSelecionada} onConfirm={async () => {
         try {
-          // Determinar status baseado em recebimento_id (PRIORIDADE) e orcamento_id
-          // Equipamentos físicos SEMPRE precisam de nota de retorno
-          let novoStatus = 'finalizada';
-          
-          if (ordemSelecionada.recebimento_id) {
-            // Se tem recebimento (equipamento físico), SEMPRE precisa de nota de retorno
-            novoStatus = 'aguardando_retorno';
-          } else if (ordemSelecionada.orcamento_id) {
-            // Orçamento avulso sem entrada de equipamento físico
-            novoStatus = 'finalizada';
-          } else {
-            // Sem orçamento e sem recebimento
-            novoStatus = 'faturado';
-          }
+          if (!empresaAtual?.id || ordemSelecionada.empresa_id !== empresaAtual.id) return;
+          const fiscalBilling = hasFiscalBilling(empresaAtual.nome);
+          const novoStatus = completionStatus(empresaAtual.nome, ordemSelecionada.recebimento_id, ordemSelecionada.orcamento_id);
           
           const {
             error
           } = await supabase.from('ordens_servico').update({
             status: novoStatus,
             data_finalizacao: new Date().toISOString()
-          }).eq('id', ordemSelecionada.id);
+          }).eq('id', ordemSelecionada.id).eq('empresa_id', empresaAtual.id);
           if (error) throw error;
 
           // Enviar notificação via webhook centralizado
           const notaFiscalEntrada = ordemSelecionada.recebimentos?.nota_fiscal || ordemSelecionada.recebimentos?.chave_acesso_nfe || 'n/a';
-          const tipoNotificacao = ordemSelecionada.recebimento_id 
+          const tipoNotificacao = !fiscalBilling ? 'ordem_finalizada' : ordemSelecionada.recebimento_id 
             ? 'ordem_retorno' 
             : ordemSelecionada.orcamento_id 
               ? 'ordem_finalizada' 
@@ -614,7 +604,7 @@ export default function Aprovados() {
             numero_ordem: ordemSelecionada.recebimentos?.numero_ordem || ordemSelecionada.numero_ordem,
             cliente: ordemSelecionada.recebimentos?.cliente_nome || ordemSelecionada.cliente_nome,
             equipamento: ordemSelecionada.equipamento,
-            nota_fiscal_entrada: notaFiscalEntrada,
+            ...(fiscalBilling ? { nota_fiscal_entrada: notaFiscalEntrada } : {}),
             data_finalizacao: format(new Date(), 'dd-MM-yyyy'),
             data_aprovacao: ordemSelecionada.updated_at ? format(parseISO(ordemSelecionada.updated_at), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy'),
             empresa: empresaAtual?.nome || 'N/A'
@@ -632,7 +622,7 @@ export default function Aprovados() {
           
           toast({
             title: "Ordem finalizada",
-            description: "A ordem foi finalizada e enviada para faturamento"
+            description: fiscalBilling ? "A ordem foi finalizada e enviada para faturamento" : t('analise.rejectedToFinished')
           });
           loadOrdensAprovadas();
         } catch (error) {
@@ -756,7 +746,7 @@ export default function Aprovados() {
       </Dialog>
       
       {/* Modal Vincular NFe */}
-      {vincularNFeModal && (
+      {hasFiscalBilling(empresaAtual?.nome) && vincularNFeModal && (
         <VincularNFeModal
           open={true}
           onClose={() => setVincularNFeModal(null)}
