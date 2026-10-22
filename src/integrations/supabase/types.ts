@@ -1865,6 +1865,7 @@ export type Database = {
           status: string
           status_negociacao: string | null
           tax_exempt: boolean
+          tech_fee: number
           total_custos_cilindros: number
           total_custos_variaveis: number | null
           updated_at: string
@@ -1921,6 +1922,7 @@ export type Database = {
           status?: string
           status_negociacao?: string | null
           tax_exempt?: boolean
+          tech_fee?: number
           total_custos_cilindros?: number
           total_custos_variaveis?: number | null
           updated_at?: string
@@ -1977,6 +1979,7 @@ export type Database = {
           status?: string
           status_negociacao?: string | null
           tax_exempt?: boolean
+          tech_fee?: number
           total_custos_cilindros?: number
           total_custos_variaveis?: number | null
           updated_at?: string

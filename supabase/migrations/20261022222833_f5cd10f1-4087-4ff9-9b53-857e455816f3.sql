@@ -1,0 +1,1 @@
+ALTER TABLE public.orcamentos ADD COLUMN IF NOT EXISTS tech_fee numeric NOT NULL DEFAULT 0;
