@@ -1,5 +1,10 @@
 # Tax por orçamento
 
+## Correção de Techs para Sales Tax
+- [x] Remover valor manual dos técnicos e mostrar Sales Tax calculado nos cards e no total superior apenas na MEC HYDRO.
+- [x] Validar cálculos: 15 testes passaram e compilação sem erros.
+- [ ] Verificar cards com dados reais — acesso autenticado indisponível no Supabase externo; página redirecionou para login sem erros.
+
 ## US fiscal workflow removal
 - [x] Remove US fiscal billing navigation, entry/return/fiscal invoice controls, and return-invoice completion dependency; retain Brazil and existing records.
 - [x] Run isolation and layout tests; compilation OK. Authenticated end-to-end verification unavailable with external Supabase.

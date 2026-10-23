@@ -152,7 +152,6 @@ export default function NovoOrcamento() {
     taxExempt: false,
     urgencyFeeEnabled: false,
     urgencyFeePercentual: 0,
-    techFee: 0,
     valorTotal: 0,
     desconto: 0,
     valorComDesconto: 0,
@@ -426,7 +425,6 @@ export default function NovoOrcamento() {
           taxExempt: Boolean(orcamentoEdicao.tax_exempt),
           urgencyFeeEnabled: Boolean((orcamentoEdicao as any).urgency_fee_enabled),
           urgencyFeePercentual: Number((orcamentoEdicao as any).urgency_fee_percentual) || 0,
-          techFee: Number((orcamentoEdicao as any).tech_fee) || 0,
           valorTotal: Number(orcamentoEdicao.valor) || 0,
           desconto: Number(orcamentoEdicao.desconto_percentual) || 0,
           condicaoPagamento: orcamentoEdicao.condicao_pagamento || '',
@@ -1488,7 +1486,6 @@ export default function NovoOrcamento() {
         tax_exempt: informacoesComerciais.taxExempt,
         urgency_fee_enabled: informacoesComerciais.urgencyFeeEnabled,
         urgency_fee_percentual: Number(informacoesComerciais.urgencyFeePercentual) || 0,
-        tech_fee: Number(informacoesComerciais.techFee) || 0,
         valor: valorFinal,
         desconto_percentual: informacoesComerciais.desconto,
         status: 'pendente',
@@ -2387,7 +2384,6 @@ export default function NovoOrcamento() {
       tax_exempt: informacoesComerciais.taxExempt,
       urgency_fee_enabled: informacoesComerciais.urgencyFeeEnabled,
       urgency_fee_percentual: Number(informacoesComerciais.urgencyFeePercentual) || 0,
-      tech_fee: Number(informacoesComerciais.techFee) || 0,
       valor: informacoesComerciais.valorTotal || 0,
       observacoes: `Documento: ${dadosOrcamento.tipoDocumento}`,
       numero_nota_entrada: dadosOrcamento.numeroNota || null,
@@ -4175,24 +4171,6 @@ export default function NovoOrcamento() {
                 ) : (
                   <span className="text-sm text-muted-foreground">{language === 'en' ? 'Off' : language === 'es' ? 'Desactivado' : 'Desligado'}</span>
                 )}
-              </div>
-            )}
-
-            {empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO') && (
-              <div className="flex flex-wrap items-center gap-3">
-                <Label htmlFor="quote-tech-fee">{language === 'en' ? 'Techs value' : language === 'es' ? 'Valor técnicos' : 'Valor técnicos'}</Label>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">$</span>
-                  <Input
-                    id="quote-tech-fee"
-                    type="number" min={0} step="0.01" className="w-32"
-                    value={informacoesComerciais.techFee || ''}
-                    onChange={e => setInformacoesComerciais(prev => ({ ...prev, techFee: parseFloat(e.target.value) || 0 }))}
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {language === 'en' ? 'Amount allocated to technicians (not shown on PDF)' : 'Valor destinado aos técnicos (não aparece no PDF)'}
-                </span>
               </div>
             )}
 
