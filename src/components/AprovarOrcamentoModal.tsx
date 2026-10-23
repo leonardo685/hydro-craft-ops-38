@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { enviarWebhook } from "@/lib/webhook-utils";
+import { quoteCardValues } from "@/lib/quote-card-values";
 
 interface AprovarOrcamentoModalProps {
   open: boolean;
@@ -96,7 +97,7 @@ export const AprovarOrcamentoModal = ({
     if (!open || !orcamento || !empresaAtual?.id) return;
     supabase
       .from('orcamentos')
-      .select('id, numero, cliente_nome, cliente_id, equipamento, valor, descricao, ordem_servico_id')
+      .select('id, numero, cliente_nome, cliente_id, equipamento, valor, descricao, ordem_servico_id, urgency_fee_enabled, urgency_fee_percentual')
       .eq('empresa_id', empresaAtual.id)
       .eq('status', 'pendente')
       .neq('id', orcamento.id)
@@ -490,6 +491,11 @@ export const AprovarOrcamentoModal = ({
 
   if (!orcamento) return null;
 
+  // Display urgency using the same rule as the cards; persist only the discounted
+  // base so the existing cards and PDF do not apply the fee a second time.
+  const originalTotals = quoteCardValues({ ...orcamento, valor: formData.valor }, empresaAtual?.nome);
+  const finalTotals = quoteCardValues({ ...orcamento, valor: formData.valorComDesconto }, empresaAtual?.nome);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -524,11 +530,16 @@ export const AprovarOrcamentoModal = ({
                 id="valor"
                 type="number"
                 step="0.01"
-                value={formData.valor}
+                value={originalTotals.value}
                 readOnly
                 disabled
                 className="bg-muted"
               />
+              {originalTotals.urgencyFee > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Urgência ({Number(orcamento.urgency_fee_percentual)}%): $ {originalTotals.urgencyFee.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="desconto">Desconto (%)</Label>
@@ -551,7 +562,7 @@ export const AprovarOrcamentoModal = ({
               id="valorFinal"
               type="number"
               step="0.01"
-              value={formData.valorComDesconto}
+              value={finalTotals.value}
               readOnly
               className="bg-muted"
             />
@@ -650,7 +661,7 @@ export const AprovarOrcamentoModal = ({
                         />
                         <span className="font-medium">{p.numero}</span>
                         <span className="text-muted-foreground truncate flex-1">{p.cliente_nome} · {p.equipamento}</span>
-                        <span>$ {(Number(p.valor) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        <span>$ {quoteCardValues(p, empresaAtual?.nome).value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </label>
                     ))}
                   </div>
