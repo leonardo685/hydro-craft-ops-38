@@ -1,3 +1,5 @@
+import { quoteCardValues } from "@/lib/quote-card-values";
+import { hasFiscalBilling } from "@/lib/company-features";
 import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
 import { gerarOrcamentoModernoPDF } from "@/lib/orcamento-modern-pdf";
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -75,6 +77,11 @@ export default function Orcamentos() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { empresaAtual } = useEmpresa();
+  const isUSCompany = !hasFiscalBilling(empresaAtual?.nome);
+  const salesTaxSummary = useMemo(() => orcamentos.reduce((summary, quote) => {
+    const { salesTax } = quoteCardValues(quote, empresaAtual?.nome);
+    return { total: summary.total + salesTax, count: summary.count + (salesTax > 0 ? 1 : 0) };
+  }, { total: 0, count: 0 }), [orcamentos, empresaAtual?.nome]);
 
   // Estados para copiar orçamento existente
   const [searchTermOrcamento, setSearchTermOrcamento] = useState("");
@@ -412,7 +419,6 @@ export default function Orcamentos() {
           tax_exempt: Boolean(orcamento.tax_exempt),
           urgency_fee_enabled: Boolean(orcamento.urgency_fee_enabled),
           urgency_fee_percentual: Number(orcamento.urgency_fee_percentual) || 0,
-          tech_fee: Number((orcamento as any).tech_fee) || 0,
           valor: orcamento.valor,
           desconto_percentual: orcamento.desconto_percentual,
           condicao_pagamento: orcamento.condicao_pagamento,
@@ -1886,8 +1892,9 @@ export default function Orcamentos() {
         </div>
 
         {/* Cards de Métricas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Total destinado aos técnicos */}
+        <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4", isUSCompany ? "lg:grid-cols-5" : "lg:grid-cols-4")}>
+          {/* Sales Tax total across existing quotes */}
+          {isUSCompany && (
           <div
             className="group rounded-2xl border border-border/50
                        bg-card/40 p-5 shadow-lg
@@ -1896,21 +1903,19 @@ export default function Orcamentos() {
                        hover:-translate-y-1 cursor-pointer"
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-muted-foreground">Techs</h3>
+              <h3 className="text-sm font-medium text-muted-foreground">Sales Tax</h3>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="mt-4">
               <p className="text-2xl font-bold tracking-tighter text-primary">
-                {useMemo(() => {
-                  const total = orcamentos.reduce((acc, o) => acc + (Number((o as any).tech_fee) || 0), 0);
-                  return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                }, [orcamentos])}
+                {salesTaxSummary.total.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {useMemo(() => orcamentos.filter(o => (Number((o as any).tech_fee) || 0) > 0).length, [orcamentos])} {t('orcamentos.quotes')}
+                {salesTaxSummary.count} {t('orcamentos.quotes')}
               </p>
             </div>
           </div>
+          )}
 
           {/* Valor Total Aguardando Aprovação */}
           <div
@@ -2395,13 +2400,12 @@ export default function Orcamentos() {
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
                           {(() => {
-                            const base = Number(item.valor) || 0;
-                            const urg = item.urgency_fee_enabled ? base * (Number(item.urgency_fee_percentual) || 0) / 100 : 0;
-                            const tech = Number(item.tech_fee) || 0;
+                            const { value, urgencyFee: urg, salesTax } = quoteCardValues(item, empresaAtual?.nome);
+                            const money = (amount: number) => amount.toLocaleString(isUSCompany ? 'en-US' : 'pt-BR', { style: 'currency', currency: isUSCompany ? 'USD' : 'BRL' });
                             return (
                               <>
-                                <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {(base + urg).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{urg > 0 && <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">(+{Number(item.urgency_fee_percentual)}% urg.)</span>}</p>
-                                {tech > 0 && <p><span className="font-medium">Techs:</span> $ {tech.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
+                                <p><span className="font-medium">{t('orcamentos.value')}:</span> {money(value)}{urg > 0 && <span className="text-xs text-muted-foreground ml-1">(+{Number(item.urgency_fee_percentual)}% urg.)</span>}</p>
+                                {isUSCompany && <p><span className="font-medium">Sales Tax:</span> {money(salesTax)}</p>}
                               </>
                             );
                           })()}
@@ -2506,13 +2510,12 @@ export default function Orcamentos() {
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
                           {(() => {
-                            const base = Number(item.valor) || 0;
-                            const urg = item.urgency_fee_enabled ? base * (Number(item.urgency_fee_percentual) || 0) / 100 : 0;
-                            const tech = Number(item.tech_fee) || 0;
+                            const { value, urgencyFee: urg, salesTax } = quoteCardValues(item, empresaAtual?.nome);
+                            const money = (amount: number) => amount.toLocaleString(isUSCompany ? 'en-US' : 'pt-BR', { style: 'currency', currency: isUSCompany ? 'USD' : 'BRL' });
                             return (
                               <>
-                                <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {(base + urg).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{urg > 0 && <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">(+{Number(item.urgency_fee_percentual)}% urg.)</span>}</p>
-                                {tech > 0 && <p><span className="font-medium">Techs:</span> $ {tech.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
+                                <p><span className="font-medium">{t('orcamentos.value')}:</span> {money(value)}{urg > 0 && <span className="text-xs text-muted-foreground ml-1">(+{Number(item.urgency_fee_percentual)}% urg.)</span>}</p>
+                                {isUSCompany && <p><span className="font-medium">Sales Tax:</span> {money(salesTax)}</p>}
                               </>
                             );
                           })()}
@@ -2611,13 +2614,12 @@ export default function Orcamentos() {
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
                           {(() => {
-                            const base = Number(item.valor) || 0;
-                            const urg = item.urgency_fee_enabled ? base * (Number(item.urgency_fee_percentual) || 0) / 100 : 0;
-                            const tech = Number(item.tech_fee) || 0;
+                            const { value, urgencyFee: urg, salesTax } = quoteCardValues(item, empresaAtual?.nome);
+                            const money = (amount: number) => amount.toLocaleString(isUSCompany ? 'en-US' : 'pt-BR', { style: 'currency', currency: isUSCompany ? 'USD' : 'BRL' });
                             return (
                               <>
-                                <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {(base + urg).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{urg > 0 && <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">(+{Number(item.urgency_fee_percentual)}% urg.)</span>}</p>
-                                {tech > 0 && <p><span className="font-medium">Techs:</span> $ {tech.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
+                                <p><span className="font-medium">{t('orcamentos.value')}:</span> {money(value)}{urg > 0 && <span className="text-xs text-muted-foreground ml-1">(+{Number(item.urgency_fee_percentual)}% urg.)</span>}</p>
+                                {isUSCompany && <p><span className="font-medium">Sales Tax:</span> {money(salesTax)}</p>}
                               </>
                             );
                           })()}
@@ -2705,13 +2707,12 @@ export default function Orcamentos() {
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
                           <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
                           {(() => {
-                            const base = Number(item.valor) || 0;
-                            const urg = item.urgency_fee_enabled ? base * (Number(item.urgency_fee_percentual) || 0) / 100 : 0;
-                            const tech = Number(item.tech_fee) || 0;
+                            const { value, urgencyFee: urg, salesTax } = quoteCardValues(item, empresaAtual?.nome);
+                            const money = (amount: number) => amount.toLocaleString(isUSCompany ? 'en-US' : 'pt-BR', { style: 'currency', currency: isUSCompany ? 'USD' : 'BRL' });
                             return (
                               <>
-                                <p><span className="font-medium">{t('orcamentos.value')}:</span> $ {(base + urg).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{urg > 0 && <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">(+{Number(item.urgency_fee_percentual)}% urg.)</span>}</p>
-                                {tech > 0 && <p><span className="font-medium">Techs:</span> $ {tech.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
+                                <p><span className="font-medium">{t('orcamentos.value')}:</span> {money(value)}{urg > 0 && <span className="text-xs text-muted-foreground ml-1">(+{Number(item.urgency_fee_percentual)}% urg.)</span>}</p>
+                                {isUSCompany && <p><span className="font-medium">Sales Tax:</span> {money(salesTax)}</p>}
                               </>
                             );
                           })()}
