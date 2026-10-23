@@ -3,11 +3,14 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { ComprasDashboard } from "@/components/compras/ComprasDashboard";
 import { ComprasKanban } from "@/components/compras/ComprasKanban";
 import { CotacoesTab } from "@/components/compras/CotacoesTab";
-import { BarChart3, Kanban, FileText } from "lucide-react";
+import { BarChart3, Kanban, FileText, ListChecks } from "lucide-react";
+import { PartsUsedList } from "@/components/compras/PartsUsedList";
+import { useEmpresa } from "@/contexts/EmpresaContext";
+import { hasFiscalBilling } from "@/lib/company-features";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 
-type ComprasView = "dashboard" | "kanban" | "cotacoes";
+type ComprasView = "dashboard" | "kanban" | "cotacoes" | "parts";
 
 const comprasTabs: { value: ComprasView; label: string; icon: typeof BarChart3 }[] = [
   { value: "dashboard", label: "Dashboard", icon: BarChart3 },
@@ -17,6 +20,9 @@ const comprasTabs: { value: ComprasView; label: string; icon: typeof BarChart3 }
 
 export default function Compras() {
   const { t } = useLanguage();
+  const { empresaAtual } = useEmpresa();
+  const isUS = !hasFiscalBilling(empresaAtual?.nome);
+  const tabs = isUS ? [...comprasTabs, { value: "parts" as ComprasView, label: "Parts Used", icon: ListChecks }] : comprasTabs;
   const [activeView, setActiveView] = useState<ComprasView>("kanban");
 
   // Limpeza automática de cache/SW ao abrir Compras, evitando versão antiga sem abas.
@@ -53,7 +59,7 @@ export default function Compras() {
         </div>
 
         <div className="flex w-full flex-wrap gap-2 rounded-md bg-muted p-1 md:w-fit">
-          {comprasTabs.map((tab) => {
+          {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeView === tab.value;
 
@@ -77,6 +83,7 @@ export default function Compras() {
           {activeView === "dashboard" && <ComprasDashboard />}
           {activeView === "kanban" && <ComprasKanban />}
           {activeView === "cotacoes" && <CotacoesTab />}
+          {activeView === "parts" && isUS && <PartsUsedList />}
         </div>
       </div>
     </AppLayout>
