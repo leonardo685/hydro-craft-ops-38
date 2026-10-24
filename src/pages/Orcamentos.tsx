@@ -2611,6 +2611,19 @@ export default function Orcamentos() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
+                        {isUSCompany && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEntregaQuote(item);
+                              setDataEntrega(new Date().toISOString().slice(0, 10));
+                            }}
+                            title="Registrar entrega e faturar"
+                          >
+                            <Truck className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
@@ -2855,6 +2868,44 @@ export default function Orcamentos() {
         onOpenChange={setShowPagamentoModal}
         orcamento={orcamentoParaPagamento}
       />
+
+      {/* Modal de Entrega / Faturamento (empresa americana) */}
+      <Dialog open={!!entregaQuote} onOpenChange={(open) => { if (!open) setEntregaQuote(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-primary" />
+              Registrar entrega
+            </DialogTitle>
+            <DialogDescription>
+              Informe a data de entrega. A quote será finalizada e um lançamento financeiro será criado com essa data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {entregaQuote && (
+              <p className="text-sm text-muted-foreground">
+                Quote <span className="font-medium text-foreground">#{entregaQuote.numero}</span> — {entregaQuote.cliente_nome}
+              </p>
+            )}
+            <div className="space-y-2">
+              <Label>Data de entrega</Label>
+              <Input
+                type="date"
+                value={dataEntrega}
+                onChange={(e) => setDataEntrega(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEntregaQuote(null)} disabled={salvandoEntrega}>
+                Cancelar
+              </Button>
+              <Button onClick={confirmarEntregaQuote} disabled={salvandoEntrega || !dataEntrega}>
+                {salvandoEntrega ? "Salvando..." : "Confirmar entrega"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
