@@ -558,6 +558,16 @@ export default function Aprovados() {
                           Etiqueta
                         </Button>
 
+                        {!hasFiscalBilling(empresaAtual?.nome) && ordem.orcamento_id && ordem.status !== 'finalizado' && (
+                          <Button variant="outline" size="sm" onClick={() => {
+                            setEntregaOrdem(ordem);
+                            setDataEntrega(new Date().toISOString().slice(0, 10));
+                          }}>
+                            <CreditCard className="h-4 w-4 mr-2" />
+                            Entrega / Faturar
+                          </Button>
+                        )}
+
                         {hasFiscalBilling(empresaAtual?.nome) && ordem.recebimento_id && !ordem.recebimentos?.chave_acesso_nfe && (
                           <Button variant="outline" size="sm" onClick={() => setVincularNFeModal({
                             recebimentoId: ordem.recebimento_id,
