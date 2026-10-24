@@ -9,6 +9,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -309,6 +310,63 @@ export default function Orcamentos() {
     setOrcamentoParaPagamento(orcamento);
     setShowPagamentoModal(true);
   };
+
+  const [entregaQuote, setEntregaQuote] = useState<any>(null);
+  const [dataEntrega, setDataEntrega] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [salvandoEntrega, setSalvandoEntrega] = useState(false);
+
+  const confirmarEntregaQuote = async () => {
+    if (!entregaQuote || !empresaAtual?.id || !dataEntrega) return;
+    setSalvandoEntrega(true);
+    try {
+      const empresaId = empresaAtual.id;
+      const dataEntregaISO = `${dataEntrega}T12:00:00`;
+
+      const { error: oErr } = await supabase
+        .from('orcamentos').update({ status: 'finalizado' }).eq('id', entregaQuote.id).eq('empresa_id', empresaId);
+      if (oErr) throw oErr;
+
+      // Finaliza também as ordens vinculadas
+      const ordensVinculadas = entregaQuote.ordens_vinculadas || [];
+      for (const ordem of ordensVinculadas) {
+        if (ordem.status === 'finalizado') continue;
+        const { error: ordemErr } = await supabase.from('ordens_servico').update({
+          status: 'finalizado',
+          data_finalizacao: dataEntregaISO,
+          data_documento_entrega: dataEntregaISO,
+        } as any).eq('id', ordem.id).eq('empresa_id', empresaId);
+        if (ordemErr) throw ordemErr;
+      }
+
+      const { value, salesTax } = quoteCardValues(entregaQuote, empresaAtual.nome);
+      const { data: contas } = await supabase
+        .from('contas_bancarias').select('nome').eq('empresa_id', empresaId).eq('ativo', true).order('nome').limit(1);
+      const { error: lErr } = await supabase.from('lancamentos_financeiros').insert({
+        tipo: 'entrada',
+        descricao: `Invoice ${String(entregaQuote.numero).replace('/', '-')} - ${entregaQuote.cliente_nome}`,
+        valor: Math.round((value + salesTax) * 100) / 100,
+        conta_bancaria: contas?.[0]?.nome || 'A definir',
+        fornecedor_cliente: entregaQuote.cliente_nome,
+        data_emissao: dataEntregaISO,
+        data_esperada: dataEntregaISO,
+        data_realizada: null,
+        pago: false,
+        forma_pagamento: 'a_vista',
+        empresa_id: empresaId,
+      });
+      if (lErr) throw lErr;
+
+      toast.success("Quote finalizada e lançamento financeiro criado com a data de entrega");
+      setEntregaQuote(null);
+      await carregarOrcamentos();
+    } catch (error: any) {
+      console.error('Erro ao registrar entrega:', error);
+      toast.error("Erro ao registrar entrega: " + (error?.message || ""));
+    } finally {
+      setSalvandoEntrega(false);
+    }
+  };
+
 
 
   const handleVincularOrdens = (orcamento: any) => {
