@@ -289,7 +289,7 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
             <Opcao
               icon={uploading ? Loader2 : Camera}
               titulo="Foto do serviço entregue"
-              sub={uploading ? "Enviando..." : info.documentoEntrega ? "Já enviado — toque para substituir" : "Tirar foto e finalizar a entrega"}
+              sub={uploading ? "Enviando..." : info.documentoEntrega ? "Já enviado — toque para substituir" : "Anexar foto (da galeria ou tirar agora) e finalizar a entrega"}
               disponivel={!!info.ordemId}
               onClick={() => {
                 if (!info.ordemId) return toast.error("Ordem de serviço indisponível");
@@ -301,7 +301,7 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
                 Ver foto da entrega
               </a>
             )}
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={enviarDocumento} />
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={enviarDocumento} />
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setInfo(null)}>
                 <ArrowLeft className="w-4 h-4 mr-1" /> Ler outro
