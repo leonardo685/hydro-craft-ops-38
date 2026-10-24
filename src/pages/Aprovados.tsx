@@ -364,66 +364,6 @@ export default function Aprovados() {
         return <CheckCircle className="h-4 w-4" />;
     }
   };
-  const confirmarEntrega = async () => {
-    if (!entregaOrdem || !empresaAtual?.id || !dataEntrega) return;
-    setSalvandoEntrega(true);
-    try {
-      const empresaId = empresaAtual.id;
-      const dataEntregaISO = `${dataEntrega}T12:00:00`;
-
-      const { error: ordemErr } = await supabase.from('ordens_servico').update({
-        status: 'finalizado',
-        data_finalizacao: dataEntregaISO,
-        data_documento_entrega: dataEntregaISO,
-      } as any).eq('id', entregaOrdem.id).eq('empresa_id', empresaId);
-      if (ordemErr) throw ordemErr;
-
-      let msg = "Entrega registrada e ordem finalizada";
-      if (entregaOrdem.orcamento_id) {
-        const { data: orc } = await supabase
-          .from('orcamentos').select('*').eq('id', entregaOrdem.orcamento_id).eq('empresa_id', empresaId).maybeSingle();
-        if (orc && orc.status !== 'finalizado') {
-          const { error: oErr } = await supabase
-            .from('orcamentos').update({ status: 'finalizado' }).eq('id', orc.id).eq('empresa_id', empresaId);
-          if (oErr) throw oErr;
-          const { value, salesTax } = quoteCardValues(orc as any, empresaAtual.nome);
-          const { data: contas } = await supabase
-            .from('contas_bancarias').select('nome').eq('empresa_id', empresaId).eq('ativo', true).order('nome').limit(1);
-          const { error: lErr } = await supabase.from('lancamentos_financeiros').insert({
-            tipo: 'entrada',
-            descricao: `Invoice ${String(orc.numero).replace('/', '-')} - ${orc.cliente_nome} (${entregaOrdem.numero_ordem})`,
-            valor: Math.round((value + salesTax) * 100) / 100,
-            conta_bancaria: contas?.[0]?.nome || 'A definir',
-            fornecedor_cliente: orc.cliente_nome,
-            data_emissao: dataEntregaISO,
-            data_esperada: dataEntregaISO,
-            data_realizada: null,
-            pago: false,
-            forma_pagamento: 'a_vista',
-            empresa_id: empresaId,
-          });
-          if (lErr) throw lErr;
-          msg = "Quote finalizada e lançamento financeiro criado com a data de entrega";
-        } else if (orc) {
-          msg = "Ordem finalizada (quote já estava finalizada)";
-        }
-      }
-
-      toast({ title: "Entrega registrada", description: msg });
-      setEntregaOrdem(null);
-      loadOrdensAprovadas();
-    } catch (error: any) {
-      console.error('Erro ao registrar entrega:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao registrar entrega: " + (error?.message || ""),
-        variant: "destructive"
-      });
-    } finally {
-      setSalvandoEntrega(false);
-    }
-  };
-
   return <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -617,16 +557,6 @@ export default function Aprovados() {
                           <Printer className="h-4 w-4 mr-2" />
                           Etiqueta
                         </Button>
-
-                        {!hasFiscalBilling(empresaAtual?.nome) && ordem.orcamento_id && ordem.status !== 'finalizado' && (
-                          <Button variant="outline" size="sm" onClick={() => {
-                            setEntregaOrdem(ordem);
-                            setDataEntrega(new Date().toISOString().slice(0, 10));
-                          }}>
-                            <CreditCard className="h-4 w-4 mr-2" />
-                            Entrega / Faturar
-                          </Button>
-                        )}
 
                         {hasFiscalBilling(empresaAtual?.nome) && ordem.recebimento_id && !ordem.recebimentos?.chave_acesso_nfe && (
                           <Button variant="outline" size="sm" onClick={() => setVincularNFeModal({
