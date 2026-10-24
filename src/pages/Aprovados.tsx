@@ -717,6 +717,44 @@ export default function Aprovados() {
         }
       }} />}
 
+      {/* Modal de Entrega / Faturamento (empresa americana) */}
+      <Dialog open={!!entregaOrdem} onOpenChange={(open) => { if (!open) setEntregaOrdem(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Registrar entrega
+            </DialogTitle>
+            <DialogDescription>
+              Informe a data de entrega. A quote será finalizada e um lançamento financeiro será criado com essa data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {entregaOrdem && (
+              <p className="text-sm text-muted-foreground">
+                Ordem <span className="font-medium text-foreground">{entregaOrdem.numero_ordem}</span> — {entregaOrdem.cliente_nome}
+              </p>
+            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Data de entrega</label>
+              <Input
+                type="date"
+                value={dataEntrega}
+                onChange={(e) => setDataEntrega(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEntregaOrdem(null)} disabled={salvandoEntrega}>
+                Cancelar
+              </Button>
+              <Button onClick={confirmarEntrega} disabled={salvandoEntrega || !dataEntrega}>
+                {salvandoEntrega ? "Salvando..." : "Confirmar entrega"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal de Busca de Laudo */}
       <Dialog open={laudoModalOpen} onOpenChange={(open) => {
         setLaudoModalOpen(open);
