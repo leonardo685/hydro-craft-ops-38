@@ -289,7 +289,7 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
             <Opcao
               icon={uploading ? Loader2 : Camera}
               titulo="Foto do serviço entregue"
-              sub={uploading ? "Enviando..." : info.documentoEntrega ? "Já enviado — toque para substituir" : "Tirar foto e finalizar a entrega"}
+              sub={uploading ? "Enviando..." : info.documentoEntrega ? "Já enviado — toque para substituir" : "Anexar foto (da galeria ou tirar agora) e finalizar a entrega"}
               disponivel={!!info.ordemId}
               onClick={() => {
                 if (!info.ordemId) return toast.error("Ordem de serviço indisponível");
