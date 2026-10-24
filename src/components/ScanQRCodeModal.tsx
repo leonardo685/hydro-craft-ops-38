@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Search, FileCheck2, FileText, Wrench, Camera, ArrowLeft, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresa } from "@/contexts/EmpresaContext";
+import { hasFiscalBilling } from "@/lib/company-features";
+import { quoteCardValues } from "@/lib/quote-card-values";
 
 interface ScanQRCodeModalProps {
   open: boolean;
@@ -176,33 +178,78 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || !info?.ordemId || !empresaAtual?.id) return;
+    if (!file.type.startsWith("image/")) return toast.error("Envie apenas uma foto do serviço entregue");
     if (file.size > 20 * 1024 * 1024) return toast.error("Arquivo muito grande (máx. 20MB)");
     setUploading(true);
     try {
+      const empresaId = empresaAtual.id;
+      const agora = new Date().toISOString();
       const ext = file.name.split(".").pop() || "jpg";
-      const path = `documentos-entrega/${info.numero}_${Date.now()}.${ext}`;
+      const path = `entregas/${info.numero}_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("equipamentos").upload(path, file, { contentType: file.type });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from("equipamentos").getPublicUrl(path);
+      const url = urlData.publicUrl;
+
+      const finalizar = !hasFiscalBilling(empresaAtual.nome);
       const { error } = await supabase
         .from("ordens_servico")
-        .update({ documento_entrega_url: urlData.publicUrl, data_documento_entrega: new Date().toISOString() } as any)
+        .update({
+          documento_entrega_url: url,
+          data_documento_entrega: agora,
+          ...(finalizar ? { status: "finalizado", data_finalizacao: agora } : {}),
+        } as any)
         .eq("id", info.ordemId)
-        .eq("empresa_id", empresaAtual.id);
+        .eq("empresa_id", empresaId);
       if (error) throw error;
-      await supabase.from("documentos_ordem").insert({
+
+      const { data: ordemRow } = await supabase
+        .from("ordens_servico").select("recebimento_id").eq("id", info.ordemId).eq("empresa_id", empresaId).maybeSingle();
+      await supabase.from("fotos_equipamentos").insert({
         ordem_servico_id: info.ordemId,
-        empresa_id: empresaAtual.id,
-        arquivo_url: urlData.publicUrl,
-        nome_arquivo: `Documento de entrega assinado - ${info.numero}.${ext}`,
-        tipo_arquivo: file.type || "image/jpeg",
-        tamanho_bytes: file.size,
+        recebimento_id: ordemRow?.recebimento_id ?? null,
+        arquivo_url: url,
+        nome_arquivo: `Serviço entregue - ${info.numero}.${ext}`,
+        legenda: "Serviço entregue",
+        apresentar_orcamento: false,
+        empresa_id: empresaId,
       });
-      setInfo({ ...info, documentoEntrega: urlData.publicUrl });
-      toast.success("Documento de entrega salvo na ordem");
+
+      let msg = "Foto da entrega salva";
+      if (finalizar && info.orcamentoId) {
+        const { data: orc } = await supabase
+          .from("orcamentos").select("*").eq("id", info.orcamentoId).eq("empresa_id", empresaId).maybeSingle();
+        if (orc && orc.status !== "finalizado") {
+          const { error: oErr } = await supabase
+            .from("orcamentos").update({ status: "finalizado" }).eq("id", orc.id).eq("empresa_id", empresaId);
+          if (oErr) throw oErr;
+          const { value, salesTax } = quoteCardValues(orc as any, empresaAtual.nome);
+          const { data: contas } = await supabase
+            .from("contas_bancarias").select("nome").eq("empresa_id", empresaId).eq("ativo", true).order("nome").limit(1);
+          const { error: lErr } = await supabase.from("lancamentos_financeiros").insert({
+            tipo: "entrada",
+            descricao: `Invoice ${String(orc.numero).replace("/", "-")} - ${orc.cliente_nome} (${info.numero})`,
+            valor: Math.round((value + salesTax) * 100) / 100,
+            conta_bancaria: contas?.[0]?.nome || "A definir",
+            fornecedor_cliente: orc.cliente_nome,
+            data_emissao: agora,
+            data_esperada: agora,
+            data_realizada: null,
+            pago: false,
+            forma_pagamento: "a_vista",
+            empresa_id: empresaId,
+          });
+          if (lErr) throw lErr;
+          msg = "Entrega registrada: orçamento finalizado e lançamento financeiro criado";
+        } else if (orc) {
+          msg = "Foto salva (orçamento já estava finalizado)";
+        }
+      }
+      setInfo({ ...info, documentoEntrega: url });
+      toast.success(msg);
     } catch (err: any) {
       console.error(err);
-      toast.error("Erro ao salvar documento: " + (err?.message || ""));
+      toast.error("Erro ao salvar entrega: " + (err?.message || ""));
     } finally {
       setUploading(false);
     }
