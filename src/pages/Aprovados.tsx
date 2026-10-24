@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera, Video, ClipboardCheck, ExternalLink, Search, History, AlertCircle, Printer, Link2, CreditCard } from "lucide-react";
+import { CheckCircle, Play, Package, Truck, FileText, Calendar, User, Settings, Wrench, RotateCw, Camera, Video, ClipboardCheck, ExternalLink, Search, History, AlertCircle, Printer, Link2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +25,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { VincularNFeModal } from "@/components/VincularNFeModal";
 import { completionStatus, hasFiscalBilling } from "@/lib/company-features";
-import { quoteCardValues } from "@/lib/quote-card-values";
 
 interface HistoricoBuscaLaudo {
   numeroOrdem: string;
@@ -49,9 +48,6 @@ export default function Aprovados() {
   const [historicoBuscas, setHistoricoBuscas] = useState<HistoricoBuscaLaudo[]>([]);
   const [etiquetaOrdem, setEtiquetaOrdem] = useState<any>(null);
   const [vincularNFeModal, setVincularNFeModal] = useState<{ recebimentoId: number; numeroOrdem: string } | null>(null);
-  const [entregaOrdem, setEntregaOrdem] = useState<any>(null);
-  const [dataEntrega, setDataEntrega] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [salvandoEntrega, setSalvandoEntrega] = useState(false);
   const {
     toast
   } = useToast();
@@ -364,66 +360,6 @@ export default function Aprovados() {
         return <CheckCircle className="h-4 w-4" />;
     }
   };
-  const confirmarEntrega = async () => {
-    if (!entregaOrdem || !empresaAtual?.id || !dataEntrega) return;
-    setSalvandoEntrega(true);
-    try {
-      const empresaId = empresaAtual.id;
-      const dataEntregaISO = `${dataEntrega}T12:00:00`;
-
-      const { error: ordemErr } = await supabase.from('ordens_servico').update({
-        status: 'finalizado',
-        data_finalizacao: dataEntregaISO,
-        data_documento_entrega: dataEntregaISO,
-      } as any).eq('id', entregaOrdem.id).eq('empresa_id', empresaId);
-      if (ordemErr) throw ordemErr;
-
-      let msg = "Entrega registrada e ordem finalizada";
-      if (entregaOrdem.orcamento_id) {
-        const { data: orc } = await supabase
-          .from('orcamentos').select('*').eq('id', entregaOrdem.orcamento_id).eq('empresa_id', empresaId).maybeSingle();
-        if (orc && orc.status !== 'finalizado') {
-          const { error: oErr } = await supabase
-            .from('orcamentos').update({ status: 'finalizado' }).eq('id', orc.id).eq('empresa_id', empresaId);
-          if (oErr) throw oErr;
-          const { value, salesTax } = quoteCardValues(orc as any, empresaAtual.nome);
-          const { data: contas } = await supabase
-            .from('contas_bancarias').select('nome').eq('empresa_id', empresaId).eq('ativo', true).order('nome').limit(1);
-          const { error: lErr } = await supabase.from('lancamentos_financeiros').insert({
-            tipo: 'entrada',
-            descricao: `Invoice ${String(orc.numero).replace('/', '-')} - ${orc.cliente_nome} (${entregaOrdem.numero_ordem})`,
-            valor: Math.round((value + salesTax) * 100) / 100,
-            conta_bancaria: contas?.[0]?.nome || 'A definir',
-            fornecedor_cliente: orc.cliente_nome,
-            data_emissao: dataEntregaISO,
-            data_esperada: dataEntregaISO,
-            data_realizada: null,
-            pago: false,
-            forma_pagamento: 'a_vista',
-            empresa_id: empresaId,
-          });
-          if (lErr) throw lErr;
-          msg = "Quote finalizada e lançamento financeiro criado com a data de entrega";
-        } else if (orc) {
-          msg = "Ordem finalizada (quote já estava finalizada)";
-        }
-      }
-
-      toast({ title: "Entrega registrada", description: msg });
-      setEntregaOrdem(null);
-      loadOrdensAprovadas();
-    } catch (error: any) {
-      console.error('Erro ao registrar entrega:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao registrar entrega: " + (error?.message || ""),
-        variant: "destructive"
-      });
-    } finally {
-      setSalvandoEntrega(false);
-    }
-  };
-
   return <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -618,16 +554,6 @@ export default function Aprovados() {
                           Etiqueta
                         </Button>
 
-                        {!hasFiscalBilling(empresaAtual?.nome) && ordem.orcamento_id && ordem.status !== 'finalizado' && (
-                          <Button variant="outline" size="sm" onClick={() => {
-                            setEntregaOrdem(ordem);
-                            setDataEntrega(new Date().toISOString().slice(0, 10));
-                          }}>
-                            <CreditCard className="h-4 w-4 mr-2" />
-                            Entrega / Faturar
-                          </Button>
-                        )}
-
                         {hasFiscalBilling(empresaAtual?.nome) && ordem.recebimento_id && !ordem.recebimentos?.chave_acesso_nfe && (
                           <Button variant="outline" size="sm" onClick={() => setVincularNFeModal({
                             recebimentoId: ordem.recebimento_id,
@@ -716,44 +642,6 @@ export default function Aprovados() {
           });
         }
       }} />}
-
-      {/* Modal de Entrega / Faturamento (empresa americana) */}
-      <Dialog open={!!entregaOrdem} onOpenChange={(open) => { if (!open) setEntregaOrdem(null); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
-              Registrar entrega
-            </DialogTitle>
-            <DialogDescription>
-              Informe a data de entrega. A quote será finalizada e um lançamento financeiro será criado com essa data.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            {entregaOrdem && (
-              <p className="text-sm text-muted-foreground">
-                Ordem <span className="font-medium text-foreground">{entregaOrdem.numero_ordem}</span> — {entregaOrdem.cliente_nome}
-              </p>
-            )}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Data de entrega</label>
-              <Input
-                type="date"
-                value={dataEntrega}
-                onChange={(e) => setDataEntrega(e.target.value)}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEntregaOrdem(null)} disabled={salvandoEntrega}>
-                Cancelar
-              </Button>
-              <Button onClick={confirmarEntrega} disabled={salvandoEntrega || !dataEntrega}>
-                {salvandoEntrega ? "Salvando..." : "Confirmar entrega"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Modal de Busca de Laudo */}
       <Dialog open={laudoModalOpen} onOpenChange={(open) => {

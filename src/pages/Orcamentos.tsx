@@ -9,13 +9,14 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2, AlertTriangle, CreditCard } from "lucide-react";
+import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2, AlertTriangle, CreditCard, Truck } from "lucide-react";
 import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -309,6 +310,63 @@ export default function Orcamentos() {
     setOrcamentoParaPagamento(orcamento);
     setShowPagamentoModal(true);
   };
+
+  const [entregaQuote, setEntregaQuote] = useState<any>(null);
+  const [dataEntrega, setDataEntrega] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [salvandoEntrega, setSalvandoEntrega] = useState(false);
+
+  const confirmarEntregaQuote = async () => {
+    if (!entregaQuote || !empresaAtual?.id || !dataEntrega) return;
+    setSalvandoEntrega(true);
+    try {
+      const empresaId = empresaAtual.id;
+      const dataEntregaISO = `${dataEntrega}T12:00:00`;
+
+      const { error: oErr } = await supabase
+        .from('orcamentos').update({ status: 'finalizado' }).eq('id', entregaQuote.id).eq('empresa_id', empresaId);
+      if (oErr) throw oErr;
+
+      // Finaliza também as ordens vinculadas
+      const ordensVinculadas = entregaQuote.ordens_vinculadas || [];
+      for (const ordem of ordensVinculadas) {
+        if (ordem.status === 'finalizado') continue;
+        const { error: ordemErr } = await supabase.from('ordens_servico').update({
+          status: 'finalizado',
+          data_finalizacao: dataEntregaISO,
+          data_documento_entrega: dataEntregaISO,
+        } as any).eq('id', ordem.id).eq('empresa_id', empresaId);
+        if (ordemErr) throw ordemErr;
+      }
+
+      const { value, salesTax } = quoteCardValues(entregaQuote, empresaAtual.nome);
+      const { data: contas } = await supabase
+        .from('contas_bancarias').select('nome').eq('empresa_id', empresaId).eq('ativo', true).order('nome').limit(1);
+      const { error: lErr } = await supabase.from('lancamentos_financeiros').insert({
+        tipo: 'entrada',
+        descricao: `Invoice ${String(entregaQuote.numero).replace('/', '-')} - ${entregaQuote.cliente_nome}`,
+        valor: Math.round((value + salesTax) * 100) / 100,
+        conta_bancaria: contas?.[0]?.nome || 'A definir',
+        fornecedor_cliente: entregaQuote.cliente_nome,
+        data_emissao: dataEntregaISO,
+        data_esperada: dataEntregaISO,
+        data_realizada: null,
+        pago: false,
+        forma_pagamento: 'a_vista',
+        empresa_id: empresaId,
+      });
+      if (lErr) throw lErr;
+
+      toast.success("Quote finalizada e lançamento financeiro criado com a data de entrega");
+      setEntregaQuote(null);
+      await carregarOrcamentos();
+    } catch (error: any) {
+      console.error('Erro ao registrar entrega:', error);
+      toast.error("Erro ao registrar entrega: " + (error?.message || ""));
+    } finally {
+      setSalvandoEntrega(false);
+    }
+  };
+
 
 
   const handleVincularOrdens = (orcamento: any) => {
@@ -2553,6 +2611,19 @@ export default function Orcamentos() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
+                        {isUSCompany && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEntregaQuote(item);
+                              setDataEntrega(new Date().toISOString().slice(0, 10));
+                            }}
+                            title="Registrar entrega e faturar"
+                          >
+                            <Truck className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
@@ -2797,6 +2868,44 @@ export default function Orcamentos() {
         onOpenChange={setShowPagamentoModal}
         orcamento={orcamentoParaPagamento}
       />
+
+      {/* Modal de Entrega / Faturamento (empresa americana) */}
+      <Dialog open={!!entregaQuote} onOpenChange={(open) => { if (!open) setEntregaQuote(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-primary" />
+              Registrar entrega
+            </DialogTitle>
+            <DialogDescription>
+              Informe a data de entrega. A quote será finalizada e um lançamento financeiro será criado com essa data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {entregaQuote && (
+              <p className="text-sm text-muted-foreground">
+                Quote <span className="font-medium text-foreground">#{entregaQuote.numero}</span> — {entregaQuote.cliente_nome}
+              </p>
+            )}
+            <div className="space-y-2">
+              <Label>Data de entrega</Label>
+              <Input
+                type="date"
+                value={dataEntrega}
+                onChange={(e) => setDataEntrega(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEntregaQuote(null)} disabled={salvandoEntrega}>
+                Cancelar
+              </Button>
+              <Button onClick={confirmarEntregaQuote} disabled={salvandoEntrega || !dataEntrega}>
+                {salvandoEntrega ? "Salvando..." : "Confirmar entrega"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
