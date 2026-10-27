@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { translateTerm } from "@/i18n/dynamicTerms";
 import { invoiceDeliveryPhotos, type DeliveryOrder } from "@/lib/invoice-delivery-photos";
+import { showsOrderReference } from "@/lib/company-features";
 
 type Lang = "pt-BR" | "en" | "es";
 
