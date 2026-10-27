@@ -1,5 +1,5 @@
 import { quoteCardValues } from "@/lib/quote-card-values";
-import { hasFiscalBilling } from "@/lib/company-features";
+import { completionStatus, hasFiscalBilling } from "@/lib/company-features";
 import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
 import { gerarOrcamentoModernoPDF } from "@/lib/orcamento-modern-pdf";
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -329,9 +329,9 @@ export default function Orcamentos() {
       // Finaliza também as ordens vinculadas
       const ordensVinculadas = entregaQuote.ordens_vinculadas || [];
       for (const ordem of ordensVinculadas) {
-        if (ordem.status === 'finalizado') continue;
+        if (ordem.status === 'finalizada') continue;
         const { error: ordemErr } = await supabase.from('ordens_servico').update({
-          status: 'finalizado',
+          status: completionStatus(empresaAtual.nome, null, entregaQuote.id),
           data_finalizacao: dataEntregaISO,
           data_documento_entrega: dataEntregaISO,
         } as any).eq('id', ordem.id).eq('empresa_id', empresaId);
