@@ -1,6 +1,6 @@
 # Project architecture rules
 
-- Centralize company-specific fiscal capabilities and completion routing in `src/lib/company-features.ts`, based on the active company rather than language, to isolate US changes from Brazil.
+- Centralize company-specific capabilities — fiscal workflows, completion routing and which document fields each company prints — in `src/lib/company-features.ts`, based on the active company rather than language, to isolate US changes from Brazil.
 - Keep visual quote fee and tax totals, including approval dialog amounts, in `src/lib/quote-card-values.ts`, derived from persisted quote values and active company; persist the discounted base separately from urgency to avoid double charging, and never use manual technician amounts as tax.
 
 - Keep public technical-report PDF layout in `src/lib/laudo-moderno-pdf.ts`; the public page only gathers data and invokes it, so presentation changes remain isolated and reusable.

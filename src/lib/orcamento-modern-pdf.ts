@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { translateTerm } from "@/i18n/dynamicTerms";
 import { invoiceDeliveryPhotos, type DeliveryOrder } from "@/lib/invoice-delivery-photos";
+import { showsOrderReference } from "@/lib/company-features";
 
 type Lang = "pt-BR" | "en" | "es";
 
@@ -140,6 +141,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const o = p.orcamento;
   const locale = lang === "en" ? "en-US" : lang === "es" ? "es-ES" : "pt-BR";
   const isMec = String(p.empresa?.nome || "").toUpperCase().includes("MEC HYDRO");
+  const mostraOrdemRef = showsOrderReference(p.empresa?.nome);
   const currency = isMec || lang === "en" ? "USD" : "BRL";
   const money = (v: number) => v.toLocaleString(locale, { style: "currency", currency });
 
@@ -198,9 +200,14 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     const size = 21;
     const x = W - M - size;
     doc.addImage(qr.image, "PNG", x, titleTop - 2, size, size);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(6.5); doc.setTextColor(...DARK);
-    doc.text(qr.number, x + size / 2, titleTop + size + 3, { align: "center" });
-    qrBottom = titleTop + size + 5;
+    if (mostraOrdemRef) {
+      doc.setFont("helvetica", "bold"); doc.setFontSize(6.5); doc.setTextColor(...DARK);
+      doc.text(qr.number, x + size / 2, titleTop + size + 3, { align: "center" });
+      qrBottom = titleTop + size + 5;
+    } else {
+      // QR sem o número da ordem impresso por baixo.
+      qrBottom = titleTop + size + 1;
+    }
   }
   doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(...RED);
   doc.text(docLabel, W / 2, y + 2, { align: "center" });
@@ -217,7 +224,18 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const data = new Date(o.data_orcamento || o.created_at || Date.now()).toLocaleDateString(locale, {
     day: "numeric", month: "long", year: "numeric",
   });
-  small(`${T.quote} ${numero}   /   ${data}`, M, y, MUTED, false, 7.5);
+  if (mostraOrdemRef) {
+    small(`${T.quote} ${numero}   /   ${data}`, M, y, MUTED, false, 7.5);
+  } else {
+    // Na MEC HYDRO: só o número do orçamento, em fonte maior e negrito.
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(...DARK);
+    const rotulo = `${T.quoteUp} ${numero}`;
+    doc.text(rotulo, M, y);
+    const larguraRotulo = doc.getTextWidth(rotulo);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...MUTED);
+    doc.text(data, M + larguraRotulo + 10, y - 1);
+    y += 8;
+  }
   y = Math.max(y, qrBottom) + 9; rule(y); y += 9;
 
   small(T.preparedFor, M, y); y += 7;
@@ -225,7 +243,9 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const cl = doc.splitTextToSize(o.cliente_nome || "N/A", CW);
   doc.text(cl, M, y); y += cl.length * 6 + 1;
   doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...DARK);
-  doc.text(`${T.refOrder}  ${o.ordem_referencia || "N/A"}`, M, y); y += 6;
+  if (mostraOrdemRef) {
+    doc.text(`${T.refOrder}  ${o.ordem_referencia || "N/A"}`, M, y); y += 6;
+  }
   small(`${T.taxId}  ${p.clienteDoc || "N/A"}    |    ${T.entryInvoice}  ${o.numero_nota_entrada || "N/A"}`, M, y, MUTED, false, 7);
   y += 9; rule(y); y += 10;
 
