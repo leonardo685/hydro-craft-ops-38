@@ -1328,6 +1328,16 @@ export default function NovoOrcamento() {
       return;
     }
 
+    if (informacoesComerciais.urgencyFeeEnabled && !(Number(informacoesComerciais.urgencyFeePercentual) > 0)) {
+      toast({
+        title: "Urgency fee",
+        description: "Informe o percentual da taxa de urgência (ex.: 20% ou 30%) ou desligue a opção.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+
     // Usar o valor total editado manualmente pelo usuário
     const valorFinal = informacoesComerciais.valorTotal;
     
