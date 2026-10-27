@@ -4155,11 +4155,18 @@ export default function NovoOrcamento() {
                 <Switch
                   id="quote-urgency-fee"
                   checked={informacoesComerciais.urgencyFeeEnabled}
-                  onCheckedChange={checked => setInformacoesComerciais(prev => ({ ...prev, urgencyFeeEnabled: checked }))}
+                  onCheckedChange={checked => setInformacoesComerciais(prev => ({ ...prev, urgencyFeeEnabled: checked, urgencyFeePercentual: checked && !(Number(prev.urgencyFeePercentual) > 0) ? 20 : prev.urgencyFeePercentual }))}
                 />
                 <Label htmlFor="quote-urgency-fee">Urgency fee</Label>
                 {informacoesComerciais.urgencyFeeEnabled ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {[20, 30].map(p => (
+                      <Button key={p} type="button" size="sm"
+                        variant={Number(informacoesComerciais.urgencyFeePercentual) === p ? 'default' : 'outline'}
+                        onClick={() => setInformacoesComerciais(prev => ({ ...prev, urgencyFeePercentual: p }))}>
+                        {p}%
+                      </Button>
+                    ))}
                     <Input
                       type="number" min={0} step="0.1" className="w-24"
                       aria-label="Urgency fee %"
@@ -4167,6 +4174,9 @@ export default function NovoOrcamento() {
                       onChange={e => setInformacoesComerciais(prev => ({ ...prev, urgencyFeePercentual: parseFloat(e.target.value) || 0 }))}
                     />
                     <span className="text-sm text-muted-foreground">%</span>
+                    {!(Number(informacoesComerciais.urgencyFeePercentual) > 0) && (
+                      <span className="text-sm text-destructive">{language === 'en' ? 'Enter the fee %' : 'Informe o % da taxa'}</span>
+                    )}
                   </div>
                 ) : (
                   <span className="text-sm text-muted-foreground">{language === 'en' ? 'Off' : language === 'es' ? 'Desactivado' : 'Desligado'}</span>
