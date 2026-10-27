@@ -13,7 +13,7 @@ describe('company fiscal workflow isolation', () => {
     expect(completionStatus('MEC HYDRO', 16, 'quote-id')).toBe('finalizada');
   });
   it('uses a completion status accepted by the service order constraint for US delivery', () => {
-    const migration = readFileSync(new URL('../../supabase/migrations/20250920193306_0794110a-25fb-4023-ab82-630597879dac.sql', import.meta.url), 'utf8');
+    const migration = readFileSync('supabase/migrations/20250920193306_0794110a-25fb-4023-ab82-630597879dac.sql', 'utf8');
     const allowedStatuses = [...migration.matchAll(/'([^']+)'/g)].map(match => match[1]);
     const deliveryStatus = completionStatus('MEC HYDRO', null, 'quote-id');
     expect(deliveryStatus).toBe('finalizada');
