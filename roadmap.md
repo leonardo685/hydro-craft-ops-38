@@ -1,5 +1,10 @@
 # Tax por orçamento
 
+## Foto de entrega no invoice americano
+- [x] Incluir fotos das ordens finalizadas no invoice correspondente, mantendo P.O. primeiro e isolamento entre empresas.
+- [x] Validar seleção com 12 testes e exportar PDF de exemplo com foto; compilação sem erros.
+- [ ] Confirmar exportação com foto real — sessão autenticada indisponível no Supabase externo.
+
 ## Correção de Techs para Sales Tax
 - [x] Remover valor manual dos técnicos e mostrar Sales Tax calculado nos cards e no total superior apenas na MEC HYDRO.
 - [x] Validar cálculos: 15 testes passaram e compilação sem erros.
