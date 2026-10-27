@@ -5,4 +5,5 @@
 
 - Keep public technical-report PDF layout in `src/lib/laudo-moderno-pdf.ts`; the public page only gathers data and invokes it, so presentation changes remain isolated and reusable.
 - Keep modern quote PDF tax calculation in `src/lib/orcamento-modern-pdf.ts`, using the budget's persisted tax selection so every export path stays consistent.
+- Resolve delivery photos in the shared modern invoice PDF generator and filter ownership through `src/lib/invoice-delivery-photos.ts` so every export path uses only finalized orders belonging to that invoice and company.
 - Resolve the modern quote's reference QR inside its shared PDF generator, accepting only a unique existing order scoped to the active company, so all export paths omit missing or ambiguous references consistently.

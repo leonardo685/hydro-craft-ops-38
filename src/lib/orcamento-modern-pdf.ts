@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { translateTerm } from "@/i18n/dynamicTerms";
+import { invoiceDeliveryPhotos, type DeliveryOrder } from "@/lib/invoice-delivery-photos";
 
 type Lang = "pt-BR" | "en" | "es";
 
@@ -23,6 +24,7 @@ const TXT: Record<Lang, Record<string, string>> = {
     unitValue: "VALOR UNIT.", lineTotal: "TOTAL", partsTotal: "TOTAL DE PEÇAS",
     photos: "Condição do equipamento", photosSub: "Registro fotográfico do equipamento",
     photoRecord: "REGISTRO FOTOGRÁFICO", defaultTitle: "Reforma / Manutenção",
+    deliveredPhotos: "Equipamento entregue", deliveredPhotosSub: "Registro fotográfico da entrega",
   },
   en: {
     proposal: "COMMERCIAL PROPOSAL", invoice: "INVOICE", quote: "Quote", quoteUp: "QUOTE",
@@ -39,6 +41,7 @@ const TXT: Record<Lang, Record<string, string>> = {
     unitValue: "UNIT VALUE", lineTotal: "TOTAL", partsTotal: "PARTS TOTAL",
     photos: "Equipment condition", photosSub: "Photographic record of the equipment",
     photoRecord: "PHOTO RECORD", defaultTitle: "Repair / Maintenance",
+    deliveredPhotos: "Delivered equipment", deliveredPhotosSub: "Delivery photo record",
   },
   es: {
     proposal: "PROPUESTA COMERCIAL", invoice: "FACTURA", quote: "Cotización", quoteUp: "COTIZACIÓN",
@@ -55,6 +58,7 @@ const TXT: Record<Lang, Record<string, string>> = {
     unitValue: "VALOR UNIT.", lineTotal: "TOTAL", partsTotal: "TOTAL DE PIEZAS",
     photos: "Condición del equipo", photosSub: "Registro fotográfico del equipo",
     photoRecord: "REGISTRO FOTOGRÁFICO", defaultTitle: "Reparación / Mantenimiento",
+    deliveredPhotos: "Equipo entregado", deliveredPhotosSub: "Registro fotográfico de la entrega",
   },
 };
 
@@ -430,18 +434,27 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   await lista(T.machining, itens.filter((i) => i.tipo === "usinagem"));
 
   // ============ FOTOS ============
-  if (p.fotos.length) {
-    const imgs = await Promise.all(p.fotos.map((f) => loadImage(f.arquivo_url)));
+  const deliveryPhotos = isMec && isInvoice ? await buscarFotosEntrega(o, p.empresa) : [];
+  const photoGroups = [
+    { photos: p.fotos, title: T.photos, subtitle: T.photosSub },
+    { photos: deliveryPhotos, title: T.deliveredPhotos, subtitle: T.deliveredPhotosSub },
+  ];
+  for (const group of photoGroups) {
+    if (!group.photos.length) continue;
+    const imgs = await Promise.all(group.photos.map((f) => loadImage(f.arquivo_url)));
+    if (group.photos === deliveryPhotos && imgs.some(img => !img)) {
+      throw new Error(lang === 'en' ? 'Could not load delivery photo. Please try again.' : lang === 'es' ? 'No se pudo cargar la foto de entrega. Inténtelo de nuevo.' : 'Não foi possível carregar a foto da entrega. Tente novamente.');
+    }
     const cardW = (CW - 8) / 2;
     const cardH = 100;
-    for (let i = 0; i < p.fotos.length; i += 4) {
+    for (let i = 0; i < group.photos.length; i += 4) {
       const pageN = i / 4 + 1;
       y = await newPage(`${T.photoRecord} / ${pageN}`);
       doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(...DARK);
-      doc.text(T.photos, M, y + 4);
-      small(T.photosSub, M, y + 10, MUTED, false, 7);
+      doc.text(group.title, M, y + 4);
+      small(group.subtitle, M, y + 10, MUTED, false, 7);
       y += 18;
-      for (let j = 0; j < 4 && i + j < p.fotos.length; j++) {
+      for (let j = 0; j < 4 && i + j < group.photos.length; j++) {
         const x = M + (j % 2) * (cardW + 8);
         const cy = y + Math.floor(j / 2) * (cardH + 8);
         doc.setFillColor(242, 243, 243);
@@ -453,7 +466,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
           const w = im.w * r, h = im.h * r;
           doc.addImage(im.data, "JPEG", x + (cardW - w) / 2, cy + 4 + (bh - h) / 2, w, h);
         }
-        const leg = `${String(i + j + 1).padStart(2, "0")}  ${tr(p.fotos[i + j].legenda || "")}`;
+        const leg = `${String(i + j + 1).padStart(2, "0")}  ${tr(group.photos[i + j].legenda || "")}`;
         small(doc.splitTextToSize(leg, cardW - 8)[0], x + 4, cy + cardH - 4, MUTED, false, 6.5);
       }
     }
@@ -507,6 +520,30 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     }
   }
   doc.save(nomeArquivo);
+}
+
+async function buscarFotosEntrega(o: any, empresa: any) {
+  const quoteId = o.orcamento_id || o.id;
+  if (!quoteId || !empresa?.id) return [];
+  const { supabase } = await import("@/integrations/supabase/client");
+  const columns = 'id, empresa_id, orcamento_id, numero_ordem, status, documento_entrega_url';
+  const linked = await supabase.from('ordens_servico').select(columns)
+    .eq('empresa_id', empresa.id).eq('orcamento_id', quoteId);
+  if (linked.error) throw linked.error;
+  const orders: DeliveryOrder[] = linked.data || [];
+  if (o.ordem_servico_id && !orders.some(order => order.id === o.ordem_servico_id)) {
+    const direct = await supabase.from('ordens_servico').select(columns)
+      .eq('empresa_id', empresa.id).eq('id', o.ordem_servico_id).maybeSingle();
+    if (direct.error) throw direct.error;
+    if (direct.data) orders.push(direct.data);
+  }
+  if (!orders.length && o.ordem_referencia) {
+    const reference = await supabase.from('ordens_servico').select(columns)
+      .eq('empresa_id', empresa.id).eq('numero_ordem', o.ordem_referencia).limit(2);
+    if (reference.error) throw reference.error;
+    orders.push(...(reference.data || []));
+  }
+  return invoiceDeliveryPhotos(orders, o, empresa);
 }
 
 /** Localiza o PDF do P.O. salvo na aprovação (registrado na descrição do orçamento). */
