@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { completionStatus, hasFiscalBilling } from './company-features';
+import { completionStatus, hasFiscalBilling, showsOrderReference } from './company-features';
 
 describe('company fiscal workflow isolation', () => {
   it('disables fiscal billing for MEC HYDRO US', () => {
