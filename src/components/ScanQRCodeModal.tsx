@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Search, FileCheck2, FileText, Wrench, Camera, ArrowLeft, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresa } from "@/contexts/EmpresaContext";
-import { hasFiscalBilling } from "@/lib/company-features";
+import { completionStatus, hasFiscalBilling } from "@/lib/company-features";
 import { quoteCardValues } from "@/lib/quote-card-values";
 
 interface ScanQRCodeModalProps {
@@ -197,7 +197,7 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
         .update({
           documento_entrega_url: url,
           data_documento_entrega: agora,
-          ...(finalizar ? { status: "finalizado", data_finalizacao: agora } : {}),
+          ...(finalizar ? { status: completionStatus(empresaAtual.nome, null, info.orcamentoId), data_finalizacao: agora } : {}),
         } as any)
         .eq("id", info.ordemId)
         .eq("empresa_id", empresaId);
