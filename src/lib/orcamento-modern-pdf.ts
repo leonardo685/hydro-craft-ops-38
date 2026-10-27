@@ -231,9 +231,10 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(...DARK);
     const rotulo = `${T.quoteUp} ${numero}`;
     doc.text(rotulo, M, y);
+    const larguraRotulo = doc.getTextWidth(rotulo);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...MUTED);
-    doc.text(data, M + doc.getTextWidth(rotulo) + 8, y - 1);
-    y += 7;
+    doc.text(data, M + larguraRotulo + 10, y - 1);
+    y += 8;
   }
   y = Math.max(y, qrBottom) + 9; rule(y); y += 9;
 
