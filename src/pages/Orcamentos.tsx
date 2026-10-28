@@ -2234,6 +2234,92 @@ export default function Orcamentos() {
             </div>
           </div>
 
+          {/* Valor Total Finalizados (empresa americana) */}
+          {isUSCompany && (
+          <div
+            className="group rounded-2xl border border-border/50
+                       bg-card/40 p-5 shadow-lg
+                       transition-all duration-300 ease-in-out
+                       hover:border-border hover:bg-card/60
+                       hover:-translate-y-1 cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground">{t('orcamentos.finalized')}</h3>
+              <FileCheck className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="mt-4 flex items-end justify-between">
+              <div className="flex flex-col">
+                <p className="text-2xl font-bold tracking-tighter text-success">
+                  {useMemo(() => {
+                    const total = orcamentos
+                      .filter(o => o.status === 'finalizado')
+                      .reduce((acc, o) => acc + quoteCardValues(o, empresaAtual?.nome).value, 0);
+                    return total.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                  }, [orcamentos, empresaAtual?.nome])}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {useMemo(() => {
+                    return orcamentos.filter(o => o.status === 'finalizado').length;
+                  }, [orcamentos])} {t('orcamentos.quotes')}
+                </p>
+              </div>
+              <div className="h-12 w-28">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={useMemo(() => {
+                      const hoje = new Date();
+                      const dados = [];
+                      for (let i = 5; i >= 0; i--) {
+                        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+                        const mes = data.toLocaleDateString('en-US', { month: 'short' });
+                        const mesIndex = data.getMonth();
+                        const ano = data.getFullYear();
+
+                        const valor = orcamentos
+                          .filter(o => {
+                            const dataOrc = new Date(o.created_at || o.data_criacao);
+                            return o.status === 'finalizado' &&
+                                   dataOrc.getMonth() === mesIndex &&
+                                   dataOrc.getFullYear() === ano;
+                          })
+                          .reduce((acc, o) => acc + quoteCardValues(o, empresaAtual?.nome).value, 0);
+
+                        dados.push({ mes, value: valor });
+                      }
+                      return dados;
+                    }, [orcamentos, empresaAtual?.nome])}
+                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                  >
+                    <defs>
+                      <linearGradient id="gradient-finalizados" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <Tooltip
+                      content={<CustomTooltip />}
+                      cursor={{
+                        stroke: 'hsl(var(--border))',
+                        strokeWidth: 1,
+                        strokeDasharray: '3 3',
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={false}
+                      fillOpacity={1}
+                      fill="url(#gradient-finalizados)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+          )}
+
           {/* Valor Total Reprovados */}
           <div
             className="group rounded-2xl border border-border/50
