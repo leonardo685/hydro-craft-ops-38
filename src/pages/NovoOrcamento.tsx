@@ -3800,8 +3800,8 @@ export default function NovoOrcamento() {
                   className="gap-1"
                   onClick={() => setInformacoesComerciais(prev => ({ ...prev, mostrarValoresPecas: !prev.mostrarValoresPecas }))}
                 >
-                  {informacoesComerciais.mostrarValoresPecas ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  {informacoesComerciais.mostrarValoresPecas ? "Valores no PDF" : "Valores no PDF"}
+                  <Eye className="h-4 w-4" />
+                  Valores no PDF
                 </Button>
                 <Label htmlFor="toggle-pecas" className="text-sm text-muted-foreground cursor-pointer">
                   Mostrar no orçamento
