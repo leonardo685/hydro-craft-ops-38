@@ -82,22 +82,46 @@ export default function Orcamentos() {
   const { t, language } = useLanguage();
   const { empresaAtual } = useEmpresa();
   const isUSCompany = !hasFiscalBilling(empresaAtual?.nome);
-  const salesTaxSummary = useMemo(() => orcamentos.reduce((summary, quote) => {
+  // Filtros de período (ano/mês) aplicados aos cards de métricas
+  const [filtroAnoCards, setFiltroAnoCards] = useState<string>('todos');
+  const [filtroMesCards, setFiltroMesCards] = useState<string>('todos');
+  const anosDisponiveisCards = useMemo(() => {
+    const anos = new Set<number>();
+    anos.add(new Date().getFullYear());
+    orcamentos.forEach(o => {
+      const d = new Date(o.created_at || o.data_criacao);
+      if (!isNaN(d.getTime())) anos.add(d.getFullYear());
+    });
+    return Array.from(anos).sort((a, b) => b - a);
+  }, [orcamentos]);
+  const noPeriodoCards = useCallback((o: any) => {
+    const d = new Date(o.created_at || o.data_criacao);
+    if (filtroAnoCards !== 'todos' && d.getFullYear() !== Number(filtroAnoCards)) return false;
+    if (filtroMesCards !== 'todos' && d.getMonth() !== Number(filtroMesCards)) return false;
+    return true;
+  }, [filtroAnoCards, filtroMesCards]);
+
+  const salesTaxSummary = useMemo(() => orcamentos.filter(noPeriodoCards).reduce((summary, quote) => {
     const { salesTax } = quoteCardValues(quote, empresaAtual?.nome);
     return { total: summary.total + salesTax, count: summary.count + (salesTax > 0 ? 1 : 0) };
-  }, { total: 0, count: 0 }), [orcamentos, empresaAtual?.nome]);
+  }, { total: 0, count: 0 }), [orcamentos, empresaAtual?.nome, noPeriodoCards]);
 
   // Totais de finalizados calculados no topo (hooks não podem ficar dentro de renderização condicional)
   const finalizadosTotal = useMemo(() => orcamentos
-    .filter(o => o.status === 'finalizado')
+    .filter(o => o.status === 'finalizado' && noPeriodoCards(o))
     .reduce((acc, o) => acc + quoteCardValues(o, empresaAtual?.nome).value, 0),
-  [orcamentos, empresaAtual?.nome]);
-  const finalizadosCount = useMemo(() => orcamentos.filter(o => o.status === 'finalizado').length, [orcamentos]);
+  [orcamentos, empresaAtual?.nome, noPeriodoCards]);
+  const finalizadosCount = useMemo(() => orcamentos.filter(o => o.status === 'finalizado' && noPeriodoCards(o)).length, [orcamentos, noPeriodoCards]);
   const finalizadosChartData = useMemo(() => {
     const hoje = new Date();
+    const fim = filtroAnoCards !== 'todos'
+      ? new Date(Number(filtroAnoCards), filtroMesCards !== 'todos' ? Number(filtroMesCards) : 11, 1)
+      : filtroMesCards !== 'todos'
+        ? new Date(hoje.getFullYear(), Number(filtroMesCards), 1)
+        : hoje;
     const dados = [];
     for (let i = 5; i >= 0; i--) {
-      const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+      const data = new Date(fim.getFullYear(), fim.getMonth() - i, 1);
       const mes = data.toLocaleDateString('en-US', { month: 'short' });
       const mesIndex = data.getMonth();
       const ano = data.getFullYear();
@@ -112,25 +136,31 @@ export default function Orcamentos() {
       dados.push({ mes, value: valor });
     }
     return dados;
-  }, [orcamentos, empresaAtual?.nome]);
+  }, [orcamentos, empresaAtual?.nome, filtroAnoCards, filtroMesCards]);
 
   // Totais dos cards de métricas — hooks sempre no topo, nunca dentro de JSX condicional
-  const aguardandoTotal = useMemo(() => orcamentos.filter(o => o.status === 'pendente').reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos]);
-  const aguardandoCount = useMemo(() => orcamentos.filter(o => o.status === 'pendente').length, [orcamentos]);
-  const aprovadosTotal = useMemo(() => orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos]);
-  const aprovadosCount = useMemo(() => orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').length, [orcamentos]);
-  const reprovadosTotal = useMemo(() => orcamentos.filter(o => o.status === 'rejeitado').reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos]);
-  const reprovadosCount = useMemo(() => orcamentos.filter(o => o.status === 'rejeitado').length, [orcamentos]);
+  const aguardandoTotal = useMemo(() => orcamentos.filter(o => o.status === 'pendente' && noPeriodoCards(o)).reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos, noPeriodoCards]);
+  const aguardandoCount = useMemo(() => orcamentos.filter(o => o.status === 'pendente' && noPeriodoCards(o)).length, [orcamentos, noPeriodoCards]);
+  const aprovadosTotal = useMemo(() => orcamentos.filter(o => (o.status === 'aprovado' || o.status === 'faturamento') && noPeriodoCards(o)).reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos, noPeriodoCards]);
+  const aprovadosCount = useMemo(() => orcamentos.filter(o => (o.status === 'aprovado' || o.status === 'faturamento') && noPeriodoCards(o)).length, [orcamentos, noPeriodoCards]);
+  const reprovadosTotal = useMemo(() => orcamentos.filter(o => o.status === 'rejeitado' && noPeriodoCards(o)).reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos, noPeriodoCards]);
+  const reprovadosCount = useMemo(() => orcamentos.filter(o => o.status === 'rejeitado' && noPeriodoCards(o)).length, [orcamentos, noPeriodoCards]);
   const totalAnualCount = useMemo(() => {
+    if (filtroAnoCards !== 'todos' || filtroMesCards !== 'todos') return orcamentos.filter(noPeriodoCards).length;
     const anoAtual = new Date().getFullYear();
     return orcamentos.filter(o => new Date(o.created_at || o.data_criacao).getFullYear() === anoAtual).length;
-  }, [orcamentos]);
+  }, [orcamentos, filtroAnoCards, filtroMesCards, noPeriodoCards]);
   const chartDataCards = useMemo(() => {
     const hoje = new Date();
+    const fim = filtroAnoCards !== 'todos'
+      ? new Date(Number(filtroAnoCards), filtroMesCards !== 'todos' ? Number(filtroMesCards) : 11, 1)
+      : filtroMesCards !== 'todos'
+        ? new Date(hoje.getFullYear(), Number(filtroMesCards), 1)
+        : hoje;
     const montar = (predicate: (o: any) => boolean, somar: (o: any) => number) => {
       const dados = [];
       for (let i = 5; i >= 0; i--) {
-        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+        const data = new Date(fim.getFullYear(), fim.getMonth() - i, 1);
         const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
         const valor = orcamentos.filter(o => {
           const d = new Date(o.created_at || o.data_criacao);
@@ -147,7 +177,7 @@ export default function Orcamentos() {
       reprovados: montar(o => o.status === 'rejeitado', valor),
       totalAnual: montar(() => true, () => 1),
     };
-  }, [orcamentos]);
+  }, [orcamentos, filtroAnoCards, filtroMesCards]);
 
   // Estados para copiar orçamento existente
   const [searchTermOrcamento, setSearchTermOrcamento] = useState("");
@@ -2100,6 +2130,32 @@ export default function Orcamentos() {
               </div>
             </SheetContent>
           </Sheet>
+        </div>
+
+        {/* Filtros de período dos cards */}
+        <div className="flex flex-wrap items-center gap-2 justify-end">
+          <Select value={filtroAnoCards} onValueChange={setFiltroAnoCards}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Ano" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os anos</SelectItem>
+              {anosDisponiveisCards.map(ano => (
+                <SelectItem key={ano} value={String(ano)}>{ano}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filtroMesCards} onValueChange={setFiltroMesCards}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os meses</SelectItem>
+              {['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map((mes, i) => (
+                <SelectItem key={i} value={String(i)}>{mes}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Cards de Métricas */}
