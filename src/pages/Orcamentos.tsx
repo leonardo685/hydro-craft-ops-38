@@ -87,6 +87,33 @@ export default function Orcamentos() {
     return { total: summary.total + salesTax, count: summary.count + (salesTax > 0 ? 1 : 0) };
   }, { total: 0, count: 0 }), [orcamentos, empresaAtual?.nome]);
 
+  // Totais de finalizados calculados no topo (hooks não podem ficar dentro de renderização condicional)
+  const finalizadosTotal = useMemo(() => orcamentos
+    .filter(o => o.status === 'finalizado')
+    .reduce((acc, o) => acc + quoteCardValues(o, empresaAtual?.nome).value, 0),
+  [orcamentos, empresaAtual?.nome]);
+  const finalizadosCount = useMemo(() => orcamentos.filter(o => o.status === 'finalizado').length, [orcamentos]);
+  const finalizadosChartData = useMemo(() => {
+    const hoje = new Date();
+    const dados = [];
+    for (let i = 5; i >= 0; i--) {
+      const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+      const mes = data.toLocaleDateString('en-US', { month: 'short' });
+      const mesIndex = data.getMonth();
+      const ano = data.getFullYear();
+      const valor = orcamentos
+        .filter(o => {
+          const dataOrc = new Date(o.created_at || o.data_criacao);
+          return o.status === 'finalizado' &&
+                 dataOrc.getMonth() === mesIndex &&
+                 dataOrc.getFullYear() === ano;
+        })
+        .reduce((acc, o) => acc + quoteCardValues(o, empresaAtual?.nome).value, 0);
+      dados.push({ mes, value: valor });
+    }
+    return dados;
+  }, [orcamentos, empresaAtual?.nome]);
+
   // Estados para copiar orçamento existente
   const [searchTermOrcamento, setSearchTermOrcamento] = useState("");
   const [selectedOrcamentoCopia, setSelectedOrcamentoCopia] = useState<any>(null);
