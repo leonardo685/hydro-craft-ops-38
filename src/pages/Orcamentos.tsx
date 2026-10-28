@@ -2313,17 +2313,10 @@ export default function Orcamentos() {
             <div className="mt-4 flex items-end justify-between">
               <div className="flex flex-col">
                 <p className="text-2xl font-bold tracking-tighter text-success">
-                  {useMemo(() => {
-                    const total = orcamentos
-                      .filter(o => o.status === 'rejeitado')
-                      .reduce((acc, o) => acc + Number(o.valor || 0), 0);
-                    return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                  }, [orcamentos])}
+                  {reprovadosTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {useMemo(() => {
-                    return orcamentos.filter(o => o.status === 'rejeitado').length;
-                  }, [orcamentos])} {t('orcamentos.quotes')}
+                  {reprovadosCount} {t('orcamentos.quotes')}
                 </p>
               </div>
               <div className="h-12 w-28">
