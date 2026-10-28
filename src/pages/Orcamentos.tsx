@@ -1,4 +1,5 @@
 import { quoteCardValues } from "@/lib/quote-card-values";
+import { deleteRejectedQuote, withoutDeletedQuote } from "@/lib/delete-rejected-quote";
 import { completionStatus, hasFiscalBilling } from "@/lib/company-features";
 import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
 import { gerarOrcamentoModernoPDF } from "@/lib/orcamento-modern-pdf";
@@ -16,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2, AlertTriangle, CreditCard, Truck } from "lucide-react";
+import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2, AlertTriangle, CreditCard, Truck, Trash2 } from "lucide-react";
 import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -75,6 +76,8 @@ export default function Orcamentos() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrdemServico, setSelectedOrdemServico] = useState<any>(null);
   const [orcamentos, setOrcamentos] = useState<any[]>([]);
+  const [quoteParaExcluir, setQuoteParaExcluir] = useState<any>(null);
+  const [excluindoQuote, setExcluindoQuote] = useState(false);
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { empresaAtual } = useEmpresa();
@@ -480,6 +483,23 @@ export default function Orcamentos() {
     } catch (error) {
       console.error('Erro ao reprovar orçamento:', error);
       toast.error(t('orcamentos.errorRejectingQuote'));
+    }
+  };
+
+  const confirmarExclusaoQuote = async () => {
+    if (!quoteParaExcluir || !empresaAtual?.id || excluindoQuote) return;
+    const empresaId = empresaAtual.id;
+    setExcluindoQuote(true);
+    try {
+      const id = await deleteRejectedQuote(supabase, quoteParaExcluir, empresaId);
+      setOrcamentos(current => withoutDeletedQuote(current, id, empresaId));
+      setQuoteParaExcluir(null);
+      toast.success(language === 'en' ? 'Quote deleted' : language === 'es' ? 'Presupuesto eliminado' : 'Orçamento apagado');
+      await carregarOrcamentos();
+    } catch (error: any) {
+      toast.error(error?.message || (language === 'en' ? 'Could not delete quote' : 'Não foi possível apagar o orçamento'));
+    } finally {
+      setExcluindoQuote(false);
     }
   };
 
@@ -2852,8 +2872,8 @@ export default function Orcamentos() {
               aplicarFiltros(orcamentos.filter(o => o.status === 'rejeitado')).map((item) => (
                 <Card key={item.id} className="hover:shadow-md transition-smooth">
                   <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
                             {t('orcamentos.quote')} #{item.numero}
@@ -2884,7 +2904,17 @@ export default function Orcamentos() {
                           })()}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive"
+                          onClick={() => setQuoteParaExcluir(item)}
+                          title={language === 'en' ? 'Delete quote' : language === 'es' ? 'Eliminar presupuesto' : 'Apagar orçamento'}
+                          aria-label={language === 'en' ? 'Delete quote' : language === 'es' ? 'Eliminar presupuesto' : 'Apagar orçamento'}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -2937,6 +2967,31 @@ export default function Orcamentos() {
         </Tabs>
       </div>
       
+      <Dialog open={!!quoteParaExcluir} onOpenChange={(open) => { if (!open && !excluindoQuote) setQuoteParaExcluir(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{language === 'en' ? 'Delete rejected quote?' : language === 'es' ? '¿Eliminar presupuesto rechazado?' : 'Apagar orçamento rejeitado?'}</DialogTitle>
+            <DialogDescription>
+              {language === 'en'
+                ? 'This permanently deletes the quote and removes it from counts and totals. Linked service orders are preserved.'
+                : language === 'es'
+                  ? 'El presupuesto se eliminará permanentemente de los conteos y totales. Las órdenes vinculadas se conservan.'
+                  : 'O orçamento será apagado permanentemente e sairá das contagens e dos valores. As ordens de serviço vinculadas serão preservadas.'}
+            </DialogDescription>
+          </DialogHeader>
+          <p className="break-words text-sm text-muted-foreground">#{quoteParaExcluir?.numero} — {quoteParaExcluir?.cliente_nome}</p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" disabled={excluindoQuote} onClick={() => setQuoteParaExcluir(null)}>
+              {language === 'en' ? 'Cancel' : language === 'es' ? 'Cancelar' : 'Cancelar'}
+            </Button>
+            <Button variant="destructive" disabled={excluindoQuote} onClick={confirmarExclusaoQuote}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              {excluindoQuote ? (language === 'en' ? 'Deleting...' : language === 'es' ? 'Eliminando...' : 'Apagando...') : (language === 'en' ? 'Delete quote' : language === 'es' ? 'Eliminar presupuesto' : 'Apagar orçamento')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <AprovarOrcamentoModal
         open={showAprovarModal}
         onOpenChange={setShowAprovarModal}
