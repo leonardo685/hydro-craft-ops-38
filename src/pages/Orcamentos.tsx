@@ -2369,13 +2369,7 @@ export default function Orcamentos() {
             <div className="mt-4 flex items-end justify-between">
               <div className="flex flex-col">
                 <p className="text-2xl font-bold tracking-tighter text-success">
-                  {useMemo(() => {
-                    const anoAtual = new Date().getFullYear();
-                    return orcamentos.filter(o => {
-                      const dataOrcamento = new Date(o.created_at || o.data_criacao);
-                      return dataOrcamento.getFullYear() === anoAtual;
-                    }).length;
-                  }, [orcamentos])}
+                  {totalAnualCount}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {t('orcamentos.quotesInYear')} {new Date().getFullYear()}
