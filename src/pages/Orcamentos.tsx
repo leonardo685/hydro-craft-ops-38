@@ -3001,6 +3001,48 @@ export default function Orcamentos() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Recebimento (quotes finalizadas) */}
+      <Dialog open={!!recebimentoQuote} onOpenChange={(open) => { if (!open) setRecebimentoQuote(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-lg leading-none">💰</span>
+              {language === 'en' ? 'Mark as received' : 'Marcar como recebido'}
+            </DialogTitle>
+            <DialogDescription>
+              {language === 'en'
+                ? 'Choose the payment date. The financial entry will be marked as received on that date.'
+                : 'Escolha a data do pagamento. O lançamento financeiro será marcado como recebido nessa data.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {recebimentoQuote && (
+              <p className="text-sm text-muted-foreground">
+                Quote <span className="font-medium text-foreground">#{recebimentoQuote.numero}</span> — {recebimentoQuote.cliente_nome}
+              </p>
+            )}
+            <div className="space-y-2">
+              <Label>{language === 'en' ? 'Payment date' : 'Data do recebimento'}</Label>
+              <Input
+                type="date"
+                value={dataRecebimento}
+                onChange={(e) => setDataRecebimento(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setRecebimentoQuote(null)} disabled={salvandoRecebimento}>
+                {language === 'en' ? 'Cancel' : 'Cancelar'}
+              </Button>
+              <Button onClick={confirmarRecebimento} disabled={salvandoRecebimento || !dataRecebimento}>
+                {salvandoRecebimento
+                  ? (language === 'en' ? 'Saving...' : 'Salvando...')
+                  : (language === 'en' ? 'Confirm received' : 'Confirmar recebimento')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
