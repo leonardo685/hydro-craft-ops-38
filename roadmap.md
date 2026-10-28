@@ -1,5 +1,9 @@
 # Tax por orçamento
 
+## Exclusão de orçamentos rejeitados
+- [ ] Adicionar exclusão confirmada nos rejeitados e retirar orçamento excluído das contagens e somas.
+- [ ] Testar exclusão e isolamento por empresa; confirmar o fluxo disponível.
+
 ## Foto de entrega no invoice americano
 - [x] Incluir fotos das ordens finalizadas no invoice correspondente, mantendo P.O. primeiro e isolamento entre empresas.
 - [x] Validar seleção com 12 testes e exportar PDF de exemplo com foto; compilação sem erros.
