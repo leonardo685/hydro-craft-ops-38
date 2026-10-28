@@ -2041,7 +2041,7 @@ export default function Orcamentos() {
         </div>
 
         {/* Cards de Métricas */}
-        <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4", isUSCompany ? "lg:grid-cols-5" : "lg:grid-cols-4")}>
+        <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4", isUSCompany ? "lg:grid-cols-6" : "lg:grid-cols-4")}>
           {/* Sales Tax total across existing quotes */}
           {isUSCompany && (
           <div
