@@ -2782,21 +2782,22 @@ export default function Orcamentos() {
                       <div className="flex items-center gap-2">
                         {(() => {
                           const lanc = lancamentoDaQuote(item);
-                          if (!lanc) return null;
-                          if (lanc.pago) {
-                            return <Badge variant="outline" className="border-primary text-primary">{language === 'en' ? 'Paid' : 'Realizado'}</Badge>;
+                          if (lanc?.pago) {
+                            return <Badge variant="outline" className="border-primary text-primary">{language === 'en' ? 'Paid' : 'Recebido'}</Badge>;
                           }
-                          const atrasado = new Date(lanc.data_esperada) < new Date(new Date().toDateString());
+                          const atrasado = lanc ? new Date(lanc.data_esperada) < new Date(new Date().toDateString()) : false;
                           return (
                             <>
-                              <Badge variant={atrasado ? 'destructive' : 'secondary'}>
-                                {atrasado ? (language === 'en' ? 'Overdue' : 'Atrasado') : (language === 'en' ? 'On time' : 'No prazo')}
-                              </Badge>
+                              {lanc && (
+                                <Badge variant={atrasado ? 'destructive' : 'secondary'}>
+                                  {atrasado ? (language === 'en' ? 'Overdue' : 'Atrasado') : (language === 'en' ? 'On time' : 'No prazo')}
+                                </Badge>
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => marcarPagamentoRealizado(lanc)}
-                                title={language === 'en' ? 'Mark payment as received' : 'Marcar pagamento como realizado'}
+                                onClick={() => abrirRecebimento(item)}
+                                title={language === 'en' ? 'Mark payment as received' : 'Marcar pagamento como recebido'}
                               >
                                 <span className="text-base leading-none">💰</span>
                               </Button>
