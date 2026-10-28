@@ -82,11 +82,6 @@ export default function Orcamentos() {
   const { t, language } = useLanguage();
   const { empresaAtual } = useEmpresa();
   const isUSCompany = !hasFiscalBilling(empresaAtual?.nome);
-  const salesTaxSummary = useMemo(() => orcamentos.reduce((summary, quote) => {
-    const { salesTax } = quoteCardValues(quote, empresaAtual?.nome);
-    return { total: summary.total + salesTax, count: summary.count + (salesTax > 0 ? 1 : 0) };
-  }, { total: 0, count: 0 }), [orcamentos, empresaAtual?.nome]);
-
   // Filtros de período (ano/mês) aplicados aos cards de métricas
   const [filtroAnoCards, setFiltroAnoCards] = useState<string>('todos');
   const [filtroMesCards, setFiltroMesCards] = useState<string>('todos');
@@ -105,6 +100,11 @@ export default function Orcamentos() {
     if (filtroMesCards !== 'todos' && d.getMonth() !== Number(filtroMesCards)) return false;
     return true;
   }, [filtroAnoCards, filtroMesCards]);
+
+  const salesTaxSummary = useMemo(() => orcamentos.filter(noPeriodoCards).reduce((summary, quote) => {
+    const { salesTax } = quoteCardValues(quote, empresaAtual?.nome);
+    return { total: summary.total + salesTax, count: summary.count + (salesTax > 0 ? 1 : 0) };
+  }, { total: 0, count: 0 }), [orcamentos, empresaAtual?.nome, noPeriodoCards]);
 
   // Totais de finalizados calculados no topo (hooks não podem ficar dentro de renderização condicional)
   const finalizadosTotal = useMemo(() => orcamentos
