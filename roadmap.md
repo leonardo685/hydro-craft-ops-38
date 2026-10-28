@@ -1,8 +1,9 @@
 # Tax por orçamento
 
 ## Exclusão de orçamentos rejeitados
-- [ ] Adicionar exclusão confirmada nos rejeitados e retirar orçamento excluído das contagens e somas.
-- [ ] Testar exclusão e isolamento por empresa; confirmar o fluxo disponível.
+- [x] Adicionar exclusão confirmada nos rejeitados e retirar orçamento excluído das contagens e somas.
+- [x] Validar exclusão e isolamento: 16 testes passaram, compilação OK e acesso público à função bloqueado.
+- [ ] Confirmar exclusão real na conta — sessão autenticada indisponível no Supabase externo.
 
 ## Foto de entrega no invoice americano
 - [x] Incluir fotos das ordens finalizadas no invoice correspondente, mantendo P.O. primeiro e isolamento entre empresas.

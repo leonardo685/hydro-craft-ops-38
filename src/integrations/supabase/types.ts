@@ -2629,6 +2629,10 @@ export type Database = {
       cotacao_fornecedor_id_por_token: { Args: never; Returns: string }
       cotacao_id_por_token: { Args: never; Returns: string }
       cotacao_token_atual: { Args: never; Returns: string }
+      excluir_orcamento_rejeitado: {
+        Args: { p_empresa_id: string; p_orcamento_id: string }
+        Returns: string
+      }
       gerar_proximo_numero_cotacao: {
         Args: { p_empresa_id: string }
         Returns: string
