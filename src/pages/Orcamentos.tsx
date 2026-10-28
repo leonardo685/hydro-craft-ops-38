@@ -367,6 +367,37 @@ export default function Orcamentos() {
     }
   };
 
+  // Lançamentos financeiros de invoices (quotes finalizadas)
+  const [lancamentosInvoice, setLancamentosInvoice] = useState<any[]>([]);
+  const carregarLancamentosInvoice = async () => {
+    if (!empresaAtual?.id) return;
+    const { data } = await supabase
+      .from('lancamentos_financeiros')
+      .select('id, descricao, data_esperada, data_realizada, pago')
+      .eq('empresa_id', empresaAtual.id)
+      .eq('tipo', 'entrada')
+      .ilike('descricao', 'Invoice %');
+    setLancamentosInvoice(data || []);
+  };
+  useEffect(() => { carregarLancamentosInvoice(); }, [empresaAtual?.id, orcamentos]);
+
+  const lancamentoDaQuote = (quote: any) => {
+    const prefixo = `Invoice ${String(quote.numero).replace('/', '-')} - `;
+    return lancamentosInvoice.find(l => String(l.descricao || '').startsWith(prefixo));
+  };
+
+  const marcarPagamentoRealizado = async (lanc: any) => {
+    if (!empresaAtual?.id) return;
+    if (!window.confirm(language === 'en' ? 'Mark this payment as received today?' : 'Marcar este pagamento como realizado hoje?')) return;
+    const { error } = await supabase
+      .from('lancamentos_financeiros')
+      .update({ pago: true, data_realizada: new Date().toISOString() })
+      .eq('id', lanc.id)
+      .eq('empresa_id', empresaAtual.id);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    toast.success(language === 'en' ? 'Payment marked as received' : 'Pagamento marcado como realizado');
+    carregarLancamentosInvoice();
+  };
 
 
   const handleVincularOrdens = (orcamento: any) => {
@@ -2709,6 +2740,29 @@ export default function Orcamentos() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        {(() => {
+                          const lanc = lancamentoDaQuote(item);
+                          if (!lanc) return null;
+                          if (lanc.pago) {
+                            return <Badge variant="outline" className="border-primary text-primary">{language === 'en' ? 'Paid' : 'Realizado'}</Badge>;
+                          }
+                          const atrasado = new Date(lanc.data_esperada) < new Date(new Date().toDateString());
+                          return (
+                            <>
+                              <Badge variant={atrasado ? 'destructive' : 'secondary'}>
+                                {atrasado ? (language === 'en' ? 'Overdue' : 'Atrasado') : (language === 'en' ? 'On time' : 'No prazo')}
+                              </Badge>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => marcarPagamentoRealizado(lanc)}
+                                title={language === 'en' ? 'Mark payment as received' : 'Marcar pagamento como realizado'}
+                              >
+                                <span className="text-base leading-none">💰</span>
+                              </Button>
+                            </>
+                          );
+                        })()}
                         <Button
                           variant="outline"
                           size="sm"
