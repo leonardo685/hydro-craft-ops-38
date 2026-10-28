@@ -2132,6 +2132,32 @@ export default function Orcamentos() {
           </Sheet>
         </div>
 
+        {/* Filtros de período dos cards */}
+        <div className="flex flex-wrap items-center gap-2 justify-end">
+          <Select value={filtroAnoCards} onValueChange={setFiltroAnoCards}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Ano" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os anos</SelectItem>
+              {anosDisponiveisCards.map(ano => (
+                <SelectItem key={ano} value={String(ano)}>{ano}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filtroMesCards} onValueChange={setFiltroMesCards}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os meses</SelectItem>
+              {['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map((mes, i) => (
+                <SelectItem key={i} value={String(i)}>{mes}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Cards de Métricas */}
         <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4", isUSCompany ? "lg:grid-cols-6" : "lg:grid-cols-4")}>
           {/* Sales Tax total across existing quotes */}
