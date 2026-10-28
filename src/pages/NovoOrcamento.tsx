@@ -1228,6 +1228,7 @@ export default function NovoOrcamento() {
     }
   };
   const atualizarValorItem = (categoria: 'pecas' | 'servicos' | 'usinagem', id: string, valorUnitario: number) => {
+    somaAutomaticaRef.current = true;
     setItensAnalise(prev => {
       const novoItens = {
         ...prev
@@ -1241,6 +1242,7 @@ export default function NovoOrcamento() {
     });
   };
   const atualizarQuantidadeItem = (categoria: 'pecas' | 'servicos' | 'usinagem', id: string, quantidade: number) => {
+    somaAutomaticaRef.current = true;
     setItensAnalise(prev => {
       const novoItens = {
         ...prev
