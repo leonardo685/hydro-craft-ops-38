@@ -386,17 +386,57 @@ export default function Orcamentos() {
     return lancamentosInvoice.find(l => String(l.descricao || '').startsWith(prefixo));
   };
 
-  const marcarPagamentoRealizado = async (lanc: any) => {
-    if (!empresaAtual?.id) return;
-    if (!window.confirm(language === 'en' ? 'Mark this payment as received today?' : 'Marcar este pagamento como realizado hoje?')) return;
-    const { error } = await supabase
-      .from('lancamentos_financeiros')
-      .update({ pago: true, data_realizada: new Date().toISOString() })
-      .eq('id', lanc.id)
-      .eq('empresa_id', empresaAtual.id);
-    if (error) { toast.error('Erro: ' + error.message); return; }
-    toast.success(language === 'en' ? 'Payment marked as received' : 'Pagamento marcado como realizado');
-    carregarLancamentosInvoice();
+  const [recebimentoQuote, setRecebimentoQuote] = useState<any>(null);
+  const [dataRecebimento, setDataRecebimento] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [salvandoRecebimento, setSalvandoRecebimento] = useState(false);
+
+  const abrirRecebimento = (quote: any) => {
+    setDataRecebimento(new Date().toISOString().slice(0, 10));
+    setRecebimentoQuote(quote);
+  };
+
+  const confirmarRecebimento = async () => {
+    if (!recebimentoQuote || !empresaAtual?.id || !dataRecebimento) return;
+    setSalvandoRecebimento(true);
+    try {
+      const dataISO = `${dataRecebimento}T12:00:00`;
+      const lanc = lancamentoDaQuote(recebimentoQuote);
+      if (lanc) {
+        const { error } = await supabase
+          .from('lancamentos_financeiros')
+          .update({ pago: true, data_realizada: dataISO })
+          .eq('id', lanc.id)
+          .eq('empresa_id', empresaAtual.id);
+        if (error) throw error;
+      } else {
+        // Quote finalizada sem lançamento: cria já como recebido na data escolhida
+        const { value, salesTax } = quoteCardValues(recebimentoQuote, empresaAtual.nome);
+        const { data: contas } = await supabase
+          .from('contas_bancarias').select('nome').eq('empresa_id', empresaAtual.id).eq('ativo', true).order('nome').limit(1);
+        const { error } = await supabase.from('lancamentos_financeiros').insert({
+          tipo: 'entrada',
+          descricao: `Invoice ${String(recebimentoQuote.numero).replace('/', '-')} - ${recebimentoQuote.cliente_nome}`,
+          valor: Math.round((value + salesTax) * 100) / 100,
+          conta_bancaria: contas?.[0]?.nome || 'A definir',
+          fornecedor_cliente: recebimentoQuote.cliente_nome,
+          data_emissao: dataISO,
+          data_esperada: dataISO,
+          data_realizada: dataISO,
+          pago: true,
+          forma_pagamento: 'a_vista',
+          empresa_id: empresaAtual.id,
+        });
+        if (error) throw error;
+      }
+      toast.success(language === 'en' ? 'Payment marked as received' : 'Pagamento marcado como recebido');
+      setRecebimentoQuote(null);
+      carregarLancamentosInvoice();
+    } catch (error: any) {
+      console.error('Erro ao marcar recebimento:', error);
+      toast.error('Erro: ' + (error?.message || ''));
+    } finally {
+      setSalvandoRecebimento(false);
+    }
   };
 
 
