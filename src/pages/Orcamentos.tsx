@@ -2277,17 +2277,10 @@ export default function Orcamentos() {
             <div className="mt-4 flex items-end justify-between">
               <div className="flex flex-col">
                 <p className="text-2xl font-bold tracking-tighter text-success">
-                  {useMemo(() => {
-                    const total = orcamentos
-                      .filter(o => o.status === 'finalizado')
-                      .reduce((acc, o) => acc + quoteCardValues(o, empresaAtual?.nome).value, 0);
-                    return total.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-                  }, [orcamentos, empresaAtual?.nome])}
+                  {finalizadosTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {useMemo(() => {
-                    return orcamentos.filter(o => o.status === 'finalizado').length;
-                  }, [orcamentos])} {t('orcamentos.quotes')}
+                 <p className="text-xs text-muted-foreground mt-1">
+                  {finalizadosCount} {t('orcamentos.quotes')}
                 </p>
               </div>
               <div className="h-12 w-28">
