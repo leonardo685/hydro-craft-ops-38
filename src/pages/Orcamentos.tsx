@@ -87,6 +87,25 @@ export default function Orcamentos() {
     return { total: summary.total + salesTax, count: summary.count + (salesTax > 0 ? 1 : 0) };
   }, { total: 0, count: 0 }), [orcamentos, empresaAtual?.nome]);
 
+  // Filtros de período (ano/mês) aplicados aos cards de métricas
+  const [filtroAnoCards, setFiltroAnoCards] = useState<string>('todos');
+  const [filtroMesCards, setFiltroMesCards] = useState<string>('todos');
+  const anosDisponiveisCards = useMemo(() => {
+    const anos = new Set<number>();
+    anos.add(new Date().getFullYear());
+    orcamentos.forEach(o => {
+      const d = new Date(o.created_at || o.data_criacao);
+      if (!isNaN(d.getTime())) anos.add(d.getFullYear());
+    });
+    return Array.from(anos).sort((a, b) => b - a);
+  }, [orcamentos]);
+  const noPeriodoCards = useCallback((o: any) => {
+    const d = new Date(o.created_at || o.data_criacao);
+    if (filtroAnoCards !== 'todos' && d.getFullYear() !== Number(filtroAnoCards)) return false;
+    if (filtroMesCards !== 'todos' && d.getMonth() !== Number(filtroMesCards)) return false;
+    return true;
+  }, [filtroAnoCards, filtroMesCards]);
+
   // Totais de finalizados calculados no topo (hooks não podem ficar dentro de renderização condicional)
   const finalizadosTotal = useMemo(() => orcamentos
     .filter(o => o.status === 'finalizado')
