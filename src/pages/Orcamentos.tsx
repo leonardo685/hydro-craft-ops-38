@@ -2377,26 +2377,8 @@ export default function Orcamentos() {
               </div>
               <div className="h-12 w-28">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart 
-                    data={useMemo(() => {
-                      const hoje = new Date();
-                      const dados = [];
-                      for (let i = 5; i >= 0; i--) {
-                        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-                        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
-                        const mesIndex = data.getMonth();
-                        const ano = data.getFullYear();
-                        
-                        const count = orcamentos.filter(o => {
-                          const dataOrc = new Date(o.created_at || o.data_criacao);
-                          return dataOrc.getMonth() === mesIndex && 
-                                 dataOrc.getFullYear() === ano;
-                        }).length;
-                        
-                        dados.push({ mes, value: count });
-                      }
-                      return dados;
-                    }, [orcamentos])}
+                  <LineChart
+                    data={chartDataCards.totalAnual}
                     margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                   >
                     <defs>
