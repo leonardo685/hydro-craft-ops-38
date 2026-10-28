@@ -114,6 +114,41 @@ export default function Orcamentos() {
     return dados;
   }, [orcamentos, empresaAtual?.nome]);
 
+  // Totais dos cards de métricas — hooks sempre no topo, nunca dentro de JSX condicional
+  const aguardandoTotal = useMemo(() => orcamentos.filter(o => o.status === 'pendente').reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos]);
+  const aguardandoCount = useMemo(() => orcamentos.filter(o => o.status === 'pendente').length, [orcamentos]);
+  const aprovadosTotal = useMemo(() => orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos]);
+  const aprovadosCount = useMemo(() => orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').length, [orcamentos]);
+  const reprovadosTotal = useMemo(() => orcamentos.filter(o => o.status === 'rejeitado').reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos]);
+  const reprovadosCount = useMemo(() => orcamentos.filter(o => o.status === 'rejeitado').length, [orcamentos]);
+  const totalAnualCount = useMemo(() => {
+    const anoAtual = new Date().getFullYear();
+    return orcamentos.filter(o => new Date(o.created_at || o.data_criacao).getFullYear() === anoAtual).length;
+  }, [orcamentos]);
+  const chartDataCards = useMemo(() => {
+    const hoje = new Date();
+    const montar = (predicate: (o: any) => boolean, somar: (o: any) => number) => {
+      const dados = [];
+      for (let i = 5; i >= 0; i--) {
+        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+        const valor = orcamentos.filter(o => {
+          const d = new Date(o.created_at || o.data_criacao);
+          return predicate(o) && d.getMonth() === data.getMonth() && d.getFullYear() === data.getFullYear();
+        }).reduce((acc, o) => acc + somar(o), 0);
+        dados.push({ mes, value: valor });
+      }
+      return dados;
+    };
+    const valor = (o: any) => Number(o.valor || 0);
+    return {
+      aguardando: montar(o => o.status === 'pendente', valor),
+      aprovados: montar(o => o.status === 'aprovado' || o.status === 'faturamento', valor),
+      reprovados: montar(o => o.status === 'rejeitado', valor),
+      totalAnual: montar(() => true, () => 1),
+    };
+  }, [orcamentos]);
+
   // Estados para copiar orçamento existente
   const [searchTermOrcamento, setSearchTermOrcamento] = useState("");
   const [selectedOrcamentoCopia, setSelectedOrcamentoCopia] = useState<any>(null);
@@ -2108,44 +2143,16 @@ export default function Orcamentos() {
             <div className="mt-4 flex items-end justify-between">
               <div className="flex flex-col">
                 <p className="text-2xl font-bold tracking-tighter text-success">
-                  {useMemo(() => {
-                    const total = orcamentos
-                      .filter(o => o.status === 'pendente')
-                      .reduce((acc, o) => acc + Number(o.valor || 0), 0);
-                    return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                  }, [orcamentos])}
+                  {aguardandoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {useMemo(() => {
-                    return orcamentos.filter(o => o.status === 'pendente').length;
-                  }, [orcamentos])} {t('orcamentos.quotes')}
+                  {aguardandoCount} {t('orcamentos.quotes')}
                 </p>
               </div>
               <div className="h-12 w-28">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart 
-                    data={useMemo(() => {
-                      const hoje = new Date();
-                      const dados = [];
-                      for (let i = 5; i >= 0; i--) {
-                        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-                        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
-                        const mesIndex = data.getMonth();
-                        const ano = data.getFullYear();
-                        
-                        const valor = orcamentos
-                          .filter(o => {
-                            const dataOrc = new Date(o.created_at || o.data_criacao);
-                            return o.status === 'pendente' && 
-                                   dataOrc.getMonth() === mesIndex && 
-                                   dataOrc.getFullYear() === ano;
-                          })
-                          .reduce((acc, o) => acc + Number(o.valor || 0), 0);
-                        
-                        dados.push({ mes, value: valor });
-                      }
-                      return dados;
-                    }, [orcamentos])}
+                  <LineChart
+                    data={chartDataCards.aguardando}
                     margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                   >
                     <defs>
@@ -2192,44 +2199,16 @@ export default function Orcamentos() {
             <div className="mt-4 flex items-end justify-between">
               <div className="flex flex-col">
                 <p className="text-2xl font-bold tracking-tighter text-success">
-                  {useMemo(() => {
-                    const total = orcamentos
-                      .filter(o => o.status === 'aprovado' || o.status === 'faturamento')
-                      .reduce((acc, o) => acc + Number(o.valor || 0), 0);
-                    return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                  }, [orcamentos])}
+                  {aprovadosTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {useMemo(() => {
-                    return orcamentos.filter(o => o.status === 'aprovado' || o.status === 'faturamento').length;
-                  }, [orcamentos])} {t('orcamentos.quotes')}
+                  {aprovadosCount} {t('orcamentos.quotes')}
                 </p>
               </div>
               <div className="h-12 w-28">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart 
-                    data={useMemo(() => {
-                      const hoje = new Date();
-                      const dados = [];
-                      for (let i = 5; i >= 0; i--) {
-                        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-                        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
-                        const mesIndex = data.getMonth();
-                        const ano = data.getFullYear();
-                        
-                        const valor = orcamentos
-                          .filter(o => {
-                            const dataOrc = new Date(o.created_at || o.data_criacao);
-                            return (o.status === 'aprovado' || o.status === 'faturamento') && 
-                                   dataOrc.getMonth() === mesIndex && 
-                                   dataOrc.getFullYear() === ano;
-                          })
-                          .reduce((acc, o) => acc + Number(o.valor || 0), 0);
-                        
-                        dados.push({ mes, value: valor });
-                      }
-                      return dados;
-                    }, [orcamentos])}
+                  <LineChart
+                    data={chartDataCards.aprovados}
                     margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                   >
                     <defs>
@@ -2334,44 +2313,16 @@ export default function Orcamentos() {
             <div className="mt-4 flex items-end justify-between">
               <div className="flex flex-col">
                 <p className="text-2xl font-bold tracking-tighter text-success">
-                  {useMemo(() => {
-                    const total = orcamentos
-                      .filter(o => o.status === 'rejeitado')
-                      .reduce((acc, o) => acc + Number(o.valor || 0), 0);
-                    return total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                  }, [orcamentos])}
+                  {reprovadosTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {useMemo(() => {
-                    return orcamentos.filter(o => o.status === 'rejeitado').length;
-                  }, [orcamentos])} {t('orcamentos.quotes')}
+                  {reprovadosCount} {t('orcamentos.quotes')}
                 </p>
               </div>
               <div className="h-12 w-28">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart 
-                    data={useMemo(() => {
-                      const hoje = new Date();
-                      const dados = [];
-                      for (let i = 5; i >= 0; i--) {
-                        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-                        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
-                        const mesIndex = data.getMonth();
-                        const ano = data.getFullYear();
-                        
-                        const valor = orcamentos
-                          .filter(o => {
-                            const dataOrc = new Date(o.created_at || o.data_criacao);
-                            return o.status === 'rejeitado' && 
-                                   dataOrc.getMonth() === mesIndex && 
-                                   dataOrc.getFullYear() === ano;
-                          })
-                          .reduce((acc, o) => acc + Number(o.valor || 0), 0);
-                        
-                        dados.push({ mes, value: valor });
-                      }
-                      return dados;
-                    }, [orcamentos])}
+                  <LineChart
+                    data={chartDataCards.reprovados}
                     margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                   >
                     <defs>
@@ -2418,13 +2369,7 @@ export default function Orcamentos() {
             <div className="mt-4 flex items-end justify-between">
               <div className="flex flex-col">
                 <p className="text-2xl font-bold tracking-tighter text-success">
-                  {useMemo(() => {
-                    const anoAtual = new Date().getFullYear();
-                    return orcamentos.filter(o => {
-                      const dataOrcamento = new Date(o.created_at || o.data_criacao);
-                      return dataOrcamento.getFullYear() === anoAtual;
-                    }).length;
-                  }, [orcamentos])}
+                  {totalAnualCount}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {t('orcamentos.quotesInYear')} {new Date().getFullYear()}
@@ -2432,26 +2377,8 @@ export default function Orcamentos() {
               </div>
               <div className="h-12 w-28">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart 
-                    data={useMemo(() => {
-                      const hoje = new Date();
-                      const dados = [];
-                      for (let i = 5; i >= 0; i--) {
-                        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-                        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
-                        const mesIndex = data.getMonth();
-                        const ano = data.getFullYear();
-                        
-                        const count = orcamentos.filter(o => {
-                          const dataOrc = new Date(o.created_at || o.data_criacao);
-                          return dataOrc.getMonth() === mesIndex && 
-                                 dataOrc.getFullYear() === ano;
-                        }).length;
-                        
-                        dados.push({ mes, value: count });
-                      }
-                      return dados;
-                    }, [orcamentos])}
+                  <LineChart
+                    data={chartDataCards.totalAnual}
                     margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                   >
                     <defs>
