@@ -3824,8 +3824,8 @@ export default function NovoOrcamento() {
                       <TableRow>
                       <TableHead>{t('novoOrcamento.part')}</TableHead>
                       <TableHead>{t('novoOrcamento.code')}</TableHead>
-                      {informacoesComerciais.mostrarValoresPecas && <>
                       <TableHead className="text-center">{t('novoOrcamento.qty')}</TableHead>
+                      {informacoesComerciais.mostrarValoresPecas && <>
                       <TableHead className="text-right">{t('novoOrcamento.unitValue')}</TableHead>
                       <TableHead className="text-right">{t('novoOrcamento.total')}</TableHead>
                       </>}
@@ -3852,10 +3852,10 @@ export default function NovoOrcamento() {
                             className="min-w-[100px]" 
                           />
                         </TableCell>
-                        {informacoesComerciais.mostrarValoresPecas && <>
                         <TableCell className="text-center">
                           <Input type="number" min="1" value={peca.quantidade === 0 ? '' : peca.quantidade} onChange={e => atualizarQuantidadeItem('pecas', peca.id, e.target.value === '' ? 0 : (parseInt(e.target.value) || 0))} onBlur={e => { if (!e.target.value || parseInt(e.target.value) < 1) atualizarQuantidadeItem('pecas', peca.id, 1); }} className="w-16 text-center" />
                         </TableCell>
+                        {informacoesComerciais.mostrarValoresPecas && <>
                         <TableCell className="text-right">
                           <Input type="number" step="0.01" min="0" value={peca.valorUnitario} onChange={e => atualizarValorItem('pecas', peca.id, parseFloat(e.target.value) || 0)} className="w-24 text-right" />
                         </TableCell>
