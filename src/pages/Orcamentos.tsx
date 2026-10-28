@@ -108,15 +108,20 @@ export default function Orcamentos() {
 
   // Totais de finalizados calculados no topo (hooks não podem ficar dentro de renderização condicional)
   const finalizadosTotal = useMemo(() => orcamentos
-    .filter(o => o.status === 'finalizado')
+    .filter(o => o.status === 'finalizado' && noPeriodoCards(o))
     .reduce((acc, o) => acc + quoteCardValues(o, empresaAtual?.nome).value, 0),
-  [orcamentos, empresaAtual?.nome]);
-  const finalizadosCount = useMemo(() => orcamentos.filter(o => o.status === 'finalizado').length, [orcamentos]);
+  [orcamentos, empresaAtual?.nome, noPeriodoCards]);
+  const finalizadosCount = useMemo(() => orcamentos.filter(o => o.status === 'finalizado' && noPeriodoCards(o)).length, [orcamentos, noPeriodoCards]);
   const finalizadosChartData = useMemo(() => {
     const hoje = new Date();
+    const fim = filtroAnoCards !== 'todos'
+      ? new Date(Number(filtroAnoCards), filtroMesCards !== 'todos' ? Number(filtroMesCards) : 11, 1)
+      : filtroMesCards !== 'todos'
+        ? new Date(hoje.getFullYear(), Number(filtroMesCards), 1)
+        : hoje;
     const dados = [];
     for (let i = 5; i >= 0; i--) {
-      const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+      const data = new Date(fim.getFullYear(), fim.getMonth() - i, 1);
       const mes = data.toLocaleDateString('en-US', { month: 'short' });
       const mesIndex = data.getMonth();
       const ano = data.getFullYear();
@@ -131,7 +136,7 @@ export default function Orcamentos() {
       dados.push({ mes, value: valor });
     }
     return dados;
-  }, [orcamentos, empresaAtual?.nome]);
+  }, [orcamentos, empresaAtual?.nome, filtroAnoCards, filtroMesCards]);
 
   // Totais dos cards de métricas — hooks sempre no topo, nunca dentro de JSX condicional
   const aguardandoTotal = useMemo(() => orcamentos.filter(o => o.status === 'pendente').reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos]);
