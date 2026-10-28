@@ -1307,6 +1307,16 @@ export default function NovoOrcamento() {
     const desconto = total * (informacoesComerciais.desconto / 100);
     return total - desconto;
   };
+  // Soma automática: quando o usuário edita preço/quantidade de peças, serviços ou usinagem,
+  // o valor total do orçamento acompanha a soma dos itens sem precisar clicar na calculadora.
+  const somaAutomaticaRef = useRef(false);
+  useEffect(() => {
+    if (!somaAutomaticaRef.current) return;
+    const totalItens = calcularTotalGeral();
+    if (totalItens > 0) {
+      setInformacoesComerciais(prev => (prev.valorTotal === totalItens ? prev : { ...prev, valorTotal: totalItens }));
+    }
+  }, [itensAnalise]);
 
   // Auto-preencher assunto da proposta com o equipamento
   useEffect(() => {
