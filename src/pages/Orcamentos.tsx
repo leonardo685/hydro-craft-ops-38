@@ -2321,29 +2321,8 @@ export default function Orcamentos() {
               </div>
               <div className="h-12 w-28">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart 
-                    data={useMemo(() => {
-                      const hoje = new Date();
-                      const dados = [];
-                      for (let i = 5; i >= 0; i--) {
-                        const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-                        const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
-                        const mesIndex = data.getMonth();
-                        const ano = data.getFullYear();
-                        
-                        const valor = orcamentos
-                          .filter(o => {
-                            const dataOrc = new Date(o.created_at || o.data_criacao);
-                            return o.status === 'rejeitado' && 
-                                   dataOrc.getMonth() === mesIndex && 
-                                   dataOrc.getFullYear() === ano;
-                          })
-                          .reduce((acc, o) => acc + Number(o.valor || 0), 0);
-                        
-                        dados.push({ mes, value: valor });
-                      }
-                      return dados;
-                    }, [orcamentos])}
+                  <LineChart
+                    data={chartDataCards.reprovados}
                     margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                   >
                     <defs>
