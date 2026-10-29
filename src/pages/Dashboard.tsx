@@ -358,26 +358,12 @@ export default function Dashboard() {
     despesasTotais: selectedColumns.some(col => col.value === 'despesasTotais'),
   };
 
-  // Calcular saldo atual somando todas as contas bancárias
+  // Saldo atual = entradas recebidas (pagas) no período filtrado
   const saldoAtual = useMemo(() => {
-    return contas.reduce((acc, conta) => {
-      // Somar saldo inicial
-      let saldo = conta.saldo_inicial;
-      
-      // Somar/subtrair lançamentos da conta
-      lancamentos.forEach(lanc => {
-        if (lanc.contaBancaria === conta.nome && lanc.pago) {
-          if (lanc.tipo === 'entrada') {
-            saldo += lanc.valor;
-          } else {
-            saldo -= lanc.valor;
-          }
-        }
-      });
-      
-      return acc + saldo;
-    }, 0);
-  }, [contas, lancamentos]);
+    return getLancamentosFiltrados
+      .filter(l => l.tipo === 'entrada' && l.pago)
+      .reduce((acc, l) => acc + l.valor, 0);
+  }, [getLancamentosFiltrados]);
 
   // Calcular impostos pagos do período filtrado
   const impostosPagosPeriodo = useMemo(() => {
