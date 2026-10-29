@@ -267,6 +267,8 @@ export default function Orcamentos() {
           id,
           orcamento_id,
           numero_ordem,
+          documento_entrega_url,
+          data_documento_entrega,
           recebimentos:recebimento_id (
             numero_ordem
           )
@@ -283,7 +285,8 @@ export default function Orcamentos() {
           }
           ordensPorOrcamento[ordem.orcamento_id].push({
             id: ordem.id,
-            numero_ordem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem
+            numero_ordem: ordem.recebimentos?.numero_ordem || ordem.numero_ordem,
+            entregue: !!(ordem as any).documento_entrega_url || !!(ordem as any).data_documento_entrega
           });
         }
       });
@@ -2829,9 +2832,13 @@ export default function Orcamentos() {
                           <h3 className="text-lg font-semibold text-foreground">
                             {t('orcamentos.quote')} #{item.numero}
                           </h3>
-                          <Badge className="bg-success-light text-success border-success/20">
-                            {t('orcamentos.waitingDelivery')}
-                          </Badge>
+                          {(item.ordens_vinculadas?.length ?? 0) > 0 &&
+                            !item.ordens_vinculadas.some((o: any) => o.entregue) &&
+                            !lancamentoDaQuote(item) && (
+                            <Badge variant="outline" className="bg-success/10 text-success border-success/40">
+                              {t('orcamentos.waitingDelivery')}
+                            </Badge>
+                          )}
                           {item.ordens_vinculadas && item.ordens_vinculadas.length > 0 && (
                             item.ordens_vinculadas.map((ordem: any) => (
                               <Badge key={ordem.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
