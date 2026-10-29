@@ -1515,7 +1515,7 @@ export default function NovoOrcamento() {
         numero_nota_entrada: dadosOrcamento.numeroNota || null,
         ordem_referencia: ordemRef,
         ordem_servico_id: ordemServicoId || null,
-        condicao_pagamento: informacoesComerciais.condicaoPagamento || null,
+        condicao_pagamento: (informacoesComerciais.condicaoPagamento || (usesStructuredPaymentTerms(empresaAtual?.nome) ? formatPaymentTerms(30, 'NET') : '')) || null,
         prazo_entrega: informacoesComerciais.prazoEntrega || null,
         assunto_proposta: informacoesComerciais.assuntoProposta || null,
         frete: informacoesComerciais.frete || 'CIF',
@@ -2412,7 +2412,7 @@ export default function NovoOrcamento() {
       numero_pedido: orcamentoRef.current?.numero_pedido || null,
       status: orcamentoRef.current?.status || null,
       ordem_referencia: ordemRef || null,
-      condicao_pagamento: informacoesComerciais.condicaoPagamento || null,
+      condicao_pagamento: (informacoesComerciais.condicaoPagamento || (usesStructuredPaymentTerms(empresaAtual?.nome) ? formatPaymentTerms(30, 'NET') : '')) || null,
       prazo_entrega: informacoesComerciais.prazoEntrega || null,
       assunto_proposta: informacoesComerciais.assuntoProposta || null,
       frete: informacoesComerciais.frete || 'CIF',
@@ -2705,7 +2705,7 @@ export default function NovoOrcamento() {
     yPosition += 10;
     
     const valorTotalFormatado = `$ ${valorComDesconto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-    const condicaoPagamento = informacoesComerciais.condicaoPagamento || 'A combinar';
+    const condicaoPagamento = (informacoesComerciais.condicaoPagamento || (usesStructuredPaymentTerms(empresaAtual?.nome) ? formatPaymentTerms(30, 'NET') : '')) || 'A combinar';
     const dataGeracao = new Date().toLocaleDateString('pt-BR');
     const validadeProposta = informacoesComerciais.validadeProposta 
       ? `${informacoesComerciais.validadeProposta} dias` 
