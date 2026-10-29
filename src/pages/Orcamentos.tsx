@@ -1,3 +1,4 @@
+import { expectedPaymentDate, quoteServiceCategoryId } from '@/lib/delivery-billing';
 import { quoteCardValues } from "@/lib/quote-card-values";
 import { deleteRejectedQuote, withoutDeletedQuote } from "@/lib/delete-rejected-quote";
 import { completionStatus, hasFiscalBilling } from "@/lib/company-features";
@@ -446,7 +447,8 @@ export default function Orcamentos() {
         conta_bancaria: contas?.[0]?.nome || 'A definir',
         fornecedor_cliente: entregaQuote.cliente_nome,
         data_emissao: dataEntregaISO,
-        data_esperada: dataEntregaISO,
+        data_esperada: `${expectedPaymentDate(dataEntrega, entregaQuote.condicao_pagamento)}T12:00:00`,
+        categoria_id: quoteServiceCategoryId(entregaQuote.observacoes),
         data_realizada: null,
         pago: false,
         forma_pagamento: 'a_vista',
