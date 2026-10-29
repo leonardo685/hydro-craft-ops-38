@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -155,7 +156,14 @@ export default function Dashboard() {
     enabled: !!empresaAtual?.id
   });
   
-  const [dashboardPeriodType, setDashboardPeriodType] = useState<'mes' | 'trimestre' | 'ano'>('mes');
+  const [dashboardPeriodType, setDashboardPeriodType] = useState<'mes' | 'trimestre' | 'ano' | 'personalizado'>('mes');
+  const [customStart, setCustomStart] = useState<string>(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; });
+  const [customEnd, setCustomEnd] = useState<string>(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; });
+  const inCustomRange = (d: Date) => {
+    const ymd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return (!customStart || ymd >= customStart) && (!customEnd || ymd <= customEnd);
+  };
+  const yearOptions = Array.from({ length: new Date().getFullYear() - 2022 + 2 }, (_, i) => String(2023 + i));
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [selectedQuarter, setSelectedQuarter] = useState<string>('Q1');
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
@@ -173,6 +181,9 @@ export default function Dashboard() {
       
       const dataLanc = new Date(dataReferencia);
       
+      if (dashboardPeriodType === 'personalizado') {
+        return inCustomRange(dataLanc);
+      }
       if (dashboardPeriodType === 'mes') {
         return dataLanc.getMonth() === selectedMonth.getMonth() 
           && dataLanc.getFullYear() === selectedMonth.getFullYear();
@@ -190,7 +201,7 @@ export default function Dashboard() {
         return dataLanc.getFullYear() === parseInt(selectedYear);
       }
     });
-  }, [lancamentos, dashboardPeriodType, selectedMonth, selectedQuarter, selectedYear]);
+  }, [lancamentos, dashboardPeriodType, selectedMonth, selectedQuarter, selectedYear, customStart, customEnd]);
 
   // Helper: Obter cor dinâmica por categoria
   const getCorCategoria = (categoria: any, index: number): string => {
@@ -250,6 +261,10 @@ export default function Dashboard() {
 
   // Helper: Obter label do período selecionado
   const getPeriodoLabel = (): string => {
+    if (dashboardPeriodType === 'personalizado') {
+      const f = (x: string) => x ? x.split('-').reverse().join('/') : '...';
+      return `${f(customStart)} a ${f(customEnd)}`;
+    }
     if (dashboardPeriodType === 'mes') {
       return selectedMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     } else if (dashboardPeriodType === 'trimestre') {
@@ -499,6 +514,9 @@ export default function Dashboard() {
       // Aplicar filtro de período
       const dataRef = new Date(orc.data_aprovacao || orc.data_criacao);
       
+      if (dashboardPeriodType === 'personalizado') {
+        return inCustomRange(dataRef);
+      }
       if (dashboardPeriodType === 'mes') {
         return dataRef.getMonth() === selectedMonth.getMonth() 
           && dataRef.getFullYear() === selectedMonth.getFullYear();
@@ -562,7 +580,7 @@ export default function Dashboard() {
         chartData: last7MonthsVendas
       }
     ];
-  }, [orcamentos, dashboardPeriodType, selectedMonth, selectedQuarter, selectedYear, monthlyData]);
+  }, [orcamentos, dashboardPeriodType, selectedMonth, selectedQuarter, selectedYear, customStart, customEnd, monthlyData]);
 
   // Dados para gráfico de pizza - Categorias de Faturamento (com filtro de período)
   const faturamentoPorCategoria = useMemo(() => {
@@ -689,7 +707,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Tipo de Período</label>
-                <Select value={dashboardPeriodType} onValueChange={(value: 'mes' | 'trimestre' | 'ano') => setDashboardPeriodType(value)}>
+                <Select value={dashboardPeriodType} onValueChange={(value: 'mes' | 'trimestre' | 'ano' | 'personalizado') => setDashboardPeriodType(value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
@@ -697,37 +715,45 @@ export default function Dashboard() {
                     <SelectItem value="mes">Mês</SelectItem>
                     <SelectItem value="trimestre">Trimestre</SelectItem>
                     <SelectItem value="ano">Ano</SelectItem>
+                    <SelectItem value="personalizado">Período personalizado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {dashboardPeriodType === 'mes' && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Selecionar Mês</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !selectedMonth && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedMonth ? format(selectedMonth, "MMMM yyyy") : <span>Escolha o mês</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={selectedMonth}
-                        onSelect={(date) => date && setSelectedMonth(date)}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Selecionar Mês</label>
+                    <Select value={String(selectedMonth.getMonth())} onValueChange={(v) => setSelectedMonth(new Date(selectedMonth.getFullYear(), parseInt(v), 1))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"].map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Selecionar Ano</label>
+                    <Select value={String(selectedMonth.getFullYear())} onValueChange={(v) => setSelectedMonth(new Date(parseInt(v), selectedMonth.getMonth(), 1))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {yearOptions.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              {dashboardPeriodType === 'personalizado' && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Data inicial</label>
+                    <Input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Data final</label>
+                    <Input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
+                  </div>
+                </>
               )}
 
               {dashboardPeriodType === 'trimestre' && (
@@ -755,9 +781,7 @@ export default function Dashboard() {
                       <SelectValue placeholder="Escolha o ano" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="2023">2023</SelectItem>
-                      <SelectItem value="2024">2024</SelectItem>
-                      <SelectItem value="2025">2025</SelectItem>
+                      {yearOptions.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
