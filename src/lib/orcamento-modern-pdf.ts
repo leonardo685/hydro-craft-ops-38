@@ -135,6 +135,14 @@ async function referenceOrderQR(orcamento: any, empresa: any) {
 }
 
 export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
+  /** Peças mostram valores e a somatória (PARTS TOTAL) quando o toggle está ligado
+   *  OU quando qualquer peça já tem preço unitário — o valor digitado no formulário
+   *  nunca fica de fora do PDF por esquecimento do toggle. */
+  const pecasMostramValores = (itens: any[], mostrarValoresPecas: unknown) => {
+    if (Boolean(mostrarValoresPecas)) return true;
+    return (itens || []).some((i) => i?.tipo === "peca" && (Number(i.valorUnitario ?? i.valor_unitario ?? 0) || 0) > 0);
+  };
+  const mostraValoresPecas = pecasMostramValores(p.itens || [], p.orcamento?.mostrar_valores_pecas);
   const lang: Lang = (["pt-BR", "en", "es"].includes(p.language) ? p.language : "pt-BR") as Lang;
   const T = TXT[lang];
   const tr = (v: any) => translateTerm(v == null ? "" : String(v), lang as any);
