@@ -2829,8 +2829,8 @@ export default function Orcamentos() {
                           <h3 className="text-lg font-semibold text-foreground">
                             {t('orcamentos.quote')} #{item.numero}
                           </h3>
-                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            {t('orcamentos.finalized')}
+                          <Badge className="bg-success-light text-success border-success/20">
+                            {t('orcamentos.waitingDelivery')}
                           </Badge>
                           {item.ordens_vinculadas && item.ordens_vinculadas.length > 0 && (
                             item.ordens_vinculadas.map((ordem: any) => (
