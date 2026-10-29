@@ -1,5 +1,5 @@
 import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
-import { hasFiscalBilling } from "@/lib/company-features";
+import { hasFiscalBilling, usesStructuredPaymentTerms, parsePaymentTerms, formatPaymentTerms, PAYMENT_TERM_TYPES, type PaymentTermType } from "@/lib/company-features";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -4231,10 +4231,30 @@ export default function NovoOrcamento() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="condicaoPagamento">{t('novoOrcamento.paymentCondition')}</Label>
+                {usesStructuredPaymentTerms(empresaAtual?.nome) ? (() => {
+                  const pt = parsePaymentTerms(informacoesComerciais.condicaoPagamento);
+                  const setPt = (days: number, type: PaymentTermType) => setInformacoesComerciais(prev => ({ ...prev, condicaoPagamento: formatPaymentTerms(days, type) }));
+                  return (
+                    <div className="flex gap-2">
+                      <div className="flex items-center">
+                        <Button type="button" variant="outline" size="icon" className="h-10 w-9 rounded-r-none" onClick={() => setPt(Math.max(0, pt.days - 1), pt.type)}>−</Button>
+                        <Input id="condicaoPagamento" type="number" min={0} className="w-16 rounded-none text-center" value={pt.days} onChange={e => setPt(parseInt(e.target.value || '0', 10) || 0, pt.type)} />
+                        <Button type="button" variant="outline" size="icon" className="h-10 w-9 rounded-l-none" onClick={() => setPt(pt.days + 1, pt.type)}>+</Button>
+                      </div>
+                      <Select value={pt.type} onValueChange={v => setPt(pt.days, v as PaymentTermType)}>
+                        <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {PAYMENT_TERM_TYPES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })() : (
                 <Input id="condicaoPagamento" value={informacoesComerciais.condicaoPagamento} onChange={e => setInformacoesComerciais(prev => ({
                 ...prev,
                 condicaoPagamento: e.target.value
               }))} placeholder={t('novoOrcamento.paymentConditionPlaceholder')} />
+                )}
               </div>
               <div>
                 <Label htmlFor="prazoEntrega">{t('novoOrcamento.deliveryTime')}</Label>
