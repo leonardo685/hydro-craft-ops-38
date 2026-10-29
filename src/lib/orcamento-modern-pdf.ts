@@ -457,7 +457,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     y += 4;
   };
   const itens = p.itens || [];
-  await lista(T.parts, itens.filter((i) => i.tipo === "peca"), Boolean(o.mostrar_valores_pecas));
+  await lista(T.parts, itens.filter((i) => i.tipo === "peca"), mostraValoresPecas);
   await lista(T.services, itens.filter((i) => i.tipo === "servico"));
   await lista(T.machining, itens.filter((i) => i.tipo === "usinagem"));
 
