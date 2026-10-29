@@ -1,3 +1,4 @@
+import { expectedPaymentDate, quoteServiceCategoryId } from '@/lib/delivery-billing';
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Html5Qrcode } from "html5-qrcode";
@@ -233,7 +234,8 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
             conta_bancaria: contas?.[0]?.nome || "A definir",
             fornecedor_cliente: orc.cliente_nome,
             data_emissao: agora,
-            data_esperada: agora,
+            data_esperada: `${expectedPaymentDate(agora, orc.condicao_pagamento)}T12:00:00`,
+            categoria_id: quoteServiceCategoryId(orc.observacoes),
             data_realizada: null,
             pago: false,
             forma_pagamento: "a_vista",
