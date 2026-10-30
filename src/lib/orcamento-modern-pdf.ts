@@ -1,4 +1,4 @@
-import { STATUS_APROVADO_INVOICE, nomeArquivoOrcamentoPDF } from "@/lib/quote-filename";
+import { STATUS_APROVADO_INVOICE, nomeArquivoOrcamentoPDF, numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
 import { normalizarNumeroPedido } from "@/lib/pedido-utils";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
@@ -73,6 +73,8 @@ export interface ModernOrcamentoParams {
   clienteDoc: string;
   empresa: any;
   language: string;
+  /** Uso interno: retorna só os bytes do invoice (sem P.O., sem download). */
+  somenteBytes?: boolean;
 }
 
 const RED: [number, number, number] = [200, 30, 30];
@@ -513,42 +515,89 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   }
 
   // Invoice aprovada com P.O.: nome do arquivo começa com o número do P.O. (mesma regra nas abas Approved e Finalized).
-  const nomeArquivo = nomeArquivoOrcamentoPDF(o, String(lang || "").startsWith("pt"));
+  let nomeArquivo = nomeArquivoOrcamentoPDF(o, String(lang || "").startsWith("pt"));
 
-  // Invoice aprovada: anexa ao final o PDF do P.O. enviado na aprovação.
-  if (isInvoice) {
+  if (p.somenteBytes) return doc.output("arraybuffer");
+
+  // MEC HYDRO: todas as invoices aprovadas/finalizadas com o mesmo P.O. saem num único arquivo
+  // (P.O. primeiro, depois os orçamentos do maior número para o menor).
+  let invoiceParts: ArrayBuffer[] = [doc.output("arraybuffer")];
+  if (isInvoice && isMec && temPedido && p.empresa?.id) {
     try {
-      const poUrl = await buscarAnexoPedidoUrl(o);
-      if (poUrl) {
-        const resp = await fetch(poUrl);
-        if (resp.ok) {
-          const { PDFDocument } = await import("pdf-lib");
-          const invoiceDoc = await PDFDocument.load(doc.output("arraybuffer"));
-          const poDoc = await PDFDocument.load(await resp.arrayBuffer(), { ignoreEncryption: true });
-          // P.O. do cliente primeiro, invoice do Mec Hydro depois.
-          const merged = await PDFDocument.create();
-          const poPages = await merged.copyPages(poDoc, poDoc.getPageIndices());
-          poPages.forEach((pg) => merged.addPage(pg));
-          const invoicePages = await merged.copyPages(invoiceDoc, invoiceDoc.getPageIndices());
-          invoicePages.forEach((pg) => merged.addPage(pg));
-          const bytes = await merged.save();
-          const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = nomeArquivo;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          setTimeout(() => URL.revokeObjectURL(url), 5000);
-          return;
+      const irmaos = await buscarOrcamentosMesmoPedido(o, numeroPedido!, p.empresa);
+      if (irmaos.length > 1) {
+        const partes: ArrayBuffer[] = [];
+        for (const irmao of irmaos) {
+          if (irmao.id === o.id) { partes.push(invoiceParts[0]); continue; }
+          const params = await carregarParamsOrcamento(irmao.id, p.empresa, p.language);
+          const bytes = await gerarOrcamentoModernoPDF({ ...params, somenteBytes: true });
+          if (bytes) partes.push(bytes as ArrayBuffer);
         }
+        invoiceParts = partes;
+        const nums = irmaos.map((x) => numeroOrcamentoParaArquivo(x.numero)).join(", ");
+        nomeArquivo = `PO ${numeroPedido} - Invoice ${nums}.pdf`;
       }
     } catch (e) {
-      console.error("Falha ao anexar P.O. ao invoice:", e);
+      console.error("Falha ao agrupar orçamentos do mesmo P.O.:", e);
+      invoiceParts = [doc.output("arraybuffer")];
+    }
+  }
+
+  // Invoice aprovada: P.O. do cliente primeiro, invoice(s) depois.
+  if (isInvoice) {
+    try {
+      const { PDFDocument } = await import("pdf-lib");
+      const merged = await PDFDocument.create();
+      const poUrl = await buscarAnexoPedidoUrl(o);
+      if (poUrl) {
+        try {
+          const resp = await fetch(poUrl);
+          if (resp.ok) {
+            const poDoc = await PDFDocument.load(await resp.arrayBuffer(), { ignoreEncryption: true });
+            (await merged.copyPages(poDoc, poDoc.getPageIndices())).forEach((pg) => merged.addPage(pg));
+          }
+        } catch (e) { console.error("Falha ao anexar P.O. ao invoice:", e); }
+      }
+      if (merged.getPageCount() > 0 || invoiceParts.length > 1) {
+        for (const part of invoiceParts) {
+          const d = await PDFDocument.load(part);
+          (await merged.copyPages(d, d.getPageIndices())).forEach((pg) => merged.addPage(pg));
+        }
+        const bytes = await merged.save();
+        const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = nomeArquivo;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        return;
+      }
+    } catch (e) {
+      console.error("Falha ao montar invoice com P.O.:", e);
     }
   }
   doc.save(nomeArquivo);
+}
+
+/** Orçamentos da mesma empresa, aprovados/finalizados, com o mesmo P.O.; ordem decrescente de número. */
+async function buscarOrcamentosMesmoPedido(o: any, numeroPedido: string, empresa: any) {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data, error } = await supabase.from("orcamentos")
+    .select("id, numero, numero_pedido, status")
+    .eq("empresa_id", empresa.id)
+    .in("status", STATUS_APROVADO_INVOICE);
+  if (error) throw error;
+  const alvo = numeroPedido.trim().toUpperCase();
+  const lista = (data || []).filter((x: any) => String(normalizarNumeroPedido(x.numero_pedido) || "").trim().toUpperCase() === alvo);
+  if (!lista.some((x: any) => x.id === o.id)) lista.push({ id: o.id, numero: o.numero });
+  const chave = (n: any) => {
+    const m = String(n || "").match(/(\d+)\D+(\d{2,4})$/);
+    return m ? Number(m[2].slice(-2)) * 100000 + Number(m[1]) : 0;
+  };
+  return lista.sort((a: any, b: any) => chave(b.numero) - chave(a.numero));
 }
 
 async function buscarFotosEntrega(o: any, empresa: any) {
@@ -593,6 +642,10 @@ async function buscarAnexoPedidoUrl(o: any): Promise<string | null> {
 
 /** Busca todos os dados de um orçamento salvo e gera o PDF no novo layout. */
 export async function baixarOrcamentoModernoPorId(orcamentoId: string, empresa: any, language: string) {
+  await gerarOrcamentoModernoPDF(await carregarParamsOrcamento(orcamentoId, empresa, language));
+}
+
+async function carregarParamsOrcamento(orcamentoId: string, empresa: any, language: string): Promise<ModernOrcamentoParams> {
   const { supabase } = await import("@/integrations/supabase/client");
   if (!empresa?.id) throw new Error("Selecione uma empresa");
   const { data: orcamento } = await supabase.from("orcamentos").select("*").eq("empresa_id", empresa.id).eq("id", orcamentoId).maybeSingle();
@@ -630,5 +683,5 @@ export async function baixarOrcamentoModernoPorId(orcamentoId: string, empresa: 
     const cliente = (await q).data;
     clienteDoc = cliente?.cnpj_cpf || "";
   }
-  await gerarOrcamentoModernoPDF({ orcamento: o, itens: itens || [], fotos, dadosTecnicos, laudo, findings, clienteDoc, empresa, language });
+  return { orcamento: o, itens: itens || [], fotos, dadosTecnicos, laudo, findings, clienteDoc, empresa, language };
 }
