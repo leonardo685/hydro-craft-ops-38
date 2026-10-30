@@ -592,7 +592,7 @@ async function buscarOrcamentosMesmoPedido(o: any, numeroPedido: string, empresa
   if (error) throw error;
   const alvo = numeroPedido.trim().toUpperCase();
   const lista = (data || []).filter((x: any) => String(normalizarNumeroPedido(x.numero_pedido) || "").trim().toUpperCase() === alvo);
-  if (!lista.some((x: any) => x.id === o.id)) lista.push({ id: o.id, numero: o.numero });
+  if (!lista.some((x: any) => x.id === o.id)) lista.push({ id: o.id, numero: o.numero, numero_pedido: o.numero_pedido, status: o.status });
   const chave = (n: any) => {
     const m = String(n || "").match(/(\d+)\D+(\d{2,4})$/);
     return m ? Number(m[2].slice(-2)) * 100000 + Number(m[1]) : 0;
