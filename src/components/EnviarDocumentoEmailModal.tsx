@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, Plus, Send, Loader2 } from "lucide-react";
+import { Mail, Plus, Send, Loader2, ChevronDown, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useClientes } from "@/hooks/use-clientes";
 import { useEmpresa } from "@/contexts/EmpresaContext";
@@ -33,6 +33,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
   const { clientes, adicionarEmail } = useClientes();
   const { empresaAtual } = useEmpresa();
   const [selecionados, setSelecionados] = useState<string[]>([]);
+  const [listaAberta, setListaAberta] = useState(false);
   const [extras, setExtras] = useState<string[]>([]);
   const [novoEmail, setNovoEmail] = useState("");
   const [mensagem, setMensagem] = useState("");
@@ -54,9 +55,9 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
   const todos = [...new Set([...cadastrados, ...extras])];
 
   useEffect(() => {
-    if (open) { setSelecionados(cadastrados); setExtras([]); setNovoEmail(""); setMensagem(""); }
+    if (open) { setSelecionados([]); setListaAberta(false); setExtras([]); setNovoEmail(""); setMensagem(""); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, orcamento?.id, cadastrados.join(",")]);
+  }, [open, orcamento?.id]);
 
   const toggle = (e: string) => setSelecionados((p) => (p.includes(e) ? p.filter((x) => x !== e) : [...p, e]));
 
@@ -119,12 +120,36 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
           <div className="space-y-2">
             <Label>E-mails</Label>
             {todos.length === 0 && <p className="text-sm text-muted-foreground">Nenhum e-mail cadastrado para este cliente.</p>}
-            {todos.map((e) => (
-              <label key={e} className="flex items-center gap-2 text-sm cursor-pointer">
-                <Checkbox checked={selecionados.includes(e)} onCheckedChange={() => toggle(e)} />
-                {e}
-              </label>
-            ))}
+            {selecionados.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {selecionados.map((e) => (
+                  <span key={e} className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs">
+                    {e}
+                    <button type="button" aria-label={`Remover ${e}`} onClick={() => toggle(e)} className="rounded-full hover:text-destructive">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {todos.length > 0 && (
+              <div className="relative">
+                <Button type="button" variant="outline" size="sm" className="w-full justify-between" onClick={() => setListaAberta((v) => !v)}>
+                  <span className="text-muted-foreground">{listaAberta ? "Fechar lista" : "Selecionar e-mails"}</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${listaAberta ? "rotate-180" : ""}`} />
+                </Button>
+                {listaAberta && (
+                  <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border bg-popover p-1 shadow-md">
+                    {todos.map((e) => (
+                      <label key={e} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-accent">
+                        <Checkbox checked={selecionados.includes(e)} onCheckedChange={() => toggle(e)} />
+                        {e}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <Input
