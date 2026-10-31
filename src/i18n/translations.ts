@@ -1162,7 +1162,7 @@ export const translations = {
     menu: {
       recebimentos: 'Receipts',
       analise: 'Analysis',
-      orcamentos: 'Quotes',
+      orcamentos: 'Comercial',
       aprovados: 'Production',
       compras: 'Purchases',
       faturamento: 'Billing',
