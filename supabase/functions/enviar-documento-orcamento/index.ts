@@ -1,6 +1,6 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
 
-const GATEWAY_URL = 'https://connector-gateway.lovable.dev/resend';
 const isEmail = (v: unknown) => typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
@@ -11,9 +11,9 @@ Deno.serve(async (req) => {
 
   try {
     if (!req.headers.get('Authorization')) return json({ error: 'Não autorizado' }, 401);
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-    if (!LOVABLE_API_KEY || !RESEND_API_KEY) return json({ error: 'Serviço de e-mail não configurado.' }, 500);
+    const GMAIL_USER = Deno.env.get('GMAIL_USER');
+    const GMAIL_APP_PASSWORD = Deno.env.get('GMAIL_APP_PASSWORD')?.replace(/\s+/g, '');
+    if (!GMAIL_USER || !GMAIL_APP_PASSWORD) return json({ error: 'Gmail não configurado (GMAIL_USER / GMAIL_APP_PASSWORD).' }, 500);
 
     const b = await req.json();
     const emails: string[] = Array.isArray(b.emails) ? b.emails.filter(isEmail).slice(0, 20) : [];
@@ -53,24 +53,25 @@ Deno.serve(async (req) => {
         : 'Please find attached our quote for your review.'))}</p>
       ${incluirAssinatura ? assinaturaHtml : `<p style="font-size:12px;color:#777">${esc(empresaNome)}</p>`}</div>`;
 
-    const r = await fetch(`${GATEWAY_URL}/emails`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LOVABLE_API_KEY}`, 'X-Connection-Api-Key': RESEND_API_KEY },
-      body: JSON.stringify({
-        from: `${empresaNome} <onboarding@resend.dev>`,
+    const client = new SMTPClient({
+      connection: { hostname: 'smtp.gmail.com', port: 465, tls: true, auth: { username: GMAIL_USER, password: GMAIL_APP_PASSWORD } },
+    });
+    try {
+      await client.send({
+        from: `${empresaNome} <${GMAIL_USER}>`,
         to: emails,
         subject: `${titulo} - ${empresaNome}`,
+        content: 'auto',
         html,
-        attachments: [{ filename: nomeArquivo, content: pdfBase64 }],
-      }),
-    });
-    if (!r.ok) {
-      const details = await r.text();
-      console.error(`Resend failed [${r.status}]: ${details}`);
-      return json({ error: 'Falha ao enviar e-mail', details }, r.status);
+        attachments: [{ filename: nomeArquivo, content: pdfBase64, encoding: 'base64', contentType: 'application/pdf' }],
+      });
+    } catch (err) {
+      console.error('Gmail SMTP failed', err);
+      return json({ error: 'Falha ao enviar e-mail pelo Gmail', details: err instanceof Error ? err.message : String(err) }, 502);
+    } finally {
+      await client.close().catch(() => {});
     }
-    const result = await r.json();
-    return json({ success: true, id: result?.id });
+    return json({ success: true });
   } catch (e) {
     console.error(e);
     return json({ error: e instanceof Error ? e.message : 'Erro desconhecido' }, 500);
