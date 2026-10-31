@@ -72,9 +72,9 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
   const todos = [...new Set([...cadastrados, ...extras])];
 
   useEffect(() => {
-    if (open) { setSelecionados([]); setListaAberta(false); setExtras([]); setNovoEmail(""); setMensagem(""); }
+    if (open) { setSelecionados([]); setListaAberta(false); setExtras([]); setNovoEmail(""); setMensagem(isInvoice ? "" : mensagemPadrao); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, orcamento?.id]);
+  }, [open, orcamento?.id, mensagemPadrao]);
 
   const toggle = (e: string) => setSelecionados((p) => (p.includes(e) ? p.filter((x) => x !== e) : [...p, e]));
 
