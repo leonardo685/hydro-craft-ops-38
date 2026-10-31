@@ -25,6 +25,7 @@ import { useNavigate } from "react-router-dom";
 import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 import { VincularOrdensModal } from "@/components/VincularOrdensModal";
+import { EnviarDocumentoEmailModal } from "@/components/EnviarDocumentoEmailModal";
 import { PagamentoStripeModal } from "@/components/PagamentoStripeModal";
 import jsPDF from "jspdf";
 import { applyMinimalPdfStyle, setPdfGridMode } from "@/lib/pdf-minimal";
@@ -410,6 +411,7 @@ export default function Orcamentos() {
     setShowPagamentoModal(true);
   };
 
+  const [emailQuote, setEmailQuote] = useState<any>(null);
   const [entregaQuote, setEntregaQuote] = useState<any>(null);
   const [dataEntrega, setDataEntrega] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [salvandoEntrega, setSalvandoEntrega] = useState(false);
@@ -2668,6 +2670,14 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => setEmailQuote(item)}
+                          title="Enviar por e-mail"
+                        >
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => gerarPDFOrcamento(item, language)}
                         >
                           <Download className="h-4 w-4" />
@@ -2791,8 +2801,8 @@ export default function Orcamentos() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => abrirPagamento(item)}
-                          title="Pagamento online"
+                          onClick={() => setEmailQuote(item)}
+                          title="Enviar por e-mail"
                         >
                           <Mail className="h-4 w-4" />
                         </Button>
@@ -2916,6 +2926,14 @@ export default function Orcamentos() {
                           onClick={() => abrirPrecificacao(item)}
                         >
                           <DollarSign className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEmailQuote(item)}
+                          title="Enviar por e-mail"
+                        >
+                          <Mail className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
@@ -3088,6 +3106,13 @@ export default function Orcamentos() {
         onOpenChange={setShowVincularModal}
         orcamento={orcamentoParaVincular}
         onSuccess={carregarOrcamentos}
+      />
+
+      <EnviarDocumentoEmailModal
+        open={!!emailQuote}
+        onOpenChange={(o) => { if (!o) setEmailQuote(null); }}
+        orcamento={emailQuote}
+        language={language}
       />
 
       <PagamentoStripeModal

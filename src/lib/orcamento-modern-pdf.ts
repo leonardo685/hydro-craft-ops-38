@@ -75,6 +75,8 @@ export interface ModernOrcamentoParams {
   language: string;
   /** Uso interno: retorna só os bytes do invoice (sem P.O., sem download). */
   somenteBytes?: boolean;
+  /** Em vez de baixar, entrega o arquivo final (ex.: para envio por e-mail). */
+  capturar?: (bytes: ArrayBuffer, nome: string) => void;
 }
 
 const RED: [number, number, number] = [200, 30, 30];
@@ -564,6 +566,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
           (await merged.copyPages(d, d.getPageIndices())).forEach((pg) => merged.addPage(pg));
         }
         const bytes = await merged.save();
+        if (p.capturar) { p.capturar(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer, nomeArquivo); return; }
         const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -579,6 +582,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
       console.error("Falha ao montar invoice com P.O.:", e);
     }
   }
+  if (p.capturar) { p.capturar(doc.output("arraybuffer"), nomeArquivo); return; }
   doc.save(nomeArquivo);
 }
 
@@ -643,6 +647,15 @@ async function buscarAnexoPedidoUrl(o: any): Promise<string | null> {
 /** Busca todos os dados de um orçamento salvo e gera o PDF no novo layout. */
 export async function baixarOrcamentoModernoPorId(orcamentoId: string, empresa: any, language: string) {
   await gerarOrcamentoModernoPDF(await carregarParamsOrcamento(orcamentoId, empresa, language));
+}
+
+/** Gera o mesmo arquivo do download (quote ou invoice com P.O.) e devolve os bytes. */
+export async function gerarArquivoOrcamentoPorId(orcamentoId: string, empresa: any, language: string) {
+  let out: { bytes: ArrayBuffer; nome: string } | null = null;
+  const params = await carregarParamsOrcamento(orcamentoId, empresa, language);
+  await gerarOrcamentoModernoPDF({ ...params, capturar: (bytes, nome) => { out = { bytes, nome }; } });
+  if (!out) throw new Error("Falha ao gerar PDF");
+  return out as { bytes: ArrayBuffer; nome: string };
 }
 
 async function carregarParamsOrcamento(orcamentoId: string, empresa: any, language: string): Promise<ModernOrcamentoParams> {
