@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2, AlertTriangle, CreditCard, Truck, Trash2 } from "lucide-react";
+import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2, AlertTriangle, CreditCard, Truck, Trash2, Mail } from "lucide-react";
 import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -2801,7 +2801,7 @@ export default function Orcamentos() {
                           size="sm"
                           onClick={() => gerarPDFOrcamento(item, language)}
                         >
-                          <Download className="h-4 w-4" />
+                          <Mail className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
