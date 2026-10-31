@@ -1419,7 +1419,7 @@ export const translations = {
     },
     // Orçamentos
     orcamentos: {
-      title: 'Quotes',
+      title: 'Comercial',
       subtitle: 'Manage your quotes',
       new: 'New Quote',
       number: 'Number',
