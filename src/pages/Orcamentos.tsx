@@ -2605,7 +2605,7 @@ export default function Orcamentos() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
-                            {t('orcamentos.quote')} #{item.numero}
+                            {isUSCompany ? (<button type="button" onClick={() => editarOrcamento(item)} className="hover:underline hover:text-primary text-left" title="Edit">{t('orcamentos.quote')} #{item.numero}</button>) : <>{t('orcamentos.quote')} #{item.numero}</>}
                           </h3>
                           <Badge className={getStatusColor(item.status)}>
                             {getStatusText(item.status)}
@@ -2715,7 +2715,7 @@ export default function Orcamentos() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
-                            {t('orcamentos.quote')} #{item.numero}
+                            {isUSCompany ? (<button type="button" onClick={() => editarOrcamento(item)} className="hover:underline hover:text-primary text-left" title="Edit">{t('orcamentos.quote')} #{item.numero}</button>) : <>{t('orcamentos.quote')} #{item.numero}</>}
                           </h3>
                           <Badge className={getStatusColor(item.status)}>
                             {getStatusText(item.status)}
@@ -2832,7 +2832,7 @@ export default function Orcamentos() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
-                            {t('orcamentos.quote')} #{item.numero}
+                            {isUSCompany ? (<button type="button" onClick={() => editarOrcamento(item)} className="hover:underline hover:text-primary text-left" title="Edit">{t('orcamentos.quote')} #{item.numero}</button>) : <>{t('orcamentos.quote')} #{item.numero}</>}
                           </h3>
                           {(item.ordens_vinculadas?.length ?? 0) > 0 &&
                             !item.ordens_vinculadas.some((o: any) => o.entregue) &&
@@ -2953,7 +2953,7 @@ export default function Orcamentos() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-lg font-semibold text-foreground">
-                            {t('orcamentos.quote')} #{item.numero}
+                            {isUSCompany ? (<button type="button" onClick={() => editarOrcamento(item)} className="hover:underline hover:text-primary text-left" title="Edit">{t('orcamentos.quote')} #{item.numero}</button>) : <>{t('orcamentos.quote')} #{item.numero}</>}
                           </h3>
                           <Badge className={getStatusColor(item.status)}>
                             {getStatusText(item.status)}
