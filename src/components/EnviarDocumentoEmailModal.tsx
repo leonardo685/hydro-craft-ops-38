@@ -38,7 +38,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
   const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  const isInvoice = ["aprovado", "finalizado"].includes(orcamento?.status);
+  const isInvoice = ["aprovado", "faturamento", "finalizado"].includes(orcamento?.status);
   const tipoLabel = isInvoice ? "Invoice" : "Quote";
 
   const cliente = useMemo(
