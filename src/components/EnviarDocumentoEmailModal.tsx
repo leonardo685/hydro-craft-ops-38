@@ -42,6 +42,23 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
   const isInvoice = ["aprovado", "faturamento", "finalizado"].includes(orcamento?.status);
   const tipoLabel = isInvoice ? "Invoice" : "Quote";
 
+  const mensagemPadrao = useMemo(() => {
+    if (isInvoice) return "";
+    const empresaNome = empresaAtual?.razao_social || empresaAtual?.nome || "MEC HYDRO";
+    const assunto = orcamento?.assunto_proposta?.trim() || orcamento?.equipamento?.trim() || "";
+    const linhas = [
+      `Hello ${orcamento?.cliente_nome?.trim() || "there"},`,
+      "",
+      `Please find attached our Quote ${orcamento?.numero || ""}${assunto ? ` regarding ${assunto}` : ""}.`,
+      "",
+      "If you have any questions, please let us know.",
+      "",
+      `Best regards,`,
+      empresaNome,
+    ];
+    return linhas.join("\n");
+  }, [isInvoice, orcamento?.numero, orcamento?.cliente_nome, orcamento?.assunto_proposta, orcamento?.equipamento, empresaAtual]);
+
   const cliente = useMemo(
     () => clientes.find((c: any) => (orcamento?.cliente_id && c.id === orcamento.cliente_id) || c.nome === orcamento?.cliente_nome) || null,
     [clientes, orcamento]
