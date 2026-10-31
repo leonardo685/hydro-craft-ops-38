@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
             <div style="font-size:17px;font-weight:bold">Bruno Forte</div>
             <div>Sales Representative</div>
             <div style="font-weight:bold">Mec Hydro Hydraulics</div>
-            <div><span style="font-size:12px">📱</span> <a href="tel:+12035456510" style="color:#1a1a1a;text-decoration:none">+1 (203) 545-6510</a></div>
+            <div><span style="font-size:12px">📱</span> <a href="tel:+12547332028" style="color:#1a1a1a;text-decoration:none">+1 (254) 733-2028</a></div>
             <div><span style="font-size:12px">✉️</span> <a href="mailto:bruno.forte@mechydro.com" style="color:#1155cc">bruno.forte@mechydro.com</a></div>
             <div><span style="font-size:12px">🌐</span> <a href="https://www.mechydro.com" style="color:#1155cc">www.mechydro.com</a></div>
           </td>
