@@ -2622,7 +2622,7 @@ export default function Orcamentos() {
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
-                          <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
+                          <p><span className="font-medium">{t('pdf.subject')}:</span> {item.assunto_proposta || item.equipamento}</p>
                           {(() => {
                             const { value, urgencyFee: urg, salesTax } = quoteCardValues(item, empresaAtual?.nome);
                             const money = (amount: number) => amount.toLocaleString(isUSCompany ? 'en-US' : 'pt-BR', { style: 'currency', currency: isUSCompany ? 'USD' : 'BRL' });
@@ -2740,7 +2740,7 @@ export default function Orcamentos() {
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
-                          <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
+                          <p><span className="font-medium">{t('pdf.subject')}:</span> {item.assunto_proposta || item.equipamento}</p>
                           {(() => {
                             const { value, urgencyFee: urg, salesTax } = quoteCardValues(item, empresaAtual?.nome);
                             const money = (amount: number) => amount.toLocaleString(isUSCompany ? 'en-US' : 'pt-BR', { style: 'currency', currency: isUSCompany ? 'USD' : 'BRL' });
@@ -2861,7 +2861,7 @@ export default function Orcamentos() {
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
-                          <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
+                          <p><span className="font-medium">{t('pdf.subject')}:</span> {item.assunto_proposta || item.equipamento}</p>
                           {(() => {
                             const { value, urgencyFee: urg, salesTax } = quoteCardValues(item, empresaAtual?.nome);
                             const money = (amount: number) => amount.toLocaleString(isUSCompany ? 'en-US' : 'pt-BR', { style: 'currency', currency: isUSCompany ? 'USD' : 'BRL' });
@@ -2986,7 +2986,7 @@ export default function Orcamentos() {
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p><span className="font-medium">{t('orcamentos.client')}:</span> {item.cliente_nome}</p>
-                          <p><span className="font-medium">{t('orcamentos.equipment')}:</span> {item.equipamento}</p>
+                          <p><span className="font-medium">{t('pdf.subject')}:</span> {item.assunto_proposta || item.equipamento}</p>
                           {(() => {
                             const { value, urgencyFee: urg, salesTax } = quoteCardValues(item, empresaAtual?.nome);
                             const money = (amount: number) => amount.toLocaleString(isUSCompany ? 'en-US' : 'pt-BR', { style: 'currency', currency: isUSCompany ? 'USD' : 'BRL' });
