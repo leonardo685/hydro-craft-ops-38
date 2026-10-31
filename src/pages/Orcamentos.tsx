@@ -2794,14 +2794,14 @@ export default function Orcamentos() {
                           onClick={() => abrirPagamento(item)}
                           title="Pagamento online"
                         >
-                          <CreditCard className="h-4 w-4" />
+                          <Mail className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => gerarPDFOrcamento(item, language)}
                         >
-                          <Mail className="h-4 w-4" />
+                          <Download className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
