@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableRow, TableHeader } from "@/components/ui/table";
-import { Plus, Users, Building, Tag, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Users, Building, Tag, Edit, Trash2, AlertTriangle, X } from "lucide-react";
 import { CategoriasFinanceiras } from "@/components/CategoriasFinanceiras";
 import { ContasBancarias } from "@/components/ContasBancarias";
 import { IdentificacaoInput, TipoIdentificacao, getLabels, formatTelefoneBR, formatTelefoneUS, formatCEP, formatZIPCode } from "@/components/IdentificacaoInput";
@@ -66,6 +66,15 @@ const Cadastros = () => {
   // Tipo de identificação para os formulários
   const [clienteTipoId, setClienteTipoId] = useState<TipoIdentificacao>('cnpj');
   const [fornecedorTipoId, setFornecedorTipoId] = useState<TipoIdentificacao>('cnpj');
+
+  const [emailsAdicionais, setEmailsAdicionais] = useState<string[]>([]);
+  const [novoEmailAdicional, setNovoEmailAdicional] = useState("");
+  const adicionarEmailExtra = () => {
+    const e = novoEmailAdicional.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { toast.error('Email inválido'); return; }
+    if (!emailsAdicionais.includes(e) && e !== clienteForm.email.trim().toLowerCase()) setEmailsAdicionais([...emailsAdicionais, e]);
+    setNovoEmailAdicional("");
+  };
 
   // Formulário de cliente
   const [clienteForm, setClienteForm] = useState({
@@ -151,6 +160,8 @@ const Cadastros = () => {
   };
 
   const resetClienteForm = () => {
+    setEmailsAdicionais([]);
+    setNovoEmailAdicional("");
     setClienteForm({
       nome: "",
       email: "",
@@ -324,6 +335,7 @@ const Cadastros = () => {
       const dataToSave = {
         nome: clienteForm.nome.trim(),
         email: clienteForm.email?.trim() || null,
+        emails_adicionais: emailsAdicionais,
         telefone: clienteForm.telefone?.trim() || null,
         endereco: clienteForm.endereco?.trim() || null,
         cidade: clienteForm.cidade?.trim() || null,
@@ -404,6 +416,8 @@ const Cadastros = () => {
   };
 
   const handleEditCliente = (cliente: Cliente) => {
+    setEmailsAdicionais(((cliente as any).emails_adicionais as string[]) || []);
+    setNovoEmailAdicional("");
     setClienteForm({
       nome: cliente.nome,
       email: cliente.email || "",
@@ -574,6 +588,28 @@ const Cadastros = () => {
                             onChange={(e) => setClienteForm({ ...clienteForm, email: e.target.value })}
                             placeholder="email@exemplo.com"
                           />
+                          <div className="mt-2 space-y-1">
+                            {emailsAdicionais.map((e) => (
+                              <div key={e} className="flex items-center justify-between rounded border px-2 py-1 text-sm">
+                                <span className="truncate">{e}</span>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => setEmailsAdicionais(emailsAdicionais.filter((x) => x !== e))}>
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                            <div className="flex gap-2">
+                              <Input
+                                type="email"
+                                value={novoEmailAdicional}
+                                onChange={(e) => setNovoEmailAdicional(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); adicionarEmailExtra(); } }}
+                                placeholder="Adicionar outro email"
+                              />
+                              <Button type="button" variant="outline" size="sm" onClick={adicionarEmailExtra}>
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                         <div>
                           <Label htmlFor="telefone">Telefone</Label>
