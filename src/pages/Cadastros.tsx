@@ -724,7 +724,7 @@ const Cadastros = () => {
                       {clientes.map((cliente) => (
                         <TableRow key={cliente.id}>
                           <TableCell>{cliente.nome}</TableCell>
-                          <TableCell>{cliente.email || '-'}</TableCell>
+                          <TableCell>{[cliente.email, ...(((cliente as any).emails_adicionais as string[]) || [])].filter(Boolean).join(', ') || '-'}</TableCell>
                           <TableCell>{cliente.telefone || '-'}</TableCell>
                           <TableCell>{cliente.cnpj_cpf || '-'}</TableCell>
                           <TableCell>
