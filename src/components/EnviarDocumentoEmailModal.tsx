@@ -41,6 +41,8 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
 
   const isInvoice = ["aprovado", "faturamento", "finalizado"].includes(orcamento?.status);
   const tipoLabel = isInvoice ? "Invoice" : "Quote";
+  const nomeEmpresa = (empresaAtual?.razao_social || empresaAtual?.nome || "").toUpperCase();
+  const incluirAssinatura = nomeEmpresa.includes("MEC HYDRO");
 
   const mensagemPadrao = useMemo(() => {
     if (isInvoice) return "";
@@ -107,6 +109,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
           numero: orcamento.numero,
           clienteNome: orcamento.cliente_nome,
           empresaNome: empresaAtual?.razao_social || empresaAtual?.nome || "MEC HYDRO",
+          assinatura: incluirAssinatura,
           emails: selecionados,
           mensagem,
           nomeArquivo: nome,
