@@ -2801,7 +2801,7 @@ export default function Orcamentos() {
                           size="sm"
                           onClick={() => gerarPDFOrcamento(item, language)}
                         >
-                          <Download className="h-4 w-4" />
+                          <Mail className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
