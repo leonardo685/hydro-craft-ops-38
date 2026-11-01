@@ -47,7 +47,8 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
   const mensagemPadrao = useMemo(() => {
     if (isInvoice) return "";
     const empresaNome = empresaAtual?.razao_social || empresaAtual?.nome || "MEC HYDRO";
-    const assunto = orcamento?.assunto_proposta?.trim() || orcamento?.equipamento?.trim() || "";
+    const valido = (v?: string) => { const t = v?.trim() || ""; return /não especificado|nao especificado/i.test(t) ? "" : t; };
+    const assunto = valido(orcamento?.assunto_proposta) || valido(orcamento?.equipamento);
     const linhas = [
       `Hello ${orcamento?.cliente_nome?.trim() || "there"},`,
       "",
