@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       console.error('Gmail SMTP failed', err);
       return json({ error: 'Falha ao enviar e-mail pelo Gmail', details: err instanceof Error ? err.message : String(err) }, 502);
     } finally {
-      await client.close().catch(() => {});
+      try { await client.close(); } catch (_) { /* ignore close errors */ }
     }
     return json({ success: true });
   } catch (e) {
