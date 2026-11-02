@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
     const corpo = esc(mensagem || (tipo === 'invoice'
       ? `Hello${clienteNome ? ` ${clienteNome}` : ''},\n\nPlease find attached the invoice for the services provided.\n\nIf you have any questions, please let us know.`
       : `Hello${clienteNome ? ` ${clienteNome}` : ''},\n\nPlease find attached our quote for your review.`))
+      .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
       .split('\n').map((l) => l.trim() ? `<p style="margin:0 0 4px">${l.trim()}</p>` : '<p style="margin:0 0 10px">&nbsp;</p>').join('');
     const html = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#222;max-width:600px">` +
       `<h2 style="margin:0 0 16px;font-size:20px;color:#111">${esc(titulo)}</h2>${corpo}` +
