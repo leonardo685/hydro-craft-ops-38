@@ -28,7 +28,8 @@ Deno.serve(async (req) => {
     if (!numero || !emails.length || !pdfBase64) return json({ error: 'Informe o documento e ao menos um e-mail válido.' }, 400);
     if (pdfBase64.length > 50_000_000) return json({ error: 'PDF muito grande para envio.' }, 400);
 
-    const titulo = tipo === 'invoice' ? `Invoice ${numero}` : `Quote ${numero}`;
+    const titulo = tipo === 'invoice' ? 'Invoice' : 'Quote';
+    const tituloCompleto = tipo === 'invoice' ? `Invoice ${numero}` : `Quote ${numero}`;
     const incluirAssinatura = b.assinatura === true;
     const assinaturaHtml = `<table cellpadding="0" cellspacing="0" style="margin-top:28px;border-collapse:collapse;font-family:Arial,sans-serif;color:#1a1a1a"><tr>` +
       `<td style="padding-right:16px;border-right:2px solid #d92b2b;vertical-align:middle"><img src="cid:mechydrologo" alt="MEC HYDRO" width="120" style="display:block;border:0" /></td>` +
