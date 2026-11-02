@@ -52,7 +52,8 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
     const linhas = [
       `Hello ${orcamento?.cliente_nome?.trim() || "there"},`,
       "",
-      `Please find attached our Quote ${orcamento?.numero || ""}${assunto ? ` regarding ${assunto}` : ""}.`,
+      "Please find attached our Quote:",
+      `**${orcamento?.numero || ""}**${assunto ? ` regarding ${assunto}` : ""}.`,
       "",
       "If you have any questions, please let us know.",
       "",
