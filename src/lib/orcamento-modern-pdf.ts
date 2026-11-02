@@ -16,7 +16,7 @@ const TXT: Record<Lang, Record<string, string>> = {
     preparedFor: "CLIENTE", refOrder: "Ordem de referência", taxId: "ID fiscal do cliente",
     entryInvoice: "Nota de entrada", totalTax: "VALOR TOTAL COM IMPOSTO", total: "VALOR TOTAL",
     subtotal: "Subtotal da reforma", salesTax: "Imposto sobre vendas", validity: "VALIDADE",
-    warranty: "GARANTIA", freight: "FRETE", payment: "Pagamento", delivery: "Prazo de entrega",
+    warranty: "GARANTIA", freight: "FRETE", payment: "Pagamento", delivery: "Prazo de entrega", observations: "OBSERVAÇÕES",
     days: "dias", months: "meses", noWarranty: "Sem garantia", toArrange: "A combinar",
     scope: "Escopo técnico", findings: "RELATÓRIO DE INSPEÇÃO", identifiedProblems: "CONSTATAÇÕES", technicalReport: "LAUDO TÉCNICO", equipData: "DADOS DO EQUIPAMENTO",
     pressure: "PRESSÃO DE TRABALHO", bore: "DIÂMETRO INTERNO", stroke: "CURSO",
@@ -33,7 +33,7 @@ const TXT: Record<Lang, Record<string, string>> = {
     preparedFor: "PREPARED FOR", refOrder: "Reference order", taxId: "Client tax ID",
     entryInvoice: "Entry invoice", totalTax: "TOTAL INCLUDING SALES TAX", total: "TOTAL",
     subtotal: "Repair subtotal", salesTax: "Sales tax", validity: "VALIDITY",
-    warranty: "WARRANTY", freight: "FREIGHT", payment: "Payment terms", delivery: "Delivery time",
+    warranty: "WARRANTY", freight: "FREIGHT", payment: "Payment terms", delivery: "Delivery time", observations: "OBSERVATIONS",
     days: "days", months: "months", noWarranty: "No warranty", toArrange: "To be arranged",
     scope: "Technical scope", findings: "INSPECTION FINDINGS", identifiedProblems: "FINDINGS", technicalReport: "TECHNICAL REPORT", equipData: "EQUIPMENT DATA",
     pressure: "WORKING PRESSURE", bore: "BORE", stroke: "STROKE",
@@ -50,7 +50,7 @@ const TXT: Record<Lang, Record<string, string>> = {
     preparedFor: "CLIENTE", refOrder: "Orden de referencia", taxId: "ID fiscal del cliente",
     entryInvoice: "Nota de entrada", totalTax: "TOTAL CON IMPUESTO", total: "TOTAL",
     subtotal: "Subtotal de la reparación", salesTax: "Impuesto sobre ventas", validity: "VALIDEZ",
-    warranty: "GARANTÍA", freight: "FLETE", payment: "Pago", delivery: "Plazo de entrega",
+    warranty: "GARANTÍA", freight: "FLETE", payment: "Pago", delivery: "Plazo de entrega", observations: "OBSERVACIONES",
     days: "días", months: "meses", noWarranty: "Sin garantía", toArrange: "A convenir",
     scope: "Alcance técnico", findings: "INFORME DE INSPECCIÓN", identifiedProblems: "HALLAZGOS", technicalReport: "INFORME TÉCNICO", equipData: "DATOS DEL EQUIPO",
     pressure: "PRESIÓN DE TRABAJO", bore: "DIÁMETRO INTERNO", stroke: "CARRERA",
@@ -330,6 +330,18 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     doc.text(lines, M + doc.getTextWidth(`${k}: `) + 1, y);
     y += lines.length * 4 + 1;
   });
+
+  const obs = (o.descricao || "").trim();
+  if (obs) {
+    const obsLines = doc.splitTextToSize(obs, CW);
+    if (y + 14 + obsLines.length * 4 > H - 26) y = await newPage(T.scope);
+    rule(y); y += 9;
+    small(T.observations, M, y, MUTED, true, 7.5);
+    y += 7;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...DARK);
+    doc.text(obsLines, M, y);
+    y += obsLines.length * 4.5 + 2;
+  }
 
   // ============ PÁGINA 2: ESCOPO TÉCNICO ============
   const scopeLabel = T.scope.toUpperCase();
