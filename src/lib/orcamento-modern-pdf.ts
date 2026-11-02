@@ -75,6 +75,8 @@ export interface ModernOrcamentoParams {
   language: string;
   /** Uso interno: retorna só os bytes do invoice (sem P.O., sem download). */
   somenteBytes?: boolean;
+  /** Email: limita o agrupamento às invoices explicitamente escolhidas. */
+  invoiceIds?: string[];
   /** Em vez de baixar, entrega o arquivo final (ex.: para envio por e-mail). */
   capturar?: (bytes: ArrayBuffer, nome: string) => void;
 }
@@ -526,7 +528,13 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   let invoiceParts: ArrayBuffer[] = [doc.output("arraybuffer")];
   if (isInvoice && isMec && temPedido && p.empresa?.id) {
     try {
-      const irmaos = await buscarOrcamentosMesmoPedido(o, numeroPedido!, p.empresa);
+      const encontrados = await buscarOrcamentosMesmoPedido(o, numeroPedido, p.empresa);
+      const irmaos = p.invoiceIds
+        ? encontrados.filter((quote) => quote.id === o.id || p.invoiceIds?.includes(quote.id))
+        : encontrados;
+      if (p.invoiceIds?.some(id => !irmaos.some(quote => quote.id === id))) {
+        throw new Error('Uma invoice selecionada não pertence mais a este P.O.');
+      }
       if (irmaos.length > 1) {
         const partes: ArrayBuffer[] = [];
         for (const irmao of irmaos) {
@@ -540,6 +548,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
         nomeArquivo = `PO ${numeroPedido} - Invoice ${nums}.pdf`;
       }
     } catch (e) {
+      if (p.invoiceIds) throw e;
       console.error("Falha ao agrupar orçamentos do mesmo P.O.:", e);
       invoiceParts = [doc.output("arraybuffer")];
     }
@@ -650,10 +659,10 @@ export async function baixarOrcamentoModernoPorId(orcamentoId: string, empresa: 
 }
 
 /** Gera o mesmo arquivo do download (quote ou invoice com P.O.) e devolve os bytes. */
-export async function gerarArquivoOrcamentoPorId(orcamentoId: string, empresa: any, language: string) {
+export async function gerarArquivoOrcamentoPorId(orcamentoId: string, empresa: any, language: string, invoiceIds?: string[]) {
   let out: { bytes: ArrayBuffer; nome: string } | null = null;
   const params = await carregarParamsOrcamento(orcamentoId, empresa, language);
-  await gerarOrcamentoModernoPDF({ ...params, capturar: (bytes, nome) => { out = { bytes, nome }; } });
+  await gerarOrcamentoModernoPDF({ ...params, invoiceIds, capturar: (bytes, nome) => { out = { bytes, nome }; } });
   if (!out) throw new Error("Falha ao gerar PDF");
   return out as { bytes: ArrayBuffer; nome: string };
 }

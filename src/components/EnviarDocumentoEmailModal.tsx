@@ -11,7 +11,7 @@ import { useClientes } from "@/hooks/use-clientes";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { supabase } from "@/integrations/supabase/client";
 import { gerarArquivoOrcamentoPorId } from "@/lib/orcamento-modern-pdf";
-import { commercialEmailType } from "@/lib/commercial-email";
+import { commercialEmailType, emailQuoteLines, emailQuotePO, samePOEmailQuotes, type EmailQuote } from "@/lib/commercial-email";
 
 interface Props {
   open: boolean;
@@ -39,23 +39,27 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
   const [novoEmail, setNovoEmail] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [relacionadas, setRelacionadas] = useState<EmailQuote[]>([]);
+  const [invoiceIds, setInvoiceIds] = useState<string[]>([]);
+  const [carregandoInvoices, setCarregandoInvoices] = useState(false);
+  const [erroInvoices, setErroInvoices] = useState(false);
+  const [mensagemEditada, setMensagemEditada] = useState(false);
 
   const tipoDocumento = commercialEmailType(orcamento?.status);
   const isInvoice = tipoDocumento === "invoice";
   const tipoLabel = isInvoice ? "Invoice" : "Quote";
   const nomeEmpresa = (empresaAtual?.razao_social || empresaAtual?.nome || "").toUpperCase();
   const incluirAssinatura = nomeEmpresa.includes("MEC HYDRO");
+  const invoicesEnviadas = useMemo(() => orcamento ? [orcamento, ...relacionadas.filter(q => invoiceIds.includes(q.id))] : [], [orcamento, relacionadas, invoiceIds]);
 
   const mensagemPadrao = useMemo(() => {
     if (isInvoice && !incluirAssinatura) return "";
     const empresaNome = empresaAtual?.razao_social || empresaAtual?.nome || "MEC HYDRO";
-    const valido = (v?: string) => { const t = v?.trim() || ""; return /não especificado|nao especificado/i.test(t) ? "" : t; };
-    const assunto = valido(orcamento?.assunto_proposta) || valido(orcamento?.equipamento);
     const linhas = [
       `Hello ${orcamento?.cliente_nome?.trim() || "there"},`,
       "",
-      `Please find attached our ${tipoLabel}:`,
-      `**${orcamento?.numero || ""}**${assunto ? ` regarding ${assunto}` : ""}.`,
+      `Please find attached our ${invoicesEnviadas.length > 1 ? "Invoices" : tipoLabel}:`,
+      ...emailQuoteLines(invoicesEnviadas),
       "",
       "If you have any questions, please let us know.",
       "",
@@ -63,7 +67,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
       empresaNome,
     ];
     return linhas.join("\n");
-  }, [isInvoice, incluirAssinatura, tipoLabel, orcamento?.numero, orcamento?.cliente_nome, orcamento?.assunto_proposta, orcamento?.equipamento, empresaAtual]);
+  }, [isInvoice, incluirAssinatura, tipoLabel, invoicesEnviadas, orcamento?.cliente_nome, empresaAtual]);
 
   const cliente = useMemo(
     () => clientes.find((c: any) => (orcamento?.cliente_id && c.id === orcamento.cliente_id) || c.nome === orcamento?.cliente_nome) || null,
@@ -78,9 +82,43 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
   const todos = [...new Set([...cadastrados, ...extras])];
 
   useEffect(() => {
-    if (open) { setSelecionados([]); setListaAberta(false); setExtras([]); setNovoEmail(""); setMensagem(mensagemPadrao); }
+    if (open) { setSelecionados([]); setListaAberta(false); setExtras([]); setNovoEmail(""); setInvoiceIds([]); setMensagemEditada(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, orcamento?.id, mensagemPadrao]);
+  }, [open, orcamento?.id]);
+
+  useEffect(() => {
+    if (open && !mensagemEditada) setMensagem(mensagemPadrao);
+  }, [open, mensagemEditada, mensagemPadrao]);
+
+  useEffect(() => {
+    let active = true;
+    setRelacionadas([]);
+    setErroInvoices(false);
+    setCarregandoInvoices(false);
+    if (!open || !isInvoice || !incluirAssinatura || !empresaAtual?.id || !orcamento || !emailQuotePO(orcamento)) return;
+    setCarregandoInvoices(true);
+    const load = async () => {
+      const all: EmailQuote[] = [];
+      try {
+        for (let start = 0; ; start += 1000) {
+          const { data, error } = await supabase.from('orcamentos')
+            .select('id, empresa_id, status, numero, numero_pedido, descricao, assunto_proposta, equipamento')
+            .eq('empresa_id', empresaAtual.id).in('status', ['aprovado', 'faturamento', 'finalizado'])
+            .order('id').range(start, start + 999);
+          if (error) throw error;
+          all.push(...(data || []));
+          if ((data?.length || 0) < 1000) break;
+        }
+        if (active) setRelacionadas(samePOEmailQuotes(orcamento, all, empresaAtual.id));
+      } catch {
+        if (active) setErroInvoices(true);
+      } finally {
+        if (active) setCarregandoInvoices(false);
+      }
+    };
+    void load();
+    return () => { active = false; };
+  }, [open, orcamento, isInvoice, incluirAssinatura, empresaAtual?.id]);
 
   const toggle = (e: string) => setSelecionados((p) => (p.includes(e) ? p.filter((x) => x !== e) : [...p, e]));
 
@@ -106,11 +144,12 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
     }
     setEnviando(true);
     try {
-      const { bytes, nome } = await gerarArquivoOrcamentoPorId(orcamento.id, empresaAtual, language);
+      const { bytes, nome } = await gerarArquivoOrcamentoPorId(orcamento.id, empresaAtual, language,
+        isInvoice && incluirAssinatura ? invoicesEnviadas.map(q => q.id) : undefined);
       const { data, error } = await supabase.functions.invoke("enviar-documento-orcamento", {
         body: {
           tipo: tipoDocumento,
-          numero: orcamento.numero,
+          numero: invoicesEnviadas.map(q => q.numero).join(', '),
           clienteNome: orcamento.cliente_nome,
           empresaNome: empresaAtual?.razao_social || empresaAtual?.nome || "MEC HYDRO",
           assinatura: incluirAssinatura,
@@ -135,7 +174,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-primary" /> Enviar {tipoLabel} #{orcamento?.numero}
@@ -143,6 +182,24 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
           <DialogDescription>{orcamento?.cliente_nome}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          {carregandoInvoices && <Loader2 aria-label="Buscando invoices do mesmo P.O." className="h-4 w-4 animate-spin" />}
+          {erroInvoices && <p role="alert" className="text-sm text-destructive">Não foi possível buscar invoices do mesmo P.O. Feche e abra novamente para tentar.</p>}
+          {relacionadas.length > 0 && (
+            <div className="space-y-2">
+              <Label>Enviar juntas · P.O. {emailQuotePO(orcamento)}</Label>
+              <p className="text-sm font-medium">Invoice #{orcamento.numero}</p>
+              <div className="max-h-44 overflow-y-auto divide-y divide-border">
+                {relacionadas.map(quote => (
+                  <label key={quote.id} className="flex cursor-pointer items-start gap-2 py-2 text-sm">
+                    <Checkbox checked={invoiceIds.includes(quote.id)} disabled={enviando}
+                      aria-label={`Incluir Invoice ${quote.numero}`}
+                      onCheckedChange={() => setInvoiceIds(ids => ids.includes(quote.id) ? ids.filter(id => id !== quote.id) : [...ids, quote.id])} />
+                    <span className="min-w-0 break-words">Invoice #{quote.numero}<span className="block text-xs text-muted-foreground">{quote.assunto_proposta || quote.equipamento}</span></span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             <Label>E-mails</Label>
             {todos.length === 0 && <p className="text-sm text-muted-foreground">Nenhum e-mail cadastrado para este cliente.</p>}
@@ -189,11 +246,11 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
           </div>
           <div className="space-y-2">
             <Label>Mensagem (opcional)</Label>
-            <Textarea rows={3} value={mensagem} onChange={(e) => setMensagem(e.target.value)} />
+            <Textarea rows={6} value={mensagem} onChange={(e) => { setMensagemEditada(true); setMensagem(e.target.value); }} />
           </div>
-          <Button className="w-full" onClick={enviar} disabled={enviando}>
+          <Button className="w-full" onClick={enviar} disabled={enviando || carregandoInvoices || erroInvoices}>
             {enviando ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-            Enviar {tipoLabel}
+            Enviar {invoicesEnviadas.length > 1 ? `${invoicesEnviadas.length} Invoices` : tipoLabel}
           </Button>
         </div>
       </DialogContent>
