@@ -1,5 +1,9 @@
 # Tax por orçamento
 
+## Vincular ordem em Finalized
+- [x] Adicionar botão de vínculo nas quotes Finalized da MEC HYDRO reutilizando a seleção de ordens existente, sem alterar a empresa brasileira.
+- [ ] Verificar abertura e salvamento na conta — sessão autenticada indisponível no Supabase externo.
+
 ## Email nas abas do Comercial
 - [x] Usar o mesmo envio e mensagem formatada nas abas permitidas; Approved e Finalized enviam Invoice e Reproved não permite envio.
 - [x] Validar tipo e disponibilidade: 8 testes passaram e compilação OK; envio real não verificado por falta de sessão no Supabase externo.

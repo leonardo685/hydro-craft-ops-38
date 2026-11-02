@@ -145,6 +145,11 @@ export function VincularOrdensModal({
   };
 
   const handleSalvar = async () => {
+    if (!empresaAtual?.id || orcamento?.empresa_id !== empresaAtual.id) {
+      toast.error('Selecione um orçamento da empresa atual');
+      return;
+    }
+
     if (ordensSelecionadas.length === 0 && ordensParaDesvincular.length === 0) {
       toast.error('Selecione pelo menos uma ordem para vincular ou desvincular');
       return;
@@ -164,7 +169,8 @@ export function VincularOrdensModal({
             // Se orçamento já está aprovado, aprovar as OS também
             ...(isOrcamentoAprovado && { status: 'aprovada' })
           })
-          .in('id', ordensSelecionadas);
+          .in('id', ordensSelecionadas)
+          .eq('empresa_id', empresaAtual.id);
 
         if (errorVincular) throw errorVincular;
 
@@ -205,7 +211,9 @@ export function VincularOrdensModal({
             orcamento_id: null,
             valor_estimado: null
           })
-          .in('id', ordensParaDesvincular);
+          .in('id', ordensParaDesvincular)
+          .eq('empresa_id', empresaAtual.id)
+          .eq('orcamento_id', orcamento.id);
 
         if (errorDesvincular) throw errorDesvincular;
       }
