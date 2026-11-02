@@ -1,8 +1,9 @@
 # Tax por orçamento
 
 ## Email conjunto por P.O.
-- [ ] Oferecer seleção de invoices Approved/Finalized com o mesmo P.O. e enviar apenas as escolhidas, com números e assuntos na mensagem.
-- [ ] Testar seleção, isolamento e anexos; envio real depende de sessão autenticada no Supabase externo.
+- [x] Oferecer seleção de invoices Approved/Finalized com o mesmo P.O. e enviar apenas as escolhidas, com números e assuntos na mensagem.
+- [x] Validar envio individual e conjunto, isolamento e fotos com 20 testes; compilação sem erros.
+- [ ] Confirmar envio real — sessão autenticada indisponível no Supabase externo.
 
 ## Vincular ordem em Finalized
 - [x] Adicionar botão de vínculo nas quotes Finalized da MEC HYDRO reutilizando a seleção de ordens existente, sem alterar a empresa brasileira.
