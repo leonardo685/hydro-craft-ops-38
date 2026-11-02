@@ -1,5 +1,6 @@
 import { STATUS_APROVADO_INVOICE, nomeArquivoOrcamentoPDF, numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
 import { normalizarNumeroPedido } from "@/lib/pedido-utils";
+import { emailQuotePO } from "@/lib/commercial-email";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
@@ -75,6 +76,8 @@ export interface ModernOrcamentoParams {
   language: string;
   /** Uso interno: retorna só os bytes do invoice (sem P.O., sem download). */
   somenteBytes?: boolean;
+  /** Email: limita o agrupamento às invoices explicitamente escolhidas. */
+  invoiceIds?: string[];
   /** Em vez de baixar, entrega o arquivo final (ex.: para envio por e-mail). */
   capturar?: (bytes: ArrayBuffer, nome: string) => void;
 }
@@ -166,7 +169,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
 
   const numero = o.numero_revisao ? `${o.numero} REV${o.numero_revisao}` : o.numero || "";
   // "none", "n/a" e similares significam sem pedido: não mostram o prefixo P.O.
-  const numeroPedido = normalizarNumeroPedido(o.numero_pedido);
+  const numeroPedido = p.invoiceIds ? emailQuotePO(o) : normalizarNumeroPedido(o.numero_pedido);
   const aprovado = STATUS_APROVADO_INVOICE.includes(String(o.status || "").toLowerCase());
   // Orçamento aprovado vira invoice. O prefixo "P.O:" só aparece com número real de pedido.
   const isInvoice = aprovado;
@@ -526,7 +529,13 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   let invoiceParts: ArrayBuffer[] = [doc.output("arraybuffer")];
   if (isInvoice && isMec && temPedido && p.empresa?.id) {
     try {
-      const irmaos = await buscarOrcamentosMesmoPedido(o, numeroPedido!, p.empresa);
+      const encontrados = await buscarOrcamentosMesmoPedido(o, numeroPedido, p.empresa);
+      const irmaos = p.invoiceIds
+        ? encontrados.filter((quote) => quote.id === o.id || p.invoiceIds?.includes(quote.id))
+        : encontrados;
+      if (p.invoiceIds?.some(id => !irmaos.some(quote => quote.id === id))) {
+        throw new Error('Uma invoice selecionada não pertence mais a este P.O.');
+      }
       if (irmaos.length > 1) {
         const partes: ArrayBuffer[] = [];
         for (const irmao of irmaos) {
@@ -540,6 +549,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
         nomeArquivo = `PO ${numeroPedido} - Invoice ${nums}.pdf`;
       }
     } catch (e) {
+      if (p.invoiceIds) throw e;
       console.error("Falha ao agrupar orçamentos do mesmo P.O.:", e);
       invoiceParts = [doc.output("arraybuffer")];
     }
@@ -579,6 +589,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
         return;
       }
     } catch (e) {
+      if (p.invoiceIds) throw e;
       console.error("Falha ao montar invoice com P.O.:", e);
     }
   }
@@ -589,13 +600,19 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
 /** Orçamentos da mesma empresa, aprovados/finalizados, com o mesmo P.O.; ordem decrescente de número. */
 async function buscarOrcamentosMesmoPedido(o: any, numeroPedido: string, empresa: any) {
   const { supabase } = await import("@/integrations/supabase/client");
-  const { data, error } = await supabase.from("orcamentos")
-    .select("id, numero, numero_pedido, status")
-    .eq("empresa_id", empresa.id)
-    .in("status", STATUS_APROVADO_INVOICE);
-  if (error) throw error;
+  const data: any[] = [];
+  for (let start = 0; ; start += 1000) {
+    const page = await supabase.from("orcamentos")
+      .select("id, numero, numero_pedido, descricao, status")
+      .eq("empresa_id", empresa.id)
+      .in("status", STATUS_APROVADO_INVOICE)
+      .order("id").range(start, start + 999);
+    if (page.error) throw page.error;
+    data.push(...(page.data || []));
+    if ((page.data?.length || 0) < 1000) break;
+  }
   const alvo = numeroPedido.trim().toUpperCase();
-  const lista = (data || []).filter((x: any) => String(normalizarNumeroPedido(x.numero_pedido) || "").trim().toUpperCase() === alvo);
+  const lista = data.filter((x: any) => emailQuotePO(x).toUpperCase() === alvo);
   if (!lista.some((x: any) => x.id === o.id)) lista.push({ id: o.id, numero: o.numero, numero_pedido: o.numero_pedido, status: o.status });
   const chave = (n: any) => {
     const m = String(n || "").match(/(\d+)\D+(\d{2,4})$/);
@@ -650,10 +667,10 @@ export async function baixarOrcamentoModernoPorId(orcamentoId: string, empresa: 
 }
 
 /** Gera o mesmo arquivo do download (quote ou invoice com P.O.) e devolve os bytes. */
-export async function gerarArquivoOrcamentoPorId(orcamentoId: string, empresa: any, language: string) {
+export async function gerarArquivoOrcamentoPorId(orcamentoId: string, empresa: any, language: string, invoiceIds?: string[]) {
   let out: { bytes: ArrayBuffer; nome: string } | null = null;
   const params = await carregarParamsOrcamento(orcamentoId, empresa, language);
-  await gerarOrcamentoModernoPDF({ ...params, capturar: (bytes, nome) => { out = { bytes, nome }; } });
+  await gerarOrcamentoModernoPDF({ ...params, invoiceIds, capturar: (bytes, nome) => { out = { bytes, nome }; } });
   if (!out) throw new Error("Falha ao gerar PDF");
   return out as { bytes: ArrayBuffer; nome: string };
 }
