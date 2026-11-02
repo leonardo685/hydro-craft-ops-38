@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       await client.send({
         from: `${empresaNome} <${GMAIL_USER}>`,
         to: emails,
-        subject: `${titulo} - ${empresaNome}`,
+        subject: `${tituloCompleto} - ${empresaNome}`,
         content: 'auto',
         html,
         attachments,
