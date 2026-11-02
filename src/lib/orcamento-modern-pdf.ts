@@ -331,6 +331,18 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     y += lines.length * 4 + 1;
   });
 
+  const obs = (o.descricao || "").trim();
+  if (obs) {
+    const obsLines = doc.splitTextToSize(obs, CW);
+    if (y + 14 + obsLines.length * 4 > H - 26) y = await newPage(scopeLabel);
+    rule(y); y += 9;
+    small(T.observations, M, y, MUTED, true, 7.5);
+    y += 7;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...DARK);
+    doc.text(obsLines, M, y);
+    y += obsLines.length * 4.5 + 2;
+  }
+
   // ============ PÁGINA 2: ESCOPO TÉCNICO ============
   const scopeLabel = T.scope.toUpperCase();
   y = await newPage(scopeLabel);
