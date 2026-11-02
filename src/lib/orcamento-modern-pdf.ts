@@ -334,7 +334,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   const obs = (o.descricao || "").trim();
   if (obs) {
     const obsLines = doc.splitTextToSize(obs, CW);
-    if (y + 14 + obsLines.length * 4 > H - 26) y = await newPage(scopeLabel);
+    if (y + 14 + obsLines.length * 4 > H - 26) y = await newPage(T.scope);
     rule(y); y += 9;
     small(T.observations, M, y, MUTED, true, 7.5);
     y += 7;
