@@ -11,6 +11,7 @@ import { useClientes } from "@/hooks/use-clientes";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { supabase } from "@/integrations/supabase/client";
 import { gerarArquivoOrcamentoPorId } from "@/lib/orcamento-modern-pdf";
+import { commercialEmailType } from "@/lib/commercial-email";
 
 interface Props {
   open: boolean;
@@ -39,20 +40,21 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
   const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  const isInvoice = ["aprovado", "faturamento", "finalizado"].includes(orcamento?.status);
+  const tipoDocumento = commercialEmailType(orcamento?.status);
+  const isInvoice = tipoDocumento === "invoice";
   const tipoLabel = isInvoice ? "Invoice" : "Quote";
   const nomeEmpresa = (empresaAtual?.razao_social || empresaAtual?.nome || "").toUpperCase();
   const incluirAssinatura = nomeEmpresa.includes("MEC HYDRO");
 
   const mensagemPadrao = useMemo(() => {
-    if (isInvoice) return "";
+    if (isInvoice && !incluirAssinatura) return "";
     const empresaNome = empresaAtual?.razao_social || empresaAtual?.nome || "MEC HYDRO";
     const valido = (v?: string) => { const t = v?.trim() || ""; return /não especificado|nao especificado/i.test(t) ? "" : t; };
     const assunto = valido(orcamento?.assunto_proposta) || valido(orcamento?.equipamento);
     const linhas = [
       `Hello ${orcamento?.cliente_nome?.trim() || "there"},`,
       "",
-      "Please find attached our Quote:",
+      `Please find attached our ${tipoLabel}:`,
       `**${orcamento?.numero || ""}**${assunto ? ` regarding ${assunto}` : ""}.`,
       "",
       "If you have any questions, please let us know.",
@@ -61,7 +63,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
       empresaNome,
     ];
     return linhas.join("\n");
-  }, [isInvoice, orcamento?.numero, orcamento?.cliente_nome, orcamento?.assunto_proposta, orcamento?.equipamento, empresaAtual]);
+  }, [isInvoice, incluirAssinatura, tipoLabel, orcamento?.numero, orcamento?.cliente_nome, orcamento?.assunto_proposta, orcamento?.equipamento, empresaAtual]);
 
   const cliente = useMemo(
     () => clientes.find((c: any) => (orcamento?.cliente_id && c.id === orcamento.cliente_id) || c.nome === orcamento?.cliente_nome) || null,
@@ -76,7 +78,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
   const todos = [...new Set([...cadastrados, ...extras])];
 
   useEffect(() => {
-    if (open) { setSelecionados([]); setListaAberta(false); setExtras([]); setNovoEmail(""); setMensagem(isInvoice ? "" : mensagemPadrao); }
+    if (open) { setSelecionados([]); setListaAberta(false); setExtras([]); setNovoEmail(""); setMensagem(mensagemPadrao); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, orcamento?.id, mensagemPadrao]);
 
@@ -97,7 +99,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
   };
 
   const enviar = async () => {
-    if (!orcamento) return;
+    if (!orcamento || !tipoDocumento) return;
     if (!selecionados.length) {
       toast({ title: "Selecione ao menos um e-mail", variant: "destructive" });
       return;
@@ -107,7 +109,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
       const { bytes, nome } = await gerarArquivoOrcamentoPorId(orcamento.id, empresaAtual, language);
       const { data, error } = await supabase.functions.invoke("enviar-documento-orcamento", {
         body: {
-          tipo: isInvoice ? "invoice" : "quote",
+          tipo: tipoDocumento,
           numero: orcamento.numero,
           clienteNome: orcamento.cliente_nome,
           empresaNome: empresaAtual?.razao_social || empresaAtual?.nome || "MEC HYDRO",
@@ -128,6 +130,8 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
       setEnviando(false);
     }
   };
+
+  if (!tipoDocumento) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

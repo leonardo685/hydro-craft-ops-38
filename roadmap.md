@@ -1,5 +1,9 @@
 # Tax por orçamento
 
+## Email nas abas do Comercial
+- [x] Usar o mesmo envio e mensagem formatada nas abas permitidas; Approved e Finalized enviam Invoice e Reproved não permite envio.
+- [x] Validar tipo e disponibilidade: 8 testes passaram e compilação OK; envio real não verificado por falta de sessão no Supabase externo.
+
 ## Exclusão de orçamentos rejeitados
 - [x] Adicionar exclusão confirmada nos rejeitados e retirar orçamento excluído das contagens e somas.
 - [x] Validar exclusão e isolamento: 16 testes passaram, compilação OK e acesso público à função bloqueado.
