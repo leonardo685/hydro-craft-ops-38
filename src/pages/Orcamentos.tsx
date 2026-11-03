@@ -1941,6 +1941,22 @@ export default function Orcamentos() {
                   </CardHeader>
                 </Card>
 
+                <Card className="cursor-pointer hover:shadow-md transition-smooth border-2 hover:border-primary/20" onClick={() => { setIsSheetOpen(false); navigate('/orcamentos/precificacao'); }}>
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Calculator className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO') ? 'Pricing' : 'Precificação'}</CardTitle>
+                        <CardDescription>
+                          {empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO') ? 'Price estimate without creating a quote' : 'Estimativa de preço sem criar orçamento'}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+
                 <Card className="border-2">
                   <CardHeader className="pb-4">
                     <div className="flex items-center gap-3">
