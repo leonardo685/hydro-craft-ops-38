@@ -33,9 +33,11 @@ interface PrecificacaoModalProps {
   onClose: () => void;
   orcamento: any;
   onSave?: () => void;
+  /** Precificação avulsa: sem orçamento salvo, sem fotos/histórico/salvar */
+  standalone?: boolean;
 }
 
-export function PrecificacaoModal({ open, onClose, orcamento, onSave }: PrecificacaoModalProps) {
+export function PrecificacaoModal({ open, onClose, orcamento, onSave, standalone = false }: PrecificacaoModalProps) {
   const { empresaAtual } = useEmpresa();
   const [precoDesejado, setPrecoDesejado] = useState(0);
   const [descontoPercentual, setDescontoPercentual] = useState(0);
@@ -372,6 +374,11 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
       percentual_margem: percentualMargem,
     };
 
+    if (standalone) {
+      (dadosAtualizados as any).numero = orcamento?.numero || "Estimativa";
+      (dadosAtualizados as any).custos_cilindros = custosCilindros;
+      (dadosAtualizados as any).total_custos_cilindros = totalCustosCilindros;
+    }
     const sucesso = await gerarPDFPrecificacao(dadosAtualizados);
     if (sucesso) {
       toast.success("PDF gerado com sucesso!");
@@ -415,9 +422,11 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Precificação do Orçamento</DialogTitle>
+          <DialogTitle className="text-2xl">{standalone ? "Precificação" : "Precificação do Orçamento"}</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Orçamento #{orcamento?.numero} - {orcamento?.cliente_nome}
+            {standalone
+              ? `${orcamento?.cliente_nome || ""}${orcamento?.equipamento ? ` - ${orcamento.equipamento}` : ""}`
+              : `Orçamento #${orcamento?.numero} - ${orcamento?.cliente_nome}`}
           </p>
         </DialogHeader>
 
@@ -692,6 +701,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
             onChange={setCustosCilindros}
           />
 
+          {!standalone && (<>
           {/* Upload de Fotos para Precificação */}
           <Card>
             <CardHeader className="pb-3">
@@ -812,6 +822,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
             </Card>
           )}
           </>)}
+          </>)}
         </div>
 
 
@@ -823,9 +834,11 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave }: Precific
             <FileDown className="h-4 w-4 mr-2" />
             Exportar PDF
           </Button>
-          <Button onClick={handleSalvar} disabled={salvando}>
-            {salvando ? "Salvando..." : "Salvar"}
-          </Button>
+          {!standalone && (
+            <Button onClick={handleSalvar} disabled={salvando}>
+              {salvando ? "Salvando..." : "Salvar"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
 
