@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2, AlertTriangle, CreditCard, Truck, Trash2, Mail } from "lucide-react";
+import { Plus, FileText, Edit, Check, X, Copy, Search, Download, DollarSign, CalendarIcon, TrendingUp, TrendingDown, XCircle, FileCheck, Link2, AlertTriangle, CreditCard, Truck, Trash2, Mail, Calculator } from "lucide-react";
 import { LineChart, Line, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -1935,6 +1935,22 @@ export default function Orcamentos() {
                         <CardTitle className="text-lg">{t('orcamentos.blankQuote')}</CardTitle>
                         <CardDescription>
                           {t('orcamentos.createFromScratch')}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+
+                <Card className="cursor-pointer hover:shadow-md transition-smooth border-2 hover:border-primary/20" onClick={() => { setIsSheetOpen(false); navigate('/orcamentos/precificacao'); }}>
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Calculator className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO') ? 'Pricing' : 'Precificação'}</CardTitle>
+                        <CardDescription>
+                          {empresaAtual?.nome?.toUpperCase().includes('MEC HYDRO') ? 'Price estimate without creating a quote' : 'Estimativa de preço sem criar orçamento'}
                         </CardDescription>
                       </div>
                     </div>
