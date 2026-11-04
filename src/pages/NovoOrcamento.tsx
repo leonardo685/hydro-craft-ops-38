@@ -3545,6 +3545,64 @@ export default function NovoOrcamento() {
               {t('novoOrcamento.pageSubtitle')}
             </p>
           </div>
+          {editId && orcamentoAtual && (
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowVincularModalTop(true)}
+                title={t('orcamentos.linkOrders')}
+              >
+                <Link2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copiarOrcamentoTop}
+                title={t('orcamentos.copyQuote')}
+                disabled={copiandoTop}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPrecificacaoModalTop(true)}
+              >
+                <DollarSign className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEmailModalTop(true)}
+                title="Enviar por e-mail"
+              >
+                <Mail className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportarPDF}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                onClick={reprovarOrcamentoTop}
+                title={t('orcamentos.rejectQuote')}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setShowAprovarModalTop(true)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-6">
