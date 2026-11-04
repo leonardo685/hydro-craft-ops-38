@@ -885,11 +885,9 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave, standalone
             <FileDown className="h-4 w-4 mr-2" />
             Exportar PDF
           </Button>
-          {!standalone && (
-            <Button onClick={handleSalvar} disabled={salvando}>
-              {salvando ? "Salvando..." : "Salvar"}
-            </Button>
-          )}
+          <Button onClick={standalone ? handleSalvarStandalone : handleSalvar} disabled={salvando}>
+            {salvando ? "Salvando..." : "Salvar"}
+          </Button>
         </DialogFooter>
       </DialogContent>
 
