@@ -392,8 +392,8 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave, standalone
       };
 
       const query = orcamento?.id
-        ? supabase.from("precificacoes").update(payload).eq("id", orcamento.id)
-        : supabase.from("precificacoes").insert(payload);
+        ? supabase.from("precificacoes").update(payload as any).eq("id", orcamento.id)
+        : supabase.from("precificacoes").insert(payload as any);
 
       const { error } = await query;
       if (error) throw error;
