@@ -3569,6 +3569,7 @@ export default function NovoOrcamento() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowPrecificacaoModalTop(true)}
+                title={language === 'en' ? 'Pricing' : language === 'es' ? 'Precificación' : 'Precificação'}
               >
                 <DollarSign className="h-4 w-4" />
               </Button>
@@ -3576,7 +3577,7 @@ export default function NovoOrcamento() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowEmailModalTop(true)}
-                title="Enviar por e-mail"
+                title={language === 'en' ? 'Send by email' : language === 'es' ? 'Enviar por correo' : 'Enviar por e-mail'}
               >
                 <Mail className="h-4 w-4" />
               </Button>
@@ -3584,6 +3585,7 @@ export default function NovoOrcamento() {
                 variant="outline"
                 size="sm"
                 onClick={exportarPDF}
+                title={t('novoOrcamento.exportPdf')}
               >
                 <Download className="h-4 w-4" />
               </Button>
