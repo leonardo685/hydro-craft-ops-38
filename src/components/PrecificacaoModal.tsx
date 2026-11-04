@@ -358,6 +358,57 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave, standalone
     }
   };
 
+  const handleSalvarStandalone = async () => {
+    if (precoDesejado <= 0) {
+      toast.error("Preço desejado deve ser maior que zero");
+      return;
+    }
+    if (!empresaAtual?.id) {
+      toast.error("Empresa não identificada");
+      return;
+    }
+
+    setSalvando(true);
+    try {
+      const payload = {
+        empresa_id: empresaAtual.id,
+        cliente_nome: orcamento?.cliente_nome || "",
+        produto: orcamento?.equipamento || "",
+        descricao: orcamento?.descricao || "",
+        preco_desejado: precoDesejado,
+        desconto_percentual: descontoPercentual,
+        impostos_percentual: impostosPercentual,
+        impostos_valor: impostosValor,
+        comissao_percentual: comissaoPercentual,
+        comissao_valor: comissaoValor,
+        percentuais_customizados: percentuaisCustomizados,
+        custos_variaveis: custosVariaveis,
+        total_custos_variaveis: totalCustosVariaveis,
+        custos_cilindros: custosCilindros,
+        total_custos_cilindros: totalCustosCilindros,
+        margem_contribuicao: margemContribuicao,
+        percentual_margem: percentualMargem,
+        precificacao_lucro_real: { ...lucroReal, regime },
+      };
+
+      const query = orcamento?.id
+        ? supabase.from("precificacoes").update(payload as any).eq("id", orcamento.id)
+        : supabase.from("precificacoes").insert(payload as any);
+
+      const { error } = await query;
+      if (error) throw error;
+
+      toast.success("Precificação salva com sucesso!");
+      onSave?.();
+      onClose();
+    } catch (error) {
+      console.error("Erro ao salvar precificação:", error);
+      toast.error("Erro ao salvar precificação");
+    } finally {
+      setSalvando(false);
+    }
+  };
+
   const handleExportarPDF = async () => {
     const dadosAtualizados = {
       ...orcamento,
@@ -834,11 +885,9 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave, standalone
             <FileDown className="h-4 w-4 mr-2" />
             Exportar PDF
           </Button>
-          {!standalone && (
-            <Button onClick={handleSalvar} disabled={salvando}>
-              {salvando ? "Salvando..." : "Salvar"}
-            </Button>
-          )}
+          <Button onClick={standalone ? handleSalvarStandalone : handleSalvar} disabled={salvando}>
+            {salvando ? "Salvando..." : "Salvar"}
+          </Button>
         </DialogFooter>
       </DialogContent>
 
