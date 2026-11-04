@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X, Minus, Eye, EyeOff } from "lucide-react";
+import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X, Minus, Eye, EyeOff, Link2, Mail, Copy, Check } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useClientes } from "@/hooks/use-clientes";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
@@ -27,6 +27,10 @@ import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations } from "@/i18n/translations";
 import { translateTerm } from "@/i18n/dynamicTerms";
+import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
+import { VincularOrdensModal } from "@/components/VincularOrdensModal";
+import { EnviarDocumentoEmailModal } from "@/components/EnviarDocumentoEmailModal";
+import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 interface ItemOrcamento {
   id: string;
   tipo: 'peca' | 'servico' | 'usinagem';
@@ -92,6 +96,150 @@ export default function NovoOrcamento() {
     })();
     return () => { cancelled = true; };
   }, [editId]);
+
+  // ===== Ações rápidas no topo da página (mesmos botões dos cards do Comercial) =====
+  const [showVincularModalTop, setShowVincularModalTop] = useState(false);
+  const [showAprovarModalTop, setShowAprovarModalTop] = useState(false);
+  const [showEmailModalTop, setShowEmailModalTop] = useState(false);
+  const [showPrecificacaoModalTop, setShowPrecificacaoModalTop] = useState(false);
+  const [copiandoTop, setCopiandoTop] = useState(false);
+  const orcamentoAtual = orcamentoRef.current as any;
+
+  const copiarOrcamentoTop = async () => {
+    const orcamento = orcamentoRef.current as any;
+    if (!orcamento?.id || !empresaAtual?.id || copiandoTop) return;
+    setCopiandoTop(true);
+    toast({ title: t('orcamentos.copyingQuote') });
+    try {
+      const anoAtual = new Date().getFullYear().toString().slice(-2);
+      const { data: orcamentosExistentes } = await supabase
+        .from('orcamentos')
+        .select('numero')
+        .eq('empresa_id', empresaAtual.id);
+      let maiorNumero = 0;
+      orcamentosExistentes?.forEach((o: any) => {
+        const match = o.numero?.match(/^(\d+)\/(\d{2})$/);
+        if (match && match[2] === anoAtual) {
+          const num = parseInt(match[1], 10);
+          if (num > maiorNumero) maiorNumero = num;
+        }
+      });
+      const novoNumeroOrcamento = `${String(maiorNumero + 1).padStart(4, '0')}/${anoAtual}`;
+      const { data: novoOrcamento, error: errorOrcamento } = await supabase
+        .from('orcamentos')
+        .insert({
+          numero: novoNumeroOrcamento,
+          empresa_id: empresaAtual.id,
+          cliente_id: orcamento.cliente_id,
+          cliente_nome: orcamento.cliente_nome,
+          equipamento: orcamento.equipamento,
+          tax_exempt: Boolean(orcamento.tax_exempt),
+          urgency_fee_enabled: Boolean(orcamento.urgency_fee_enabled),
+          urgency_fee_percentual: Number(orcamento.urgency_fee_percentual) || 0,
+          valor: orcamento.valor,
+          desconto_percentual: orcamento.desconto_percentual,
+          condicao_pagamento: orcamento.condicao_pagamento,
+          prazo_entrega: orcamento.prazo_entrega,
+          prazo_pagamento: orcamento.prazo_pagamento,
+          garantia: orcamento.garantia,
+          validade_proposta: orcamento.validade_proposta,
+          frete: orcamento.frete,
+          assunto_proposta: orcamento.assunto_proposta,
+          descricao: orcamento.descricao,
+          observacoes: orcamento.observacoes,
+          observacoes_nota: orcamento.observacoes_nota,
+          numero_nota_entrada: orcamento.numero_nota_entrada,
+          impostos_percentual: orcamento.impostos_percentual,
+          comissao_percentual: orcamento.comissao_percentual,
+          margem_contribuicao: orcamento.margem_contribuicao,
+          custos_variaveis: orcamento.custos_variaveis,
+          percentuais_customizados: orcamento.percentuais_customizados,
+          preco_desejado: orcamento.preco_desejado,
+          total_custos_variaveis: orcamento.total_custos_variaveis,
+          percentual_margem: orcamento.percentual_margem,
+          impostos_valor: orcamento.impostos_valor,
+          comissao_valor: orcamento.comissao_valor,
+          status: 'pendente',
+          data_criacao: new Date().toISOString().split('T')[0]
+        })
+        .select()
+        .single();
+      if (errorOrcamento || !novoOrcamento) throw errorOrcamento;
+
+      const { data: itensOriginais } = await supabase
+        .from('itens_orcamento')
+        .select('*')
+        .eq('orcamento_id', orcamento.id);
+      if (itensOriginais && itensOriginais.length > 0) {
+        const novosItens = itensOriginais.map((item: any) => ({
+          orcamento_id: novoOrcamento.id,
+          empresa_id: empresaAtual.id,
+          tipo: item.tipo,
+          descricao: item.descricao,
+          codigo: item.codigo,
+          quantidade: item.quantidade,
+          valor_unitario: item.valor_unitario,
+          valor_total: item.valor_total,
+          detalhes: item.detalhes
+        }));
+        await supabase.from('itens_orcamento').insert(novosItens);
+      }
+
+      const { data: fotosOriginais } = await supabase
+        .from('fotos_orcamento')
+        .select('*')
+        .eq('orcamento_id', orcamento.id);
+      if (fotosOriginais && fotosOriginais.length > 0) {
+        const novasFotos = fotosOriginais.map((foto: any) => ({
+          orcamento_id: novoOrcamento.id,
+          empresa_id: empresaAtual.id,
+          arquivo_url: foto.arquivo_url,
+          nome_arquivo: foto.nome_arquivo,
+          legenda: foto.legenda,
+          apresentar_orcamento: foto.apresentar_orcamento,
+          tipo: foto.tipo
+        }));
+        await supabase.from('fotos_orcamento').insert(novasFotos);
+      }
+
+      toast({ title: t('orcamentos.copyQuoteSuccess') });
+      navigate(`/orcamentos/novo?editId=${novoOrcamento.id}`, { replace: true });
+    } catch (error) {
+      console.error('Erro ao copiar orçamento:', error);
+      toast({ title: t('orcamentos.copyQuoteError'), variant: "destructive" });
+    } finally {
+      setCopiandoTop(false);
+    }
+  };
+
+  const reprovarOrcamentoTop = async () => {
+    const orcamento = orcamentoRef.current as any;
+    if (!orcamento?.id) return;
+    try {
+      const { error } = await supabase
+        .from('orcamentos')
+        .update({ status: 'rejeitado' })
+        .eq('id', orcamento.id);
+      if (error) {
+        console.error('Erro ao reprovar orçamento:', error);
+        toast({ title: t('orcamentos.errorRejectingQuote'), variant: "destructive" });
+        return;
+      }
+      toast({
+        title: t('orcamentos.quoteRejected'),
+        description: t('orcamentos.quoteRejectedDesc')
+      });
+      navigate('/orcamentos');
+    } catch (error) {
+      console.error('Erro ao reprovar orçamento:', error);
+      toast({ title: t('orcamentos.errorRejectingQuote'), variant: "destructive" });
+    }
+  };
+
+  const aprovarOrcamentoTopConfirm = () => {
+    setShowAprovarModalTop(false);
+    navigate('/orcamentos');
+  };
   
   const {
     clientes,
@@ -3398,6 +3546,64 @@ export default function NovoOrcamento() {
               {t('novoOrcamento.pageSubtitle')}
             </p>
           </div>
+          {editId && orcamentoAtual && (
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowVincularModalTop(true)}
+                title={t('orcamentos.linkOrders')}
+              >
+                <Link2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copiarOrcamentoTop}
+                title={t('orcamentos.copyQuote')}
+                disabled={copiandoTop}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPrecificacaoModalTop(true)}
+              >
+                <DollarSign className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEmailModalTop(true)}
+                title="Enviar por e-mail"
+              >
+                <Mail className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportarPDF}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                onClick={reprovarOrcamentoTop}
+                title={language === 'en' ? 'Reject quote' : language === 'es' ? 'Rechazar presupuesto' : 'Reprovar orçamento'}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setShowAprovarModalTop(true)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -4395,6 +4601,36 @@ export default function NovoOrcamento() {
           </Button>
         </div>
       </div>
+
+      {/* Modais das ações rápidas do topo */}
+      {orcamentoAtual && (
+        <>
+          <AprovarOrcamentoModal
+            open={showAprovarModalTop}
+            onOpenChange={setShowAprovarModalTop}
+            orcamento={orcamentoAtual}
+            onConfirm={aprovarOrcamentoTopConfirm}
+          />
+          <PrecificacaoModal
+            open={showPrecificacaoModalTop}
+            onClose={() => setShowPrecificacaoModalTop(false)}
+            orcamento={orcamentoAtual}
+            onSave={() => {}}
+          />
+          <VincularOrdensModal
+            open={showVincularModalTop}
+            onOpenChange={setShowVincularModalTop}
+            orcamento={orcamentoAtual}
+            onSuccess={() => {}}
+          />
+          <EnviarDocumentoEmailModal
+            open={showEmailModalTop}
+            onOpenChange={setShowEmailModalTop}
+            orcamento={orcamentoAtual}
+            language={language}
+          />
+        </>
+      )}
 
       {/* Modal de Cadastro de Novo Cliente */}
       <Dialog open={modalNovoCliente} onOpenChange={setModalNovoCliente}>
