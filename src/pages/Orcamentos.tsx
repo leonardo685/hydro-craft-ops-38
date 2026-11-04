@@ -2673,6 +2673,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => abrirPrecificacao(item)}
+                          title={language === 'en' ? 'Pricing' : language === 'es' ? 'Precificación' : 'Precificação'}
                         >
                           <DollarSign className="h-4 w-4" />
                         </Button>
@@ -2680,6 +2681,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => editarOrcamento(item)}
+                          title={language === 'en' ? 'Edit' : language === 'es' ? 'Editar' : 'Editar'}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -2695,6 +2697,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => gerarPDFOrcamento(item, language)}
+                          title={t('novoOrcamento.exportPdf')}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -2702,6 +2705,7 @@ export default function Orcamentos() {
                           size="sm"
                           onClick={() => handleReprovarOrcamento(item.id)}
                           className="bg-red-600 hover:bg-red-700 text-white"
+                          title={language === 'en' ? 'Reject quote' : language === 'es' ? 'Rechazar presupuesto' : 'Reprovar orçamento'}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -2709,6 +2713,7 @@ export default function Orcamentos() {
                           size="sm"
                           onClick={() => handleAprovarOrcamento(item)}
                           className="bg-green-600 hover:bg-green-700 text-white"
+                          title={language === 'en' ? 'Approve' : language === 'es' ? 'Aprobar' : 'Aprovar'}
                         >
                           <Check className="h-4 w-4" />
                         </Button>
@@ -2791,6 +2796,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => abrirPrecificacao(item)}
+                          title={language === 'en' ? 'Pricing' : language === 'es' ? 'Precificación' : 'Precificação'}
                         >
                           <DollarSign className="h-4 w-4" />
                         </Button>
@@ -2798,6 +2804,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => editarOrcamento(item)}
+                          title={language === 'en' ? 'Edit' : language === 'es' ? 'Editar' : 'Editar'}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -2826,6 +2833,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => gerarPDFOrcamento(item, language)}
+                          title={t('novoOrcamento.exportPdf')}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -2951,6 +2959,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => abrirPrecificacao(item)}
+                          title={language === 'en' ? 'Pricing' : language === 'es' ? 'Precificación' : 'Precificação'}
                         >
                           <DollarSign className="h-4 w-4" />
                         </Button>
@@ -2966,6 +2975,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => gerarPDFOrcamento(item, language)}
+                          title={t('novoOrcamento.exportPdf')}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -3050,6 +3060,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => abrirPrecificacao(item)}
+                          title={language === 'en' ? 'Pricing' : language === 'es' ? 'Precificación' : 'Precificação'}
                         >
                           <DollarSign className="h-4 w-4" />
                         </Button>
@@ -3057,6 +3068,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => editarOrcamento(item)}
+                          title={language === 'en' ? 'Edit' : language === 'es' ? 'Editar' : 'Editar'}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -3064,6 +3076,7 @@ export default function Orcamentos() {
                           variant="outline"
                           size="sm"
                           onClick={() => gerarPDFOrcamento(item, language)}
+                          title={t('novoOrcamento.exportPdf')}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
