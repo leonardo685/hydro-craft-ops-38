@@ -96,6 +96,149 @@ export default function NovoOrcamento() {
     })();
     return () => { cancelled = true; };
   }, [editId]);
+
+  // ===== Ações rápidas no topo da página (mesmos botões dos cards do Comercial) =====
+  const [showVincularModalTop, setShowVincularModalTop] = useState(false);
+  const [showAprovarModalTop, setShowAprovarModalTop] = useState(false);
+  const [showEmailModalTop, setShowEmailModalTop] = useState(false);
+  const [showPrecificacaoModalTop, setShowPrecificacaoModalTop] = useState(false);
+  const [copiandoTop, setCopiandoTop] = useState(false);
+  const orcamentoAtual = orcamentoRef.current as any;
+
+  const copiarOrcamentoTop = async () => {
+    const orcamento = orcamentoRef.current as any;
+    if (!orcamento?.id || !empresaAtual?.id || copiandoTop) return;
+    setCopiandoTop(true);
+    toast(t('orcamentos.copyingQuote'));
+    try {
+      const anoAtual = new Date().getFullYear().toString().slice(-2);
+      const { data: orcamentosExistentes } = await supabase
+        .from('orcamentos')
+        .select('numero')
+        .eq('empresa_id', empresaAtual.id);
+      let maiorNumero = 0;
+      orcamentosExistentes?.forEach((o: any) => {
+        const match = o.numero?.match(/^(\d+)\/(\d{2})$/);
+        if (match && match[2] === anoAtual) {
+          const num = parseInt(match[1], 10);
+          if (num > maiorNumero) maiorNumero = num;
+        }
+      });
+      const novoNumeroOrcamento = `${String(maiorNumero + 1).padStart(4, '0')}/${anoAtual}`;
+      const { data: novoOrcamento, error: errorOrcamento } = await supabase
+        .from('orcamentos')
+        .insert({
+          numero: novoNumeroOrcamento,
+          empresa_id: empresaAtual.id,
+          cliente_id: orcamento.cliente_id,
+          cliente_nome: orcamento.cliente_nome,
+          equipamento: orcamento.equipamento,
+          tax_exempt: Boolean(orcamento.tax_exempt),
+          urgency_fee_enabled: Boolean(orcamento.urgency_fee_enabled),
+          urgency_fee_percentual: Number(orcamento.urgency_fee_percentual) || 0,
+          valor: orcamento.valor,
+          desconto_percentual: orcamento.desconto_percentual,
+          condicao_pagamento: orcamento.condicao_pagamento,
+          prazo_entrega: orcamento.prazo_entrega,
+          prazo_pagamento: orcamento.prazo_pagamento,
+          garantia: orcamento.garantia,
+          validade_proposta: orcamento.validade_proposta,
+          frete: orcamento.frete,
+          assunto_proposta: orcamento.assunto_proposta,
+          descricao: orcamento.descricao,
+          observacoes: orcamento.observacoes,
+          observacoes_nota: orcamento.observacoes_nota,
+          numero_nota_entrada: orcamento.numero_nota_entrada,
+          impostos_percentual: orcamento.impostos_percentual,
+          comissao_percentual: orcamento.comissao_percentual,
+          margem_contribuicao: orcamento.margem_contribuicao,
+          custos_variaveis: orcamento.custos_variaveis,
+          percentuais_customizados: orcamento.percentuais_customizados,
+          preco_desejado: orcamento.preco_desejado,
+          total_custos_variaveis: orcamento.total_custos_variaveis,
+          percentual_margem: orcamento.percentual_margem,
+          impostos_valor: orcamento.impostos_valor,
+          comissao_valor: orcamento.comissao_valor,
+          status: 'pendente',
+          data_criacao: new Date().toISOString().split('T')[0]
+        })
+        .select()
+        .single();
+      if (errorOrcamento || !novoOrcamento) throw errorOrcamento;
+
+      const { data: itensOriginais } = await supabase
+        .from('itens_orcamento')
+        .select('*')
+        .eq('orcamento_id', orcamento.id);
+      if (itensOriginais && itensOriginais.length > 0) {
+        const novosItens = itensOriginais.map((item: any) => ({
+          orcamento_id: novoOrcamento.id,
+          empresa_id: empresaAtual.id,
+          tipo: item.tipo,
+          descricao: item.descricao,
+          codigo: item.codigo,
+          quantidade: item.quantidade,
+          valor_unitario: item.valor_unitario,
+          valor_total: item.valor_total,
+          detalhes: item.detalhes
+        }));
+        await supabase.from('itens_orcamento').insert(novosItens);
+      }
+
+      const { data: fotosOriginais } = await supabase
+        .from('fotos_orcamento')
+        .select('*')
+        .eq('orcamento_id', orcamento.id);
+      if (fotosOriginais && fotosOriginais.length > 0) {
+        const novasFotos = fotosOriginais.map((foto: any) => ({
+          orcamento_id: novoOrcamento.id,
+          empresa_id: empresaAtual.id,
+          arquivo_url: foto.arquivo_url,
+          nome_arquivo: foto.nome_arquivo,
+          legenda: foto.legenda,
+          apresentar_orcamento: foto.apresentar_orcamento,
+          tipo: foto.tipo
+        }));
+        await supabase.from('fotos_orcamento').insert(novasFotos);
+      }
+
+      toast.success(t('orcamentos.copyQuoteSuccess'));
+      navigate(`/orcamentos/novo?editId=${novoOrcamento.id}`, { replace: true });
+    } catch (error) {
+      console.error('Erro ao copiar orçamento:', error);
+      toast.error(t('orcamentos.copyQuoteError'));
+    } finally {
+      setCopiandoTop(false);
+    }
+  };
+
+  const reprovarOrcamentoTop = async () => {
+    const orcamento = orcamentoRef.current as any;
+    if (!orcamento?.id) return;
+    try {
+      const { error } = await supabase
+        .from('orcamentos')
+        .update({ status: 'rejeitado' })
+        .eq('id', orcamento.id);
+      if (error) {
+        console.error('Erro ao reprovar orçamento:', error);
+        toast.error(t('orcamentos.errorRejectingQuote'));
+        return;
+      }
+      toast(t('orcamentos.quoteRejected'), {
+        description: t('orcamentos.quoteRejectedDesc')
+      });
+      navigate('/orcamentos');
+    } catch (error) {
+      console.error('Erro ao reprovar orçamento:', error);
+      toast.error(t('orcamentos.errorRejectingQuote'));
+    }
+  };
+
+  const aprovarOrcamentoTopConfirm = () => {
+    setShowAprovarModalTop(false);
+    navigate('/orcamentos');
+  };
   
   const {
     clientes,
