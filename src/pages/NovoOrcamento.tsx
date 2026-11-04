@@ -3589,7 +3589,7 @@ export default function NovoOrcamento() {
               <Button
                 size="sm"
                 onClick={reprovarOrcamentoTop}
-                title={t('orcamentos.rejectQuote')}
+                title={language === 'en' ? 'Reject quote' : language === 'es' ? 'Rechazar presupuesto' : 'Reprovar orçamento'}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
                 <X className="h-4 w-4" />
