@@ -109,7 +109,7 @@ export default function NovoOrcamento() {
     const orcamento = orcamentoRef.current as any;
     if (!orcamento?.id || !empresaAtual?.id || copiandoTop) return;
     setCopiandoTop(true);
-    toast(t('orcamentos.copyingQuote'));
+    toast({ title: t('orcamentos.copyingQuote') });
     try {
       const anoAtual = new Date().getFullYear().toString().slice(-2);
       const { data: orcamentosExistentes } = await supabase
@@ -202,11 +202,11 @@ export default function NovoOrcamento() {
         await supabase.from('fotos_orcamento').insert(novasFotos);
       }
 
-      toast.success(t('orcamentos.copyQuoteSuccess'));
+      toast({ title: t('orcamentos.copyQuoteSuccess') });
       navigate(`/orcamentos/novo?editId=${novoOrcamento.id}`, { replace: true });
     } catch (error) {
       console.error('Erro ao copiar orçamento:', error);
-      toast.error(t('orcamentos.copyQuoteError'));
+      toast({ title: t('orcamentos.copyQuoteError'), variant: "destructive" });
     } finally {
       setCopiandoTop(false);
     }
@@ -222,16 +222,17 @@ export default function NovoOrcamento() {
         .eq('id', orcamento.id);
       if (error) {
         console.error('Erro ao reprovar orçamento:', error);
-        toast.error(t('orcamentos.errorRejectingQuote'));
+        toast({ title: t('orcamentos.errorRejectingQuote'), variant: "destructive" });
         return;
       }
-      toast(t('orcamentos.quoteRejected'), {
+      toast({
+        title: t('orcamentos.quoteRejected'),
         description: t('orcamentos.quoteRejectedDesc')
       });
       navigate('/orcamentos');
     } catch (error) {
       console.error('Erro ao reprovar orçamento:', error);
-      toast.error(t('orcamentos.errorRejectingQuote'));
+      toast({ title: t('orcamentos.errorRejectingQuote'), variant: "destructive" });
     }
   };
 
