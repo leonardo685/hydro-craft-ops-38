@@ -345,9 +345,14 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
 
   // ============ PÁGINA 2: ESCOPO TÉCNICO ============
   const scopeLabel = T.scope.toUpperCase();
-  y = await newPage(scopeLabel);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(...DARK);
-  doc.text(T.scope, M, y + 4); y += 14;
+  const _d = p.dadosTecnicos;
+  const temDadosTec = !!_d && [_d.pressaoTrabalho, _d.camisa, _d.curso, _d.hasteComprimento, _d.conexaoA, _d.conexaoB, _d.temperaturaTrabalho, _d.fluidoTrabalho, _d.potencia].some((v) => v && String(v).trim());
+  const temEscopo = !!((p.laudo || "").trim() || (p.findings || "").trim() || temDadosTec || (p.itens || []).some((i) => ["peca", "servico", "usinagem"].includes(i.tipo)));
+  if (temEscopo) {
+    y = await newPage(scopeLabel);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(...DARK);
+    doc.text(T.scope, M, y + 4); y += 14;
+  }
 
   const ensure = async (need: number) => {
     if (y + need > H - 22) { y = await newPage(scopeLabel); }
