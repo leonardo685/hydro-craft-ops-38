@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X, Minus, Eye, EyeOff } from "lucide-react";
+import { Calculator, FileText, DollarSign, ArrowLeft, Wrench, Settings, Package, Plus, Trash2, Download, Save, Camera, Upload, X, Minus, Eye, EyeOff, Link2, Mail, Copy, Check } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useClientes } from "@/hooks/use-clientes";
 import { useCategoriasFinanceiras } from "@/hooks/use-categorias-financeiras";
@@ -27,6 +27,10 @@ import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations } from "@/i18n/translations";
 import { translateTerm } from "@/i18n/dynamicTerms";
+import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
+import { VincularOrdensModal } from "@/components/VincularOrdensModal";
+import { EnviarDocumentoEmailModal } from "@/components/EnviarDocumentoEmailModal";
+import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 interface ItemOrcamento {
   id: string;
   tipo: 'peca' | 'servico' | 'usinagem';
