@@ -41,3 +41,6 @@
 - [x] Usar a escolha do orçamento em todas as exportações modernas.
 - [x] Validar PDFs com tax e sem tax (8,5% e 0%); compilação OK.
 - [ ] Confirmar salvar/reabrir na sessão do usuário — sessão autenticada indisponível para testes externos.
+## Lista de precificações
+- [x] Criar tabela precificacoes com isolamento por empresa e transformar a página em lista com botão "Nova precificação", edição, exclusão e salvamento no modal.
+- [x] Compilação OK; salvamento real não verificado por falta de sessão autenticada no Supabase externo.
