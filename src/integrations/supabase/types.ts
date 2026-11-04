@@ -2251,6 +2251,78 @@ export type Database = {
           },
         ]
       }
+      precificacoes: {
+        Row: {
+          cliente_nome: string
+          comissao_percentual: number
+          comissao_valor: number
+          created_at: string
+          custos_cilindros: Json
+          custos_variaveis: Json
+          desconto_percentual: number
+          descricao: string | null
+          empresa_id: string
+          id: string
+          impostos_percentual: number
+          impostos_valor: number
+          margem_contribuicao: number
+          percentuais_customizados: Json
+          percentual_margem: number
+          precificacao_lucro_real: Json
+          preco_desejado: number
+          produto: string | null
+          total_custos_cilindros: number
+          total_custos_variaveis: number
+          updated_at: string
+        }
+        Insert: {
+          cliente_nome: string
+          comissao_percentual?: number
+          comissao_valor?: number
+          created_at?: string
+          custos_cilindros?: Json
+          custos_variaveis?: Json
+          desconto_percentual?: number
+          descricao?: string | null
+          empresa_id: string
+          id?: string
+          impostos_percentual?: number
+          impostos_valor?: number
+          margem_contribuicao?: number
+          percentuais_customizados?: Json
+          percentual_margem?: number
+          precificacao_lucro_real?: Json
+          preco_desejado?: number
+          produto?: string | null
+          total_custos_cilindros?: number
+          total_custos_variaveis?: number
+          updated_at?: string
+        }
+        Update: {
+          cliente_nome?: string
+          comissao_percentual?: number
+          comissao_valor?: number
+          created_at?: string
+          custos_cilindros?: Json
+          custos_variaveis?: Json
+          desconto_percentual?: number
+          descricao?: string | null
+          empresa_id?: string
+          id?: string
+          impostos_percentual?: number
+          impostos_valor?: number
+          margem_contribuicao?: number
+          percentuais_customizados?: Json
+          percentual_margem?: number
+          precificacao_lucro_real?: Json
+          preco_desejado?: number
+          produto?: string | null
+          total_custos_cilindros?: number
+          total_custos_variaveis?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       produtos_nfe: {
         Row: {
           codigo: string
