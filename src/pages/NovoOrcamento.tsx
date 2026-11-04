@@ -4601,6 +4601,36 @@ export default function NovoOrcamento() {
         </div>
       </div>
 
+      {/* Modais das ações rápidas do topo */}
+      {orcamentoAtual && (
+        <>
+          <AprovarOrcamentoModal
+            open={showAprovarModalTop}
+            onOpenChange={setShowAprovarModalTop}
+            orcamento={orcamentoAtual}
+            onConfirm={aprovarOrcamentoTopConfirm}
+          />
+          <PrecificacaoModal
+            open={showPrecificacaoModalTop}
+            onClose={() => setShowPrecificacaoModalTop(false)}
+            orcamento={orcamentoAtual}
+            onSave={() => {}}
+          />
+          <VincularOrdensModal
+            open={showVincularModalTop}
+            onOpenChange={setShowVincularModalTop}
+            orcamento={orcamentoAtual}
+            onSuccess={() => {}}
+          />
+          <EnviarDocumentoEmailModal
+            open={showEmailModalTop}
+            onOpenChange={setShowEmailModalTop}
+            orcamento={orcamentoAtual}
+            language={language}
+          />
+        </>
+      )}
+
       {/* Modal de Cadastro de Novo Cliente */}
       <Dialog open={modalNovoCliente} onOpenChange={setModalNovoCliente}>
         <DialogContent className="max-w-2xl">
