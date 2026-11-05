@@ -271,11 +271,11 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   // Desconto: valor antigo riscado, preto, sem negrito, logo acima do valor em destaque
   const drawOldValue = (yy: number, oldAmount: number) => {
     if (descontoPct <= 0) return;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(...DARK);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(...MUTED);
     const txt = money(oldAmount);
     doc.text(txt, M, yy);
     const w = doc.getTextWidth(txt);
-    doc.setDrawColor(...DARK); doc.setLineWidth(0.4);
+    doc.setDrawColor(...MUTED); doc.setLineWidth(0.4);
     doc.line(M, yy - 1.4, M + w, yy - 1.4);
   };
   const taxRate = o.tax_exempt ? 0 : 8.5;
