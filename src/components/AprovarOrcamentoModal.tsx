@@ -107,7 +107,7 @@ export const AprovarOrcamentoModal = ({
     if (!open || !orcamento || !empresaAtual?.id) return;
     supabase
       .from('orcamentos')
-      .select('id, numero, cliente_nome, cliente_id, equipamento, valor, descricao, ordem_servico_id, urgency_fee_enabled, urgency_fee_percentual')
+      .select('id, numero, cliente_nome, cliente_id, equipamento, valor, desconto_percentual, descricao, ordem_servico_id, urgency_fee_enabled, urgency_fee_percentual')
       .eq('empresa_id', empresaAtual.id)
       .eq('status', 'pendente')
       .neq('id', orcamento.id)
@@ -123,7 +123,7 @@ export const AprovarOrcamentoModal = ({
   }, [open, orcamento?.id, empresaAtual?.id]);
 
   const aprovarAdicional = async (orc: any, anexoUrl: string | null) => {
-    const valorFinal = Number(orc.valor) || 0;
+    const valorFinal = (Number(orc.valor) || 0) * (1 - lerDescontoPersistido(orc) / 100);
     const { data: atualizados, error } = await supabase
       .from('orcamentos')
       .update({
