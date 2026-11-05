@@ -296,6 +296,7 @@ export default function NovoOrcamento() {
   });
 
   // Estados para informações comerciais
+  const [discountMode, setDiscountMode] = useState<'percent' | 'amount'>('percent');
   const [informacoesComerciais, setInformacoesComerciais] = useState({
     taxExempt: false,
     urgencyFeeEnabled: false,
@@ -4346,17 +4347,48 @@ export default function NovoOrcamento() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="desconto">{t('novoOrcamento.discount')}</Label>
-                <Input id="desconto" type="number" min="0" max="100" step="0.5" value={informacoesComerciais.desconto} onChange={e => setInformacoesComerciais(prev => ({
-                ...prev,
-                desconto: parseFloat(e.target.value) || 0
-              }))} />
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="desconto">{t('novoOrcamento.discount')}</Label>
+                  <div className="flex rounded-md border text-xs overflow-hidden">
+                    {(['percent', 'amount'] as const).map(mode => (
+                      <button key={mode} type="button" onClick={() => setDiscountMode(mode)}
+                        className={`px-2 py-0.5 ${discountMode === mode ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground'}`}>
+                        {mode === 'percent' ? '%' : '$'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {discountMode === 'percent' ? (
+                  <Input id="desconto" type="number" min="0" max="100" step="0.5" value={informacoesComerciais.desconto} onChange={e => setInformacoesComerciais(prev => ({
+                    ...prev,
+                    desconto: Math.min(100, Math.max(0, parseFloat(e.target.value) || 0))
+                  }))} />
+                ) : (
+                  <Input id="desconto" type="number" min="0" step="0.01"
+                    value={Number(((informacoesComerciais.valorTotal || 0) * informacoesComerciais.desconto / 100).toFixed(2))}
+                    onChange={e => {
+                      const amount = Math.max(0, parseFloat(e.target.value) || 0);
+                      setInformacoesComerciais(prev => {
+                        const total = prev.valorTotal || 0;
+                        return { ...prev, desconto: total > 0 ? Math.min(100, (amount / total) * 100) : 0 };
+                      });
+                    }} />
+                )}
               </div>
               <div>
                 <Label htmlFor="valorComDesconto">{t('novoOrcamento.valueWithDiscount')}</Label>
-                <Input id="valorComDesconto" value={`$ ${calcularValorComDesconto().toLocaleString('pt-BR', {
-                minimumFractionDigits: 2
-              })}`} disabled className="bg-muted font-medium" />
+                <Input id="valorComDesconto" type="number" min="0" step="0.01"
+                  value={Number(calcularValorComDesconto().toFixed(2))}
+                  onChange={e => {
+                    const finalValue = Math.max(0, parseFloat(e.target.value) || 0);
+                    setInformacoesComerciais(prev => {
+                      const total = prev.valorTotal || 0;
+                      if (total <= 0) return prev;
+                      const pct = ((total - Math.min(finalValue, total)) / total) * 100;
+                      return { ...prev, desconto: pct };
+                    });
+                  }}
+                  className="font-medium" />
               </div>
             </div>
 
