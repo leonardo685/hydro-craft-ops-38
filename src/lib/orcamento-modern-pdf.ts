@@ -265,7 +265,19 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   small(`${T.taxId}  ${p.clienteDoc || "N/A"}    |    ${T.entryInvoice}  ${o.numero_nota_entrada || "N/A"}`, M, y, MUTED, false, 7);
   y += 9; rule(y); y += 10;
 
-  const subtotal = Number(o.valor || 0);
+  const valorOriginal = Number(o.valor || 0);
+  const descontoPct = Math.min(100, Math.max(0, Number(o.desconto_percentual) || 0));
+  const subtotal = valorOriginal * (1 - descontoPct / 100);
+  // Desconto: valor antigo riscado, preto, sem negrito, logo acima do valor em destaque
+  const drawOldValue = (yy: number, oldAmount: number) => {
+    if (descontoPct <= 0) return;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(...DARK);
+    const txt = money(oldAmount);
+    doc.text(txt, M, yy);
+    const w = doc.getTextWidth(txt);
+    doc.setDrawColor(...DARK); doc.setLineWidth(0.4);
+    doc.line(M, yy - 1.4, M + w, yy - 1.4);
+  };
   const taxRate = o.tax_exempt ? 0 : 8.5;
   const feePct = isMec && o.urgency_fee_enabled ? Number(o.urgency_fee_percentual) || 0 : 0;
   const fee = subtotal * (feePct / 100);
@@ -274,6 +286,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   if (feePct > 0) {
     // Com fee: valor total (com fee, sem tax) em destaque; abaixo fee %, tax e somatória com imposto
     small(T.total, M, y); y += 14;
+    if (descontoPct > 0) { drawOldValue(y - 4, valorOriginal * (1 + feePct / 100)); y += 10; }
     doc.setFont("helvetica", "bold"); doc.setFontSize(26); doc.setTextColor(...RED);
     doc.text(money(subtotal + fee), M, y);
     small(currency, M + doc.getTextWidth(money(subtotal + fee)) + 12, y - 1, MUTED, false, 7);
@@ -290,6 +303,7 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
     }
   } else {
     small(isMec ? T.subtotal : T.total, M, y); y += 14;
+    if (descontoPct > 0) { drawOldValue(y - 4, valorOriginal); y += 10; }
     doc.setFont("helvetica", "bold"); doc.setFontSize(26); doc.setTextColor(...RED);
     doc.text(money(subtotal), M, y);
     small(currency, M + doc.getTextWidth(money(subtotal)) + 12, y - 1, MUTED, false, 7);
