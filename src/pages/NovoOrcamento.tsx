@@ -1961,6 +1961,7 @@ export default function NovoOrcamento() {
             urgency_fee_enabled: Boolean(revisao.urgency_fee_enabled),
             urgency_fee_percentual: Number(revisao.urgency_fee_percentual) || 0,
             valor: Number(revisao.valor) || 0,
+            desconto_percentual: Math.min(100, Math.max(0, Number(revisao.desconto_percentual) || 0)),
             condicao_pagamento: revisao.condicao_pagamento,
             prazo_pagamento: revisao.prazo_pagamento,
             prazo_entrega: revisao.prazo_entrega,

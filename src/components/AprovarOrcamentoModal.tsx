@@ -20,6 +20,10 @@ interface AprovarOrcamentoModalProps {
   onConfirm: () => void;
 }
 
+/** `valor` da quote é o valor bruto; o desconto efetivo fica em `desconto_percentual`. */
+const lerDescontoPersistido = (orcamento: any) =>
+  Math.min(100, Math.max(0, Number(orcamento?.desconto_percentual) || 0));
+
 export const AprovarOrcamentoModal = ({ 
   open, 
   onOpenChange, 
