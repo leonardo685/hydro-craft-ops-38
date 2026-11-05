@@ -141,11 +141,11 @@ export default function Orcamentos() {
   }, [orcamentos, empresaAtual?.nome, filtroAnoCards, filtroMesCards]);
 
   // Totais dos cards de métricas — hooks sempre no topo, nunca dentro de JSX condicional
-  const aguardandoTotal = useMemo(() => orcamentos.filter(o => o.status === 'pendente' && noPeriodoCards(o)).reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos, noPeriodoCards]);
+  const aguardandoTotal = useMemo(() => orcamentos.filter(o => o.status === 'pendente' && noPeriodoCards(o)).reduce((acc, o) => acc + quoteCardValues(o, empresaAtual?.nome).value, 0), [orcamentos, noPeriodoCards, empresaAtual?.nome]);
   const aguardandoCount = useMemo(() => orcamentos.filter(o => o.status === 'pendente' && noPeriodoCards(o)).length, [orcamentos, noPeriodoCards]);
-  const aprovadosTotal = useMemo(() => orcamentos.filter(o => (o.status === 'aprovado' || o.status === 'faturamento') && noPeriodoCards(o)).reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos, noPeriodoCards]);
+  const aprovadosTotal = useMemo(() => orcamentos.filter(o => (o.status === 'aprovado' || o.status === 'faturamento') && noPeriodoCards(o)).reduce((acc, o) => acc + quoteCardValues(o, empresaAtual?.nome).value, 0), [orcamentos, noPeriodoCards, empresaAtual?.nome]);
   const aprovadosCount = useMemo(() => orcamentos.filter(o => (o.status === 'aprovado' || o.status === 'faturamento') && noPeriodoCards(o)).length, [orcamentos, noPeriodoCards]);
-  const reprovadosTotal = useMemo(() => orcamentos.filter(o => o.status === 'rejeitado' && noPeriodoCards(o)).reduce((acc, o) => acc + Number(o.valor || 0), 0), [orcamentos, noPeriodoCards]);
+  const reprovadosTotal = useMemo(() => orcamentos.filter(o => o.status === 'rejeitado' && noPeriodoCards(o)).reduce((acc, o) => acc + quoteCardValues(o, empresaAtual?.nome).value, 0), [orcamentos, noPeriodoCards, empresaAtual?.nome]);
   const reprovadosCount = useMemo(() => orcamentos.filter(o => o.status === 'rejeitado' && noPeriodoCards(o)).length, [orcamentos, noPeriodoCards]);
   const totalAnualCount = useMemo(() => {
     if (filtroAnoCards !== 'todos' || filtroMesCards !== 'todos') return orcamentos.filter(noPeriodoCards).length;
@@ -172,14 +172,14 @@ export default function Orcamentos() {
       }
       return dados;
     };
-    const valor = (o: any) => Number(o.valor || 0);
+    const valor = (o: any) => quoteCardValues(o, empresaAtual?.nome).value;
     return {
       aguardando: montar(o => o.status === 'pendente', valor),
       aprovados: montar(o => o.status === 'aprovado' || o.status === 'faturamento', valor),
       reprovados: montar(o => o.status === 'rejeitado', valor),
       totalAnual: montar(() => true, () => 1),
     };
-  }, [orcamentos, filtroAnoCards, filtroMesCards]);
+  }, [orcamentos, filtroAnoCards, filtroMesCards, empresaAtual?.nome]);
 
   // Estados para copiar orçamento existente
   const [searchTermOrcamento, setSearchTermOrcamento] = useState("");

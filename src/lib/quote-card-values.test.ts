@@ -21,6 +21,21 @@ describe('US quote card Sales Tax', () => {
     const persisted = { valor: 1000 * (1 - 10 / 100), urgency_fee_enabled: true, urgency_fee_percentual: 30 };
     expect(quoteCardValues(persisted, 'MEC HYDRO').value).toBe(1170);
   });
+  it('shows the discounted value when the quote has a discount', () => {
+    expect(quoteCardValues({ valor: 1000, desconto_percentual: 10 }, 'MEC HYDRO'))
+      .toEqual({ value: 900, urgencyFee: 0, salesTax: 76.5 });
+  });
+  it('applies the discount once, before urgency and sales tax', () => {
+    expect(quoteCardValues({ valor: 1000, desconto_percentual: 10, urgency_fee_enabled: true, urgency_fee_percentual: 30 }, 'MEC HYDRO'))
+      .toEqual({ value: 1170, urgencyFee: 270, salesTax: 99.45 });
+  });
+  it('ignores an invalid negative discount', () => {
+    expect(quoteCardValues({ valor: 1000, desconto_percentual: -20 }, 'MEC HYDRO').value).toBe(1000);
+  });
+  it('shows the discounted value in Brazil without US fees or tax', () => {
+    expect(quoteCardValues({ valor: 1000, desconto_percentual: 10 }, 'MEC HIDRO'))
+      .toEqual({ value: 900, urgencyFee: 0, salesTax: 0 });
+  });
   it('sums sales tax from existing quotes including zero-tax quotes', () => {
     const quotes = [{ valor: 1000 }, { valor: 2000 }, { valor: 500, tax_exempt: true }];
     expect(quotes.reduce((sum, quote) => sum + quoteCardValues(quote, 'MEC HYDRO').salesTax, 0)).toBe(255);

@@ -20,6 +20,10 @@ interface AprovarOrcamentoModalProps {
   onConfirm: () => void;
 }
 
+/** `valor` da quote é o valor bruto; o desconto efetivo fica em `desconto_percentual`. */
+const lerDescontoPersistido = (orcamento: any) =>
+  Math.min(100, Math.max(0, Number(orcamento?.desconto_percentual) || 0));
+
 export const AprovarOrcamentoModal = ({ 
   open, 
   onOpenChange, 
@@ -30,14 +34,18 @@ export const AprovarOrcamentoModal = ({
   const { empresaAtual } = useEmpresa();
   const [condicoesPagamento, setCondicoesPagamento] = useState<string>('');
   
-  const [formData, setFormData] = useState({
-    valor: orcamento?.valor || 0,
-    prazoPagamento: 30,
-    dataVencimento: '',
-    descontoPercentual: 0,
-    valorComDesconto: orcamento?.valor || 0,
-    numeroPedido: '',
-    observacoes: ''
+  const [formData, setFormData] = useState(() => {
+    const valorBruto = Number(orcamento?.valor) || 0;
+    const descontoPercentual = lerDescontoPersistido(orcamento);
+    return {
+      valor: valorBruto,
+      prazoPagamento: 30,
+      dataVencimento: '',
+      descontoPercentual,
+      valorComDesconto: valorBruto * (1 - descontoPercentual / 100),
+      numeroPedido: '',
+      observacoes: ''
+    };
   });
 
   // Update form data when orcamento changes
@@ -46,12 +54,14 @@ export const AprovarOrcamentoModal = ({
       const dataVencimento = new Date();
       dataVencimento.setDate(dataVencimento.getDate() + 30);
       
+      const valorBruto = Number(orcamento.valor) || 0;
+      const descontoInicial = lerDescontoPersistido(orcamento);
       setFormData({
-        valor: orcamento.valor || 0,
+        valor: valorBruto,
         prazoPagamento: 30,
         dataVencimento: dataVencimento.toISOString().split('T')[0],
-        descontoPercentual: 0,
-        valorComDesconto: orcamento.valor || 0,
+        descontoPercentual: descontoInicial,
+        valorComDesconto: valorBruto * (1 - descontoInicial / 100),
         numeroPedido: '',
         observacoes: ''
       });
@@ -97,7 +107,7 @@ export const AprovarOrcamentoModal = ({
     if (!open || !orcamento || !empresaAtual?.id) return;
     supabase
       .from('orcamentos')
-      .select('id, numero, cliente_nome, cliente_id, equipamento, valor, descricao, ordem_servico_id, urgency_fee_enabled, urgency_fee_percentual')
+      .select('id, numero, cliente_nome, cliente_id, equipamento, valor, desconto_percentual, descricao, ordem_servico_id, urgency_fee_enabled, urgency_fee_percentual')
       .eq('empresa_id', empresaAtual.id)
       .eq('status', 'pendente')
       .neq('id', orcamento.id)
@@ -113,7 +123,7 @@ export const AprovarOrcamentoModal = ({
   }, [open, orcamento?.id, empresaAtual?.id]);
 
   const aprovarAdicional = async (orc: any, anexoUrl: string | null) => {
-    const valorFinal = Number(orc.valor) || 0;
+    const valorFinal = (Number(orc.valor) || 0) * (1 - lerDescontoPersistido(orc) / 100);
     const { data: atualizados, error } = await supabase
       .from('orcamentos')
       .update({
@@ -313,7 +323,8 @@ export const AprovarOrcamentoModal = ({
         .update({
           status: 'aprovado',
           data_aprovacao: new Date().toISOString(),
-          valor: formData.valorComDesconto,
+          valor: formData.valor,
+          desconto_percentual: formData.descontoPercentual,
           prazo_pagamento: formData.prazoPagamento,
           data_vencimento: formData.dataVencimento,
           numero_pedido: formData.numeroPedido,
@@ -494,7 +505,7 @@ export const AprovarOrcamentoModal = ({
   // Display urgency using the same rule as the cards; persist only the discounted
   // base so the existing cards and PDF do not apply the fee a second time.
   const originalTotals = quoteCardValues({ ...orcamento, valor: formData.valor }, empresaAtual?.nome);
-  const finalTotals = quoteCardValues({ ...orcamento, valor: formData.valorComDesconto }, empresaAtual?.nome);
+  const finalTotals = quoteCardValues({ ...orcamento, valor: formData.valorComDesconto, desconto_percentual: 0 }, empresaAtual?.nome);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
