@@ -16,8 +16,9 @@ export function quoteCardValues(quote: QuoteCardInput, companyName: string | nul
   const isUS = !hasFiscalBilling(companyName);
   const valorBruto = Number(quote.valor) || 0;
   const descontoPct = Math.min(100, Math.max(0, Number(quote.desconto_percentual) || 0));
-  const base = valorBruto * (1 - descontoPct / 100);
-  const urgencyFee = isUS && quote.urgency_fee_enabled ? base * ((Number(quote.urgency_fee_percentual) || 0) / 100) : 0;
-  const salesTax = isUS && !quote.tax_exempt ? (base + urgencyFee) * 0.085 : 0;
-  return { value: base + urgencyFee, urgencyFee, salesTax };
+  const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  const base = round2(valorBruto * (1 - descontoPct / 100));
+  const urgencyFee = isUS && quote.urgency_fee_enabled ? round2(base * ((Number(quote.urgency_fee_percentual) || 0) / 100)) : 0;
+  const salesTax = isUS && !quote.tax_exempt ? round2((base + urgencyFee) * 0.085) : 0;
+  return { value: round2(base + urgencyFee), urgencyFee, salesTax };
 }
