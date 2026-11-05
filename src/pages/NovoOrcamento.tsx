@@ -2556,6 +2556,7 @@ export default function NovoOrcamento() {
       urgency_fee_enabled: informacoesComerciais.urgencyFeeEnabled,
       urgency_fee_percentual: Number(informacoesComerciais.urgencyFeePercentual) || 0,
       valor: informacoesComerciais.valorTotal || 0,
+      desconto_percentual: Number(informacoesComerciais.desconto) || 0,
       observacoes: `Documento: ${dadosOrcamento.tipoDocumento}`,
       numero_nota_entrada: dadosOrcamento.numeroNota || null,
       numero_pedido: orcamentoRef.current?.numero_pedido || null,
