@@ -114,16 +114,18 @@ export default function ProcessoInterno() {
         // Orçamento
         const { data: orcs } = await supabase
           .from("orcamentos")
-          .select("id, numero, status, valor, cliente_nome, equipamento, ordem_referencia")
+          .select("id, numero, status, valor, desconto_percentual, cliente_nome, equipamento, ordem_referencia")
           .or(`ordem_referencia.eq.${numero},numero.eq.${numero}`);
         if (orcs && orcs.length > 0) {
           const o = orcs[0];
+          const desconto = Math.min(100, Math.max(0, Number(o.desconto_percentual) || 0));
+          const valorFinal = Number(o.valor || 0) * (1 - desconto / 100);
           setResumo((p) => ({ cliente: o.cliente_nome || p.cliente, equipamento: o.equipamento || p.equipamento }));
           ids.push(o.id);
           list.push({
             area: "Orçamento",
             status: o.status,
-            detalhes: `Nº ${o.numero} • $ ${Number(o.valor || 0).toFixed(2)}`,
+            detalhes: `Nº ${o.numero} • $ ${valorFinal.toFixed(2)}`,
             link: `/orcamentos`,
             icon: FileText,
             variant: o.status === "aprovado" ? "default" : "secondary",
