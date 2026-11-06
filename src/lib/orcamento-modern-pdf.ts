@@ -141,10 +141,10 @@ async function referenceOrderQR(orcamento: any, empresa: any) {
   return { image, number };
 }
 
-/** Peças mostram valores e a somatória (PARTS TOTAL) quando o toggle está ligado
- *  OU quando qualquer peça já tem preço unitário — o valor digitado no formulário
- *  nunca fica de fora do PDF por esquecimento do toggle. */
+/** O toggle "Valores no PDF" manda: desligado (false) sempre oculta preços e PARTS TOTAL.
+ *  Só quando o flag não foi informado (chamadas antigas) caímos na detecção por preço. */
 export function pecasMostramValores(itens: any[], mostrarValoresPecas: unknown): boolean {
+  if (mostrarValoresPecas === false) return false;
   if (Boolean(mostrarValoresPecas)) return true;
   return (itens || []).some((i) => i?.tipo === "peca" && (Number(i.valorUnitario ?? i.valor_unitario ?? 0) || 0) > 0);
 }

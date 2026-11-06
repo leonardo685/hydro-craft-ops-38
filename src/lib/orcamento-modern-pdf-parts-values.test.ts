@@ -7,12 +7,17 @@ describe("pecasMostramValores", () => {
     expect(pecasMostramValores(itens, true)).toBe(true);
   });
 
-  it("mostra a somatória quando qualquer peça tem preço unitário, mesmo sem o toggle", () => {
+  it("oculta preços quando o toggle está desligado, mesmo com peça precificada", () => {
+    const itens = [{ tipo: "peca", quantidade: 2, valorUnitario: 120 }];
+    expect(pecasMostramValores(itens, false)).toBe(false);
+  });
+
+  it("mostra a somatória quando o flag não foi informado e há peça com preço", () => {
     const itens = [
       { tipo: "peca", descricao: "Piston", quantidade: 2, valorUnitario: 120 },
       { tipo: "servico", descricao: "Repair", quantidade: 1, valorUnitario: 500 },
     ];
-    expect(pecasMostramValores(itens, false)).toBe(true);
+    expect(pecasMostramValores(itens, undefined)).toBe(true);
   });
 
   it("aceita itens em snake_case vindos do banco", () => {
