@@ -1,5 +1,10 @@
 # Tax por orçamento
 
+## Assinatura de entrega
+- [ ] Capturar assinatura no celular e salvar com data na ordem, mesmo sem aprovação ou P.O.
+- [ ] Incluir assinatura e data ao final do Invoice da ordem e empresa correspondentes.
+- [ ] Validar captura e PDF; confirmar salvamento real se houver sessão disponível.
+
 ## Email conjunto por P.O.
 - [x] Oferecer seleção de invoices Approved/Finalized com o mesmo P.O. e enviar apenas as escolhidas, com números e assuntos na mensagem.
 - [x] Validar envio individual e conjunto, isolamento e fotos com 20 testes; compilação sem erros.
