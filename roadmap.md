@@ -3,7 +3,7 @@
 ## Assinatura de entrega
 - [x] Capturar assinatura no celular e salvar com data na ordem, mesmo sem aprovação ou P.O.
 - [x] Incluir assinatura e data ao final do Invoice da ordem e empresa correspondentes.
-- [x] Validar regras com testes.
+- [x] Validar regras com testes, captura em tela de celular e última página de um Invoice de exemplo com assinatura e data.
 - [ ] Confirmar assinatura real no celular — sessão autenticada indisponível no Supabase externo.
 
 ## Impressão
