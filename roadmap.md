@@ -5,6 +5,10 @@
 - [ ] Incluir assinatura e data ao final do Invoice da ordem e empresa correspondentes.
 - [ ] Validar captura e PDF; confirmar salvamento real se houver sessão disponível.
 
+## Impressão
+- [ ] Adicionar impressão de Quotes, Invoices e ordens de serviço usando os documentos existentes.
+- [ ] Validar abertura da impressão.
+
 ## Email conjunto por P.O.
 - [x] Oferecer seleção de invoices Approved/Finalized com o mesmo P.O. e enviar apenas as escolhidas, com números e assuntos na mensagem.
 - [x] Validar envio individual e conjunto, isolamento e fotos com 20 testes; compilação sem erros.
