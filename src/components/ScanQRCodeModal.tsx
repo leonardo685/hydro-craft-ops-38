@@ -339,7 +339,7 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
             {!hasFiscalBilling(empresaAtual?.nome) && info.ordemId && <>
               <Opcao icon={PenLine} titulo="Customer signature" sub={info.assinatura ? 'Signed' : info.numero} onClick={() => setSigning(value => !value)} />
               {signing && <DeliverySignature busy={savingSignature} onSave={saveSignature} />}
-              {signaturePreview && <img src={signaturePreview} alt="Customer signature" className="w-full aspect-[5/2] object-contain border rounded-md bg-background" />}
+              {signaturePreview && <img src={signaturePreview} alt="Customer signature" className="w-full aspect-[5/2] object-contain border rounded-md bg-[hsl(var(--signature-paper))]" />}
               {info.assinaturaData && <p className="text-sm text-muted-foreground">{new Date(info.assinaturaData).toLocaleString()}</p>}
             </>}
             <div className="flex gap-2 pt-2">

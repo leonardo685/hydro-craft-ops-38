@@ -101,6 +101,8 @@ const loadImage = (url: string) =>
       c.width = w; c.height = h;
       const ctx = c.getContext("2d");
       if (!ctx) return resolve(null);
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, w, h);
       ctx.drawImage(img, 0, 0, w, h);
       resolve({ data: c.toDataURL("image/jpeg", 0.7), w, h });
     };
