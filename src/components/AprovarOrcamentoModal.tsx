@@ -504,7 +504,7 @@ export const AprovarOrcamentoModal = ({
 
   // Display urgency using the same rule as the cards; persist only the discounted
   // base so the existing cards and PDF do not apply the fee a second time.
-  const originalTotals = quoteCardValues({ ...orcamento, valor: formData.valor }, empresaAtual?.nome);
+  const originalTotals = quoteCardValues({ ...orcamento, valor: formData.valor, desconto_percentual: 0 }, empresaAtual?.nome);
   const finalTotals = quoteCardValues({ ...orcamento, valor: formData.valorComDesconto, desconto_percentual: 0 }, empresaAtual?.nome);
 
   return (
