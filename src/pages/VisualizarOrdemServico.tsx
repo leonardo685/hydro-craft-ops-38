@@ -125,8 +125,9 @@ const VisualizarOrdemServico = () => {
   const exportToPDF = async (imprimir = false) => {
     if (!ordem) return;
     const dadosRecebimento = recebimento || ordem;
-    const print = imprimir ? preparePDFPrint() : undefined;
+    let print: ReturnType<typeof preparePDFPrint> | undefined;
     try {
+    if (imprimir) print = preparePDFPrint();
     const jsPDF = (await import('jspdf')).default;
     const tipoIdentificacao = empresaAtual?.tipo_identificacao || 'cnpj';
     const labelIdentificacao = tipoIdentificacao === 'ein' ? 'EIN' : tipoIdentificacao === 'ssn' ? 'SSN' : 'CNPJ';

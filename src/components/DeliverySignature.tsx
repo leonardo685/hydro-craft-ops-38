@@ -13,8 +13,20 @@ export function DeliverySignature({ onSave, busy }: { onSave: (image: Blob) => P
     const color = getComputedStyle(node).color;
     const instance = new SignaturePad(node, { penColor: color });
     pad.current = instance;
+    const resize = () => {
+      const strokes = instance.toData();
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      node.width = Math.round(node.clientWidth * ratio);
+      node.height = Math.round(node.clientHeight * ratio);
+      node.getContext('2d')?.scale(ratio, ratio);
+      instance.clear();
+      instance.fromData(strokes);
+    };
+    const observer = new ResizeObserver(resize);
+    observer.observe(node);
+    resize();
     instance.addEventListener('endStroke', () => setEmpty(instance.isEmpty()));
-    return () => { instance.off(); pad.current = null; };
+    return () => { observer.disconnect(); instance.off(); pad.current = null; };
   }, []);
   return <div className="space-y-3">
     <canvas ref={canvas} width={900} height={360} aria-label="Customer signature" className="w-full aspect-[5/2] touch-none border rounded-md bg-[hsl(var(--signature-paper))] text-[hsl(var(--signature-ink))]" />
