@@ -2015,6 +2015,7 @@ export type Database = {
       ordens_servico: {
         Row: {
           ambiente_trabalho: string | null
+          assinatura_entrega_path: string | null
           camisa: string | null
           categoria_equipamento: string | null
           cliente_nome: string
@@ -2023,6 +2024,7 @@ export type Database = {
           created_at: string
           curso: string | null
           data_analise: string | null
+          data_assinatura_entrega: string | null
           data_documento_entrega: string | null
           data_entrada: string
           data_finalizacao: string | null
@@ -2061,6 +2063,7 @@ export type Database = {
         }
         Insert: {
           ambiente_trabalho?: string | null
+          assinatura_entrega_path?: string | null
           camisa?: string | null
           categoria_equipamento?: string | null
           cliente_nome: string
@@ -2069,6 +2072,7 @@ export type Database = {
           created_at?: string
           curso?: string | null
           data_analise?: string | null
+          data_assinatura_entrega?: string | null
           data_documento_entrega?: string | null
           data_entrada: string
           data_finalizacao?: string | null
@@ -2107,6 +2111,7 @@ export type Database = {
         }
         Update: {
           ambiente_trabalho?: string | null
+          assinatura_entrega_path?: string | null
           camisa?: string | null
           categoria_equipamento?: string | null
           cliente_nome?: string
@@ -2115,6 +2120,7 @@ export type Database = {
           created_at?: string
           curso?: string | null
           data_analise?: string | null
+          data_assinatura_entrega?: string | null
           data_documento_entrega?: string | null
           data_entrada?: string
           data_finalizacao?: string | null
