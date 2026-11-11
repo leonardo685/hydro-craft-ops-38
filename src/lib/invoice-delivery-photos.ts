@@ -7,9 +7,27 @@ export interface DeliveryOrder {
   numero_ordem: string;
   status: string;
   documento_entrega_url: string | null;
+  assinatura_entrega_path?: string | null;
+  data_assinatura_entrega?: string | null;
 }
 
 export function invoiceDeliveryPhotos(
+  orders: DeliveryOrder[],
+  quote: { id?: string; orcamento_id?: string; ordem_servico_id?: string; ordem_referencia?: string },
+  company: { id: string; nome: string },
+) {
+  const linked = invoiceDeliveryOrders(orders, quote, company);
+  const seen = new Set<string>();
+  return linked.filter(order => order.documento_entrega_url)
+    .flatMap(order => {
+      const url = order.documento_entrega_url;
+      if (!url || seen.has(url)) return [];
+      seen.add(url);
+      return [{ arquivo_url: url, legenda: order.numero_ordem }];
+    });
+}
+
+export function invoiceDeliveryOrders(
   orders: DeliveryOrder[],
   quote: { id?: string; orcamento_id?: string; ordem_servico_id?: string; ordem_referencia?: string },
   company: { id: string; nome: string },
@@ -24,12 +42,5 @@ export function invoiceDeliveryPhotos(
     const references = scoped.filter(order => order.numero_ordem === quote.ordem_referencia && !order.orcamento_id);
     if (references.length === 1) linked = references;
   }
-  const seen = new Set<string>();
-  return linked.filter(order => order.status === 'finalizada' && order.documento_entrega_url)
-    .flatMap(order => {
-      const url = order.documento_entrega_url;
-      if (!url || seen.has(url)) return [];
-      seen.add(url);
-      return [{ arquivo_url: url, legenda: order.numero_ordem }];
-    });
+  return linked.filter(order => order.status === 'finalizada');
 }
