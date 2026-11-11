@@ -124,6 +124,7 @@ const VisualizarOrdemServico = () => {
   };
   const exportToPDF = async (imprimir = false) => {
     if (!ordem) return;
+    const dadosRecebimento = recebimento || ordem;
     const print = imprimir ? preparePDFPrint() : undefined;
     try {
     const jsPDF = (await import('jspdf')).default;
@@ -241,13 +242,13 @@ const VisualizarOrdemServico = () => {
       value: string;
     }> = [{
       label: 'Nº Ordem:',
-      value: recebimento.numero_ordem || ''
+      value: dadosRecebimento.numero_ordem || ''
     }, {
       label: 'Cliente:',
       value: ordem.cliente_nome || ''
     }, {
       label: 'CNPJ/CPF:',
-      value: recebimento.cliente_cnpj || '-'
+      value: dadosRecebimento.cliente_cnpj || '-'
     }, {
       label: 'Equipamento:',
       value: ordem.equipamento || ''
@@ -256,39 +257,39 @@ const VisualizarOrdemServico = () => {
       value: new Date(ordem.data_entrada).toLocaleDateString('pt-BR')
     }, {
       label: 'Nota Fiscal:',
-      value: recebimento.nota_fiscal || '-'
+      value: dadosRecebimento.nota_fiscal || '-'
     }, {
       label: 'Nº Série:',
-      value: recebimento.numero_serie || '-'
+      value: dadosRecebimento.numero_serie || '-'
     }];
     criarTabela('Informações Básicas', dadosBasicos.filter(campo => campo.label !== 'Nota Fiscal:' || hasFiscalBilling(empresaAtual?.nome)), [128, 128, 128]);
     const dadosTecnicos: Array<{
       label: string;
       value: string;
     }> = [];
-    if (recebimento.pressao_trabalho) dadosTecnicos.push({
+    if (dadosRecebimento.pressao_trabalho) dadosTecnicos.push({
       label: 'Pressão de Trabalho:',
-      value: recebimento.pressao_trabalho
+      value: dadosRecebimento.pressao_trabalho
     });
-    if (recebimento.camisa) dadosTecnicos.push({
+    if (dadosRecebimento.camisa) dadosTecnicos.push({
       label: 'Ø Camisa:',
-      value: recebimento.camisa
+      value: dadosRecebimento.camisa
     });
-    if (recebimento.haste_comprimento) dadosTecnicos.push({
+    if (dadosRecebimento.haste_comprimento) dadosTecnicos.push({
       label: 'Ø Haste x Comprimento:',
-      value: recebimento.haste_comprimento
+      value: dadosRecebimento.haste_comprimento
     });
-    if (recebimento.curso) dadosTecnicos.push({
+    if (dadosRecebimento.curso) dadosTecnicos.push({
       label: 'Curso:',
-      value: recebimento.curso
+      value: dadosRecebimento.curso
     });
-    if (recebimento.conexao_a) dadosTecnicos.push({
+    if (dadosRecebimento.conexao_a) dadosTecnicos.push({
       label: 'Conexão A:',
-      value: recebimento.conexao_a
+      value: dadosRecebimento.conexao_a
     });
-    if (recebimento.conexao_b) dadosTecnicos.push({
+    if (dadosRecebimento.conexao_b) dadosTecnicos.push({
       label: 'Conexão B:',
-      value: recebimento.conexao_b
+      value: dadosRecebimento.conexao_b
     });
     if (dadosTecnicos.length > 0) {
       criarTabela('Dados Técnicos', dadosTecnicos, [128, 128, 128]);

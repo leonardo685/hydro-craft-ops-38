@@ -1,3 +1,5 @@
+import { preparePDFPrint } from '@/lib/print-pdf';
+import { Printer } from 'lucide-react';
 import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
 import { hasFiscalBilling, usesStructuredPaymentTerms, parsePaymentTerms, formatPaymentTerms, PAYMENT_TERM_TYPES, type PaymentTermType } from "@/lib/company-features";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -3607,6 +3609,7 @@ export default function NovoOrcamento() {
               >
                 <Download className="h-4 w-4" />
               </Button>
+              <Button variant="outline" size="sm" onClick={imprimirPDF} title={language === 'en' ? 'Print' : 'Imprimir'} aria-label={language === 'en' ? 'Print' : 'Imprimir'}><Printer className="h-4 w-4" /></Button>
               <Button
                 size="sm"
                 onClick={reprovarOrcamentoTop}

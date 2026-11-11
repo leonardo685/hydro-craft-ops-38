@@ -2708,6 +2708,7 @@ export default function Orcamentos() {
                         >
                           <Download className="h-4 w-4" />
                         </Button>
+                        <Button variant="outline" size="sm" onClick={() => gerarPDFOrcamento(item, language, true)} title={language === 'en' ? 'Print' : 'Imprimir'} aria-label={language === 'en' ? 'Print' : 'Imprimir'}><Printer className="h-4 w-4" /></Button>
                         <Button
                           size="sm"
                           onClick={() => handleReprovarOrcamento(item.id)}
@@ -2844,6 +2845,7 @@ export default function Orcamentos() {
                         >
                           <Download className="h-4 w-4" />
                         </Button>
+                        <Button variant="outline" size="sm" onClick={() => gerarPDFOrcamento(item, language, true)} title={language === 'en' ? 'Print' : 'Imprimir'} aria-label={language === 'en' ? 'Print' : 'Imprimir'}><Printer className="h-4 w-4" /></Button>
                       </div>
                     </div>
                   </CardContent>
@@ -2986,6 +2988,7 @@ export default function Orcamentos() {
                         >
                           <Download className="h-4 w-4" />
                         </Button>
+                        <Button variant="outline" size="sm" onClick={() => gerarPDFOrcamento(item, language, true)} title={language === 'en' ? 'Print' : 'Imprimir'} aria-label={language === 'en' ? 'Print' : 'Imprimir'}><Printer className="h-4 w-4" /></Button>
                       </div>
                     </div>
                   </CardContent>
@@ -3087,6 +3090,7 @@ export default function Orcamentos() {
                         >
                           <Download className="h-4 w-4" />
                         </Button>
+                        <Button variant="outline" size="sm" onClick={() => gerarPDFOrcamento(item, language, true)} title={language === 'en' ? 'Print' : 'Imprimir'} aria-label={language === 'en' ? 'Print' : 'Imprimir'}><Printer className="h-4 w-4" /></Button>
                       </div>
                     </div>
                   </CardContent>
