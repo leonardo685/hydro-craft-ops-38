@@ -11,6 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { completionStatus, hasFiscalBilling } from "@/lib/company-features";
 import { quoteCardValues } from "@/lib/quote-card-values";
+import { DeliverySignature } from '@/components/DeliverySignature';
+import { deliverySignatureURL, saveDeliverySignature } from '@/lib/delivery-signature';
+import { PenLine } from 'lucide-react';
+import { STATUS_APROVADO_INVOICE } from '@/lib/quote-filename';
 
 interface ScanQRCodeModalProps {
   open: boolean;
@@ -25,6 +29,8 @@ type OrdemInfo = {
   temLaudo: boolean;
   orcamentoId: string | null;
   documentoEntrega?: string | null;
+  assinatura?: string | null;
+  assinaturaData?: string | null;
 };
 
 const SCANNER_ID = "qr-internal-scanner-region";
@@ -51,6 +57,28 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
   const [uploading, setUploading] = useState(false);
   const [manual, setManual] = useState("");
   const [info, setInfo] = useState<OrdemInfo | null>(null);
+  const [signing, setSigning] = useState(false);
+  const [savingSignature, setSavingSignature] = useState(false);
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
+
+  useEffect(() => { setSigning(false); setSignaturePreview(null); }, [info?.ordemId, open]);
+  useEffect(() => {
+    let active = true;
+    if (info?.assinatura) deliverySignatureURL(info.assinatura).then(url => { if (active) setSignaturePreview(url); }).catch(() => toast.error('Could not load signature'));
+    return () => { active = false; };
+  }, [info?.assinatura]);
+
+  const saveSignature = async (image: Blob) => {
+    if (!info?.ordemId || !empresaAtual?.id) return;
+    setSavingSignature(true);
+    try {
+      const result = await saveDeliverySignature(empresaAtual.id, info.ordemId, image);
+      setInfo(current => current ? { ...current, assinatura: result.path, assinaturaData: result.date } : current);
+      setSigning(false);
+      toast.success('Customer signature saved');
+    } catch (error: any) { toast.error(error?.message || 'Could not save signature'); }
+    finally { setSavingSignature(false); }
+  };
 
   useEffect(() => {
     if (!open) {
@@ -106,7 +134,7 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
     try {
       const { data: ordens } = await supabase
         .from("ordens_servico")
-        .select("id, cliente_nome, equipamento, orcamento_id, documento_entrega_url")
+        .select("id, cliente_nome, equipamento, orcamento_id, documento_entrega_url, assinatura_entrega_path, data_assinatura_entrega")
         .eq("empresa_id", empresaAtual.id)
         .eq("numero_ordem", numero)
         .limit(1);
@@ -148,6 +176,8 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
         temLaudo,
         orcamentoId,
         documentoEntrega: ordem?.documento_entrega_url,
+        assinatura: ordem?.assinatura_entrega_path,
+        assinaturaData: ordem?.data_assinatura_entrega,
       });
     } catch (err) {
       console.error(err);
@@ -220,7 +250,7 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
       if (finalizar && info.orcamentoId) {
         const { data: orc } = await supabase
           .from("orcamentos").select("*").eq("id", info.orcamentoId).eq("empresa_id", empresaId).maybeSingle();
-        if (orc && orc.status !== "finalizado") {
+        if (orc && STATUS_APROVADO_INVOICE.includes(orc.status) && orc.status !== "finalizado") {
           const { error: oErr } = await supabase
             .from("orcamentos").update({ status: "finalizado" }).eq("id", orc.id).eq("empresa_id", empresaId);
           if (oErr) throw oErr;
@@ -258,22 +288,24 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
   };
 
   const Opcao = ({ icon: Icon, titulo, sub, onClick, disponivel = true }: any) => (
-    <button
+    <Button variant="outline"
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-3 w-full rounded-lg border p-4 text-left transition-colors hover:bg-secondary ${disponivel ? "" : "opacity-60"}`}
+      title={titulo}
+      disabled={!disponivel}
+      className="flex items-center justify-start gap-3 w-full h-auto p-4 text-left whitespace-normal"
     >
       <Icon className="w-6 h-6 text-primary shrink-0" />
       <div className="min-w-0">
         <p className="font-medium text-foreground">{titulo}</p>
         <p className="text-xs text-muted-foreground">{sub}</p>
       </div>
-    </button>
+    </Button>
   );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{info ? `Ordem ${info.numero}` : "Ler QR Code do equipamento"}</DialogTitle>
           <DialogDescription>
@@ -304,6 +336,12 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
               </a>
             )}
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={enviarDocumento} />
+            {!hasFiscalBilling(empresaAtual?.nome) && info.ordemId && <>
+              <Opcao icon={PenLine} titulo="Customer signature" sub={info.assinatura ? 'Signed' : info.numero} onClick={() => setSigning(value => !value)} />
+              {signing && <DeliverySignature busy={savingSignature} onSave={saveSignature} />}
+              {signaturePreview && <img src={signaturePreview} alt="Customer signature" className="w-full aspect-[5/2] object-contain border rounded-md bg-[hsl(var(--signature-paper))]" />}
+              {info.assinaturaData && <p className="text-sm text-muted-foreground">{new Date(info.assinaturaData).toLocaleString()}</p>}
+            </>}
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setInfo(null)}>
                 <ArrowLeft className="w-4 h-4 mr-1" /> Ler outro

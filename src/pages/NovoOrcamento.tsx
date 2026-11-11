@@ -1,3 +1,5 @@
+import { preparePDFPrint } from '@/lib/print-pdf';
+import { Printer } from 'lucide-react';
 import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
 import { hasFiscalBilling, usesStructuredPaymentTerms, parsePaymentTerms, formatPaymentTerms, PAYMENT_TERM_TYPES, type PaymentTermType } from "@/lib/company-features";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -2531,7 +2533,7 @@ export default function NovoOrcamento() {
     }
   };
   // Gera o PDF no layout moderno usando exatamente o que está na tela (salvo ou não).
-  const gerarModernoDoFormulario = async (override?: { orcamento?: any; itens?: any[]; fotos?: any[] }) => {
+  const gerarModernoDoFormulario = async (override?: { orcamento?: any; itens?: any[]; fotos?: any[] }, capturar?: (bytes: ArrayBuffer, name: string) => void) => {
     const { gerarOrcamentoModernoPDF } = await import('@/lib/orcamento-modern-pdf');
     const ordemRef = dadosOrcamento.numeroSerie || '';
     let findings = '';
@@ -2540,6 +2542,7 @@ export default function NovoOrcamento() {
         .from('ordens_servico')
         .select('descricao_problema, tipo_problema')
         .eq('numero_ordem', ordemRef)
+        .eq('empresa_id', empresaAtual?.id || '')
         .limit(1);
       const r: any = data?.[0];
       findings = r?.descricao_problema || r?.tipo_problema || '';
@@ -2550,6 +2553,8 @@ export default function NovoOrcamento() {
       clienteDoc = data?.cnpj_cpf || '';
     }
     const orcamento = {
+      id: orcamentoRef.current?.id,
+      ordem_servico_id: orcamentoRef.current?.ordem_servico_id,
       numero: dadosOrcamento.numeroOrdem,
       cliente_nome: dadosOrcamento.cliente,
       equipamento: dadosOrcamento.tag,
@@ -2592,6 +2597,7 @@ export default function NovoOrcamento() {
       clienteDoc,
       empresa: empresaAtual,
       language,
+      capturar,
     });
   };
 
@@ -2604,6 +2610,17 @@ export default function NovoOrcamento() {
       toast({ title: "Erro", description: `Erro ao gerar PDF: ${e?.message || e}`, variant: "destructive" });
     }
     return;
+  };
+
+  const imprimirPDF = async () => {
+    let print: ReturnType<typeof preparePDFPrint> | undefined;
+    try {
+      print = preparePDFPrint();
+      await gerarModernoDoFormulario(undefined, print.show);
+    } catch (error: any) {
+      print?.close();
+      toast({ title: 'Print', description: error?.message || 'Could not print PDF', variant: 'destructive' });
+    }
   };
 
   // Layout antigo (desativado — mantido apenas como referência)
@@ -3592,6 +3609,7 @@ export default function NovoOrcamento() {
               >
                 <Download className="h-4 w-4" />
               </Button>
+              <Button variant="outline" size="sm" onClick={imprimirPDF} title={language === 'en' ? 'Print' : 'Imprimir'} aria-label={language === 'en' ? 'Print' : 'Imprimir'}><Printer className="h-4 w-4" /></Button>
               <Button
                 size="sm"
                 onClick={reprovarOrcamentoTop}
@@ -4631,6 +4649,7 @@ export default function NovoOrcamento() {
             <Download className="h-4 w-4" />
             {t('novoOrcamento.exportPdf')}
           </Button>
+          <Button onClick={imprimirPDF} variant="outline" title={language === 'en' ? 'Print' : language === 'es' ? 'Imprimir' : 'Imprimir'}><Printer className="h-4 w-4 mr-2" />{language === 'en' ? 'Print' : 'Imprimir'}</Button>
           <Button onClick={salvarOrcamento} className="flex items-center gap-2 bg-gradient-primary hover:bg-primary-hover">
             <Save className="h-4 w-4" />
             {t('novoOrcamento.saveQuote')}

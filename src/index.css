@@ -11,6 +11,8 @@ All colors MUST be HSL.
     /* FIXZYS Light Theme - Vibrant Orange Brand */
     --background: 0 0% 100%;
     --foreground: 0 0% 5%;
+    --signature-paper: 0 0% 100%;
+    --signature-ink: 0 0% 5%;
 
     --card: 0 0% 100%;
     --card-foreground: 0 0% 5%;

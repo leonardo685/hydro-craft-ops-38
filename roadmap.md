@@ -1,13 +1,15 @@
 # Tax por orçamento
 
 ## Assinatura de entrega
-- [ ] Capturar assinatura no celular e salvar com data na ordem, mesmo sem aprovação ou P.O.
-- [ ] Incluir assinatura e data ao final do Invoice da ordem e empresa correspondentes.
-- [ ] Validar captura e PDF; confirmar salvamento real se houver sessão disponível.
+- [x] Capturar assinatura no celular e salvar com data na ordem, mesmo sem aprovação ou P.O.
+- [x] Incluir assinatura e data ao final do Invoice da ordem e empresa correspondentes.
+- [x] Validar regras com testes, captura em tela de celular e última página de um Invoice de exemplo com assinatura e data.
+- [ ] Confirmar assinatura real no celular — sessão autenticada indisponível no Supabase externo.
 
 ## Impressão
-- [ ] Adicionar impressão de Quotes, Invoices e ordens de serviço usando os documentos existentes.
-- [ ] Validar abertura da impressão.
+- [x] Adicionar impressão de Quotes, Invoices e ordens de serviço usando os documentos existentes.
+- [x] Validar abertura da impressão com testes.
+- [ ] Confirmar impressão real — sessão autenticada indisponível no Supabase externo.
 
 ## Email conjunto por P.O.
 - [x] Oferecer seleção de invoices Approved/Finalized com o mesmo P.O. e enviar apenas as escolhidas, com números e assuntos na mensagem.
