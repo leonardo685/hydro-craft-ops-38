@@ -1,4 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { preparePDFPrint } from '@/lib/print-pdf';
+import { Printer } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -120,8 +122,10 @@ const VisualizarOrdemServico = () => {
       });
     }
   };
-  const exportToPDF = async () => {
-    if (!ordem || !recebimento) return;
+  const exportToPDF = async (imprimir = false) => {
+    if (!ordem) return;
+    const print = imprimir ? preparePDFPrint() : undefined;
+    try {
     const jsPDF = (await import('jspdf')).default;
     const tipoIdentificacao = empresaAtual?.tipo_identificacao || 'cnpj';
     const labelIdentificacao = tipoIdentificacao === 'ein' ? 'EIN' : tipoIdentificacao === 'ssn' ? 'SSN' : 'CNPJ';
@@ -414,11 +418,17 @@ const VisualizarOrdemServico = () => {
       criarTabela('Observações Técnicas', dadosObservacoes, [128, 128, 128]);
     }
     adicionarRodape();
-    doc.save(`ordem-servico-${recebimento.numero_ordem || 'ordem'}.pdf`);
+    const name = `ordem-servico-${recebimento?.numero_ordem || ordem.numero_ordem || 'ordem'}.pdf`;
+    if (print) { print.show(doc.output('arraybuffer'), name); return; }
+    doc.save(name);
     toast({
       title: "PDF gerado!",
       description: "O arquivo foi baixado com sucesso"
     });
+    } catch (error: any) {
+      print?.close();
+      toast({ title: 'PDF', description: error?.message || 'Could not generate PDF', variant: 'destructive' });
+    }
   };
   const renderItems = (items: any[], title: string, icon: React.ReactNode) => {
     if (!items || items.length === 0) return null;
@@ -464,7 +474,7 @@ const VisualizarOrdemServico = () => {
   return <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap gap-3 items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="outline" onClick={() => navigate('/aprovados')} className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
@@ -477,10 +487,13 @@ const VisualizarOrdemServico = () => {
               </p>
             </div>
           </div>
-          <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth" onClick={exportToPDF}>
+          <div className="flex gap-2">
+          <Button variant="outline" onClick={() => void exportToPDF(true)} title={language === 'en' ? 'Print work order' : 'Imprimir ordem de serviço'}><Printer className="mr-2 h-4 w-4" />{language === 'en' ? 'Print' : 'Imprimir'}</Button>
+          <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth" onClick={() => void exportToPDF()}>
             <FileText className="mr-2 h-4 w-4" />
             {t('visualizarOrdem.exportPdf')}
           </Button>
+          </div>
         </div>
 
         {/* Informações Básicas */}

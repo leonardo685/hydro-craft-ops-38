@@ -1,4 +1,6 @@
 import { expectedPaymentDate, quoteServiceCategoryId } from '@/lib/delivery-billing';
+import { preparePDFPrint } from '@/lib/print-pdf';
+import { Printer } from 'lucide-react';
 import { quoteCardValues } from "@/lib/quote-card-values";
 import { deleteRejectedQuote, withoutDeletedQuote } from "@/lib/delete-rejected-quote";
 import { completionStatus, hasFiscalBilling } from "@/lib/company-features";
@@ -813,15 +815,18 @@ export default function Orcamentos() {
     });
   };
 
-  const gerarPDFOrcamento = async (orcamentoParam: any, language: Language = 'pt-BR') => {
+  const gerarPDFOrcamento = async (orcamentoParam: any, language: Language = 'pt-BR', imprimir = false) => {
     let orcamento = orcamentoParam;
+    let print: ReturnType<typeof preparePDFPrint> | undefined;
     try {
+      if (imprimir) print = preparePDFPrint();
       // Sempre usar os dados mais recentes (ex.: tipo de documento alterado após aprovação)
       if (orcamentoParam?.id) {
         const { data: fresh } = await supabase
           .from('orcamentos')
           .select('*')
           .eq('id', orcamentoParam.id)
+          .eq('empresa_id', empresaAtual?.id || '')
           .maybeSingle();
         if (fresh) orcamento = { ...orcamentoParam, ...fresh };
       }
@@ -985,6 +990,7 @@ export default function Orcamentos() {
           clienteDoc: docCliente,
           empresa: empresaAtual,
           language,
+          capturar: print ? print.show : undefined,
         });
         toast.success(pdfT.pdfSuccess);
         return;
@@ -1869,6 +1875,7 @@ export default function Orcamentos() {
       doc.save(nomeArquivo);
       toast.success(pdfT.pdfSuccess);
     } catch (error) {
+      print?.close();
       console.error('Erro ao gerar PDF:', error);
       toast.error(t('pdf.pdfError'));
     }

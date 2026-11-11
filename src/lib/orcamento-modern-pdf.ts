@@ -5,7 +5,8 @@ import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { translateTerm } from "@/i18n/dynamicTerms";
-import { invoiceDeliveryPhotos, type DeliveryOrder } from "@/lib/invoice-delivery-photos";
+import { invoiceDeliveryPhotos, invoiceDeliveryOrders, type DeliveryOrder } from "@/lib/invoice-delivery-photos";
+import { deliverySignatureURL } from '@/lib/delivery-signature';
 import { showsOrderReference } from "@/lib/company-features";
 
 type Lang = "pt-BR" | "en" | "es";
@@ -501,7 +502,9 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   await lista(T.machining, itens.filter((i) => i.tipo === "usinagem"));
 
   // ============ FOTOS ============
-  const deliveryPhotos = isMec && isInvoice ? await buscarFotosEntrega(o, p.empresa) : [];
+  const deliveryOrders = isMec && isInvoice ? await buscarOrdensEntrega(o, p.empresa) : [];
+  const signedOrders = deliveryOrders.filter(order => order.assinatura_entrega_path);
+  const deliveryPhotos = invoiceDeliveryPhotos(deliveryOrders.filter(order => !order.assinatura_entrega_path), o, p.empresa);
   const photoGroups = [
     { photos: p.fotos, title: T.photos, subtitle: T.photosSub },
     { photos: deliveryPhotos, title: T.deliveredPhotos, subtitle: T.deliveredPhotosSub },
@@ -536,6 +539,34 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
         const leg = `${String(i + j + 1).padStart(2, "0")}  ${tr(group.photos[i + j].legenda || "")}`;
         small(doc.splitTextToSize(leg, cardW - 8)[0], x + 4, cy + cardH - 4, MUTED, false, 6.5);
       }
+    }
+  }
+
+  // Signed delivery receipts are the final pages of this invoice, never of a Quote.
+  for (const order of signedOrders) {
+    if (!order.assinatura_entrega_path) continue;
+    const signature = await loadImage(await deliverySignatureURL(order.assinatura_entrega_path));
+    const photo = order.documento_entrega_url ? await loadImage(order.documento_entrega_url) : null;
+    if (!signature || (order.documento_entrega_url && !photo)) throw new Error('Could not load signed delivery record');
+    y = await newPage(T.deliveredPhotos);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(...DARK);
+    doc.text(T.deliveredPhotos, M, y + 4);
+    small(order.numero_ordem, M, y + 12, MUTED, false, 9);
+    y += 20;
+    if (photo) {
+      const ratio = Math.min(CW / photo.w, 120 / photo.h);
+      doc.addImage(photo.data, 'JPEG', M + (CW - photo.w * ratio) / 2, y, photo.w * ratio, photo.h * ratio);
+      y += 126;
+    }
+    const label = lang === 'en' ? 'CUSTOMER SIGNATURE' : lang === 'es' ? 'FIRMA DEL CLIENTE' : 'ASSINATURA DO CLIENTE';
+    small(label, M, y, MUTED, true, 8);
+    const ratio = Math.min(CW / signature.w, 45 / signature.h);
+    doc.addImage(signature.data, 'JPEG', M, y + 5, signature.w * ratio, signature.h * ratio);
+    y += 55;
+    rule(y);
+    if (order.data_assinatura_entrega) {
+      const date = new Date(order.data_assinatura_entrega);
+      small(`${date.toLocaleString(lang, { timeZone: 'America/Chicago' })} (America/Chicago)`, M, y + 7, MUTED, false, 8);
     }
   }
 
@@ -652,11 +683,11 @@ async function buscarOrcamentosMesmoPedido(o: any, numeroPedido: string, empresa
   return lista.sort((a: any, b: any) => chave(b.numero) - chave(a.numero));
 }
 
-async function buscarFotosEntrega(o: any, empresa: any) {
+async function buscarOrdensEntrega(o: any, empresa: any) {
   const quoteId = o.orcamento_id || o.id;
   if (!quoteId || !empresa?.id) return [];
   const { supabase } = await import("@/integrations/supabase/client");
-  const columns = 'id, empresa_id, orcamento_id, numero_ordem, status, documento_entrega_url';
+  const columns = 'id, empresa_id, orcamento_id, numero_ordem, status, documento_entrega_url, assinatura_entrega_path, data_assinatura_entrega';
   const linked = await supabase.from('ordens_servico').select(columns)
     .eq('empresa_id', empresa.id).eq('orcamento_id', quoteId);
   if (linked.error) throw linked.error;
@@ -673,7 +704,7 @@ async function buscarFotosEntrega(o: any, empresa: any) {
     if (reference.error) throw reference.error;
     orders.push(...(reference.data || []));
   }
-  return invoiceDeliveryPhotos(orders, o, empresa);
+  return invoiceDeliveryOrders(orders, o, empresa);
 }
 
 /** Localiza o PDF do P.O. salvo na aprovação (registrado na descrição do orçamento). */
