@@ -28,6 +28,7 @@ import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 import { VincularOrdensModal } from "@/components/VincularOrdensModal";
 import { EnviarDocumentoEmailModal } from "@/components/EnviarDocumentoEmailModal";
+import { EmailSentBadge } from "@/components/EmailSentBadge";
 import { PagamentoStripeModal } from "@/components/PagamentoStripeModal";
 import jsPDF from "jspdf";
 import { applyMinimalPdfStyle, setPdfGridMode } from "@/lib/pdf-minimal";
@@ -2635,6 +2636,7 @@ export default function Orcamentos() {
                           <Badge className={getStatusColor(item.status)}>
                             {getStatusText(item.status)}
                           </Badge>
+                          {isUSCompany && <EmailSentBadge quote={item} language={language} />}
                           {item.ordens_vinculadas && item.ordens_vinculadas.length > 0 && (
                             item.ordens_vinculadas.map((ordem: any) => (
                               <Badge key={ordem.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
@@ -2759,6 +2761,7 @@ export default function Orcamentos() {
                           <Badge className={getStatusColor(item.status)}>
                             {getStatusText(item.status)}
                           </Badge>
+                          {isUSCompany && <EmailSentBadge quote={item} language={language} />}
                           {item.ordens_vinculadas && item.ordens_vinculadas.length > 0 && (
                             item.ordens_vinculadas.map((ordem: any) => (
                               <Badge key={ordem.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
@@ -2884,6 +2887,7 @@ export default function Orcamentos() {
                               {t('orcamentos.waitingDelivery')}
                             </Badge>
                           )}
+                          {isUSCompany && <EmailSentBadge quote={item} language={language} />}
                           {item.ordens_vinculadas && item.ordens_vinculadas.length > 0 && (
                             item.ordens_vinculadas.map((ordem: any) => (
                               <Badge key={ordem.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
@@ -3164,6 +3168,10 @@ export default function Orcamentos() {
         onOpenChange={(o) => { if (!o) setEmailQuote(null); }}
         orcamento={emailQuote}
         language={language}
+        onSent={({ ids, tipo, sentAt }) => {
+          const column = tipo === 'invoice' ? 'email_invoice_enviado_em' : 'email_quote_enviado_em';
+          setOrcamentos(current => current.map(quote => ids.includes(quote.id) ? { ...quote, [column]: sentAt } : quote));
+        }}
       />
 
       <PagamentoStripeModal

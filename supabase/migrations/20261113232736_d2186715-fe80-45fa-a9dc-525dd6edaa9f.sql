@@ -1,0 +1,1 @@
+ALTER TABLE public.orcamentos ADD COLUMN IF NOT EXISTS email_quote_enviado_em timestamptz, ADD COLUMN IF NOT EXISTS email_invoice_enviado_em timestamptz;

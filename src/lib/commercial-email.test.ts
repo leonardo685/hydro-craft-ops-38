@@ -1,7 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { commercialEmailType, samePOEmailQuotes } from "./commercial-email";
+import { commercialEmailType, commercialEmailSentAt, samePOEmailQuotes } from "./commercial-email";
 
 describe("Commercial email document rules", () => {
+  it('shows a Quote sent date only in the Quote stage', () => {
+    expect(commercialEmailSentAt({ status: 'pendente', email_quote_enviado_em: '2026-11-13T18:50:00Z' })).toBe('2026-11-13T18:50:00Z');
+  });
+  it('does not show an old Quote send as an Invoice send after approval', () => {
+    expect(commercialEmailSentAt({ status: 'aprovado', email_quote_enviado_em: '2026-11-13T18:50:00Z' })).toBeNull();
+  });
+  it('uses the Invoice sent date in Approved and Finalized', () => {
+    for (const status of ['aprovado', 'finalizado']) {
+      expect(commercialEmailSentAt({ status, email_invoice_enviado_em: '2026-11-13T19:00:00Z' })).toBe('2026-11-13T19:00:00Z');
+    }
+  });
+  it('leaves unsent and rejected quotes unmarked', () => {
+    expect(commercialEmailSentAt({ status: 'pendente' })).toBeNull();
+    expect(commercialEmailSentAt({ status: 'rejeitado', email_quote_enviado_em: '2026-11-13T18:50:00Z' })).toBeNull();
+  });
   it("Awaiting Approval sends Quote", () => {
     expect(commercialEmailType("pendente")).toBe("quote");
   });

@@ -1836,6 +1836,8 @@ export type Database = {
           data_vencimento: string | null
           desconto_percentual: number | null
           descricao: string | null
+          email_invoice_enviado_em: string | null
+          email_quote_enviado_em: string | null
           empresa_id: string | null
           equipamento: string
           forma_pagamento: string | null
@@ -1893,6 +1895,8 @@ export type Database = {
           data_vencimento?: string | null
           desconto_percentual?: number | null
           descricao?: string | null
+          email_invoice_enviado_em?: string | null
+          email_quote_enviado_em?: string | null
           empresa_id?: string | null
           equipamento: string
           forma_pagamento?: string | null
@@ -1950,6 +1954,8 @@ export type Database = {
           data_vencimento?: string | null
           desconto_percentual?: number | null
           descricao?: string | null
+          email_invoice_enviado_em?: string | null
+          email_quote_enviado_em?: string | null
           empresa_id?: string | null
           equipamento?: string
           forma_pagamento?: string | null
