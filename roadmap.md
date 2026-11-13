@@ -2,7 +2,8 @@
 
 ## Email sent indicator
 - [x] Persist separate Quote/Invoice sent dates after successful email and show Sent on commercial cards and quote editing.
-- [ ] Validate single/grouped sends and failure handling with tests; authenticated live send requires an external Supabase session.
+- [x] Validate sent-state selection and failure handling: 16 tests passed, compilation OK, deployed email function rejects invalid authentication.
+- [ ] Confirm live email and persisted Sent indicators — authenticated access unavailable for external Supabase.
 
 ## Assinatura de entrega
 - [x] Capturar assinatura no celular e salvar com data na ordem, mesmo sem aprovação ou P.O.
