@@ -1,5 +1,4 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
 import { LOGO_BASE64 } from './logo.ts';
 
 const isEmail = (v: unknown) => typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -49,25 +48,13 @@ Deno.serve(async (req) => {
       `<h2 style="margin:0 0 16px;font-size:20px;color:#111">${esc(titulo)}</h2>${corpo}` +
       (incluirAssinatura ? assinaturaHtml : `<p style="font-size:12px;color:#777">${esc(empresaNome)}</p>`) + `</div>`;
 
-    const client = new SMTPClient({
-      connection: { hostname: 'smtp.gmail.com', port: 465, tls: true, auth: { username: GMAIL_USER, password: GMAIL_APP_PASSWORD } },
-    });
     try {
-      const attachments: any[] = [{ filename: nomeArquivo, content: pdfBase64, encoding: 'base64', contentType: 'application/pdf' }];
-      if (incluirAssinatura) attachments.push({ filename: 'mec-hydro-logo.jpg', content: LOGO_BASE64, encoding: 'base64', contentType: 'image/jpeg', contentID: 'mechydrologo' });
-      await client.send({
-        from: `${empresaNome} <${GMAIL_USER}>`,
-        to: emails,
-        subject: `${tituloCompleto} - ${empresaNome}`,
-        content: 'auto',
-        html,
-        attachments,
-      });
+      const attachments: Att[] = [{ filename: nomeArquivo, content: pdfBase64, contentType: 'application/pdf' }];
+      if (incluirAssinatura) attachments.push({ filename: 'mec-hydro-logo.jpg', content: LOGO_BASE64, contentType: 'image/jpeg', cid: 'mechydrologo' });
+      await sendSmtp(GMAIL_USER, GMAIL_APP_PASSWORD, `${empresaNome} <${GMAIL_USER}>`, emails, `${tituloCompleto} - ${empresaNome}`, html, attachments);
     } catch (err) {
       console.error('Gmail SMTP failed', err);
       return json({ error: 'Falha ao enviar e-mail pelo Gmail', details: err instanceof Error ? err.message : String(err) }, 502);
-    } finally {
-      try { await client.close(); } catch (_) { /* ignore close errors */ }
     }
     return json({ success: true });
   } catch (e) {
@@ -75,3 +62,53 @@ Deno.serve(async (req) => {
     return json({ error: e instanceof Error ? e.message : 'Erro desconhecido' }, 500);
   }
 });
+
+type Att = { filename: string; content: string; contentType: string; cid?: string };
+const enc = new TextEncoder();
+const b64 = (t: string) => btoa(String.fromCharCode(...enc.encode(t)));
+const hdr = (v: string) => (/^[\x20-\x7E]*$/.test(v) ? v : `=?UTF-8?B?${b64(v)}?=`);
+const wrap = (s: string) => { const c = s.replace(/\s+/g, ''); const out: string[] = []; for (let i = 0; i < c.length; i += 76) out.push(c.slice(i, i + 76)); return out.join('\r\n'); };
+
+async function sendSmtp(user: string, pass: string, from: string, to: string[], subject: string, html: string, atts: Att[]) {
+  const conn = await Deno.connectTls({ hostname: 'smtp.gmail.com', port: 465 });
+  const dec = new TextDecoder();
+  let buf = '';
+  const read = async (): Promise<string> => {
+    while (true) {
+      const lines = buf.split('\r\n');
+      for (let i = 0; i < lines.length - 1; i++) {
+        if (/^\d{3} /.test(lines[i])) { const r = lines.slice(0, i + 1).join('\n'); buf = lines.slice(i + 1).join('\r\n'); return r; }
+      }
+      const chunk = new Uint8Array(4096); const n = await conn.read(chunk);
+      if (n === null) throw new Error('SMTP connection closed');
+      buf += dec.decode(chunk.subarray(0, n));
+    }
+  };
+  const write = async (data: string) => { const b = enc.encode(data); let o = 0; while (o < b.length) o += await conn.write(b.subarray(o)); };
+  const cmd = async (c: string, ok: string) => { await write(c + '\r\n'); const r = await read(); if (!r.startsWith(ok)) throw new Error(`SMTP ${c.split(' ')[0]}: ${r}`); return r; };
+  try {
+    const g = await read(); if (!g.startsWith('220')) throw new Error(g);
+    await cmd('EHLO mechydro.com', '250');
+    await cmd('AUTH LOGIN', '334'); await cmd(btoa(user), '334'); await cmd(btoa(pass), '235');
+    await cmd(`MAIL FROM:<${user}>`, '250');
+    for (const r of to) await cmd(`RCPT TO:<${r}>`, '25');
+    await cmd('DATA', '354');
+    const mix = 'mix_' + crypto.randomUUID(), rel = 'rel_' + crypto.randomUUID();
+    const inline = atts.filter((a) => a.cid), files = atts.filter((a) => !a.cid);
+    const parts: string[] = [
+      `From: ${hdr(from)}`, `To: ${to.join(', ')}`, `Subject: ${hdr(subject)}`, `Date: ${new Date().toUTCString()}`,
+      `Message-ID: <${crypto.randomUUID()}@mechydro.com>`, 'MIME-Version: 1.0', `Content-Type: multipart/mixed; boundary="${mix}"`, '',
+      `--${mix}`, `Content-Type: multipart/related; boundary="${rel}"`, '',
+      `--${rel}`, 'Content-Type: text/html; charset="UTF-8"', 'Content-Transfer-Encoding: base64', '', wrap(b64(html)),
+    ];
+    for (const a of inline) parts.push(`--${rel}`, `Content-Type: ${a.contentType}; name="${a.filename}"`, 'Content-Transfer-Encoding: base64', `Content-ID: <${a.cid}>`, `Content-Disposition: inline; filename="${a.filename}"`, '', wrap(a.content));
+    parts.push(`--${rel}--`);
+    for (const a of files) parts.push(`--${mix}`, `Content-Type: ${a.contentType}; name="${hdr(a.filename)}"`, 'Content-Transfer-Encoding: base64', `Content-Disposition: attachment; filename="${hdr(a.filename)}"`, '', wrap(a.content));
+    parts.push(`--${mix}--`, '');
+    await write(parts.join('\r\n'));
+    await cmd('\r\n.', '250');
+    try { await write('QUIT\r\n'); } catch (_) { /* ignore */ }
+  } finally {
+    try { conn.close(); } catch (_) { /* ignore */ }
+  }
+}
