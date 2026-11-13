@@ -1,8 +1,24 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import { z } from 'npm:zod@3';
 import { LOGO_BASE64 } from './logo.ts';
+import { sendAndRecordEmail, sentColumn } from './sent-status.ts';
 
 const isEmail = (v: unknown) => typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
+const BodySchema = z.object({
+  empresaId: z.string().uuid(),
+  orcamentoIds: z.array(z.string().uuid()).min(1).max(100).transform(ids => [...new Set(ids)]),
+  tipo: z.enum(['quote', 'invoice']),
+  numero: z.string().min(1).max(2000),
+  clienteNome: z.string().max(200),
+  empresaNome: z.string().min(1).max(200),
+  assinatura: z.boolean(),
+  emails: z.array(z.string().email()).min(1).max(20),
+  mensagem: z.string().max(10000),
+  nomeArquivo: z.string().min(1).max(200).refine(v => !/[\r\n"\\]/.test(v)),
+  pdfBase64: z.string().min(1).max(50_000_000).regex(/^[A-Za-z0-9+/=\s]+$/),
+});
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -10,15 +26,30 @@ Deno.serve(async (req) => {
     new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   try {
-    if (!req.headers.get('Authorization')) return json({ error: 'Não autorizado' }, 401);
+    const authorization = req.headers.get('Authorization');
+    if (!authorization) return json({ error: 'Não autorizado' }, 401);
+    const client = createClient(Deno.env.get('SUPABASE_URL') || '', Deno.env.get('SUPABASE_ANON_KEY') || '', {
+      global: { headers: { Authorization: authorization } },
+    });
+    const { data: auth, error: authError } = await client.auth.getUser();
+    if (authError || !auth.user) return json({ error: 'Não autorizado' }, 401);
     const GMAIL_USER = Deno.env.get('GMAIL_USER');
     const GMAIL_APP_PASSWORD = Deno.env.get('GMAIL_APP_PASSWORD')?.replace(/\s+/g, '');
     if (!GMAIL_USER || !GMAIL_APP_PASSWORD) return json({ error: 'Gmail não configurado (GMAIL_USER / GMAIL_APP_PASSWORD).' }, 500);
 
-    const b = await req.json();
+    const parsed = BodySchema.safeParse(await req.json());
+    if (!parsed.success) return json({ error: 'Dados de e-mail inválidos', details: parsed.error.flatten().fieldErrors }, 400);
+    const b = parsed.data;
+    const { data: quotes, error: quotesError } = await client.from('orcamentos')
+      .select('id, status').eq('empresa_id', b.empresaId).in('id', b.orcamentoIds);
+    if (quotesError || quotes?.length !== b.orcamentoIds.length) return json({ error: 'Documento indisponível nesta empresa.' }, 403);
+    if (quotes.some(q => q.status === 'rejeitado' ||
+      (['aprovado', 'faturamento', 'finalizado'].includes(q.status) ? 'invoice' : 'quote') !== b.tipo)) {
+      return json({ error: 'O tipo do documento não corresponde à cotação.' }, 400);
+    }
     const emails: string[] = Array.isArray(b.emails) ? b.emails.filter(isEmail).slice(0, 20) : [];
     const tipo = b.tipo === 'invoice' ? 'invoice' : 'quote';
-    const numero = String(b.numero || '').slice(0, 60);
+    const numero = b.numero;
     const clienteNome = String(b.clienteNome || '').slice(0, 200);
     const empresaNome = String(b.empresaNome || 'MEC HYDRO').slice(0, 200);
     const mensagem = String(b.mensagem || '').slice(0, 3000);
@@ -48,15 +79,27 @@ Deno.serve(async (req) => {
       `<h2 style="margin:0 0 16px;font-size:20px;color:#111">${esc(titulo)}</h2>${corpo}` +
       (incluirAssinatura ? assinaturaHtml : `<p style="font-size:12px;color:#777">${esc(empresaNome)}</p>`) + `</div>`;
 
+    let result;
     try {
       const attachments: Att[] = [{ filename: nomeArquivo, content: pdfBase64, contentType: 'application/pdf' }];
       if (incluirAssinatura) attachments.push({ filename: 'mec-hydro-logo.jpg', content: LOGO_BASE64, contentType: 'image/jpeg', cid: 'mechydrologo' });
-      await sendSmtp(GMAIL_USER, GMAIL_APP_PASSWORD, `${empresaNome} <${GMAIL_USER}>`, emails, `${tituloCompleto} - ${empresaNome}`, html, attachments);
+      result = await sendAndRecordEmail(
+        () => sendSmtp(GMAIL_USER, GMAIL_APP_PASSWORD, `${empresaNome} <${GMAIL_USER}>`, emails, `${tituloCompleto} - ${empresaNome}`, html, attachments),
+        async sentAt => {
+          const admin = createClient(Deno.env.get('SUPABASE_URL') || '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '');
+          const { data: saved, error } = await admin.from('orcamentos')
+            .update({ [sentColumn(tipo)]: sentAt }).eq('empresa_id', b.empresaId).in('id', b.orcamentoIds).select('id');
+          if (error || saved?.length !== b.orcamentoIds.length) {
+            console.error('Email sent status could not be saved', error?.message);
+            throw new Error('Sent status not saved');
+          }
+        },
+      );
     } catch (err) {
       console.error('Gmail SMTP failed', err);
       return json({ error: 'Falha ao enviar e-mail pelo Gmail', details: err instanceof Error ? err.message : String(err) }, 502);
     }
-    return json({ success: true });
+    return json({ ...result, orcamentoIds: b.orcamentoIds, tipo });
   } catch (e) {
     console.error(e);
     return json({ error: e instanceof Error ? e.message : 'Erro desconhecido' }, 500);

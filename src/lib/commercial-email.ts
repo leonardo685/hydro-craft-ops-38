@@ -6,6 +6,16 @@ export function commercialEmailType(status: string | null | undefined): "quote" 
   return ["aprovado", "faturamento", "finalizado"].includes(status || "") ? "invoice" : "quote";
 }
 
+export function commercialEmailSentAt(quote: {
+  status?: string | null;
+  email_quote_enviado_em?: string | null;
+  email_invoice_enviado_em?: string | null;
+}): string | null {
+  const type = commercialEmailType(quote.status);
+  if (!type) return null;
+  return (type === 'invoice' ? quote.email_invoice_enviado_em : quote.email_quote_enviado_em) || null;
+}
+
 export interface EmailQuote {
   id: string;
   empresa_id?: string | null;

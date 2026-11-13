@@ -12,3 +12,4 @@
 - Resolve commercial email eligibility, document type and same-P.O. selection in `src/lib/commercial-email.ts`; the shared modal passes explicit invoice IDs to the modern PDF generator for email, while ordinary downloads retain automatic P.O. grouping.
 - Store delivery signatures as private order-owned files with a separate timestamp; save independently of commercial status and resolve them through the shared invoice ownership filter so later linking never mixes companies.
 - Print generated document bytes through `src/lib/print-pdf.ts`, reserving the window on click; reuse the existing PDF generators so printed and downloaded documents stay identical.
+- Record separate Quote/Invoice last-sent timestamps in the email edge function only after SMTP accepts the message; validate company-owned document IDs first and mark every selected invoice, so sent badges persist without confusing prior Quote sends with Invoice sends.

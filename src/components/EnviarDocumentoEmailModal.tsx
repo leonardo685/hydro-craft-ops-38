@@ -18,6 +18,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   orcamento: any | null;
   language: string;
+  onSent?: (result: { ids: string[]; tipo: 'quote' | 'invoice'; sentAt: string }) => void;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -29,7 +30,7 @@ function toBase64(buf: ArrayBuffer) {
   return btoa(bin);
 }
 
-export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, language }: Props) {
+export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, language, onSent }: Props) {
   const { toast } = useToast();
   const { clientes, adicionarEmail } = useClientes();
   const { empresaAtual } = useEmpresa();
@@ -137,7 +138,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
   };
 
   const enviar = async () => {
-    if (!orcamento || !tipoDocumento) return;
+    if (!orcamento || !tipoDocumento || !empresaAtual?.id) return;
     if (!selecionados.length) {
       toast({ title: "Selecione ao menos um e-mail", variant: "destructive" });
       return;
@@ -148,6 +149,8 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
         isInvoice && incluirAssinatura ? invoicesEnviadas.map(q => q.id) : undefined);
       const { data, error } = await supabase.functions.invoke("enviar-documento-orcamento", {
         body: {
+          empresaId: empresaAtual.id,
+          orcamentoIds: invoicesEnviadas.map(q => q.id),
           tipo: tipoDocumento,
           numero: invoicesEnviadas.map(q => q.numero).join(', '),
           clienteNome: orcamento.cliente_nome,
@@ -161,6 +164,12 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      if (data?.success !== true) throw new Error('O envio não foi confirmado.');
+      if (data.trackingSaved && data.sentAt) {
+        onSent?.({ ids: data.orcamentoIds, tipo: tipoDocumento, sentAt: data.sentAt });
+      } else {
+        toast({ title: 'E-mail enviado', description: 'Não foi possível salvar o indicador Sent. Não é necessário reenviar.' });
+      }
       toast({ title: `${tipoLabel} enviado`, description: `Enviado para ${selecionados.length} destinatário(s)` });
       onOpenChange(false);
     } catch (e: any) {

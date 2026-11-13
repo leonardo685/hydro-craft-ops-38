@@ -32,6 +32,7 @@ import { translateTerm } from "@/i18n/dynamicTerms";
 import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { VincularOrdensModal } from "@/components/VincularOrdensModal";
 import { EnviarDocumentoEmailModal } from "@/components/EnviarDocumentoEmailModal";
+import { EmailSentBadge } from "@/components/EmailSentBadge";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 interface ItemOrcamento {
   id: string;
@@ -3568,6 +3569,7 @@ export default function NovoOrcamento() {
           </div>
           {editId && orcamentoAtual && (
             <div className="ml-auto flex items-center gap-2">
+              {!hasFiscalBilling(empresaAtual?.nome) && <EmailSentBadge quote={orcamentoAtual} language={language} />}
               <Button
                 variant="outline"
                 size="sm"
@@ -4683,6 +4685,9 @@ export default function NovoOrcamento() {
             onOpenChange={setShowEmailModalTop}
             orcamento={orcamentoAtual}
             language={language}
+            onSent={({ tipo, sentAt }) => setOrcamentoAtual((current: any) => current ? {
+              ...current, [tipo === 'invoice' ? 'email_invoice_enviado_em' : 'email_quote_enviado_em']: sentAt,
+            } : current)}
           />
         </>
       )}
