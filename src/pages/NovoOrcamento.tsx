@@ -4685,9 +4685,13 @@ export default function NovoOrcamento() {
             onOpenChange={setShowEmailModalTop}
             orcamento={orcamentoAtual}
             language={language}
-            onSent={({ tipo, sentAt }) => setOrcamentoAtual((current: any) => current ? {
-              ...current, [tipo === 'invoice' ? 'email_invoice_enviado_em' : 'email_quote_enviado_em']: sentAt,
-            } : current)}
+            onSent={({ tipo, sentAt }) => {
+              if (orcamentoRef.current) {
+                orcamentoRef.current = { ...orcamentoRef.current,
+                  [tipo === 'invoice' ? 'email_invoice_enviado_em' : 'email_quote_enviado_em']: sentAt,
+                };
+              }
+            }}
           />
         </>
       )}
