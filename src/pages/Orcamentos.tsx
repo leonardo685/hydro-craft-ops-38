@@ -779,8 +779,12 @@ export default function Orcamentos() {
   };
 
   // Função para aplicar filtros
+  const [filtroAReceber, setFiltroAReceber] = useState(false);
   const aplicarFiltros = (orcamentosLista: any[]) => {
     return orcamentosLista.filter((orc) => {
+      if (filtroAReceber && !(['aprovado', 'faturamento', 'finalizado'].includes(orc.status) && !lancamentoDaQuote(orc)?.pago)) {
+        return false;
+      }
       // Filtro por cliente
       if (filtroCliente && !orc.cliente_nome?.toLowerCase().includes(filtroCliente.toLowerCase())) {
         return false;
@@ -2198,7 +2202,7 @@ export default function Orcamentos() {
         </div>
 
         {/* Cards de Métricas */}
-        <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4", isUSCompany ? "lg:grid-cols-3 xl:grid-cols-6" : "lg:grid-cols-5")}>
+        <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4", isUSCompany ? "lg:grid-cols-3 xl:grid-cols-5" : "lg:grid-cols-4")}>
           {/* Sales Tax total across existing quotes */}
           {isUSCompany && (
           <div
@@ -2225,8 +2229,11 @@ export default function Orcamentos() {
 
           {/* Invoices a receber */}
           <div
-            className="group rounded-2xl border border-border/50
-                       bg-card/40 p-5 shadow-lg
+            role="button"
+            onClick={() => setFiltroAReceber(v => !v)}
+            title={language === 'en' ? 'Click to show only unpaid invoices' : 'Clique para ver só invoices a receber'}
+            className={cn("group rounded-2xl border p-5 shadow-lg", filtroAReceber ? "border-primary bg-primary/10" : "border-border/50 bg-card/40")}
+            
                        transition-all duration-300 ease-in-out
                        hover:border-border hover:bg-card/60
                        hover:-translate-y-1 cursor-pointer"
@@ -2415,62 +2422,6 @@ export default function Orcamentos() {
           </div>
           )}
 
-          {/* Valor Total Reprovados */}
-          <div
-            className="group rounded-2xl border border-border/50
-                       bg-card/40 p-5 shadow-lg
-                       transition-all duration-300 ease-in-out
-                       hover:border-border hover:bg-card/60
-                       hover:-translate-y-1 cursor-pointer"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-muted-foreground">{t('orcamentos.rejected')}</h3>
-              <XCircle className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="mt-4 flex items-end justify-between">
-              <div className="flex flex-col">
-                <p className="text-2xl font-bold tracking-tighter text-success">
-                  {reprovadosTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {reprovadosCount} {t('orcamentos.quotes')}
-                </p>
-              </div>
-              <div className="h-12 w-28">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={chartDataCards.reprovados}
-                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                  >
-                    <defs>
-                      <linearGradient id="gradient-reprovados" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <Tooltip
-                      content={<CustomTooltip />}
-                      cursor={{
-                        stroke: 'hsl(var(--border))',
-                        strokeWidth: 1,
-                        strokeDasharray: '3 3',
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#ef4444"
-                      strokeWidth={2}
-                      dot={false}
-                      fillOpacity={1}
-                      fill="url(#gradient-reprovados)"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
           {/* Contagem Total Anual */}
           <div
             className="group rounded-2xl border border-border/50
@@ -2644,6 +2595,12 @@ export default function Orcamentos() {
           </CardContent>
         </Card>
 
+        {filtroAReceber && (
+          <div className="flex items-center justify-between rounded-lg border border-primary/40 bg-primary/5 px-4 py-2 text-sm">
+            <span>{language === 'en' ? 'Showing only unpaid invoices (see Approved and Finalized tabs)' : 'Mostrando só invoices a receber (abas Aprovado e Finalizado)'}</span>
+            <Button size="sm" variant="ghost" onClick={() => setFiltroAReceber(false)}>{language === 'en' ? 'Clear' : 'Limpar'}</Button>
+          </div>
+        )}
         <Tabs defaultValue="pendente" className="space-y-4">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="pendente">{t('orcamentos.awaitingApproval')}</TabsTrigger>
