@@ -491,6 +491,14 @@ export default function Orcamentos() {
     return lancamentosInvoice.find(l => String(l.descricao || '').startsWith(prefixo));
   };
 
+  // Invoices a receber: aprovados/finalizados cujo lançamento ainda não foi marcado como recebido
+  const aReceberSummary = orcamentos
+    .filter(o => ['aprovado', 'faturamento', 'finalizado'].includes(o.status) && !lancamentoDaQuote(o)?.pago)
+    .reduce((acc, o) => {
+      const v = quoteCardValues(o, empresaAtual?.nome);
+      return { total: acc.total + v.value + v.salesTax, count: acc.count + 1 };
+    }, { total: 0, count: 0 });
+
   const [recebimentoQuote, setRecebimentoQuote] = useState<any>(null);
   const [dataRecebimento, setDataRecebimento] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [salvandoRecebimento, setSalvandoRecebimento] = useState(false);
@@ -2190,7 +2198,7 @@ export default function Orcamentos() {
         </div>
 
         {/* Cards de Métricas */}
-        <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4", isUSCompany ? "lg:grid-cols-6" : "lg:grid-cols-4")}>
+        <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4", isUSCompany ? "lg:grid-cols-3 xl:grid-cols-6" : "lg:grid-cols-5")}>
           {/* Sales Tax total across existing quotes */}
           {isUSCompany && (
           <div
@@ -2214,6 +2222,28 @@ export default function Orcamentos() {
             </div>
           </div>
           )}
+
+          {/* Invoices a receber */}
+          <div
+            className="group rounded-2xl border border-border/50
+                       bg-card/40 p-5 shadow-lg
+                       transition-all duration-300 ease-in-out
+                       hover:border-border hover:bg-card/60
+                       hover:-translate-y-1 cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground">{language === 'en' ? 'To Be Received' : 'A Receber'}</h3>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="mt-4">
+              <p className="text-2xl font-bold tracking-tighter text-primary">
+                {aReceberSummary.total.toLocaleString(isUSCompany ? 'en-US' : 'pt-BR', { style: 'currency', currency: isUSCompany ? 'USD' : 'BRL' })}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {aReceberSummary.count} {language === 'en' ? 'unpaid invoices' : 'invoices não recebidos'}
+              </p>
+            </div>
+          </div>
 
           {/* Valor Total Aguardando Aprovação */}
           <div
