@@ -2232,11 +2232,7 @@ export default function Orcamentos() {
             role="button"
             onClick={() => setFiltroAReceber(v => !v)}
             title={language === 'en' ? 'Click to show only unpaid invoices' : 'Clique para ver só invoices a receber'}
-            className={cn("group rounded-2xl border p-5 shadow-lg", filtroAReceber ? "border-primary bg-primary/10" : "border-border/50 bg-card/40")}
-            
-                       transition-all duration-300 ease-in-out
-                       hover:border-border hover:bg-card/60
-                       hover:-translate-y-1 cursor-pointer"
+            className={cn("group rounded-2xl border p-5 shadow-lg", filtroAReceber ? "border-primary bg-primary/10" : "border-border/50 bg-card/40", "transition-all duration-300 hover:-translate-y-1 cursor-pointer")}
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-muted-foreground">{language === 'en' ? 'To Be Received' : 'A Receber'}</h3>
