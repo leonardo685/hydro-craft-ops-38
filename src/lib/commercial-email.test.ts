@@ -17,6 +17,12 @@ describe("Commercial email document rules", () => {
     expect(commercialEmailSentAt({ status: 'pendente' })).toBeNull();
     expect(commercialEmailSentAt({ status: 'rejeitado', email_quote_enviado_em: '2026-11-13T18:50:00Z' })).toBeNull();
   });
+  it('keeps invoices unsent until their own email has been recorded', () => {
+    for (const status of ['aprovado', 'faturamento', 'finalizado']) {
+      expect(commercialEmailSentAt({ status, email_quote_enviado_em: '2026-11-13T18:50:00Z', email_invoice_enviado_em: null })).toBeNull();
+      expect(commercialEmailSentAt({ status, email_invoice_enviado_em: '2026-11-15T15:41:00Z' })).toBe('2026-11-15T15:41:00Z');
+    }
+  });
   it("Awaiting Approval sends Quote", () => {
     expect(commercialEmailType("pendente")).toBe("quote");
   });
