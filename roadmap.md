@@ -1,6 +1,7 @@
 # Tax por orçamento
 
 ## Email sent indicator
+- [x] Make email status visible on Quote/Invoice cards and editing: Email sent with last-send date, or Email not sent when no send is recorded.
 - [x] Persist separate Quote/Invoice sent dates after successful email and show Sent on commercial cards and quote editing.
 - [x] Validate sent-state selection and failure handling: 16 tests passed, compilation OK, deployed email function rejects invalid authentication.
 - [ ] Confirm live email and persisted Sent indicators — authenticated access unavailable for external Supabase.
