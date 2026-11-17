@@ -28,6 +28,7 @@ import { AprovarOrcamentoModal } from "@/components/AprovarOrcamentoModal";
 import { PrecificacaoModal } from "@/components/PrecificacaoModal";
 import { VincularOrdensModal } from "@/components/VincularOrdensModal";
 import { EnviarDocumentoEmailModal } from "@/components/EnviarDocumentoEmailModal";
+import { EditarPOModal } from "@/components/EditarPOModal";
 import { EmailSentBadge } from "@/components/EmailSentBadge";
 import { PagamentoStripeModal } from "@/components/PagamentoStripeModal";
 import jsPDF from "jspdf";
@@ -415,6 +416,7 @@ export default function Orcamentos() {
   };
 
   const [emailQuote, setEmailQuote] = useState<any>(null);
+  const [poQuote, setPoQuote] = useState<any>(null);
   const [entregaQuote, setEntregaQuote] = useState<any>(null);
   const [dataEntrega, setDataEntrega] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [salvandoEntrega, setSalvandoEntrega] = useState(false);
@@ -2832,6 +2834,7 @@ export default function Orcamentos() {
                           <Download className="h-4 w-4" />
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => gerarPDFOrcamento(item, language, true)} title={language === 'en' ? 'Print' : 'Imprimir'} aria-label={language === 'en' ? 'Print' : 'Imprimir'}><Printer className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="sm" onClick={() => setPoQuote(item)} title={language === 'en' ? 'Edit P.O.' : 'Editar P.O.'} aria-label={language === 'en' ? 'Edit P.O.' : 'Editar P.O.'}><FileText className="h-4 w-4" /></Button>
                       </div>
                     </div>
                   </CardContent>
@@ -2976,6 +2979,7 @@ export default function Orcamentos() {
                           <Download className="h-4 w-4" />
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => gerarPDFOrcamento(item, language, true)} title={language === 'en' ? 'Print' : 'Imprimir'} aria-label={language === 'en' ? 'Print' : 'Imprimir'}><Printer className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="sm" onClick={() => setPoQuote(item)} title={language === 'en' ? 'Edit P.O.' : 'Editar P.O.'} aria-label={language === 'en' ? 'Edit P.O.' : 'Editar P.O.'}><FileText className="h-4 w-4" /></Button>
                       </div>
                     </div>
                   </CardContent>
@@ -3145,6 +3149,8 @@ export default function Orcamentos() {
         orcamento={orcamentoParaVincular}
         onSuccess={carregarOrcamentos}
       />
+
+      <EditarPOModal open={!!poQuote} onOpenChange={(o) => { if (!o) setPoQuote(null); }} orcamento={poQuote} empresaId={empresaAtual?.id} language={language} onSaved={carregarOrcamentos} />
 
       <EnviarDocumentoEmailModal
         open={!!emailQuote}
