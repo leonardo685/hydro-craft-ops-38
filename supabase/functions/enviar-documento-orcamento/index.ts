@@ -8,8 +8,9 @@ const isEmail = (v: unknown) => typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
 const BodySchema = z.object({
   empresaId: z.string().uuid(),
-  orcamentoIds: z.array(z.string().uuid()).min(1).max(100).transform(ids => [...new Set(ids)]),
-  tipo: z.enum(['quote', 'invoice']),
+  orcamentoIds: z.array(z.string().uuid()).min(0).max(100).transform(ids => [...new Set(ids)]),
+  tipo: z.enum(['quote', 'invoice', 'delivery']),
+  ordemId: z.string().uuid().optional(),
   numero: z.string().min(1).max(2000),
   clienteNome: z.string().max(200),
   empresaNome: z.string().min(1).max(200),
@@ -40,15 +41,20 @@ Deno.serve(async (req) => {
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) return json({ error: 'Dados de e-mail inválidos', details: parsed.error.flatten().fieldErrors }, 400);
     const b = parsed.data;
+    if (b.tipo === 'delivery') {
+      if (!b.ordemId) return json({ error: 'Ordem obrigatória.' }, 400);
+      const { data: ord } = await client.from('ordens_servico').select('id, assinatura_entrega_path').eq('empresa_id', b.empresaId).eq('id', b.ordemId).maybeSingle();
+      if (!ord?.assinatura_entrega_path) return json({ error: 'Ordem sem assinatura de entrega nesta empresa.' }, 403);
+    } else if (!b.orcamentoIds.length) return json({ error: 'Documento obrigatório.' }, 400);
     const { data: quotes, error: quotesError } = await client.from('orcamentos')
       .select('id, status').eq('empresa_id', b.empresaId).in('id', b.orcamentoIds);
-    if (quotesError || quotes?.length !== b.orcamentoIds.length) return json({ error: 'Documento indisponível nesta empresa.' }, 403);
-    if (quotes.some(q => q.status === 'rejeitado' ||
+    if (b.tipo !== 'delivery' && (quotesError || quotes?.length !== b.orcamentoIds.length)) return json({ error: 'Documento indisponível nesta empresa.' }, 403);
+    if (b.tipo !== 'delivery' && quotes!.some(q => q.status === 'rejeitado' ||
       (['aprovado', 'faturamento', 'finalizado'].includes(q.status) ? 'invoice' : 'quote') !== b.tipo)) {
       return json({ error: 'O tipo do documento não corresponde à cotação.' }, 400);
     }
     const emails: string[] = Array.isArray(b.emails) ? b.emails.filter(isEmail).slice(0, 20) : [];
-    const tipo = b.tipo === 'invoice' ? 'invoice' : 'quote';
+    const tipo = b.tipo;
     const numero = b.numero;
     const clienteNome = String(b.clienteNome || '').slice(0, 200);
     const empresaNome = String(b.empresaNome || 'MEC HYDRO').slice(0, 200);
@@ -58,8 +64,8 @@ Deno.serve(async (req) => {
     if (!numero || !emails.length || !pdfBase64) return json({ error: 'Informe o documento e ao menos um e-mail válido.' }, 400);
     if (pdfBase64.length > 50_000_000) return json({ error: 'PDF muito grande para envio.' }, 400);
 
-    const titulo = tipo === 'invoice' ? 'Invoice' : 'Quote';
-    const tituloCompleto = tipo === 'invoice' ? `Invoice ${numero}` : `Quote ${numero}`;
+    const titulo = tipo === 'invoice' ? 'Invoice' : tipo === 'delivery' ? 'Delivery Receipt' : 'Quote';
+    const tituloCompleto = `${titulo} ${numero}`;
     const incluirAssinatura = b.assinatura === true;
     const assinaturaHtml = `<table cellpadding="0" cellspacing="0" style="margin-top:28px;border-collapse:collapse;font-family:Arial,sans-serif;color:#1a1a1a"><tr>` +
       `<td style="padding-right:16px;border-right:2px solid #d92b2b;vertical-align:middle"><img src="cid:mechydrologo" alt="MEC HYDRO" width="120" style="display:block;border:0" /></td>` +
@@ -70,7 +76,9 @@ Deno.serve(async (req) => {
       `<div><a href="mailto:bruno.forte@mechydro.com" style="color:#1155cc">bruno.forte@mechydro.com</a></div>` +
       `<div><a href="https://www.mechydro.com" style="color:#1155cc">www.mechydro.com</a></div>` +
       `</td></tr></table>`;
-    const corpo = esc(mensagem || (tipo === 'invoice'
+    const corpo = esc(mensagem || (tipo === 'delivery'
+      ? `Hello${clienteNome ? ` ${clienteNome}` : ''},\n\nPlease find attached the signed delivery receipt for your equipment.\n\nThank you for your business.`
+      : tipo === 'invoice'
       ? `Hello${clienteNome ? ` ${clienteNome}` : ''},\n\nPlease find attached the invoice for the services provided.\n\nIf you have any questions, please let us know.`
       : `Hello${clienteNome ? ` ${clienteNome}` : ''},\n\nPlease find attached our quote for your review.`))
       .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
@@ -86,6 +94,7 @@ Deno.serve(async (req) => {
       result = await sendAndRecordEmail(
         () => sendSmtp(GMAIL_USER, GMAIL_APP_PASSWORD, `${empresaNome} <${GMAIL_USER}>`, emails, `${tituloCompleto} - ${empresaNome}`, html, attachments),
         async sentAt => {
+          if (tipo === 'delivery') return;
           const admin = createClient(Deno.env.get('SUPABASE_URL') || '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '');
           const { data: saved, error } = await admin.from('orcamentos')
             .update({ [sentColumn(tipo)]: sentAt }).eq('empresa_id', b.empresaId).in('id', b.orcamentoIds).select('id');

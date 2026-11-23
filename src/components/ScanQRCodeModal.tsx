@@ -13,7 +13,8 @@ import { completionStatus, hasFiscalBilling } from "@/lib/company-features";
 import { quoteCardValues } from "@/lib/quote-card-values";
 import { DeliverySignature } from '@/components/DeliverySignature';
 import { deliverySignatureURL, saveDeliverySignature } from '@/lib/delivery-signature';
-import { PenLine } from 'lucide-react';
+import { PenLine, Download, Mail } from 'lucide-react';
+import { loadDeliveryReceiptData, gerarComprovanteEntregaPDF, deliveryReceiptFilename } from '@/lib/delivery-receipt-pdf';
 import { STATUS_APROVADO_INVOICE } from '@/lib/quote-filename';
 
 interface ScanQRCodeModalProps {
@@ -67,6 +68,45 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
     if (info?.assinatura) deliverySignatureURL(info.assinatura).then(url => { if (active) setSignaturePreview(url); }).catch(() => toast.error('Could not load signature'));
     return () => { active = false; };
   }, [info?.assinatura]);
+
+  const [receiptBusy, setReceiptBusy] = useState(false);
+  const [receiptEmail, setReceiptEmail] = useState('');
+  const buildReceipt = async () => {
+    const data = await loadDeliveryReceiptData(empresaAtual as any, info!.ordemId!);
+    return { data, blob: await gerarComprovanteEntregaPDF(data) };
+  };
+  const downloadReceipt = async () => {
+    if (!info?.ordemId || !empresaAtual) return;
+    setReceiptBusy(true);
+    try {
+      const { data, blob } = await buildReceipt();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = deliveryReceiptFilename(data);
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch (e: any) { toast.error(e?.message || 'Could not create delivery receipt'); }
+    finally { setReceiptBusy(false); }
+  };
+  const emailReceipt = async () => {
+    const emails = receiptEmail.split(/[,;\s]+/).map(e => e.trim()).filter(e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+    if (!emails.length) return toast.error('Enter a valid email');
+    if (!info?.ordemId || !empresaAtual) return;
+    setReceiptBusy(true);
+    try {
+      const { data, blob } = await buildReceipt();
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      const { error } = await supabase.functions.invoke('enviar-documento-orcamento', { body: {
+        empresaId: empresaAtual.id, orcamentoIds: [], ordemId: info.ordemId, tipo: 'delivery', numero: data.numeroOrdem,
+        clienteNome: data.cliente || '', empresaNome: empresaAtual.nome, assinatura: true, emails, mensagem: '',
+        nomeArquivo: deliveryReceiptFilename(data), pdfBase64: btoa(bin),
+      } });
+      if (error) throw error;
+      toast.success('Delivery receipt sent');
+      setReceiptEmail('');
+    } catch (e: any) { toast.error(e?.message || 'Could not send email'); }
+    finally { setReceiptBusy(false); }
+  };
 
   const saveSignature = async (image: Blob) => {
     if (!info?.ordemId || !empresaAtual?.id) return;
@@ -341,6 +381,16 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
               {signing && <DeliverySignature busy={savingSignature} onSave={saveSignature} />}
               {signaturePreview && <img src={signaturePreview} alt="Customer signature" className="w-full aspect-[5/2] object-contain border rounded-md bg-[hsl(var(--signature-paper))]" />}
               {info.assinaturaData && <p className="text-sm text-muted-foreground">{new Date(info.assinaturaData).toLocaleString()}</p>}
+              {info.assinatura && <div className="space-y-2 rounded-md border p-3">
+                <p className="text-sm font-medium">Delivery receipt</p>
+                <Button className="w-full" variant="outline" disabled={receiptBusy} title="Download delivery receipt PDF" onClick={downloadReceipt}>
+                  {receiptBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}Download PDF
+                </Button>
+                <div className="flex gap-2">
+                  <Input type="email" placeholder="customer@email.com" value={receiptEmail} onChange={e => setReceiptEmail(e.target.value)} disabled={receiptBusy} />
+                  <Button disabled={receiptBusy || !receiptEmail.trim()} title="Email delivery receipt" onClick={emailReceipt}><Mail className="h-4 w-4" /></Button>
+                </div>
+              </div>}
             </>}
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setInfo(null)}>

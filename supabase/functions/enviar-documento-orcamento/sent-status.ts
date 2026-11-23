@@ -1,4 +1,4 @@
-export type EmailDocumentType = 'quote' | 'invoice';
+export type EmailDocumentType = 'quote' | 'invoice' | 'delivery';
 
 export async function sendAndRecordEmail(
   send: () => Promise<void>,
