@@ -103,7 +103,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
       try {
         for (let start = 0; ; start += 1000) {
           const { data, error } = await supabase.from('orcamentos')
-            .select('id, empresa_id, status, numero, numero_pedido, descricao, assunto_proposta, equipamento')
+            .select('id, empresa_id, status, numero, numero_pedido, descricao, assunto_proposta, equipamento, numero_nota_entrada')
             .eq('empresa_id', empresaAtual.id).in('status', ['aprovado', 'faturamento', 'finalizado'])
             .order('id').range(start, start + 999);
           if (error) throw error;
@@ -147,6 +147,12 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
     try {
       const { bytes, nome } = await gerarArquivoOrcamentoPorId(orcamento.id, empresaAtual, language,
         isInvoice && incluirAssinatura ? invoicesEnviadas.map(q => q.id) : undefined);
+      let shippingOrder = String(orcamento.numero_nota_entrada || '').trim();
+      if (!shippingOrder) {
+        const { data: so } = await supabase.from('orcamentos').select('numero_nota_entrada')
+          .eq('id', orcamento.id).eq('empresa_id', empresaAtual.id).maybeSingle();
+        shippingOrder = String(so?.numero_nota_entrada || '').trim();
+      }
       const { data, error } = await supabase.functions.invoke("enviar-documento-orcamento", {
         body: {
           empresaId: empresaAtual.id,
@@ -158,7 +164,10 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
           assinatura: incluirAssinatura,
           emails: selecionados,
           mensagem,
-          assunto: invoicesEnviadas.length === 1 ? (orcamento.assunto_proposta || orcamento.equipamento || '') : '',
+          assunto: [
+            shippingOrder && !/^(n\/?a|none|-)$/i.test(shippingOrder) ? `Shipping Order ${shippingOrder}` : '',
+            invoicesEnviadas.length === 1 ? (orcamento.assunto_proposta || orcamento.equipamento || '') : '',
+          ].filter(Boolean).join(' - '),
           nomeArquivo: nome,
           pdfBase64: toBase64(bytes),
         },
