@@ -158,6 +158,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
           assinatura: incluirAssinatura,
           emails: selecionados,
           mensagem,
+          assunto: invoicesEnviadas.length === 1 ? (orcamento.assunto_proposta || orcamento.equipamento || '') : '',
           nomeArquivo: nome,
           pdfBase64: toBase64(bytes),
         },

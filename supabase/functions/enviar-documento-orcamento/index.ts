@@ -17,6 +17,7 @@ const BodySchema = z.object({
   assinatura: z.boolean(),
   emails: z.array(z.string().email()).min(1).max(20),
   mensagem: z.string().max(10000),
+  assunto: z.string().max(300).optional(),
   nomeArquivo: z.string().min(1).max(200).refine(v => !/[\r\n"\\]/.test(v)),
   pdfBase64: z.string().min(1).max(50_000_000).regex(/^[A-Za-z0-9+/=\s]+$/),
 });
@@ -67,6 +68,8 @@ Deno.serve(async (req) => {
     const titulo = tipo === 'invoice' ? 'Invoice' : tipo === 'delivery' ? 'Delivery Receipt' : 'Quote';
     const tituloCompleto = `${titulo} ${numero}`;
     const incluirAssinatura = b.assinatura === true;
+    const assuntoProposta = String(b.assunto || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 300);
+    const assuntoEmail = `${tituloCompleto}${assuntoProposta ? ` - ${assuntoProposta}` : ''} - ${empresaNome}`;
     const assinaturaHtml = `<table cellpadding="0" cellspacing="0" style="margin-top:28px;border-collapse:collapse;font-family:Arial,sans-serif;color:#1a1a1a"><tr>` +
       `<td style="padding-right:16px;border-right:2px solid #d92b2b;vertical-align:middle"><img src="cid:mechydrologo" alt="MEC HYDRO" width="120" style="display:block;border:0" /></td>` +
       `<td style="padding-left:16px;vertical-align:middle;font-size:13px;line-height:1.7">` +
@@ -92,7 +95,7 @@ Deno.serve(async (req) => {
       const attachments: Att[] = [{ filename: nomeArquivo, content: pdfBase64, contentType: 'application/pdf' }];
       if (incluirAssinatura) attachments.push({ filename: 'mec-hydro-logo.jpg', content: LOGO_BASE64, contentType: 'image/jpeg', cid: 'mechydrologo' });
       result = await sendAndRecordEmail(
-        () => sendSmtp(GMAIL_USER, GMAIL_APP_PASSWORD, `${empresaNome} <${GMAIL_USER}>`, emails, `${tituloCompleto} - ${empresaNome}`, html, attachments),
+        () => sendSmtp(GMAIL_USER, GMAIL_APP_PASSWORD, `${empresaNome} <${GMAIL_USER}>`, emails, assuntoEmail, html, attachments),
         async sentAt => {
           if (tipo === 'delivery') return;
           const admin = createClient(Deno.env.get('SUPABASE_URL') || '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '');
