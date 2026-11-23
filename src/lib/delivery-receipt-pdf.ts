@@ -6,7 +6,7 @@ import { deliverySignatureURL } from '@/lib/delivery-signature';
 export type DeliveryReceiptData = {
   empresaNome: string; empresaEndereco?: string | null; empresaTelefone?: string | null; empresaEmail?: string | null; logoUrl?: string | null;
   numeroOrdem: string; cliente: string; equipamento: string; numeroSerie?: string | null;
-  po?: string | null; tag?: string | null; solicitante?: string | null; quoteNumero?: string | null;
+  po?: string | null; tag?: string | null; solicitante?: string | null; quoteNumero?: string | null; shippingOrder?: string | null;
   dataEntrega: string; assinaturaDataUrl: string;
 };
 
@@ -30,14 +30,14 @@ export async function loadDeliveryReceiptData(empresa: { id: string; nome: strin
   if (error || !o) throw new Error('Order not found');
   if (!o.assinatura_entrega_path || !o.data_assinatura_entrega) throw new Error('Customer signature required');
   let q: any = null;
-  if (o.orcamento_id) q = (await supabase.from('orcamentos').select('numero, numero_pedido, equipamento, assunto_proposta, observacoes').eq('empresa_id', empresa.id).eq('id', o.orcamento_id).maybeSingle()).data;
-  if (!q) q = (await supabase.from('orcamentos').select('numero, numero_pedido, equipamento, assunto_proposta, observacoes').eq('empresa_id', empresa.id).eq('ordem_servico_id', o.id).order('created_at', { ascending: false }).limit(1)).data?.[0] ?? null;
+  if (o.orcamento_id) q = (await supabase.from('orcamentos').select('numero, numero_pedido, equipamento, assunto_proposta, observacoes, numero_nota_entrada').eq('empresa_id', empresa.id).eq('id', o.orcamento_id).maybeSingle()).data;
+  if (!q) q = (await supabase.from('orcamentos').select('numero, numero_pedido, equipamento, assunto_proposta, observacoes, numero_nota_entrada').eq('empresa_id', empresa.id).eq('ordem_servico_id', o.id).order('created_at', { ascending: false }).limit(1)).data?.[0] ?? null;
   const assinaturaDataUrl = await toDataUrl(await deliverySignatureURL(o.assinatura_entrega_path));
   return {
     empresaNome: empresa.nome, empresaEndereco: empresa.endereco, empresaTelefone: empresa.telefone, empresaEmail: empresa.email, logoUrl: empresa.logo_url,
     numeroOrdem: o.numero_ordem, cliente: o.cliente_nome, equipamento: q?.assunto_proposta || o.equipamento, numeroSerie: o.numero_serie,
     po: blank(q?.numero_pedido) ? null : q.numero_pedido, tag: q?.equipamento || o.equipamento, solicitante: solicitanteFromObservacoes(q?.observacoes),
-    quoteNumero: q?.numero || null, dataEntrega: o.data_assinatura_entrega, assinaturaDataUrl,
+    quoteNumero: q?.numero || null, shippingOrder: blank(q?.numero_nota_entrada) ? null : q.numero_nota_entrada, dataEntrega: o.data_assinatura_entrega, assinaturaDataUrl,
   };
 }
 

@@ -98,7 +98,7 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
       let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
       const { error } = await supabase.functions.invoke('enviar-documento-orcamento', { body: {
         empresaId: empresaAtual.id, orcamentoIds: [], ordemId: info.ordemId, tipo: 'delivery', numero: data.numeroOrdem,
-        clienteNome: data.cliente || '', empresaNome: empresaAtual.nome, assinatura: true, emails, mensagem: '', assunto: info.equipamento || '',
+        clienteNome: data.cliente || '', empresaNome: empresaAtual.nome, assinatura: true, emails, mensagem: '', assunto: [data.shippingOrder ? `Shipping Order ${data.shippingOrder}` : '', info.equipamento || ''].filter(Boolean).join(' - '),
         nomeArquivo: deliveryReceiptFilename(data), pdfBase64: btoa(bin),
       } });
       if (error) throw error;
