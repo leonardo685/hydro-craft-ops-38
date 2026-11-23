@@ -3,7 +3,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { z } from 'npm:zod@3';
 import { LOGO_BASE64 } from './logo.ts';
 import { sendAndRecordEmail, sentColumn } from './sent-status.ts';
-import { shippingOrders, subjectDetails, type SubjectQuote } from './shipping-order.ts';
+import { shippingOrders, shippingOrderValue, subjectDetails, type SubjectQuote } from './shipping-order.ts';
 
 const isEmail = (v: unknown) => typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
@@ -43,10 +43,15 @@ Deno.serve(async (req) => {
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) return json({ error: 'Dados de e-mail inválidos', details: parsed.error.flatten().fieldErrors }, 400);
     const b = parsed.data;
+    let deliverySO = '';
     if (b.tipo === 'delivery') {
       if (!b.ordemId) return json({ error: 'Ordem obrigatória.' }, 400);
-      const { data: ord } = await client.from('ordens_servico').select('id, assinatura_entrega_path').eq('empresa_id', b.empresaId).eq('id', b.ordemId).maybeSingle();
+      const { data: ord } = await client.from('ordens_servico').select('id, assinatura_entrega_path, orcamento_id').eq('empresa_id', b.empresaId).eq('id', b.ordemId).maybeSingle();
       if (!ord?.assinatura_entrega_path) return json({ error: 'Ordem sem assinatura de entrega nesta empresa.' }, 403);
+      const sel = 'numero_nota_entrada';
+      let q = ord.orcamento_id ? (await client.from('orcamentos').select(sel).eq('empresa_id', b.empresaId).eq('id', ord.orcamento_id).maybeSingle()).data : null;
+      if (!q) q = (await client.from('orcamentos').select(sel).eq('empresa_id', b.empresaId).eq('ordem_servico_id', ord.id).order('created_at', { ascending: false }).limit(1)).data?.[0] ?? null;
+      deliverySO = shippingOrderValue(q?.numero_nota_entrada);
     } else if (!b.orcamentoIds.length) return json({ error: 'Documento obrigatório.' }, 400);
     const { data: quotes, error: quotesError } = await client.from('orcamentos')
       .select('id, status, numero, numero_nota_entrada, assunto_proposta, equipamento').eq('empresa_id', b.empresaId).in('id', b.orcamentoIds);
@@ -70,10 +75,11 @@ Deno.serve(async (req) => {
     const tituloCompleto = `${titulo} ${numero}`;
     const incluirAssinatura = b.assinatura === true;
     const docQuotes = (b.tipo === 'delivery' ? [] : quotes || []) as SubjectQuote[];
-    const sosDoc = shippingOrders(b.orcamentoIds, docQuotes);
-    const assuntoProposta = b.tipo === 'delivery'
-      ? String(b.assunto || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 300)
-      : subjectDetails(b.orcamentoIds, docQuotes);
+    const sosDoc = b.tipo === 'delivery' ? (deliverySO ? [deliverySO] : []) : shippingOrders(b.orcamentoIds, docQuotes);
+    const assuntoCliente = String(b.assunto || '').replace(/[\r\n]+/g, ' ').trim();
+    const assuntoProposta = (b.tipo === 'delivery'
+      ? (deliverySO && !/shipping order/i.test(assuntoCliente) ? [`Shipping Order ${deliverySO}`, assuntoCliente].filter(Boolean).join(' - ') : assuntoCliente)
+      : subjectDetails(b.orcamentoIds, docQuotes)).slice(0, 300);
     const assuntoEmail = `${tituloCompleto}${assuntoProposta ? ` - ${assuntoProposta}` : ''} - ${empresaNome}`;
     const assinaturaHtml = `<table cellpadding="0" cellspacing="0" style="margin-top:28px;border-collapse:collapse;font-family:Arial,sans-serif;color:#1a1a1a"><tr>` +
       `<td style="padding-right:16px;border-right:2px solid #d92b2b;vertical-align:middle"><img src="cid:mechydrologo" alt="MEC HYDRO" width="120" style="display:block;border:0" /></td>` +
