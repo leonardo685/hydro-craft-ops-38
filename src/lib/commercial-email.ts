@@ -25,6 +25,7 @@ export interface EmailQuote {
   descricao?: string | null;
   assunto_proposta?: string | null;
   equipamento?: string | null;
+  numero_nota_entrada?: string | null;
 }
 
 export function emailQuotePO(quote: EmailQuote): string {
@@ -45,6 +46,8 @@ export function emailQuoteLines(quotes: EmailQuote[]): string[] {
   const valid = (v?: string | null) => /não especificado|nao especificado/i.test(v || '') ? '' : v?.trim() || '';
   return quotes.map(quote => {
     const subject = valid(quote.assunto_proposta) || valid(quote.equipamento);
-    return `**${quote.numero || ''}**${subject ? ` regarding ${subject}` : ''}.`;
+    const so = String(quote.numero_nota_entrada || '').trim();
+    const shipping = so && !/^(n\/?a|none|-+)$/i.test(so) ? ` (Shipping Order ${so})` : '';
+    return `**${quote.numero || ''}**${subject ? ` regarding ${subject}` : ''}${shipping}.`;
   });
 }

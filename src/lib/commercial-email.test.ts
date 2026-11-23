@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commercialEmailType, commercialEmailSentAt, samePOEmailQuotes } from "./commercial-email";
+import { commercialEmailType, commercialEmailSentAt, samePOEmailQuotes, emailQuoteLines } from "./commercial-email";
 
 describe("Commercial email document rules", () => {
   it('shows a Quote sent date only in the Quote stage', () => {
@@ -60,5 +60,13 @@ describe('Same P.O. email selection', () => {
   });
   it('does not offer grouped sending from Awaiting Approval', () => {
     expect(samePOEmailQuotes({ ...current, status: 'pendente' }, quotes, 'us')).toEqual([]);
+  });
+  it("email body references the Shipping Order", () => {
+    expect(emailQuoteLines([{ id: "a", numero: "0056/26", assunto_proposta: "TAP HOLE", numero_nota_entrada: "012634" }]))
+      .toEqual(["**0056/26** regarding TAP HOLE (Shipping Order 012634)."]);
+  });
+  it("email body omits a missing Shipping Order", () => {
+    expect(emailQuoteLines([{ id: "a", numero: "0056/26", assunto_proposta: "TAP HOLE", numero_nota_entrada: "N/A" }]))
+      .toEqual(["**0056/26** regarding TAP HOLE."]);
   });
 });

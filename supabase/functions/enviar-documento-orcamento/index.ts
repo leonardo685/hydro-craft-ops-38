@@ -3,6 +3,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { z } from 'npm:zod@3';
 import { LOGO_BASE64 } from './logo.ts';
 import { sendAndRecordEmail, sentColumn } from './sent-status.ts';
+import { shippingOrders, subjectDetails, type SubjectQuote } from './shipping-order.ts';
 
 const isEmail = (v: unknown) => typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
       if (!ord?.assinatura_entrega_path) return json({ error: 'Ordem sem assinatura de entrega nesta empresa.' }, 403);
     } else if (!b.orcamentoIds.length) return json({ error: 'Documento obrigatório.' }, 400);
     const { data: quotes, error: quotesError } = await client.from('orcamentos')
-      .select('id, status').eq('empresa_id', b.empresaId).in('id', b.orcamentoIds);
+      .select('id, status, numero, numero_nota_entrada, assunto_proposta, equipamento').eq('empresa_id', b.empresaId).in('id', b.orcamentoIds);
     if (b.tipo !== 'delivery' && (quotesError || quotes?.length !== b.orcamentoIds.length)) return json({ error: 'Documento indisponível nesta empresa.' }, 403);
     if (b.tipo !== 'delivery' && quotes!.some(q => q.status === 'rejeitado' ||
       (['aprovado', 'faturamento', 'finalizado'].includes(q.status) ? 'invoice' : 'quote') !== b.tipo)) {
@@ -68,7 +69,11 @@ Deno.serve(async (req) => {
     const titulo = tipo === 'invoice' ? 'Invoice' : tipo === 'delivery' ? 'Delivery Receipt' : 'Quote';
     const tituloCompleto = `${titulo} ${numero}`;
     const incluirAssinatura = b.assinatura === true;
-    const assuntoProposta = String(b.assunto || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 300);
+    const docQuotes = (b.tipo === 'delivery' ? [] : quotes || []) as SubjectQuote[];
+    const sosDoc = shippingOrders(b.orcamentoIds, docQuotes);
+    const assuntoProposta = b.tipo === 'delivery'
+      ? String(b.assunto || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 300)
+      : subjectDetails(b.orcamentoIds, docQuotes);
     const assuntoEmail = `${tituloCompleto}${assuntoProposta ? ` - ${assuntoProposta}` : ''} - ${empresaNome}`;
     const assinaturaHtml = `<table cellpadding="0" cellspacing="0" style="margin-top:28px;border-collapse:collapse;font-family:Arial,sans-serif;color:#1a1a1a"><tr>` +
       `<td style="padding-right:16px;border-right:2px solid #d92b2b;vertical-align:middle"><img src="cid:mechydrologo" alt="MEC HYDRO" width="120" style="display:block;border:0" /></td>` +
@@ -87,7 +92,8 @@ Deno.serve(async (req) => {
       .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
       .split('\n').map((l) => l.trim() ? `<p style="margin:0 0 4px">${l.trim()}</p>` : '<p style="margin:0 0 10px">&nbsp;</p>').join('');
     const html = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#222;max-width:600px">` +
-      `<h2 style="margin:0 0 16px;font-size:20px;color:#111">${esc(titulo)}</h2>${corpo}` +
+      `<h2 style="margin:0 0 16px;font-size:20px;color:#111">${esc(titulo)}</h2>` +
+      (sosDoc.length && !/shipping order/i.test(mensagem) ? `<p style="margin:0 0 12px"><b>Shipping Order:</b> ${esc(sosDoc.join(', '))}</p>` : '') + corpo +
       (incluirAssinatura ? assinaturaHtml : `<p style="font-size:12px;color:#777">${esc(empresaNome)}</p>`) + `</div>`;
 
     let result;
