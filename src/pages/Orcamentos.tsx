@@ -495,7 +495,7 @@ export default function Orcamentos() {
 
   // Invoices a receber: aprovados/finalizados cujo lançamento ainda não foi marcado como recebido
   const aReceberSummary = orcamentos
-    .filter(o => ['aprovado', 'faturamento', 'finalizado'].includes(o.status) && !lancamentoDaQuote(o)?.pago)
+    .filter(o => o.status === 'finalizado' && !lancamentoDaQuote(o)?.pago)
     .reduce((acc, o) => {
       const v = quoteCardValues(o, empresaAtual?.nome);
       return { total: acc.total + v.value + v.salesTax, count: acc.count + 1 };
@@ -784,7 +784,7 @@ export default function Orcamentos() {
   const [filtroAReceber, setFiltroAReceber] = useState(false);
   const aplicarFiltros = (orcamentosLista: any[]) => {
     return orcamentosLista.filter((orc) => {
-      if (filtroAReceber && !(['aprovado', 'faturamento', 'finalizado'].includes(orc.status) && !lancamentoDaQuote(orc)?.pago)) {
+      if (filtroAReceber && !(orc.status === 'finalizado' && !lancamentoDaQuote(orc)?.pago)) {
         return false;
       }
       // Filtro por cliente
@@ -2595,7 +2595,7 @@ export default function Orcamentos() {
 
         {filtroAReceber && (
           <div className="flex items-center justify-between rounded-lg border border-primary/40 bg-primary/5 px-4 py-2 text-sm">
-            <span>{language === 'en' ? 'Showing only unpaid invoices (see Approved and Finalized tabs)' : 'Mostrando só invoices a receber (abas Aprovado e Finalizado)'}</span>
+            <span>{language === 'en' ? 'Showing only unpaid invoices (Finalized tab)' : 'Mostrando só invoices a receber (aba Finalizado)'}</span>
             <Button size="sm" variant="ghost" onClick={() => setFiltroAReceber(false)}>{language === 'en' ? 'Clear' : 'Limpar'}</Button>
           </div>
         )}
