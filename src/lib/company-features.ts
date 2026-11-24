@@ -8,6 +8,16 @@ export function showsOrderReference(companyName: string | null | undefined): boo
   return hasFiscalBilling(companyName);
 }
 
+/** US documents replace the customer tax ID with a prominent shipping order. */
+export function usesShippingOrder(companyName: string | null | undefined): boolean {
+  return !hasFiscalBilling(companyName);
+}
+
+/** Brazilian documents keep the customer tax ID beside the entry invoice. */
+export function showsClientTaxId(companyName: string | null | undefined): boolean {
+  return hasFiscalBilling(companyName);
+}
+
 export function completionStatus(companyName: string | null | undefined, receiptId: number | null | undefined, quoteId: string | null | undefined): string {
   if (!hasFiscalBilling(companyName)) return 'finalizada';
   return receiptId ? 'aguardando_retorno' : quoteId ? 'finalizada' : 'faturado';

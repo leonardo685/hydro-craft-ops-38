@@ -1,9 +1,14 @@
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { z } from 'npm:zod@3';
 import { LOGO_BASE64 } from './logo.ts';
 import { sendAndRecordEmail, sentColumn } from './sent-status.ts';
 import { shippingOrders, shippingOrderValue, subjectDetails, type SubjectQuote } from './shipping-order.ts';
+import { quoteShippingOrderPrefix } from './subject.ts';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 const isEmail = (v: unknown) => typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
@@ -72,7 +77,10 @@ Deno.serve(async (req) => {
     if (pdfBase64.length > 50_000_000) return json({ error: 'PDF muito grande para envio.' }, 400);
 
     const titulo = tipo === 'invoice' ? 'Invoice' : tipo === 'delivery' ? 'Delivery Receipt' : 'Quote';
-    const tituloCompleto = `${titulo} ${numero}`;
+    const prefixo = tipo === 'quote'
+      ? quoteShippingOrderPrefix(empresaNome, (quotes || []).map((q: any) => q.numero_nota_entrada))
+      : '';
+    const tituloCompleto = `${prefixo}${titulo} ${numero}`;
     const incluirAssinatura = b.assinatura === true;
     const docQuotes = (b.tipo === 'delivery' ? [] : quotes || []) as SubjectQuote[];
     const sosDoc = b.tipo === 'delivery' ? (deliverySO ? [deliverySO] : []) : shippingOrders(b.orcamentoIds, docQuotes);

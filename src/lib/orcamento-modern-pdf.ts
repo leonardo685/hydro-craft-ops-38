@@ -7,7 +7,7 @@ import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { translateTerm } from "@/i18n/dynamicTerms";
 import { invoiceDeliveryPhotos, invoiceDeliveryOrders, type DeliveryOrder } from "@/lib/invoice-delivery-photos";
 import { deliverySignatureURL } from '@/lib/delivery-signature';
-import { showsOrderReference } from "@/lib/company-features";
+import { showsClientTaxId, showsOrderReference, usesShippingOrder } from "@/lib/company-features";
 
 type Lang = "pt-BR" | "en" | "es";
 
@@ -265,7 +265,12 @@ export async function gerarOrcamentoModernoPDF(p: ModernOrcamentoParams) {
   if (mostraOrdemRef) {
     doc.text(`${T.refOrder}  ${o.ordem_referencia || "N/A"}`, M, y); y += 6;
   }
-  small(`${T.taxId}  ${p.clienteDoc || "N/A"}    |    ${T.entryInvoice}  ${o.numero_nota_entrada || "N/A"}`, M, y, MUTED, false, 7);
+  if (usesShippingOrder(p.empresa?.nome)) {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...DARK);
+    doc.text(`SHIPPING ORDER  ${o.numero_nota_entrada || "N/A"}`, M, y);
+  } else if (showsClientTaxId(p.empresa?.nome)) {
+    small(`${T.taxId}  ${p.clienteDoc || "N/A"}    |    ${T.entryInvoice}  ${o.numero_nota_entrada || "N/A"}`, M, y, MUTED, false, 7);
+  }
   y += 9; rule(y); y += 10;
 
   const valorOriginal = Number(o.valor || 0);

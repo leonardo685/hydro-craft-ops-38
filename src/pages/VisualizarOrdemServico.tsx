@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { hasFiscalBilling } from "@/lib/company-features";
+import { hasFiscalBilling, usesShippingOrder } from "@/lib/company-features";
 
 const VisualizarOrdemServico = () => {
   const navigate = useNavigate();
@@ -257,13 +257,13 @@ const VisualizarOrdemServico = () => {
       label: 'Data de Entrada:',
       value: new Date(ordem.data_entrada).toLocaleDateString('pt-BR')
     }, {
-      label: 'Nota Fiscal:',
-      value: dadosRecebimento.nota_fiscal || '-'
+      label: usesShippingOrder(empresaAtual?.nome) ? 'Shipping Order:' : 'Nota Fiscal:',
+      value: dadosRecebimento.nota_fiscal || (usesShippingOrder(empresaAtual?.nome) ? 'N/A' : '-')
     }, {
       label: 'Nº Série:',
       value: dadosRecebimento.numero_serie || '-'
     }];
-    criarTabela('Informações Básicas', dadosBasicos.filter(campo => campo.label !== 'Nota Fiscal:' || hasFiscalBilling(empresaAtual?.nome)), [128, 128, 128]);
+    criarTabela('Informações Básicas', dadosBasicos, [128, 128, 128]);
     const dadosTecnicos: Array<{
       label: string;
       value: string;
@@ -519,6 +519,10 @@ const VisualizarOrdemServico = () => {
               {hasFiscalBilling(empresaAtual?.nome) && <div>
                 <Label>{t('visualizarOrdem.invoice')}</Label>
                 <div>{recebimento?.nota_fiscal || '-'}</div>
+              </div>}
+              {usesShippingOrder(empresaAtual?.nome) && <div>
+                <Label>Shipping Order</Label>
+                <div>{recebimento?.nota_fiscal || 'N/A'}</div>
               </div>}
               <div>
                 <Label>{t('visualizarOrdem.orderNumber')}</Label>

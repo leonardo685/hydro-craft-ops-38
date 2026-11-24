@@ -16,6 +16,7 @@ import { deliverySignatureURL, saveDeliverySignature } from '@/lib/delivery-sign
 import { PenLine, Download, Mail } from 'lucide-react';
 import { loadDeliveryReceiptData, gerarComprovanteEntregaPDF, deliveryReceiptFilename } from '@/lib/delivery-receipt-pdf';
 import { STATUS_APROVADO_INVOICE } from '@/lib/quote-filename';
+import { captureQRPhoto } from '@/lib/qr-photo-capture';
 
 interface ScanQRCodeModalProps {
   open: boolean;
@@ -35,6 +36,7 @@ type OrdemInfo = {
 };
 
 const SCANNER_ID = "qr-internal-scanner-region";
+const PHOTO_SCANNER_ID = "qr-photo-scanner-region";
 
 const normalizarNumero = (raw: string): string => {
   const t = raw.trim().toUpperCase();
@@ -55,6 +57,7 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
   const handlingRef = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [capturingPhoto, setCapturingPhoto] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [manual, setManual] = useState("");
   const [info, setInfo] = useState<OrdemInfo | null>(null);
@@ -227,6 +230,32 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
     }
   };
 
+  const capturarELerFoto = async () => {
+    if (capturingPhoto || loading || handlingRef.current) return;
+    setCapturingPhoto(true);
+    handlingRef.current = true;
+    const photoScanner = new Html5Qrcode(PHOTO_SCANNER_ID, false);
+    try {
+      const photo = await captureQRPhoto(SCANNER_ID);
+      let decoded: string;
+      try {
+        decoded = await photoScanner.scanFile(photo, false);
+      } finally {
+        try { photoScanner.clear(); } catch { /* noop */ }
+      }
+      await buscar(decoded);
+    } catch (error) {
+      console.error("Erro ao ler foto do QR Code:", error);
+      const message = error instanceof Error && error.message.startsWith("A câmera")
+        ? error.message
+        : "Não foi possível identificar o QR Code na foto. Aproxime a câmera, evite reflexos e tente novamente.";
+      toast.error(message);
+    } finally {
+      handlingRef.current = false;
+      setCapturingPhoto(false);
+    }
+  };
+
   const ir = (path: string) => {
     onOpenChange(false);
     navigate(path);
@@ -351,7 +380,7 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
           <DialogDescription>
             {info
               ? [info.cliente, info.equipamento].filter(Boolean).join(" • ") || "Escolha o que deseja abrir"
-              : "Aponte a câmera para o QR Code ou digite o número da ordem."}
+              : "Enquadre a etiqueta, tire uma foto para ler o QR Code ou digite o número da ordem."}
           </DialogDescription>
         </DialogHeader>
 
@@ -404,6 +433,19 @@ export function ScanQRCodeModal({ open, onOpenChange }: ScanQRCodeModalProps) {
         ) : (
           <div className="space-y-4">
             <div id={SCANNER_ID} className="w-full overflow-hidden rounded-lg border bg-muted aspect-square" />
+            <div id={PHOTO_SCANNER_ID} className="hidden" aria-hidden="true" />
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full"
+              onClick={capturarELerFoto}
+              disabled={capturingPhoto || loading}
+              title="Tirar foto da etiqueta e tentar ler o QR Code"
+              aria-label="Tirar foto e ler QR Code"
+            >
+              {capturingPhoto ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Camera className="w-4 h-4 mr-2" />}
+              {capturingPhoto ? "Lendo foto..." : "Tirar foto e ler QR Code"}
+            </Button>
             {loading && (
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" /> Buscando...

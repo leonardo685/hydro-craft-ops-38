@@ -7,7 +7,7 @@ import { User, Calendar, Package, Settings, Wrench, FileText, Camera, MapPin, Th
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEmpresa } from "@/contexts/EmpresaContext";
-import { hasFiscalBilling } from "@/lib/company-features";
+import { hasFiscalBilling, usesShippingOrder } from "@/lib/company-features";
 
 interface OrdemServicoModalProps {
   ordem: any;
@@ -187,6 +187,13 @@ export function OrdemServicoModal({ ordem, children }: OrdemServicoModalProps) {
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">{t('modals.entryInvoice')}:</span>
                       <span>{recebimento.nota_fiscal}</span>
+                    </div>
+                  )}
+                  {usesShippingOrder(empresaAtual?.nome) && (
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Shipping Order:</span>
+                      <span>{recebimento.nota_fiscal || 'N/A'}</span>
                     </div>
                   )}
                   {recebimento.numero_serie && (

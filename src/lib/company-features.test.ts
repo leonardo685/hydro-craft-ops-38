@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { completionStatus, hasFiscalBilling, showsOrderReference } from './company-features';
+import { completionStatus, hasFiscalBilling, showsClientTaxId, showsOrderReference, usesShippingOrder } from './company-features';
 
 describe('company fiscal workflow isolation', () => {
   it('disables fiscal billing for MEC HYDRO US', () => {
@@ -33,5 +33,14 @@ describe('company fiscal workflow isolation', () => {
   it('keeps the service order reference for Brazilian companies', () => {
     expect(showsOrderReference('MEC HIDRO')).toBe(true);
     expect(showsOrderReference(null)).toBe(true);
+  });
+  it('replaces the client tax ID with a shipping order for MEC HYDRO US', () => {
+    expect(usesShippingOrder('MEC HYDRO')).toBe(true);
+    expect(showsClientTaxId('MEC HYDRO')).toBe(false);
+  });
+  it('preserves the client tax ID and entry invoice for Brazilian companies', () => {
+    expect(usesShippingOrder('MEC HIDRO')).toBe(false);
+    expect(showsClientTaxId('MEC HIDRO')).toBe(true);
+    expect(showsClientTaxId(null)).toBe(true);
   });
 });

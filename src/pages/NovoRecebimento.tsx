@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useClientes } from "@/hooks/use-clientes";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
 import { useEmpresa } from "@/contexts/EmpresaContext";
-import { hasFiscalBilling } from "@/lib/company-features";
+import { hasFiscalBilling, usesShippingOrder } from "@/lib/company-features";
 
 export default function NovoRecebimento() {
   const navigate = useNavigate();
@@ -177,7 +177,7 @@ export default function NovoRecebimento() {
         cliente_nome: clienteSelecionado?.nome || '',
         cliente_cnpj: clienteSelecionado?.cnpj_cpf || notaFiscal?.cliente_cnpj,
         data_entrada: formData.dataAbertura,
-        nota_fiscal: fiscalBilling ? formData.numeroNota : null,
+        nota_fiscal: formData.numeroNota || null,
         nota_fiscal_id: notaFiscal?.id || null,
         chave_acesso_nfe: notaFiscal?.chave_acesso || null,
         categoria_equipamento: formData.categoriaEquipamento,
@@ -326,6 +326,15 @@ export default function NovoRecebimento() {
                     id="numeroNota"
                     value={formData.numeroNota}
                     onChange={(e) => setFormData({...formData, numeroNota: e.target.value})}
+                  />
+                </div>}
+                {usesShippingOrder(empresaAtual?.nome) && <div className="space-y-2">
+                  <Label htmlFor="shippingOrderReceipt">Shipping Order</Label>
+                  <Input
+                    id="shippingOrderReceipt"
+                    value={formData.numeroNota}
+                    onChange={(e) => setFormData({...formData, numeroNota: e.target.value})}
+                    placeholder="N/A"
                   />
                 </div>}
               </div>

@@ -61,3 +61,11 @@
 ## Lista de precificações
 - [x] Criar tabela precificacoes com isolamento por empresa e transformar a página em lista com botão "Nova precificação", edição, exclusão e salvamento no modal.
 - [x] Compilação OK; salvamento real não verificado por falta de sessão autenticada no Supabase externo.
+
+## Shipping Order na MEC HYDRO
+- [x] Restaurar o campo em Basic Information ao criar ou editar uma análise e salvar nos dois fluxos.
+- [x] Revisar quotes, PDFs, emails, fluxos fiscais e rotinas relacionadas, preservando a Nota de entrada brasileira.
+- [x] Exibir e preencher Shipping Order no recebimento, detalhes, modal e PDF da ordem na MEC HYDRO.
+- [x] Restringir o prefixo Shipping Order no assunto de Quote à MEC HYDRO.
+- [x] Validar 26 testes, typecheck e compilação.
+- [ ] Confirmar salvamento e envio real com a conta do usuário — sessão autenticada indisponível; função de email não implantada no backend compartilhado.

@@ -263,7 +263,10 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave, standalone
     }
   };
 
+  const precoEfetivo = regime === "lucro_real" ? Number(lucroReal?.precoBase) || 0 : precoDesejado;
+
   const handleSalvar = async () => {
+    const precoDesejado = precoEfetivo;
     if (precoDesejado <= 0) {
       toast.error("Preço desejado deve ser maior que zero");
       return;
@@ -359,6 +362,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave, standalone
   };
 
   const handleSalvarStandalone = async () => {
+    const precoDesejado = precoEfetivo;
     if (precoDesejado <= 0) {
       toast.error("Preço desejado deve ser maior que zero");
       return;
@@ -412,7 +416,7 @@ export function PrecificacaoModal({ open, onClose, orcamento, onSave, standalone
   const handleExportarPDF = async () => {
     const dadosAtualizados = {
       ...orcamento,
-      preco_desejado: precoDesejado,
+      preco_desejado: precoEfetivo,
       desconto_percentual: descontoPercentual,
       impostos_percentual: impostosPercentual,
       impostos_valor: impostosValor,

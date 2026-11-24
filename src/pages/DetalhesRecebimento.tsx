@@ -9,7 +9,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useRecebimentos } from "@/hooks/use-recebimentos";
 import { format } from "date-fns";
 import { useEmpresa } from "@/contexts/EmpresaContext";
-import { hasFiscalBilling } from "@/lib/company-features";
+import { hasFiscalBilling, usesShippingOrder } from "@/lib/company-features";
 
 export default function DetalhesRecebimento() {
   const navigate = useNavigate();
@@ -99,6 +99,10 @@ export default function DetalhesRecebimento() {
                 {fiscalBilling && <div>
                   <p className="text-sm font-medium text-muted-foreground">Nota Fiscal</p>
                   <p className="font-medium">{recebimento.nota_fiscal || '-'}</p>
+                </div>}
+                {usesShippingOrder(empresaAtual?.nome) && <div>
+                  <p className="text-sm font-medium text-muted-foreground">Shipping Order</p>
+                  <p className="font-medium">{recebimento.nota_fiscal || 'N/A'}</p>
                 </div>}
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Tipo Equipamento</p>

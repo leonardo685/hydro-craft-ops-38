@@ -3760,6 +3760,13 @@ export default function NovoOrcamento() {
                   numeroNota: e.target.value
                 }))} placeholder={t('novoOrcamento.invoicePlaceholder')} />
                 </div>}
+                {!hasFiscalBilling(empresaAtual?.nome) && <div>
+                  <Label htmlFor="shippingOrderQuote">Shipping Order</Label>
+                  <Input id="shippingOrderQuote" value={dadosOrcamento.numeroNota} placeholder="N/A" onChange={e => setDadosOrcamento(prev => ({
+                  ...prev,
+                  numeroNota: e.target.value
+                }))} />
+                </div>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

@@ -17,7 +17,7 @@ import { addLogoToPDF } from "@/lib/pdf-logo-utils";
 import { useEmpresa } from "@/contexts/EmpresaContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DitarLaudoButton } from "@/components/DitarLaudoButton";
-import { hasFiscalBilling } from "@/lib/company-features";
+import { hasFiscalBilling, usesShippingOrder } from "@/lib/company-features";
 
 
 // Motivos de falha: mapeia o texto salvo no banco de volta para a chave do seletor
@@ -46,6 +46,8 @@ const NovaOrdemServico = () => {
   const { toast } = useToast();
   const { recebimentos, loading } = useRecebimentos();
   const [recebimento, setRecebimento] = useState<any>(null);
+  const [shippingOrder, setShippingOrder] = useState('');
+  const [shippingOrderLoaded, setShippingOrderLoaded] = useState(false);
   const [ordemExistente, setOrdemExistente] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const submittingRef = useRef(false);
@@ -1277,6 +1279,27 @@ const NovaOrdemServico = () => {
     }
   };
 
+  useEffect(() => {
+    if (!recebimento || !empresaAtual?.id || !usesShippingOrder(empresaAtual.nome) || shippingOrderLoaded) return;
+    (async () => {
+      let value = recebimento.nota_fiscal || '';
+      if (!value && ordemExistente?.id) {
+        const { data } = await supabase.from('orcamentos').select('numero_nota_entrada')
+          .eq('ordem_servico_id', ordemExistente.id).eq('empresa_id', empresaAtual.id)
+          .not('numero_nota_entrada', 'is', null).limit(1);
+        value = data?.[0]?.numero_nota_entrada || '';
+      }
+      if (!value && ordemExistente?.numero_ordem) {
+        const { data } = await supabase.from('orcamentos').select('numero_nota_entrada')
+          .eq('ordem_referencia', ordemExistente.numero_ordem).eq('empresa_id', empresaAtual.id)
+          .not('numero_nota_entrada', 'is', null).limit(1);
+        value = data?.[0]?.numero_nota_entrada || '';
+      }
+      setShippingOrder(current => current.trim() ? current : value);
+      setShippingOrderLoaded(true);
+    })();
+  }, [ordemExistente?.id, ordemExistente?.numero_ordem, empresaAtual?.id, empresaAtual?.nome, recebimento, shippingOrderLoaded]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1632,6 +1655,24 @@ const NovaOrdemServico = () => {
               console.log('✅ Dados técnicos do recebimento atualizados com sucesso!', updatedRecebimento);
             }
           }
+        }
+      }
+
+      // Shipping order vale tanto para uma análise nova quanto para uma edição na MEC HYDRO.
+      if (usesShippingOrder(empresaAtual?.nome) && (shippingOrderLoaded || shippingOrder.trim())) {
+        const so = shippingOrder.trim() || null;
+        const recId = recebimento?.id || ordemExistente?.recebimento_id || null;
+        const numeroOrdem = ordemExistente?.numero_ordem || recebimento?.numeroOrdem || recebimento?.numero_ordem || null;
+        if (recId) {
+          await supabase.from('recebimentos').update({ nota_fiscal: so }).eq('id', recId).eq('empresa_id', empresaAtual?.id);
+        }
+        if (ordemId) {
+          await supabase.from('orcamentos').update({ numero_nota_entrada: so })
+            .eq('ordem_servico_id', ordemId).eq('empresa_id', empresaAtual?.id);
+        }
+        if (numeroOrdem) {
+          await supabase.from('orcamentos').update({ numero_nota_entrada: so })
+            .eq('ordem_referencia', numeroOrdem).eq('empresa_id', empresaAtual?.id);
         }
       }
 
@@ -2026,13 +2067,17 @@ const NovaOrdemServico = () => {
                   <p className="font-medium">{recebimento.numeroOrdem}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.equipmentType')}</Label>
-                  <p className="font-medium">{recebimento.equipamento}</p>
+                  <Label htmlFor="basicTipoEquipamento" className="text-sm font-medium text-muted-foreground">{t('novaAnalise.equipmentType')}</Label>
+                  <Input id="basicTipoEquipamento" value={dadosTecnicos.tipoEquipamento} onChange={e => setDadosTecnicos(prev => ({ ...prev, tipoEquipamento: e.target.value }))} />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('novaAnalise.serialNumber')}</Label>
-                  <p className="font-medium">{recebimento.numero_serie || t('novaAnalise.notInformedM')}</p>
+                  <Label htmlFor="basicNumeroSerie" className="text-sm font-medium text-muted-foreground">{t('novaAnalise.serialNumber')}</Label>
+                  <Input id="basicNumeroSerie" value={dadosTecnicos.numeroSerie} onChange={e => setDadosTecnicos(prev => ({ ...prev, numeroSerie: e.target.value }))} />
                 </div>
+                {usesShippingOrder(empresaAtual?.nome) && <div>
+                  <Label htmlFor="shippingOrder" className="text-sm font-medium text-muted-foreground">Shipping Order</Label>
+                  <Input id="shippingOrder" value={shippingOrder} placeholder="N/A" onChange={e => setShippingOrder(e.target.value)} />
+                </div>}
               </div>
             </CardContent>
           </Card>
