@@ -62,11 +62,15 @@ describe('Same P.O. email selection', () => {
     expect(samePOEmailQuotes({ ...current, status: 'pendente' }, quotes, 'us')).toEqual([]);
   });
   it("email body references the Shipping Order", () => {
-    expect(emailQuoteLines([{ id: "a", numero: "0056/26", assunto_proposta: "TAP HOLE", numero_nota_entrada: "012634" }]))
+    expect(emailQuoteLines([{ id: "a", numero: "0056/26", assunto_proposta: "TAP HOLE", numero_nota_entrada: "012634" }], 'MEC HYDRO'))
       .toEqual(["**0056/26** regarding TAP HOLE (Shipping Order 012634)."]);
   });
   it("email body omits a missing Shipping Order", () => {
-    expect(emailQuoteLines([{ id: "a", numero: "0056/26", assunto_proposta: "TAP HOLE", numero_nota_entrada: "N/A" }]))
+    expect(emailQuoteLines([{ id: "a", numero: "0056/26", assunto_proposta: "TAP HOLE", numero_nota_entrada: "N/A" }], 'MEC HYDRO'))
       .toEqual(["**0056/26** regarding TAP HOLE."]);
+  });
+  it('does not label Brazilian entry invoices as Shipping Orders in the email body', () => {
+    expect(emailQuoteLines([{ id: 'a', numero: '0056/26', assunto_proposta: 'TAP HOLE', numero_nota_entrada: '943635' }], 'MEC HIDRO'))
+      .toEqual(['**0056/26** regarding TAP HOLE.']);
   });
 });

@@ -1,5 +1,11 @@
 # Tax por orçamento
 
+## Email monitoring fixes
+- [x] Prevent the invoice email modal from crashing Commercial when closed with same-P.O. invoices loaded.
+- [x] Include Shipping Order once in US email subjects and retain its body reference without labeling Brazilian entry invoices as Shipping Orders, including the delivery-email entry point.
+- [x] Run regression tests and deploy the corrected email function.
+- [ ] Verify a live customer email and modal closure in the account — user-managed Supabase cannot provide an authenticated session.
+
 ## Email sent indicator
 - [x] Make email status visible on Quote/Invoice cards and editing: Email sent with last-send date, or Email not sent when no send is recorded.
 - [x] Persist separate Quote/Invoice sent dates after successful email and show Sent on commercial cards and quote editing.

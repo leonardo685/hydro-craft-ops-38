@@ -13,3 +13,4 @@
 - Store delivery signatures as private order-owned files with a separate timestamp; save independently of commercial status and resolve them through the shared invoice ownership filter so later linking never mixes companies.
 - Print generated document bytes through `src/lib/print-pdf.ts`, reserving the window on click; reuse the existing PDF generators so printed and downloaded documents stay identical.
 - Record separate Quote/Invoice last-sent timestamps in the email edge function only after SMTP accepts the message; validate company-owned document IDs first and mark every selected invoice, so sent badges persist without confusing prior Quote sends with Invoice sends.
+- Compose commercial email subjects in the edge function's subject helper from company-scoped saved quotes; gate Shipping Order by the company capability in both frontend and edge helpers so entry invoices cannot be mislabeled and quote prefixes cannot duplicate it.

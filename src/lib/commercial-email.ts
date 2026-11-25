@@ -1,4 +1,5 @@
 import { normalizarNumeroPedido } from './pedido-utils';
+import { usesShippingOrder } from './company-features';
 
 /** Commercial tab eligibility and email document type. */
 export function commercialEmailType(status: string | null | undefined): "quote" | "invoice" | null {
@@ -42,12 +43,12 @@ export function samePOEmailQuotes(current: EmailQuote, quotes: EmailQuote[], emp
     .sort((a, b) => (b.numero || '').localeCompare(a.numero || '', undefined, { numeric: true }));
 }
 
-export function emailQuoteLines(quotes: EmailQuote[]): string[] {
+export function emailQuoteLines(quotes: EmailQuote[], companyName: string | null | undefined): string[] {
   const valid = (v?: string | null) => /não especificado|nao especificado/i.test(v || '') ? '' : v?.trim() || '';
   return quotes.map(quote => {
     const subject = valid(quote.assunto_proposta) || valid(quote.equipamento);
     const so = String(quote.numero_nota_entrada || '').trim();
-    const shipping = so && !/^(n\/?a|none|-+)$/i.test(so) ? ` (Shipping Order ${so})` : '';
+    const shipping = usesShippingOrder(companyName) && so && !/^(n\/?a|none|-+)$/i.test(so) ? ` (Shipping Order ${so})` : '';
     return `**${quote.numero || ''}**${subject ? ` regarding ${subject}` : ''}${shipping}.`;
   });
 }

@@ -12,6 +12,7 @@ import { useEmpresa } from "@/contexts/EmpresaContext";
 import { supabase } from "@/integrations/supabase/client";
 import { gerarArquivoOrcamentoPorId } from "@/lib/orcamento-modern-pdf";
 import { commercialEmailType, emailQuoteLines, emailQuotePO, samePOEmailQuotes, type EmailQuote } from "@/lib/commercial-email";
+import { usesShippingOrder } from "@/lib/company-features";
 
 interface Props {
   open: boolean;
@@ -60,7 +61,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
       `Hello ${orcamento?.cliente_nome?.trim() || "there"},`,
       "",
       `Please find attached our ${invoicesEnviadas.length > 1 ? "Invoices" : tipoLabel}:`,
-      ...emailQuoteLines(invoicesEnviadas),
+      ...emailQuoteLines(invoicesEnviadas, empresaAtual?.nome),
       "",
       "If you have any questions, please let us know.",
       "",
@@ -147,8 +148,9 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
     try {
       const { bytes, nome } = await gerarArquivoOrcamentoPorId(orcamento.id, empresaAtual, language,
         isInvoice && incluirAssinatura ? invoicesEnviadas.map(q => q.id) : undefined);
-      let shippingOrder = String(orcamento.numero_nota_entrada || '').trim();
-      if (!shippingOrder) {
+      const showShippingOrder = usesShippingOrder(empresaAtual.nome);
+      let shippingOrder = showShippingOrder ? String(orcamento.numero_nota_entrada || '').trim() : '';
+      if (showShippingOrder && !shippingOrder) {
         const { data: so } = await supabase.from('orcamentos').select('numero_nota_entrada')
           .eq('id', orcamento.id).eq('empresa_id', empresaAtual.id).maybeSingle();
         shippingOrder = String(so?.numero_nota_entrada || '').trim();
@@ -189,7 +191,7 @@ export function EnviarDocumentoEmailModal({ open, onOpenChange, orcamento, langu
     }
   };
 
-  if (!tipoDocumento) return null;
+  if (!orcamento || !tipoDocumento) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

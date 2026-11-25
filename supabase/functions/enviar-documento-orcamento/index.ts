@@ -2,8 +2,8 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { z } from 'npm:zod@3';
 import { LOGO_BASE64 } from './logo.ts';
 import { sendAndRecordEmail, sentColumn } from './sent-status.ts';
-import { shippingOrders, shippingOrderValue, subjectDetails, type SubjectQuote } from './shipping-order.ts';
-import { quoteShippingOrderPrefix } from './subject.ts';
+import { shippingOrders, shippingOrderValue, emailUsesShippingOrder, type SubjectQuote } from './shipping-order.ts';
+import { commercialEmailSubject } from './subject.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     const { data: quotes, error: quotesError } = await client.from('orcamentos')
       .select('id, status, numero, numero_nota_entrada, assunto_proposta, equipamento').eq('empresa_id', b.empresaId).in('id', b.orcamentoIds);
     if (b.tipo !== 'delivery' && (quotesError || quotes?.length !== b.orcamentoIds.length)) return json({ error: 'Documento indisponível nesta empresa.' }, 403);
-    if (b.tipo !== 'delivery' && quotes!.some(q => q.status === 'rejeitado' ||
+    if (b.tipo !== 'delivery' && (quotes || []).some(q => q.status === 'rejeitado' ||
       (['aprovado', 'faturamento', 'finalizado'].includes(q.status) ? 'invoice' : 'quote') !== b.tipo)) {
       return json({ error: 'O tipo do documento não corresponde à cotação.' }, 400);
     }
@@ -77,18 +77,18 @@ Deno.serve(async (req) => {
     if (pdfBase64.length > 50_000_000) return json({ error: 'PDF muito grande para envio.' }, 400);
 
     const titulo = tipo === 'invoice' ? 'Invoice' : tipo === 'delivery' ? 'Delivery Receipt' : 'Quote';
-    const prefixo = tipo === 'quote'
-      ? quoteShippingOrderPrefix(empresaNome, (quotes || []).map((q: any) => q.numero_nota_entrada))
-      : '';
-    const tituloCompleto = `${prefixo}${titulo} ${numero}`;
+    const tituloCompleto = `${titulo} ${numero}`;
     const incluirAssinatura = b.assinatura === true;
     const docQuotes = (b.tipo === 'delivery' ? [] : quotes || []) as SubjectQuote[];
-    const sosDoc = b.tipo === 'delivery' ? (deliverySO ? [deliverySO] : []) : shippingOrders(b.orcamentoIds, docQuotes);
+    const sosDoc = b.tipo === 'delivery'
+      ? (emailUsesShippingOrder(empresaNome) && deliverySO ? [deliverySO] : [])
+      : shippingOrders(b.orcamentoIds, docQuotes, empresaNome);
     const assuntoCliente = String(b.assunto || '').replace(/[\r\n]+/g, ' ').trim();
-    const assuntoProposta = (b.tipo === 'delivery'
-      ? (deliverySO && !/shipping order/i.test(assuntoCliente) ? [`Shipping Order ${deliverySO}`, assuntoCliente].filter(Boolean).join(' - ') : assuntoCliente)
-      : subjectDetails(b.orcamentoIds, docQuotes)).slice(0, 300);
-    const assuntoEmail = `${tituloCompleto}${assuntoProposta ? ` - ${assuntoProposta}` : ''} - ${empresaNome}`;
+    const assuntoProposta = (sosDoc.length && !/shipping order/i.test(assuntoCliente)
+      ? [`Shipping Order ${sosDoc.join(', ')}`, assuntoCliente].filter(Boolean).join(' - ') : assuntoCliente).slice(0, 300);
+    const assuntoEmail = tipo === 'delivery'
+      ? `${tituloCompleto}${assuntoProposta ? ` - ${assuntoProposta}` : ''} - ${empresaNome}`
+      : commercialEmailSubject(tipo, numero, b.orcamentoIds, docQuotes, empresaNome);
     const assinaturaHtml = `<table cellpadding="0" cellspacing="0" style="margin-top:28px;border-collapse:collapse;font-family:Arial,sans-serif;color:#1a1a1a"><tr>` +
       `<td style="padding-right:16px;border-right:2px solid #d92b2b;vertical-align:middle"><img src="cid:mechydrologo" alt="MEC HYDRO" width="120" style="display:block;border:0" /></td>` +
       `<td style="padding-left:16px;vertical-align:middle;font-size:13px;line-height:1.7">` +
