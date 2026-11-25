@@ -2,7 +2,9 @@ import { expectedPaymentDate, quoteServiceCategoryId } from '@/lib/delivery-bill
 import { preparePDFPrint } from '@/lib/print-pdf';
 import { Printer } from 'lucide-react';
 import { quoteCardValues } from "@/lib/quote-card-values";
-import { deleteRejectedQuote, withoutDeletedQuote } from "@/lib/delete-rejected-quote";
+import { deleteQuote } from "@/lib/delete-quote";
+import { withoutDeletedQuote } from "@/lib/delete-rejected-quote";
+import { DeleteQuoteButton } from "@/components/DeleteQuoteButton";
 import { completionStatus, hasFiscalBilling } from "@/lib/company-features";
 import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
 import { gerarOrcamentoModernoPDF } from "@/lib/orcamento-modern-pdf";
@@ -603,7 +605,7 @@ export default function Orcamentos() {
     const empresaId = empresaAtual.id;
     setExcluindoQuote(true);
     try {
-      const id = await deleteRejectedQuote(supabase, quoteParaExcluir, empresaId);
+      const id = await deleteQuote(supabase, quoteParaExcluir, empresaId);
       setOrcamentos(current => withoutDeletedQuote(current, id, empresaId));
       setQuoteParaExcluir(null);
       toast.success(language === 'en' ? 'Quote deleted' : language === 'es' ? 'Presupuesto eliminado' : 'Orçamento apagado');
@@ -2654,6 +2656,7 @@ export default function Orcamentos() {
                         >
                           <Link2 className="h-4 w-4" />
                         </Button>
+                        <DeleteQuoteButton language={language} onClick={() => setQuoteParaExcluir(item)} />
                         <Button
                           variant="outline"
                           size="sm"
@@ -2779,6 +2782,7 @@ export default function Orcamentos() {
                         >
                           <Link2 className="h-4 w-4" />
                         </Button>
+                        <DeleteQuoteButton language={language} onClick={() => setQuoteParaExcluir(item)} />
                         <Button
                           variant="outline"
                           size="sm"
@@ -2945,6 +2949,7 @@ export default function Orcamentos() {
                             <Link2 className="h-4 w-4" />
                           </Button>
                         )}
+                        <DeleteQuoteButton language={language} onClick={() => setQuoteParaExcluir(item)} />
                         <Button
                           variant="outline"
                           size="sm"
@@ -3038,16 +3043,7 @@ export default function Orcamentos() {
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive"
-                          onClick={() => setQuoteParaExcluir(item)}
-                          title={language === 'en' ? 'Delete quote' : language === 'es' ? 'Eliminar presupuesto' : 'Apagar orçamento'}
-                          aria-label={language === 'en' ? 'Delete quote' : language === 'es' ? 'Eliminar presupuesto' : 'Apagar orçamento'}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <DeleteQuoteButton language={language} onClick={() => setQuoteParaExcluir(item)} />
                         <Button
                           variant="outline"
                           size="sm"
@@ -3107,13 +3103,13 @@ export default function Orcamentos() {
       <Dialog open={!!quoteParaExcluir} onOpenChange={(open) => { if (!open && !excluindoQuote) setQuoteParaExcluir(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{language === 'en' ? 'Delete rejected quote?' : language === 'es' ? '¿Eliminar presupuesto rechazado?' : 'Apagar orçamento rejeitado?'}</DialogTitle>
+            <DialogTitle>{language === 'en' ? 'Delete quote?' : language === 'es' ? '¿Eliminar presupuesto?' : 'Apagar orçamento?'}</DialogTitle>
             <DialogDescription>
               {language === 'en'
-                ? 'This permanently deletes the quote and removes it from counts and totals. Linked service orders are preserved.'
+                ? 'This permanently deletes the quote and removes it from counts and totals. Linked service orders are preserved. Quotes with financial records cannot be deleted.'
                 : language === 'es'
-                  ? 'El presupuesto se eliminará permanentemente de los conteos y totales. Las órdenes vinculadas se conservan.'
-                  : 'O orçamento será apagado permanentemente e sairá das contagens e dos valores. As ordens de serviço vinculadas serão preservadas.'}
+                  ? 'El presupuesto se eliminará permanentemente de los conteos y totales. Las órdenes vinculadas se conservan. No se pueden eliminar presupuestos con registros financieros.'
+                  : 'O orçamento será apagado permanentemente e sairá das contagens e dos valores. As ordens de serviço vinculadas serão preservadas. Orçamentos com registros financeiros não podem ser apagados.'}
             </DialogDescription>
           </DialogHeader>
           <p className="break-words text-sm text-muted-foreground">#{quoteParaExcluir?.numero} — {quoteParaExcluir?.cliente_nome}</p>

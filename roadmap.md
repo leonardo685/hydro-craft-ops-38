@@ -1,5 +1,5 @@
 # Current tasks
 
-- [ ] Add a company-scoped transaction to delete quotes in any status only when no financial records depend on them, while preserving linked service orders.
-- [ ] Add visible delete actions and confirmation to Commercial cards and quote editing.
+- [x] Add a company-scoped transaction to delete quotes in any status only when no financial records depend on them, while preserving linked service orders.
+- [x] Add visible delete actions and confirmation to Commercial cards and quote editing.
 - [ ] Run focused deletion tests, check the preview build, and commit the changes.

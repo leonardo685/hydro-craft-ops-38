@@ -1,4 +1,6 @@
 import { preparePDFPrint } from '@/lib/print-pdf';
+import { deleteQuote } from '@/lib/delete-quote';
+import { DeleteQuoteButton } from '@/components/DeleteQuoteButton';
 import { Printer } from 'lucide-react';
 import { numeroOrcamentoParaArquivo } from "@/lib/quote-filename";
 import { hasFiscalBilling, usesStructuredPaymentTerms, parsePaymentTerms, formatPaymentTerms, PAYMENT_TERM_TYPES, type PaymentTermType } from "@/lib/company-features";
@@ -106,6 +108,8 @@ export default function NovoOrcamento() {
   const [showEmailModalTop, setShowEmailModalTop] = useState(false);
   const [showPrecificacaoModalTop, setShowPrecificacaoModalTop] = useState(false);
   const [copiandoTop, setCopiandoTop] = useState(false);
+  const [showDeleteDialogTop, setShowDeleteDialogTop] = useState(false);
+  const [excluindoTop, setExcluindoTop] = useState(false);
   const orcamentoAtual = orcamentoRef.current as any;
 
   const copiarOrcamentoTop = async () => {
@@ -236,6 +240,26 @@ export default function NovoOrcamento() {
     } catch (error) {
       console.error('Erro ao reprovar orçamento:', error);
       toast({ title: t('orcamentos.errorRejectingQuote'), variant: "destructive" });
+    }
+  };
+
+  const excluirOrcamentoTop = async () => {
+    const orcamento = orcamentoRef.current as any;
+    if (!orcamento?.id || !empresaAtual?.id || excluindoTop) return;
+    setExcluindoTop(true);
+    try {
+      await deleteQuote(supabase, orcamento, empresaAtual.id);
+      setShowDeleteDialogTop(false);
+      toast({ title: language === 'en' ? 'Quote deleted' : language === 'es' ? 'Presupuesto eliminado' : 'Orçamento apagado' });
+      navigate('/orcamentos');
+    } catch (error: any) {
+      toast({
+        title: language === 'en' ? 'Could not delete quote' : language === 'es' ? 'No se pudo eliminar el presupuesto' : 'Não foi possível apagar o orçamento',
+        description: error?.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setExcluindoTop(false);
     }
   };
 
@@ -3568,7 +3592,7 @@ export default function NovoOrcamento() {
             </p>
           </div>
           {editId && orcamentoAtual && (
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
               {!hasFiscalBilling(empresaAtual?.nome) && <EmailSentBadge quote={orcamentoAtual} language={language} />}
               <Button
                 variant="outline"
@@ -3612,6 +3636,7 @@ export default function NovoOrcamento() {
                 <Download className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="sm" onClick={imprimirPDF} title={language === 'en' ? 'Print' : 'Imprimir'} aria-label={language === 'en' ? 'Print' : 'Imprimir'}><Printer className="h-4 w-4" /></Button>
+              <DeleteQuoteButton language={language} onClick={() => setShowDeleteDialogTop(true)} disabled={excluindoTop} />
               <Button
                 size="sm"
                 onClick={reprovarOrcamentoTop}
@@ -4700,6 +4725,32 @@ export default function NovoOrcamento() {
               }
             }}
           />
+          <Dialog open={showDeleteDialogTop} onOpenChange={(open) => { if (!excluindoTop) setShowDeleteDialogTop(open); }}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{language === 'en' ? 'Delete quote?' : language === 'es' ? '¿Eliminar presupuesto?' : 'Apagar orçamento?'}</DialogTitle>
+                <DialogDescription>
+                  {language === 'en'
+                    ? 'This permanently deletes the quote. Linked service orders are preserved. Quotes with financial records cannot be deleted.'
+                    : language === 'es'
+                      ? 'El presupuesto se eliminará permanentemente. Las órdenes vinculadas se conservan. No se pueden eliminar presupuestos con registros financieros.'
+                      : 'O orçamento será apagado permanentemente. As ordens de serviço vinculadas serão preservadas. Orçamentos com registros financeiros não podem ser apagados.'}
+                </DialogDescription>
+              </DialogHeader>
+              <p className="break-words text-sm text-muted-foreground">#{orcamentoAtual.numero} — {orcamentoAtual.cliente_nome}</p>
+              <DialogFooter>
+                <Button variant="outline" disabled={excluindoTop} onClick={() => setShowDeleteDialogTop(false)}>
+                  {language === 'en' ? 'Cancel' : 'Cancelar'}
+                </Button>
+                <Button variant="destructive" disabled={excluindoTop} onClick={excluirOrcamentoTop}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {excluindoTop
+                    ? (language === 'en' ? 'Deleting...' : language === 'es' ? 'Eliminando...' : 'Apagando...')
+                    : (language === 'en' ? 'Delete quote' : language === 'es' ? 'Eliminar presupuesto' : 'Apagar orçamento')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
 

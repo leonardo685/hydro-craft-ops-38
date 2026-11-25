@@ -2717,6 +2717,10 @@ export type Database = {
         Args: { p_empresa_id: string; p_orcamento_id: string }
         Returns: string
       }
+      excluir_orcamento_sem_financeiro: {
+        Args: { p_empresa_id: string; p_orcamento_id: string }
+        Returns: string
+      }
       gerar_proximo_numero_cotacao: {
         Args: { p_empresa_id: string }
         Returns: string
