@@ -14,6 +14,7 @@ import NovaOrdemDireta from "@/pages/NovaOrdemDireta";
 import Orcamentos from "@/pages/Orcamentos";
 import NovoOrcamento from "@/pages/NovoOrcamento";
 import NovaPrecificacao from "@/pages/NovaPrecificacao";
+import SalesTaxReport from "@/pages/SalesTaxReport";
 import Aprovados from "@/pages/Aprovados";
 import Compras from "@/pages/Compras";
 import VisualizarOrdemServico from "@/pages/VisualizarOrdemServico";
@@ -50,6 +51,7 @@ export function AuthenticatedApp() {
           <Route path="/orcamentos" element={<ProtectedRoute requiredPermission="orcamentos"><Orcamentos /></ProtectedRoute>} />
           <Route path="/orcamentos/novo" element={<ProtectedRoute requiredPermission="orcamentos"><NovoOrcamento /></ProtectedRoute>} />
           <Route path="/orcamentos/precificacao" element={<ProtectedRoute requiredPermission="orcamentos"><NovaPrecificacao /></ProtectedRoute>} />
+          <Route path="/orcamentos/sales-tax" element={<ProtectedRoute requiredPermission="orcamentos"><SalesTaxReport /></ProtectedRoute>} />
           <Route path="/aprovados" element={<ProtectedRoute requiredPermission="aprovados"><Aprovados /></ProtectedRoute>} />
           <Route path="/compras" element={<ProtectedRoute requiredPermission="compras"><Compras /></ProtectedRoute>} />
           <Route path="/visualizar-ordem-servico/:id" element={<ProtectedRoute><VisualizarOrdemServico /></ProtectedRoute>} />

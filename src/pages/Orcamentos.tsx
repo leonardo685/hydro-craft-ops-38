@@ -2210,6 +2210,9 @@ export default function Orcamentos() {
           {/* Sales Tax total across existing quotes */}
           {isUSCompany && (
           <div
+            role="button"
+            onClick={() => navigate('/orcamentos/sales-tax')}
+            title="Open monthly sales tax report"
             className="group rounded-2xl border border-border/50
                        bg-card/40 p-5 shadow-lg
                        transition-all duration-300 ease-in-out
