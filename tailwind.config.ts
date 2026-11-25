@@ -34,6 +34,10 @@ export default {
 					DEFAULT: 'hsl(var(--secondary))',
 					foreground: 'hsl(var(--secondary-foreground))'
 				},
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					soft: 'hsl(var(--success-soft))'
+				},
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
 					foreground: 'hsl(var(--destructive-foreground))'

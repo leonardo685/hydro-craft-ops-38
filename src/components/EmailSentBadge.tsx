@@ -13,7 +13,7 @@ export function EmailSentBadge({ quote, language }: { quote: Parameters<typeof c
   const title = date ? `${label}: ${date}` : language === 'en'
     ? 'No recorded email send for this document.'
     : language === 'es' ? 'No hay envío de email registrado para este documento.' : 'Nenhum envio de e-mail registrado para este documento.';
-  return <Badge variant="outline" className={`gap-1 whitespace-nowrap ${sentAt ? 'border-success/40 bg-success/10 text-success' : 'border-border bg-muted text-muted-foreground'}`} title={title} aria-label={title}>
+  return <Badge variant="outline" className={`gap-1 whitespace-nowrap ${sentAt ? 'border-success/30 bg-success-soft text-success' : 'border-border bg-muted text-muted-foreground'}`} title={title} aria-label={title}>
     <Icon className="h-3.5 w-3.5 shrink-0" />{label}
   </Badge>;
 }
