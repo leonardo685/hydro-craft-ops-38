@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, ThumbsUp, ThumbsDown, Edit, FileText, Download, Tag, Settings, History } from "lucide-react";
+import { Search, Plus, ThumbsUp, ThumbsDown, Edit, FileText, Download, Tag, Settings, History, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EquipmentLabel } from "@/components/EquipmentLabel";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -40,6 +41,26 @@ export default function OrdensServico() {
   } | null>(null);
   const [selectedOrdemForLabel, setSelectedOrdemForLabel] = useState<any>(null);
   const [historicoModalOpen, setHistoricoModalOpen] = useState(false);
+  const [ordemParaExcluir, setOrdemParaExcluir] = useState<any>(null);
+  const [excluindo, setExcluindo] = useState(false);
+  const en = language === 'en';
+
+  const confirmarExclusao = async () => {
+    if (!ordemParaExcluir || !empresaAtual?.id) return;
+    setExcluindo(true);
+    const { error } = await (supabase as any).rpc('excluir_ordem_servico', {
+      p_ordem_id: ordemParaExcluir.id,
+      p_empresa_id: empresaAtual.id,
+    });
+    setExcluindo(false);
+    if (error) {
+      toast({ title: en ? 'Could not delete order' : 'Não foi possível excluir a ordem', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setOrdensServico(prev => prev.filter(o => o.id !== ordemParaExcluir.id));
+    toast({ title: en ? 'Service order deleted' : 'Ordem de serviço excluída' });
+    setOrdemParaExcluir(null);
+  };
 
 
   const loadOrdensServicoCallback = useCallback(() => {
@@ -653,6 +674,10 @@ export default function OrdensServico() {
                                         <Download className="h-4 w-4 mr-2" />
                                         {t('analise.downloadPdf')}
                                       </DropdownMenuItem>
+                                      <DropdownMenuItem className="text-destructive" onClick={() => { setMenuAberto(null); setOrdemParaExcluir(ordem); }}>
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        {en ? 'Delete' : 'Excluir'}
+                                      </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                   <Button 
@@ -701,6 +726,24 @@ export default function OrdensServico() {
         open={historicoModalOpen} 
         onOpenChange={setHistoricoModalOpen} 
       />
+    <AlertDialog open={!!ordemParaExcluir} onOpenChange={(o) => { if (!o && !excluindo) setOrdemParaExcluir(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{en ? 'Delete service order?' : 'Excluir ordem de serviço?'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {en
+                ? `Order ${ordemParaExcluir?.numero_ordem ?? ''} and its photos, tests, documents and purchases will be permanently deleted. Linked quotes are kept.`
+                : `A ordem ${ordemParaExcluir?.numero_ordem ?? ''} e suas fotos, testes, documentos e compras serão excluídos permanentemente. Orçamentos vinculados são mantidos.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={excluindo}>{en ? 'Cancel' : 'Cancelar'}</AlertDialogCancel>
+            <AlertDialogAction disabled={excluindo} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={(e) => { e.preventDefault(); confirmarExclusao(); }}>
+              {excluindo ? (en ? 'Deleting...' : 'Excluindo...') : (en ? 'Delete' : 'Excluir')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }
